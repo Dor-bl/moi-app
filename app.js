@@ -629,19 +629,54 @@ function setupEventListeners() {
         contactModal.classList.remove('active');
     });
 
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        const submitBtn = document.getElementById('contactSubmitBtn');
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
+
+        const nameVal = document.getElementById('contactName').value;
+        const emailVal = document.getElementById('contactEmail').value;
+        const subjectVal = document.getElementById('contactSubject').value;
+        const messageVal = document.getElementById('contactMessage').value;
+
+        // Save submission locally for backup
         const submissions = JSON.parse(localStorage.getItem('moiCheckMessages')) || [];
         submissions.push({
             date: new Date().toISOString(),
-            name: document.getElementById('contactName').value,
-            email: document.getElementById('contactEmail').value,
-            subject: document.getElementById('contactSubject').value,
-            message: document.getElementById('contactMessage').value
+            name: nameVal,
+            email: emailVal,
+            subject: subjectVal,
+            message: messageVal
         });
         localStorage.setItem('moiCheckMessages', JSON.stringify(submissions));
 
+        // Send email via FormSubmit AJAX endpoint securely
+        const targetEmail = atob('ZGJsYXl6ZXJAZ21haWwuY29t');
+        
+        try {
+            await fetch(`https://formsubmit.co/ajax/${targetEmail}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: nameVal,
+                    email: emailVal,
+                    _subject: `[MoiCheck Feedback] ${subjectVal}`,
+                    message: messageVal,
+                    _captcha: 'false'
+                })
+            });
+        } catch (err) {
+            console.log('Email delivery note:', err);
+        }
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
         contactForm.style.display = 'none';
         contactSuccess.style.display = 'block';
     });
