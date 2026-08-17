@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoiCheck - Groningen Bucket List</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1>MoiCheck</h1>
+            <button id="profileBtn" class="profile-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </button>
+        </div>
+        <div class="progress-container">
+            <div class="progress-text">
+                <span id="progressCount">0 of 20 completed</span>
+                <span id="currentMilestone" class="milestone-badge">Newcomer</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+        </div>
+        <div class="filters-container">
+            <button class="filter-pill active" data-filter="All">All</button>
+            <button class="filter-pill" data-filter="Food & Drink">Food</button>
+            <button class="filter-pill" data-filter="Culture & Sights">Culture</button>
+            <button class="filter-pill" data-filter="Daily Life">Daily Life</button>
+            <button class="filter-pill" data-filter="Groningen Classics">Classics</button>
+        </div>
+    </header>
+
+    <main class="list-container" id="listContainer">
+        <!-- Cards will be injected here -->
+    </main>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeDetailModal">&times;</button>
+            <span class="category-tag" id="modalCategory">Category</span>
+            <h2 id="modalTitle">Item Title</h2>
+            <p class="modal-tip"><strong>Why locals do it:</strong> <span id="modalTip">Tip text</span></p>
+            
+            <div class="memory-section">
+                <h3>Add a Memory</h3>
+                <textarea id="memoryNote" placeholder="How was it? Who were you with?"></textarea>
+                <div class="modal-actions">
+                    <button class="btn primary-btn" id="modalCheckBtn">Mark as Complete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile/Progress Modal -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeProfileModal">&times;</button>
+            <h2>Your Journey</h2>
+            <div class="milestone-card" id="milestoneCard">
+                <h3 id="profileMilestone">Newcomer</h3>
+                <p id="profileProgressText">0 of 20 completed</p>
+            </div>
+            <button class="btn share-btn" id="shareBtn">Share Milestone</button>
+            
+            <h3>Completed Memories</h3>
+            <div class="completed-list" id="completedList">
+                <!-- Completed items will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
