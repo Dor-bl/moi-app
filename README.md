@@ -8,6 +8,7 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 
 ## ✨ Features
 
+- **Interactive Groningen Map View 🗺️**: Switch seamlessly between List View and Map View. Features interactive map pins for all 20 locations across Groningen with real-time status (Green for completed, Orange for pending).
 - **Multi-Language Support (EN 🇬🇧 / NL 🇳🇱)**: Toggle instantly between English and Dutch for all items, tips, categories, and milestone badges.
 - **20 Curated Groningen Bucket List Items**: Handpicked experiences spanning Food & Drink, Culture & Sights, Daily Life, and Groningen Classics.
 - **Contact & Item Suggestions Form**: Expats can easily get in touch, suggest new Groningen bucket list items, report bugs, or send feedback with full bilingual support.

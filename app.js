@@ -1,120 +1,140 @@
 const BUCKET_LIST = [
     {
         id: '1',
+        coords: [53.2192, 6.5670],
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
         title: { en: 'Eat your first Groninger Eierbal', nl: 'Eet je eerste Groningse Eierbal' },
         tip: { en: 'Grab one hot from a snackbar or the automatic wall (automatiek).', nl: 'Haal er een warm uit de snackbar of uit de automatiek.' }
     },
     {
         id: '2',
+        coords: [53.2168, 6.5645],
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
         title: { en: 'Order Patat Oorlog at the Vismarkt', nl: 'Bestel Patat Oorlog op de Vismarkt' },
         tip: { en: 'Fries with mayo, peanut satay sauce, and raw diced onions.', nl: 'Friet met mayo, pindasaus en gesnipperde uitjes.' }
     },
     {
         id: '3',
+        coords: [53.2170, 6.5648],
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
         title: { en: 'Try fresh Stroopwafels at the Tuesday/Saturday market', nl: 'Probeer verse Stroopwafels op de markt' },
         tip: { en: 'Get them warm and fresh from the market stall at Vismarkt.', nl: 'Haal ze warm en vers bij de kraam op de Vismarkt.' }
     },
     {
         id: '4',
+        coords: [53.2172, 6.5639],
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
         title: { en: 'Buy Kruidkoek or Groninger Koek', nl: 'Koop Kruidkoek of Groninger Koek' },
         tip: { en: 'A spiced local slice, great with butter alongside coffee.', nl: 'Een gekruide lokale koek, heerlijk met boter bij de koffie.' }
     },
     {
         id: '5',
+        coords: [53.2195, 6.5684],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Climb the Martinitoren (d\'Olle Grieze)', nl: 'Beklim de Martinitoren (d\'Olle Grieze)' },
         tip: { en: '300+ steps to the top for the best view over the province.', nl: '300+ treden naar de top voor het beste uitzicht over de provincie.' }
     },
     {
         id: '6',
+        coords: [53.2384, 6.5332],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Explore the colorful houses at Reitdiephaven', nl: 'Ontdek de kleurrijke huizen bij Reitdiephaven' },
         tip: { en: 'The classic postcard photo spot on the city’s edge.', nl: 'De bekende ansichtkaart fotospot aan de rand van de stad.' }
     },
     {
         id: '7',
+        coords: [53.2190, 6.5701],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Visit the Forum Groningen rooftop', nl: 'Bezoek het dakterras van Forum Groningen' },
         tip: { en: 'Free panoramic view, great library, and open terrace.', nl: 'Gratis panoramisch uitzicht, een bibliotheek en een open terras.' }
     },
     {
         id: '8',
+        coords: [53.2124, 6.5663],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Tour the Groninger Museum', nl: 'Bezoek het Groninger Museum' },
         tip: { en: 'Distinctive postmodern architecture right opposite the central station.', nl: 'Opvallende postmoderne architectuur recht tegenover het hoofdstation.' }
     },
     {
         id: '9',
+        coords: [53.2241, 6.5540],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Have a picnic at Noorderplantsoen', nl: 'Ga picknicken in het Noorderplantsoen' },
         tip: { en: 'The social heart of the city during sunny spring and summer days.', nl: 'Het sociale hart van de stad tijdens zonnige lente- en zomerdagen.' }
     },
     {
         id: '10',
+        coords: [53.2110, 6.5640],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Say "Moi!" to a bus driver or neighbor', nl: 'Zeg "Moi!" tegen een buschauffeur of buurman' },
         tip: { en: 'The quintessential universal northern greeting.', nl: 'De iconische en universele Noorderse begroeting.' }
     },
     {
         id: '11',
+        coords: [53.2192, 6.5668],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Navigate the Grote Markt intersection on a bicycle', nl: 'Fiets over het drukke kruispunt op de Grote Markt' },
         tip: { en: 'Master the art of free-flowing Dutch bike traffic.', nl: 'Meester de kunst van het vrije Nederlandse fietsverkeer.' }
     },
     {
         id: '12',
+        coords: [53.2114, 6.5647],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Park in the underground bike garage at Central Station', nl: 'Parkeer je fiets in de fietsenstalling bij het Station' },
         tip: { en: 'Experience multi-level bicycle infrastructure firsthand.', nl: 'Ervaar de indrukwekkende ondergrondse fietsinfrastructuur.' }
     },
     {
         id: '13',
+        coords: [53.2200, 6.5600],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Bike in the rain wearing full waterproof gear (regenpak)', nl: 'Fiets door de regen in een echt regenpak' },
         tip: { en: 'The ultimate rite of passage for Dutch daily commuting.', nl: 'De ultieme inwijding voor het dagelijkse Nederlandse fietsen.' }
     },
     {
         id: '14',
+        coords: [53.2185, 6.5780],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Visit a Kringloop (thrift store) for home items', nl: 'Bezoek een Kringloopwinkel voor spullen in huis' },
         tip: { en: 'Quintessential Dutch practical way to furnish a flat.', nl: 'De praktische Nederlandse manier om je woning in te richten.' }
     },
     {
         id: '15',
+        coords: [53.4070, 6.1950],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Take a day trip to Schiermonnikoog or Ameland', nl: 'Maak een dagtocht naar Schiermonnikoog of Ameland' },
         tip: { en: 'Catch the bus to Lauwersoog and take the ferry to the Wadden Islands.', nl: 'Neem de bus naar Lauwersoog en de boot naar de Waddeneilanden.' }
     },
     {
         id: '16',
+        coords: [53.0069, 7.1919],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Visit the star fortress town of Bourtange', nl: 'Bezoek het vestingstadje Bourtange' },
         tip: { en: 'A restored 16th-century fortified village near the German border.', nl: 'Een gerestaureerde 16e-eeuwse vestingstad nabij de Duitse grens.' }
     },
     {
         id: '17',
+        coords: [53.2188, 6.5678],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Grab an evening beer at the Drie Gezusters', nl: 'Drink een biertje bij De Drie Gezusters' },
         tip: { en: 'One of the largest pub complexes in Europe on the Grote Markt.', nl: 'Een van de grootste cafécomplexen van Europa op de Grote Markt.' }
     },
     {
         id: '18',
+        coords: [53.2064, 6.5917],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Watch an FC Groningen match at the Euroborg', nl: 'Bezoek een wedstrijd van FC Groningen in de Euroborg' },
         tip: { en: 'Experience local football pride with the Green-White Army.', nl: 'Beleef de lokale voetbaltrots in het stadion van de Trots van het Noorden.' }
     },
     {
         id: '19',
+        coords: [53.2163, 6.5675],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Walk around the historic Gasthuizen courtyards', nl: 'Wandel langs de historische Gasthuizen en hofjes' },
         tip: { en: 'Peaceful hidden medieval courtyards tucked behind city streets.', nl: 'Rustige verborgen middeleeuwse hofjes achter de drukke winkelstraten.' }
     },
     {
         id: '20',
+        coords: [53.2166, 6.5652],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Do grocery shopping at the open-air market', nl: 'Doe boodschappen op de openluchtmarkt op de Vismarkt' },
         tip: { en: 'Buy fresh cheese, vegetables, and fish at the Vismarkt.', nl: 'Koop verse kaas, groenten en vis op de Vismarkt.' }
@@ -161,7 +181,10 @@ const UI_TRANSLATIONS = {
         optSuggest: 'Suggest a Groningen Item 💡',
         optFeedback: 'General Feedback 💬',
         optBug: 'Report an Issue 🐛',
-        optMoi: 'Just saying Moi! 👋'
+        optMoi: 'Just saying Moi! 👋',
+        viewList: 'List',
+        viewMap: 'Map',
+        viewDetails: 'View Details'
     },
     nl: {
         filterAll: 'Alles',
@@ -194,7 +217,10 @@ const UI_TRANSLATIONS = {
         optSuggest: 'Tip een Gronings item 💡',
         optFeedback: 'Algemene feedback 💬',
         optBug: 'Meld een probleem 🐛',
-        optMoi: 'Zeg gewoon Moi! 👋'
+        optMoi: 'Zeg gewoon Moi! 👋',
+        viewList: 'Lijst',
+        viewMap: 'Kaart',
+        viewDetails: 'Bekijk Details'
     }
 };
 
@@ -202,15 +228,21 @@ const UI_TRANSLATIONS = {
 let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
 let currentLang = localStorage.getItem('moiCheckLang') || 'en';
 let currentFilter = 'All';
+let currentView = 'list';
 let selectedItemId = null;
+let leafletMap = null;
+let markersGroup = null;
 
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
+const mapWrapper = document.getElementById('mapWrapper');
 const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
 const currentMilestone = document.getElementById('currentMilestone');
 const langBtns = document.querySelectorAll('.lang-btn');
+const listViewBtn = document.getElementById('listViewBtn');
+const mapViewBtn = document.getElementById('mapViewBtn');
 
 // Detail Modal Elements
 const detailModal = document.getElementById('detailModal');
@@ -265,6 +297,9 @@ function updateLanguageUI() {
         btn.classList.toggle('active', btn.dataset.lang === currentLang);
     });
 
+    document.getElementById('txtListView').textContent = t.viewList;
+    document.getElementById('txtMapView').textContent = t.viewMap;
+
     document.querySelector('.memory-section h3').textContent = t.addMemory;
     memoryNote.placeholder = t.memoryPlaceholder;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
@@ -297,11 +332,95 @@ function setLanguage(lang) {
     updateLanguageUI();
     renderList();
     updateProgress();
+    if (currentView === 'map' && leafletMap) {
+        renderMapMarkers();
+    }
     
     if (detailModal.classList.contains('active') && selectedItemId) {
         const item = BUCKET_LIST.find(i => i.id === selectedItemId);
         if (item) openDetailModal(item);
     }
+}
+
+function switchView(view) {
+    currentView = view;
+    if (view === 'list') {
+        listViewBtn.classList.add('active');
+        mapViewBtn.classList.remove('active');
+        listContainer.style.display = 'grid';
+        mapWrapper.style.display = 'none';
+    } else {
+        mapViewBtn.classList.add('active');
+        listViewBtn.classList.remove('active');
+        listContainer.style.display = 'none';
+        mapWrapper.style.display = 'block';
+        initOrUpdateMap();
+    }
+}
+
+function initOrUpdateMap() {
+    if (!window.L) return;
+
+    if (!leafletMap) {
+        // Initialize map centered at Groningen City Center
+        leafletMap = L.map('mapContainer').setView([53.2194, 6.5665], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(leafletMap);
+
+        markersGroup = L.layerGroup().addTo(leafletMap);
+    }
+
+    setTimeout(() => {
+        leafletMap.invalidateSize();
+    }, 100);
+
+    renderMapMarkers();
+}
+
+function renderMapMarkers() {
+    if (!leafletMap || !markersGroup) return;
+    markersGroup.clearLayers();
+
+    const t = UI_TRANSLATIONS[currentLang];
+    const filteredList = currentFilter === 'All' 
+        ? BUCKET_LIST 
+        : BUCKET_LIST.filter(item => item.category.en === currentFilter);
+
+    filteredList.forEach(item => {
+        const isCompleted = !!completedItems[item.id];
+        
+        // Custom SVG icon pin
+        const pinColor = isCompleted ? '#10B981' : '#F59E0B';
+        const customIcon = L.divIcon({
+            className: 'custom-map-pin',
+            html: `<div style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    ${isCompleted ? '✓' : '•'}
+                   </div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+
+        const marker = L.marker(item.coords, { icon: customIcon });
+
+        const popupContent = document.createElement('div');
+        popupContent.className = 'map-popup-card';
+        popupContent.innerHTML = `
+            <span class="card-category">${item.category[currentLang]}</span>
+            <h4>${item.title[currentLang]}</h4>
+            <p>${item.tip[currentLang]}</p>
+            <button class="map-popup-btn">${t.viewDetails}</button>
+        `;
+
+        popupContent.querySelector('.map-popup-btn').addEventListener('click', () => {
+            openDetailModal(item);
+        });
+
+        marker.bindPopup(popupContent);
+        markersGroup.addLayer(marker);
+    });
 }
 
 function renderList() {
@@ -341,6 +460,10 @@ function renderList() {
         
         listContainer.appendChild(card);
     });
+
+    if (currentView === 'map' && leafletMap) {
+        renderMapMarkers();
+    }
 }
 
 function getMilestoneObj(count) {
@@ -456,12 +579,18 @@ function openProfileModal() {
 }
 
 function setupEventListeners() {
+    // View Switcher buttons
+    listViewBtn.addEventListener('click', () => switchView('list'));
+    mapViewBtn.addEventListener('click', () => switchView('map'));
+
+    // Language buttons
     langBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             setLanguage(e.target.dataset.lang);
         });
     });
 
+    // Filters
     filterPills.forEach(pill => {
         pill.addEventListener('click', (e) => {
             filterPills.forEach(p => p.classList.remove('active'));
@@ -471,6 +600,7 @@ function setupEventListeners() {
         });
     });
     
+    // Modals
     closeDetailModalBtn.addEventListener('click', () => {
         detailModal.classList.remove('active');
         selectedItemId = null;
@@ -501,7 +631,6 @@ function setupEventListeners() {
     contactForm.addEventListener('submit', (e) => {
         e.preventDefault();
         
-        // Save submission locally for MVP record
         const submissions = JSON.parse(localStorage.getItem('moiCheckMessages')) || [];
         submissions.push({
             date: new Date().toISOString(),
@@ -512,7 +641,6 @@ function setupEventListeners() {
         });
         localStorage.setItem('moiCheckMessages', JSON.stringify(submissions));
 
-        // Show success state
         contactForm.style.display = 'none';
         contactSuccess.style.display = 'block';
     });
