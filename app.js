@@ -394,7 +394,7 @@ function renderMapMarkers() {
         const isCompleted = !!completedItems[item.id];
         
         // Custom SVG icon pin
-        const pinColor = isCompleted ? '#10B981' : '#F59E0B';
+        const pinColor = isCompleted ? '#E63946' : '#457B9D';
         const customIcon = L.divIcon({
             className: 'custom-map-pin',
             html: `<div style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
@@ -748,7 +748,7 @@ function createConfetti(x, y) {
         confetti.style.left = `${x + Math.cos(angle) * distance}px`;
         confetti.style.top = `${y + Math.sin(angle) * distance}px`;
         
-        const colors = ['#F59E0B', '#10B981', '#3B82F6', '#EC4899'];
+        const colors = ['#E63946', '#457B9D', '#1D3557', '#A8DADC'];
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
         
         document.body.appendChild(confetti);

@@ -1,14 +1,37 @@
 :root {
-    --bg-color: #F8F9FA;
-    --text-color: #1E293B;
-    --text-light: #64748B;
-    --primary-color: #10B981; /* Emerald Green */
-    --accent-color: #F59E0B; /* Warm Orange */
-    --card-bg: #FFFFFF;
-    --border-color: #E2E8F0;
+    /* Primitive palette */
+    --red: #E63946;
+    --cream: #F1FAEE;
+    --cyan: #A8DADC;
+    --blue: #457B9D;
+    --navy: #1D3557;
+
+    /* Semantic tokens */
+    --background: var(--cream);
+    --foreground: var(--navy);
+    --muted-foreground: color-mix(in srgb, var(--navy) 55%, var(--cream));
+    --primary: var(--red);
+    --accent: var(--blue);
+    --highlight: var(--cyan);
+    --card: #FFFFFF;
+    --border: var(--cyan);
+
+    /* Typography */
+    --font-heading: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+    --font-body: 'Karla', system-ui, -apple-system, sans-serif;
+
+    /* Legacy aliases — keep existing rules working on the new tokens */
+    --bg-color: var(--background);
+    --text-color: var(--foreground);
+    --text-light: var(--muted-foreground);
+    --primary-color: var(--primary);
+    --accent-color: var(--accent);
+    --card-bg: var(--card);
+    --border-color: var(--border);
+
     --border-radius: 16px;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    --shadow-sm: 0 1px 3px rgba(29, 53, 87, 0.08);
+    --shadow-md: 0 4px 6px -1px rgba(29, 53, 87, 0.10), 0 2px 4px -1px rgba(29, 53, 87, 0.06);
 }
 
 * {
@@ -18,11 +41,17 @@
 }
 
 body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: var(--bg-color);
+    font-family: var(--font-body);
+    background-color: var(--background);
     color: var(--text-color);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+}
+
+/* Display headings use the serif display face at its natural weight */
+h1, h2, h3 {
+    font-family: var(--font-heading);
+    font-weight: 400;
 }
 
 .app-header {
@@ -81,7 +110,7 @@ body {
 
 h1 {
     font-size: 1.75rem;
-    font-weight: 800;
+    font-weight: 400;
     color: var(--primary-color);
     letter-spacing: -0.025em;
 }
@@ -114,7 +143,7 @@ h1 {
 
 .milestone-badge {
     color: var(--accent-color);
-    background-color: rgba(245, 158, 11, 0.1);
+    background-color: color-mix(in srgb, var(--accent-color) 12%, transparent);
     padding: 0.125rem 0.5rem;
     border-radius: 1rem;
 }
@@ -196,7 +225,7 @@ h1 {
 .leaflet-popup-content-wrapper {
     border-radius: 14px;
     padding: 0.25rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: var(--font-body);
     box-shadow: var(--shadow-md);
 }
 
@@ -338,7 +367,7 @@ h1 {
 
 .card-title {
     font-size: 1.125rem;
-    font-weight: 700;
+    font-weight: 400;
     margin-bottom: 0.5rem;
 }
 
@@ -354,7 +383,7 @@ h1 {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(30, 41, 59, 0.5);
+    background-color: color-mix(in srgb, var(--foreground) 50%, transparent);
     display: flex;
     align-items: flex-end; /* Bottom sheet on mobile */
     justify-content: center;
@@ -415,7 +444,7 @@ h1 {
 
 .category-tag {
     display: inline-block;
-    background-color: rgba(16, 185, 129, 0.1);
+    background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
     color: var(--primary-color);
     padding: 0.25rem 0.75rem;
     border-radius: 1rem;
@@ -426,7 +455,7 @@ h1 {
 
 .modal-content h2 {
     font-size: 1.5rem;
-    font-weight: 800;
+    font-weight: 400;
     margin-bottom: 1rem;
     padding-right: 2rem;
 }
@@ -495,7 +524,7 @@ textarea:focus {
 }
 
 .milestone-card {
-    background: linear-gradient(135deg, var(--text-color), #334155);
+    background: linear-gradient(135deg, var(--foreground), var(--accent-color));
     color: white;
     padding: 2rem;
     border-radius: 16px;
@@ -506,7 +535,7 @@ textarea:focus {
 .milestone-card h3 {
     font-size: 2rem;
     margin-bottom: 0.5rem;
-    color: var(--accent-color);
+    color: var(--highlight);
 }
 
 .completed-list {
