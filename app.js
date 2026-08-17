@@ -365,9 +365,10 @@ function initOrUpdateMap() {
         // Initialize map centered at Groningen City Center
         leafletMap = L.map('mapContainer').setView([53.2194, 6.5665], 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            subdomains: 'abcd',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }).addTo(leafletMap);
 
         markersGroup = L.layerGroup().addTo(leafletMap);
