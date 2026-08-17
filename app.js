@@ -147,7 +147,21 @@ const UI_TRANSLATIONS = {
         completedMemories: 'Completed Memories',
         noMemories: 'No memories yet. Go explore Groningen!',
         copied: 'Copied to Clipboard!',
-        shareText: "I just unlocked '{milestone}' status on MoiCheck! I've completed {completed}/{total} classic Groningen experiences."
+        shareText: "I just unlocked '{milestone}' status on MoiCheck! I've completed {completed}/{total} classic Groningen experiences.",
+        contactTitle: 'Contact Us',
+        contactSubtitle: 'Have a tip for a Groningen bucket list item, feedback, or just want to say Moi?',
+        contactName: 'Name',
+        contactEmail: 'Email',
+        contactSubject: 'Subject',
+        contactMessage: 'Message',
+        sendMessage: 'Send Message',
+        contactBtnText: 'Contact & Suggestions',
+        successTitle: 'Moi! Bedankt!',
+        successText: 'Thanks for your message! We appreciate your input on making Groningen awesome for expats.',
+        optSuggest: 'Suggest a Groningen Item 💡',
+        optFeedback: 'General Feedback 💬',
+        optBug: 'Report an Issue 🐛',
+        optMoi: 'Just saying Moi! 👋'
     },
     nl: {
         filterAll: 'Alles',
@@ -166,7 +180,21 @@ const UI_TRANSLATIONS = {
         completedMemories: 'Voltooide Herinneringen',
         noMemories: 'Nog geen herinneringen. Ga Groningen ontdekken!',
         copied: 'Gekopieerd naar klembord!',
-        shareText: "Ik heb net de status '{milestone}' ontgrendeld op MoiCheck! Ik heb {completed}/{total} klassieke Groningse ervaringen voltooid."
+        shareText: "Ik heb net de status '{milestone}' ontgrendeld op MoiCheck! Ik heb {completed}/{total} klassieke Groningse ervaringen voltooid.",
+        contactTitle: 'Contact',
+        contactSubtitle: 'Heb je een tip voor een Groningse bucketlist ervaring, feedback of wil je gewoon Moi zeggen?',
+        contactName: 'Naam',
+        contactEmail: 'E-mailadres',
+        contactSubject: 'Onderwerp',
+        contactMessage: 'Bericht',
+        sendMessage: 'Verstuur Bericht',
+        contactBtnText: 'Contact & Suggesties',
+        successTitle: 'Moi! Bedankt!',
+        successText: 'Bedankt voor je bericht! We waarderen je input om Groningen geweldig te maken voor expats.',
+        optSuggest: 'Tip een Gronings item 💡',
+        optFeedback: 'Algemene feedback 💬',
+        optBug: 'Meld een probleem 🐛',
+        optMoi: 'Zeg gewoon Moi! 👋'
     }
 };
 
@@ -202,6 +230,14 @@ const profileMilestone = document.getElementById('profileMilestone');
 const profileProgressText = document.getElementById('profileProgressText');
 const completedList = document.getElementById('completedList');
 
+// Contact Modal Elements
+const contactModal = document.getElementById('contactModal');
+const contactBtn = document.getElementById('contactBtn');
+const closeContactModalBtn = document.getElementById('closeContactModal');
+const contactForm = document.getElementById('contactForm');
+const contactSuccess = document.getElementById('contactSuccess');
+const contactSuccessClose = document.getElementById('contactSuccessClose');
+
 function init() {
     updateLanguageUI();
     renderList();
@@ -234,6 +270,24 @@ function updateLanguageUI() {
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
     document.querySelector('#profileModal h3').textContent = t.completedMemories;
     shareBtn.textContent = t.shareMilestone;
+
+    // Contact modal translations
+    document.getElementById('contactModalTitle').textContent = t.contactTitle;
+    document.getElementById('contactModalSubtitle').textContent = t.contactSubtitle;
+    document.getElementById('lblContactName').textContent = t.contactName;
+    document.getElementById('lblContactEmail').textContent = t.contactEmail;
+    document.getElementById('lblContactSubject').textContent = t.contactSubject;
+    document.getElementById('lblContactMessage').textContent = t.contactMessage;
+    document.getElementById('contactSubmitBtn').textContent = t.sendMessage;
+    document.getElementById('contactBtn').textContent = t.contactBtnText;
+    document.getElementById('contactSuccessTitle').textContent = t.successTitle;
+    document.getElementById('contactSuccessText').textContent = t.successText;
+
+    const select = document.getElementById('contactSubject');
+    select.options[0].text = t.optSuggest;
+    select.options[1].text = t.optFeedback;
+    select.options[2].text = t.optBug;
+    select.options[3].text = t.optMoi;
 }
 
 function setLanguage(lang) {
@@ -427,8 +481,43 @@ function setupEventListeners() {
     });
     
     profileBtn.addEventListener('click', openProfileModal);
+
+    // Contact Modal events
+    contactBtn.addEventListener('click', () => {
+        contactForm.style.display = 'block';
+        contactSuccess.style.display = 'none';
+        contactForm.reset();
+        contactModal.classList.add('active');
+    });
+
+    closeContactModalBtn.addEventListener('click', () => {
+        contactModal.classList.remove('active');
+    });
+
+    contactSuccessClose.addEventListener('click', () => {
+        contactModal.classList.remove('active');
+    });
+
+    contactForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        // Save submission locally for MVP record
+        const submissions = JSON.parse(localStorage.getItem('moiCheckMessages')) || [];
+        submissions.push({
+            date: new Date().toISOString(),
+            name: document.getElementById('contactName').value,
+            email: document.getElementById('contactEmail').value,
+            subject: document.getElementById('contactSubject').value,
+            message: document.getElementById('contactMessage').value
+        });
+        localStorage.setItem('moiCheckMessages', JSON.stringify(submissions));
+
+        // Show success state
+        contactForm.style.display = 'none';
+        contactSuccess.style.display = 'block';
+    });
     
-    [detailModal, profileModal].forEach(modal => {
+    [detailModal, profileModal, contactModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.classList.remove('active');

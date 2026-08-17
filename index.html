@@ -100,6 +100,51 @@
         </div>
     </div>
 
+    <!-- Contact Modal -->
+    <div class="modal-overlay" id="contactModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeContactModal">&times;</button>
+            <h2 id="contactModalTitle">Contact Us</h2>
+            <p id="contactModalSubtitle" style="color: var(--text-light); margin-bottom: 1.5rem;">Have a tip for a Groningen bucket list item, feedback, or just want to say Moi?</p>
+            
+            <form id="contactForm">
+                <div class="form-group">
+                    <label for="contactName" id="lblContactName">Name</label>
+                    <input type="text" id="contactName" required placeholder="Your name">
+                </div>
+                <div class="form-group">
+                    <label for="contactEmail" id="lblContactEmail">Email</label>
+                    <input type="email" id="contactEmail" required placeholder="your.email@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="contactSubject" id="lblContactSubject">Subject</label>
+                    <select id="contactSubject">
+                        <option value="Suggest Item">Suggest a Groningen Item 💡</option>
+                        <option value="General Feedback">General Feedback 💬</option>
+                        <option value="Report Bug">Report an Issue 🐛</option>
+                        <option value="Say Moi">Just saying Moi! 👋</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="contactMessage" id="lblContactMessage">Message</label>
+                    <textarea id="contactMessage" required placeholder="Tell us more..."></textarea>
+                </div>
+                <button type="submit" class="btn primary-btn" id="contactSubmitBtn">Send Message</button>
+            </form>
+
+            <div id="contactSuccess" class="contact-success" style="display: none;">
+                <div class="success-icon">🎉</div>
+                <h3 id="contactSuccessTitle">Moi! Bedankt!</h3>
+                <p id="contactSuccessText">Thanks for your message! We appreciate your input on making Groningen awesome for expats.</p>
+                <button class="btn primary-btn" id="contactSuccessClose">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <p>MoiCheck &bull; <button id="contactBtn" class="footer-link-btn">Contact &amp; Suggestions</button></p>
+    </footer>
+
     <script src="app.js"></script>
 </body>
 </html>
