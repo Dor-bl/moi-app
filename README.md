@@ -1,4 +1,4 @@
-# MoiCheck 🚴‍♂️🍟
+# MoiCheck <img src="https://upload.wikimedia.org/wikipedia/commons/2/20/Flag_of_Groningen.svg" width="30" height="20" alt="Groningen Flag" />
 
 **MoiCheck** is a lightweight, interactive bucket list app tailored specifically for expats moving to the Netherlands, with a starting focus on the **Groningen** area ("Stad").
 
