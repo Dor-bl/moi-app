@@ -138,6 +138,14 @@ const BUCKET_LIST = [
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Do grocery shopping at the open-air market', nl: 'Doe boodschappen op de openluchtmarkt op de Vismarkt' },
         tip: { en: 'Buy fresh cheese, vegetables, and fish at the Vismarkt.', nl: 'Koop verse kaas, groenten en vis op de Vismarkt.' }
+    },
+    {
+        id: '21',
+        coords: [53.2192, 6.5630],
+        category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
+        title: { en: 'Enroll in the free "Introduction to Dutch" course', nl: 'Volg de gratis online cursus "Introduction to Dutch"' },
+        tip: { en: 'A popular free online course by the University of Groningen to learn basic Dutch.', nl: 'Een populaire gratis online cursus van de Rijksuniversiteit Groningen om de basis van de Nederlandse taal te leren.' },
+        url: 'https://www.futurelearn.com/courses/dutch'
     }
 ];
 
@@ -146,7 +154,7 @@ const MILESTONES = [
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
     { threshold: 10, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
     { threshold: 15, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 20, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    { threshold: 21, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const UI_TRANSLATIONS = {
@@ -184,7 +192,8 @@ const UI_TRANSLATIONS = {
         optMoi: 'Just saying Moi! 👋',
         viewList: 'List',
         viewMap: 'Map',
-        viewDetails: 'View Details'
+        viewDetails: 'View Details',
+        courseLink: 'Free Dutch Course (UG) 🎓'
     },
     nl: {
         filterAll: 'Alles',
@@ -220,7 +229,8 @@ const UI_TRANSLATIONS = {
         optMoi: 'Zeg gewoon Moi! 👋',
         viewList: 'Lijst',
         viewMap: 'Kaart',
-        viewDetails: 'Bekijk Details'
+        viewDetails: 'Bekijk Details',
+        courseLink: 'Gratis Cursus Nederlands (RUG) 🎓'
     }
 };
 
@@ -529,6 +539,13 @@ function openDetailModal(item) {
     modalTitle.textContent = item.title[currentLang];
     modalTip.textContent = item.tip[currentLang];
     document.querySelector('.modal-tip strong').textContent = t.whyLocals;
+
+    const modalLinkContainer = document.getElementById('modalLinkContainer');
+    if (item.url) {
+        modalLinkContainer.innerHTML = `<a href="${item.url}" target="_blank" rel="noopener noreferrer" class="item-link-btn">${t.courseLink} ↗</a>`;
+    } else {
+        modalLinkContainer.innerHTML = '';
+    }
     
     if (isCompleted) {
         memoryNote.value = completedItems[item.id].note || '';
