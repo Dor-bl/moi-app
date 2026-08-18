@@ -1,3 +1,13 @@
+// Supabase Configuration (Replace with your free Supabase URL and Anon Key, or set window.SUPABASE_URL)
+const SUPABASE_URL = window.SUPABASE_URL || 'https://YOUR_SUPABASE_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+
+let supabaseClient = null;
+if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PROJECT_ID')) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+let currentUser = null;
+
 const BUCKET_LIST = [
     {
         id: '1',
@@ -218,7 +228,17 @@ const UI_TRANSLATIONS = {
         viewList: 'List',
         viewMap: 'Map',
         viewDetails: 'View Details',
-        courseLink: 'Free Dutch Course (UG) 🎓'
+        courseLink: 'Free Dutch Course (UG) 🎓',
+        signIn: 'Sign In',
+        signOut: 'Sign Out',
+        authTitle: 'Sign In / Sign Up',
+        authSubtitle: 'Sync your Groningen memories & progress across all your devices.',
+        continueGoogle: 'Continue with Google',
+        orText: 'OR',
+        sendMagicLink: 'Send Magic Sign-In Link ✨',
+        magicTitle: 'Check Your Inbox!',
+        magicText: "We've sent a magic sign-in link to your email. Click it to log in instantly on this device.",
+        gotIt: 'Got It'
     },
     nl: {
         filterAll: 'Alles',
@@ -255,7 +275,17 @@ const UI_TRANSLATIONS = {
         viewList: 'Lijst',
         viewMap: 'Kaart',
         viewDetails: 'Bekijk Details',
-        courseLink: 'Gratis Cursus Nederlands (RUG) 🎓'
+        courseLink: 'Gratis Cursus Nederlands (RUG) 🎓',
+        signIn: 'Inloggen',
+        signOut: 'Uitloggen',
+        authTitle: 'Inloggen / Registreren',
+        authSubtitle: 'Synchroniseer je Groningse herinneringen & voortgang op al je apparaten.',
+        continueGoogle: 'Verder met Google',
+        orText: 'OF',
+        sendMagicLink: 'Stuur Magische Inloglink ✨',
+        magicTitle: 'Check Je Inbox!',
+        magicText: 'We hebben een magische inloglink naar je e-mail gestuurd. Klik erop om direct in te loggen op dit apparaat.',
+        gotIt: 'Begrepen'
     }
 };
 
@@ -305,11 +335,22 @@ const contactForm = document.getElementById('contactForm');
 const contactSuccess = document.getElementById('contactSuccess');
 const contactSuccessClose = document.getElementById('contactSuccessClose');
 
+// Auth Modal Elements
+const authModal = document.getElementById('authModal');
+const authBtn = document.getElementById('authBtn');
+const closeAuthModalBtn = document.getElementById('closeAuthModal');
+const googleAuthBtn = document.getElementById('googleAuthBtn');
+const magicLinkForm = document.getElementById('magicLinkForm');
+const magicLinkSuccess = document.getElementById('magicLinkSuccess');
+const magicSuccessClose = document.getElementById('magicSuccessClose');
+const authActions = document.getElementById('authActions');
+
 function init() {
     updateLanguageUI();
     renderList();
     updateProgress();
     setupEventListeners();
+    initAuth();
 }
 
 function updateLanguageUI() {
@@ -358,6 +399,131 @@ function updateLanguageUI() {
     select.options[1].text = t.optFeedback;
     select.options[2].text = t.optBug;
     select.options[3].text = t.optMoi;
+
+    // Auth modal & header translations
+    document.getElementById('authModalTitle').textContent = t.authTitle;
+    document.getElementById('authModalSubtitle').textContent = t.authSubtitle;
+    document.getElementById('txtGoogleBtn').textContent = t.continueGoogle;
+    document.getElementById('txtAuthOr').textContent = t.orText;
+    document.getElementById('lblMagicEmail').textContent = t.contactEmail;
+    document.getElementById('magicLinkSubmitBtn').textContent = t.sendMagicLink;
+    document.getElementById('magicSuccessTitle').textContent = t.magicTitle;
+    document.getElementById('magicSuccessText').textContent = t.magicText;
+    document.getElementById('magicSuccessClose').textContent = t.gotIt;
+
+    updateAuthBtnState(!!currentUser);
+}
+
+function updateAuthBtnState(isLoggedIn) {
+    const t = UI_TRANSLATIONS[currentLang];
+    if (isLoggedIn && currentUser) {
+        const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : 'User';
+        authBtn.textContent = `${shortEmail} (${t.signOut})`;
+        authBtn.classList.add('user-logged-in');
+    } else {
+        authBtn.textContent = t.signIn;
+        authBtn.classList.remove('user-logged-in');
+    }
+}
+
+async function initAuth() {
+    if (!supabaseClient) return;
+
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user) {
+            currentUser = session.user;
+            onUserLoggedIn();
+        }
+
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (session && session.user) {
+                currentUser = session.user;
+                onUserLoggedIn();
+            } else {
+                currentUser = null;
+                onUserLoggedOut();
+            }
+        });
+    } catch (err) {
+        console.log('Auth init note:', err);
+    }
+}
+
+async function onUserLoggedIn() {
+    updateAuthBtnState(true);
+    await syncCloudProgress();
+    renderList();
+    updateProgress();
+}
+
+function onUserLoggedOut() {
+    updateAuthBtnState(false);
+    renderList();
+    updateProgress();
+}
+
+async function syncCloudProgress() {
+    if (!supabaseClient || !currentUser) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_progress')
+            .select('*')
+            .eq('user_id', currentUser.id);
+
+        if (error) {
+            console.log('Cloud sync note:', error.message);
+            return;
+        }
+
+        if (data) {
+            data.forEach(row => {
+                completedItems[row.item_id] = {
+                    date: row.date || new Date().toISOString(),
+                    note: row.note || ''
+                };
+            });
+            saveState();
+
+            const localEntries = Object.entries(completedItems);
+            for (let [itemId, localData] of localEntries) {
+                const cloudMatch = data.find(d => d.item_id === itemId);
+                if (!cloudMatch) {
+                    await supabaseClient.from('user_progress').upsert({
+                        user_id: currentUser.id,
+                        item_id: itemId,
+                        note: localData.note || '',
+                        date: localData.date || new Date().toISOString()
+                    });
+                }
+            }
+        }
+    } catch (err) {
+        console.log('Sync note:', err);
+    }
+}
+
+async function syncItemToCloud(itemId, isCompleted, note = '') {
+    if (!supabaseClient || !currentUser) return;
+
+    try {
+        if (isCompleted) {
+            await supabaseClient.from('user_progress').upsert({
+                user_id: currentUser.id,
+                item_id: itemId,
+                note: note,
+                date: new Date().toISOString()
+            });
+        } else {
+            await supabaseClient.from('user_progress')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('item_id', itemId);
+        }
+    } catch (err) {
+        console.log('Cloud update note:', err);
+    }
 }
 
 function setLanguage(lang) {
@@ -397,7 +563,6 @@ function initOrUpdateMap() {
     if (!window.L) return;
 
     if (!leafletMap) {
-        // Initialize map centered at Groningen City Center
         leafletMap = L.map('mapContainer').setView([53.2194, 6.5665], 13);
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -428,7 +593,6 @@ function renderMapMarkers() {
     filteredList.forEach(item => {
         const isCompleted = !!completedItems[item.id];
         
-        // Custom SVG icon pin
         const pinColor = isCompleted ? '#10B981' : '#F59E0B';
         const customIcon = L.divIcon({
             className: 'custom-map-pin',
@@ -534,12 +698,15 @@ function toggleComplete(id, event = null) {
     
     if (isCompleted) {
         delete completedItems[id];
+        syncItemToCloud(id, false);
     } else {
+        const noteVal = memoryNote.value || '';
         completedItems[id] = {
             date: new Date().toISOString(),
-            note: memoryNote.value || ''
+            note: noteVal
         };
         if (event) createConfetti(event.clientX, event.clientY);
+        syncItemToCloud(id, true, noteVal);
     }
     
     saveState();
@@ -623,6 +790,72 @@ function openProfileModal() {
 }
 
 function setupEventListeners() {
+    // Auth Modal events
+    authBtn.addEventListener('click', async () => {
+        if (currentUser && supabaseClient) {
+            await supabaseClient.auth.signOut();
+            currentUser = null;
+            onUserLoggedOut();
+        } else {
+            authActions.style.display = 'block';
+            magicLinkSuccess.style.display = 'none';
+            authModal.classList.add('active');
+        }
+    });
+
+    closeAuthModalBtn.addEventListener('click', () => {
+        authModal.classList.remove('active');
+    });
+
+    magicSuccessClose.addEventListener('click', () => {
+        authModal.classList.remove('active');
+    });
+
+    googleAuthBtn.addEventListener('click', async () => {
+        if (!supabaseClient) {
+            alert('To enable Google Login, please connect your free Supabase URL & Anon Key in app.js or window.SUPABASE_URL. Check README.md for 1-minute setup steps!');
+            return;
+        }
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.href
+            }
+        });
+        if (error) alert(error.message);
+    });
+
+    magicLinkForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('magicEmail').value;
+        const submitBtn = document.getElementById('magicLinkSubmitBtn');
+
+        if (!supabaseClient) {
+            alert('To enable Magic Link Login, please connect your free Supabase URL & Anon Key in app.js or window.SUPABASE_URL. Check README.md for 1-minute setup steps!');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
+
+        const { error } = await supabaseClient.auth.signInWithOtp({
+            email: email,
+            options: {
+                emailRedirectTo: window.location.href
+            }
+        });
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = UI_TRANSLATIONS[currentLang].sendMagicLink;
+
+        if (error) {
+            alert(error.message);
+        } else {
+            authActions.style.display = 'none';
+            magicLinkSuccess.style.display = 'block';
+        }
+    });
+
     // View Switcher buttons
     listViewBtn.addEventListener('click', () => switchView('list'));
     mapViewBtn.addEventListener('click', () => switchView('map'));
@@ -685,7 +918,6 @@ function setupEventListeners() {
         const subjectVal = document.getElementById('contactSubject').value;
         const messageVal = document.getElementById('contactMessage').value;
 
-        // Save submission locally for backup
         const submissions = JSON.parse(localStorage.getItem('moiCheckMessages')) || [];
         submissions.push({
             date: new Date().toISOString(),
@@ -696,7 +928,6 @@ function setupEventListeners() {
         });
         localStorage.setItem('moiCheckMessages', JSON.stringify(submissions));
 
-        // Send email via FormSubmit AJAX endpoint securely
         const targetEmail = atob('ZGJsYXl6ZXJAZ21haWwuY29t');
         
         try {
@@ -724,7 +955,7 @@ function setupEventListeners() {
         contactSuccess.style.display = 'block';
     });
     
-    [detailModal, profileModal, contactModal].forEach(modal => {
+    [detailModal, profileModal, contactModal, authModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.classList.remove('active');
@@ -739,6 +970,7 @@ function setupEventListeners() {
         if (isCompleted) {
             completedItems[selectedItemId].note = memoryNote.value;
             saveState();
+            syncItemToCloud(selectedItemId, true, memoryNote.value);
             detailModal.classList.remove('active');
         } else {
             const rect = modalCheckBtn.getBoundingClientRect();
