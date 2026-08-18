@@ -1,0 +1,6 @@
+# Local configuration file with credentials
+config.js
+
+# OS files
+.DS_Store
+Thumbs.db
