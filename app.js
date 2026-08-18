@@ -32,28 +32,36 @@ const BUCKET_LIST = [
         coords: [53.2195, 6.5684],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Climb the Martinitoren (d\'Olle Grieze)', nl: 'Beklim de Martinitoren (d\'Olle Grieze)' },
-        tip: { en: '300+ steps to the top for the best view over the province.', nl: '300+ treden naar de top voor het beste uitzicht over de provincie.' }
+        tip: { en: '300+ steps to the top for the best view over the province.', nl: '300+ treden naar de top voor het beste uitzicht over de provincie.' },
+        url: 'https://de-martinitoren.nl',
+        urlLabel: { en: 'Martinitoren Info & Tickets 🎟️', nl: 'Martinitoren Info & Tickets 🎟️' }
     },
     {
         id: '6',
         coords: [53.2384, 6.5332],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Explore the colorful houses at Reitdiephaven', nl: 'Ontdek de kleurrijke huizen bij Reitdiephaven' },
-        tip: { en: 'The classic postcard photo spot on the city’s edge.', nl: 'De bekende ansichtkaart fotospot aan de rand van de stad.' }
+        tip: { en: 'The classic postcard photo spot on the city’s edge.', nl: 'De bekende ansichtkaart fotospot aan de rand van de stad.' },
+        url: 'https://www.visitgroningen.nl/en/location/reitdiephaven',
+        urlLabel: { en: 'Reitdiephaven Visitor Guide ⚓', nl: 'Reitdiephaven Bezoekersgids ⚓' }
     },
     {
         id: '7',
         coords: [53.2190, 6.5701],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Visit the Forum Groningen rooftop', nl: 'Bezoek het dakterras van Forum Groningen' },
-        tip: { en: 'Free panoramic view, great library, and open terrace.', nl: 'Gratis panoramisch uitzicht, een bibliotheek en een open terras.' }
+        tip: { en: 'Free panoramic view, great library, and open terrace.', nl: 'Gratis panoramisch uitzicht, een bibliotheek en een open terras.' },
+        url: 'https://forum.nl',
+        urlLabel: { en: 'Forum Groningen Website 🏛️', nl: 'Forum Groningen Website 🏛️' }
     },
     {
         id: '8',
         coords: [53.2124, 6.5663],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Tour the Groninger Museum', nl: 'Bezoek het Groninger Museum' },
-        tip: { en: 'Distinctive postmodern architecture right opposite the central station.', nl: 'Opvallende postmoderne architectuur recht tegenover het hoofdstation.' }
+        tip: { en: 'Distinctive postmodern architecture right opposite the central station.', nl: 'Opvallende postmoderne architectuur recht tegenover het hoofdstation.' },
+        url: 'https://www.groningermuseum.nl',
+        urlLabel: { en: 'Groninger Museum Exhibitions 🎨', nl: 'Groninger Museum Tentoonstellingen 🎨' }
     },
     {
         id: '9',
@@ -95,35 +103,45 @@ const BUCKET_LIST = [
         coords: [53.2185, 6.5780],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Visit a Kringloop (thrift store) for home items', nl: 'Bezoek een Kringloopwinkel voor spullen in huis' },
-        tip: { en: 'Quintessential Dutch practical way to furnish a flat.', nl: 'De praktische Nederlandse manier om je woning in te richten.' }
+        tip: { en: 'Quintessential Dutch practical way to furnish a flat.', nl: 'De praktische Nederlandse manier om je woning in te richten.' },
+        url: 'https://www.mamamini.nl',
+        urlLabel: { en: 'Mamamini Thrift Stores ♻️', nl: 'Mamamini Kringloopwinkels ♻️' }
     },
     {
         id: '15',
         coords: [53.4070, 6.1950],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Take a day trip to Schiermonnikoog or Ameland', nl: 'Maak een dagtocht naar Schiermonnikoog of Ameland' },
-        tip: { en: 'Catch the bus to Lauwersoog and take the ferry to the Wadden Islands.', nl: 'Neem de bus naar Lauwersoog en de boot naar de Waddeneilanden.' }
+        tip: { en: 'Catch the bus to Lauwersoog and take the ferry to the Wadden Islands.', nl: 'Neem de bus naar Lauwersoog en de boot naar de Waddeneilanden.' },
+        url: 'https://www.wpd.nl',
+        urlLabel: { en: 'Wagenborg Ferry Timetable ⛴️', nl: 'Wagenborg Dienstregeling Boot ⛴️' }
     },
     {
         id: '16',
         coords: [53.0069, 7.1919],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Visit the star fortress town of Bourtange', nl: 'Bezoek het vestingstadje Bourtange' },
-        tip: { en: 'A restored 16th-century fortified village near the German border.', nl: 'Een gerestaureerde 16e-eeuwse vestingstad nabij de Duitse grens.' }
+        tip: { en: 'A restored 16th-century fortified village near the German border.', nl: 'Een gerestaureerde 16e-eeuwse vestingstad nabij de Duitse grens.' },
+        url: 'https://www.bourtange.nl',
+        urlLabel: { en: 'Vesting Bourtange Info 🏰', nl: 'Vesting Bourtange Info 🏰' }
     },
     {
         id: '17',
         coords: [53.2188, 6.5678],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Grab an evening beer at the Drie Gezusters', nl: 'Drink een biertje bij De Drie Gezusters' },
-        tip: { en: 'One of the largest pub complexes in Europe on the Grote Markt.', nl: 'Een van de grootste cafécomplexen van Europa op de Grote Markt.' }
+        tip: { en: 'One of the largest pub complexes in Europe on the Grote Markt.', nl: 'Een van de grootste cafécomplexen van Europa op de Grote Markt.' },
+        url: 'https://dedriegezusters.nl',
+        urlLabel: { en: 'De Drie Gezusters Website 🍺', nl: 'De Drie Gezusters Website 🍺' }
     },
     {
         id: '18',
         coords: [53.2064, 6.5917],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Watch an FC Groningen match at the Euroborg', nl: 'Bezoek een wedstrijd van FC Groningen in de Euroborg' },
-        tip: { en: 'Experience local football pride with the Green-White Army.', nl: 'Beleef de lokale voetbaltrots in het stadion van de Trots van het Noorden.' }
+        tip: { en: 'Experience local football pride with the Green-White Army.', nl: 'Beleef de lokale voetbaltrots in het stadion van de Trots van het Noorden.' },
+        url: 'https://www.fcgroningen.nl',
+        urlLabel: { en: 'FC Groningen Matches & Tickets ⚽', nl: 'FC Groningen Wedstrijden & Tickets ⚽' }
     },
     {
         id: '19',
@@ -549,7 +567,8 @@ function openDetailModal(item) {
 
     const modalLinkContainer = document.getElementById('modalLinkContainer');
     if (item.url) {
-        modalLinkContainer.innerHTML = `<a href="${item.url}" target="_blank" rel="noopener noreferrer" class="item-link-btn">${t.courseLink} ↗</a>`;
+        const linkText = item.urlLabel ? item.urlLabel[currentLang] : (t.courseLink || 'Official Link ↗');
+        modalLinkContainer.innerHTML = `<a href="${item.url}" target="_blank" rel="noopener noreferrer" class="item-link-btn">${linkText} ↗</a>`;
     } else {
         modalLinkContainer.innerHTML = '';
     }
