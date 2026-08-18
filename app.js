@@ -1,6 +1,14 @@
-// Supabase Configuration (Replace with your free Supabase URL and Anon Key, or set window.SUPABASE_URL)
-const SUPABASE_URL = window.SUPABASE_URL || 'https://YOUR_SUPABASE_PROJECT_ID.supabase.co';
-const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+// Supabase Configuration (Supports Base44 .env secrets and local window config)
+const getEnvVar = (key, viteKey) => {
+    if (typeof window !== 'undefined' && window[key]) return window[key];
+    if (typeof window !== 'undefined' && window.env && window.env[key]) return window.env[key];
+    if (typeof process !== 'undefined' && process.env && process.env[key]) return process.env[key];
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[viteKey]) return import.meta.env[viteKey];
+    return '';
+};
+
+const SUPABASE_URL = getEnvVar('SUPABASE_URL', 'VITE_SUPABASE_URL');
+const SUPABASE_ANON_KEY = getEnvVar('SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY');
 
 let supabaseClient = null;
 if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PROJECT_ID')) {

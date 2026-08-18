@@ -1,4 +1,8 @@
-# Local configuration file with credentials
+# Credentials and Environment files
+.env
+.env.local
+.env.production
+.env.development
 config.js
 
 # OS files
