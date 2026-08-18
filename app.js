@@ -146,6 +146,13 @@ const BUCKET_LIST = [
         title: { en: 'Enroll in the free "Introduction to Dutch" course', nl: 'Volg de gratis online cursus "Introduction to Dutch"' },
         tip: { en: 'A popular free online course by the University of Groningen to learn basic Dutch.', nl: 'Een populaire gratis online cursus van de Rijksuniversiteit Groningen om de basis van de Nederlandse taal te leren.' },
         url: 'https://www.futurelearn.com/courses/dutch'
+    },
+    {
+        id: '22',
+        coords: [53.2185, 6.5672],
+        category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
+        title: { en: 'Taste authentic Groninger Mosterdsoep', nl: 'Proef authentieke Groningse Mosterdsoep' },
+        tip: { en: 'A rich, creamy local specialty made with coarse Groninger mustard and crispy bacon bits (spekjes).', nl: 'Een rijke, romige lokale specialiteit gemaakt met grove Groningse mosterd en knapperige spekjes.' }
     }
 ];
 
@@ -154,7 +161,7 @@ const MILESTONES = [
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
     { threshold: 10, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
     { threshold: 15, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 21, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    { threshold: 22, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const UI_TRANSLATIONS = {
