@@ -200,6 +200,49 @@ const MILESTONES = [
     { threshold: 22, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
+const CATEGORY_BADGES = [
+    {
+        id: 'food_expert',
+        category: 'Food & Drink',
+        icon: '🍟',
+        title: { en: 'Groninger Foodie', nl: 'Groninger Fijnproever' },
+        desc: { 
+            en: 'Tasted all classic Groningen delicacies & snacks!', 
+            nl: 'Alle klassieke Groningse lekkernijen geproefd!' 
+        }
+    },
+    {
+        id: 'culture_lover',
+        category: 'Culture & Sights',
+        icon: '🏛️',
+        title: { en: 'Culture Explorer', nl: 'Cultuurkenner' },
+        desc: { 
+            en: 'Explored all iconic sights, museums, and towers!', 
+            nl: 'Alle iconische bezienswaardigheden en torens ontdekt!' 
+        }
+    },
+    {
+        id: 'daily_life_hero',
+        category: 'Daily Life',
+        icon: '🚴‍♂️',
+        title: { en: 'True Stadjer', nl: 'Echte Stadjer' },
+        desc: { 
+            en: 'Mastered daily Dutch bike traffic, rain riding & greetings!', 
+            nl: 'Het dagelijkse Nederlandse fiets- en stadsleven gemeesterd!' 
+        }
+    },
+    {
+        id: 'classics_master',
+        category: 'Groningen Classics',
+        icon: '👑',
+        title: { en: 'Groningen Legend', nl: 'Groningse Legende' },
+        desc: { 
+            en: 'Completed every historic expedition & classic tradition!', 
+            nl: 'Elke historische expeditie en klassieke traditie voltooid!' 
+        }
+    }
+];
+
 const UI_TRANSLATIONS = {
     en: {
         filterAll: 'All',
@@ -246,7 +289,10 @@ const UI_TRANSLATIONS = {
         sendMagicLink: 'Send Magic Sign-In Link ✨',
         magicTitle: 'Check Your Inbox!',
         magicText: "We've sent a magic sign-in link to your email. Click it to log in instantly on this device.",
-        gotIt: 'Got It'
+        gotIt: 'Got It',
+        achievementBadges: 'Achievement Badges',
+        badgeUnlockedTag: 'BADGE UNLOCKED! 🎉',
+        unlockedTag: 'Unlocked ✓'
     },
     nl: {
         filterAll: 'Alles',
@@ -293,7 +339,10 @@ const UI_TRANSLATIONS = {
         sendMagicLink: 'Stuur Magische Inloglink ✨',
         magicTitle: 'Check Je Inbox!',
         magicText: 'We hebben een magische inloglink naar je e-mail gestuurd. Klik erop om direct in te loggen op dit apparaat.',
-        gotIt: 'Begrepen'
+        gotIt: 'Begrepen',
+        achievementBadges: 'Prestatiebadges',
+        badgeUnlockedTag: 'BADGE ONTGRENDELD! 🎉',
+        unlockedTag: 'Ontgrendeld ✓'
     }
 };
 
@@ -388,6 +437,8 @@ function updateLanguageUI() {
     memoryNote.placeholder = t.memoryPlaceholder;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
     document.querySelector('#profileModal h3').textContent = t.completedMemories;
+    const txtCatBadges = document.getElementById('txtCategoryBadges');
+    if (txtCatBadges) txtCatBadges.textContent = t.achievementBadges;
     shareBtn.textContent = t.shareMilestone;
 
     // Contact modal translations
@@ -715,6 +766,7 @@ function toggleComplete(id, event = null) {
         };
         if (event) createConfetti(event.clientX, event.clientY);
         syncItemToCloud(id, true, noteVal);
+        checkBadgeUnlocks(id, false);
     }
     
     saveState();
@@ -724,6 +776,76 @@ function toggleComplete(id, event = null) {
     if (detailModal.classList.contains('active') && selectedItemId === id) {
         updateModalButtonState(!isCompleted);
     }
+}
+
+function checkBadgeUnlocks(itemId, wasCompleted) {
+    if (wasCompleted) return;
+    const item = BUCKET_LIST.find(i => i.id === itemId);
+    if (!item) return;
+
+    const categoryName = item.category.en;
+    const badge = CATEGORY_BADGES.find(b => b.category === categoryName);
+    if (!badge) return;
+
+    const categoryItems = BUCKET_LIST.filter(i => i.category.en === categoryName);
+    const total = categoryItems.length;
+    const completedCount = categoryItems.filter(i => !!completedItems[i.id]).length;
+
+    // Check if the entire category is now complete
+    if (total > 0 && completedCount === total) {
+        showBadgeToast(badge);
+    }
+}
+
+let toastTimeout = null;
+function showBadgeToast(badge) {
+    const badgeToast = document.getElementById('badgeToast');
+    const badgeToastIcon = document.getElementById('badgeToastIcon');
+    const badgeToastTitle = document.getElementById('badgeToastTitle');
+    const badgeToastDesc = document.getElementById('badgeToastDesc');
+    const badgeToastTag = document.getElementById('badgeToastTag');
+    const t = UI_TRANSLATIONS[currentLang];
+
+    if (!badgeToast) return;
+
+    badgeToastIcon.textContent = badge.icon;
+    badgeToastTitle.textContent = badge.title[currentLang];
+    badgeToastDesc.textContent = badge.desc[currentLang];
+    badgeToastTag.textContent = t.badgeUnlockedTag;
+
+    badgeToast.classList.add('show');
+    createConfetti(window.innerWidth / 2, 100);
+
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+        badgeToast.classList.remove('show');
+    }, 4500);
+}
+
+function renderBadges() {
+    const badgesGrid = document.getElementById('badgesGrid');
+    if (!badgesGrid) return;
+    badgesGrid.innerHTML = '';
+    const t = UI_TRANSLATIONS[currentLang];
+
+    CATEGORY_BADGES.forEach(badge => {
+        const categoryItems = BUCKET_LIST.filter(item => item.category.en === badge.category);
+        const total = categoryItems.length;
+        const completedCount = categoryItems.filter(item => !!completedItems[item.id]).length;
+        const isUnlocked = total > 0 && completedCount === total;
+
+        const card = document.createElement('div');
+        card.className = `badge-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+        card.innerHTML = `
+            <div class="badge-icon">${badge.icon}</div>
+            <div class="badge-info">
+                <div class="badge-title">${badge.title[currentLang]}</div>
+                <div class="badge-desc">${badge.desc[currentLang]}</div>
+                <span class="badge-progress-tag">${isUnlocked ? t.unlockedTag : `${completedCount} / ${total}`}</span>
+            </div>
+        `;
+        badgesGrid.appendChild(card);
+    });
 }
 
 function saveState() {
@@ -772,6 +894,8 @@ function updateModalButtonState(isCompleted) {
 function openProfileModal() {
     completedList.innerHTML = '';
     const t = UI_TRANSLATIONS[currentLang];
+    
+    renderBadges();
     
     const completedArr = Object.entries(completedItems).map(([id, data]) => {
         return {

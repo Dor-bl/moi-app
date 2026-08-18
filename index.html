@@ -109,13 +109,30 @@
             <h2>Your Journey</h2>
             <div class="milestone-card" id="milestoneCard">
                 <h3 id="profileMilestone">Newcomer</h3>
-                <p id="profileProgressText">0 of 20 completed</p>
+                <p id="profileProgressText">0 of 22 completed</p>
             </div>
             <button class="btn share-btn" id="shareBtn">Share Milestone</button>
             
-            <h3>Completed Memories</h3>
+            <h3 id="txtCategoryBadges" style="margin-bottom: 0.75rem;">Achievement Badges</h3>
+            <div class="badges-grid" id="badgesGrid">
+                <!-- Badges will be injected here -->
+            </div>
+
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Completed Memories</h3>
             <div class="completed-list" id="completedList">
                 <!-- Completed items will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Badge Unlock Toast -->
+    <div class="badge-toast" id="badgeToast">
+        <div class="badge-toast-content">
+            <div class="badge-toast-icon" id="badgeToastIcon">🍟</div>
+            <div class="badge-toast-info">
+                <span class="badge-toast-tag" id="badgeToastTag">BADGE UNLOCKED! 🎉</span>
+                <h4 id="badgeToastTitle">Groninger Foodie</h4>
+                <p id="badgeToastDesc">You tasted all classic Groningen delicacies!</p>
             </div>
         </div>
     </div>
