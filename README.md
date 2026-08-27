@@ -23,11 +23,24 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 
 ---
 
-## 🛠️ Built With
+## 🛠️ Tech Stack & Built With
 
-- **HTML5**: Semantic layout and accessibility.
-- **CSS3**: Custom design system using variables, flexbox, CSS grid, and responsive design.
-- **Vanilla JavaScript**: Pure JS state management, DOM manipulation, and `localStorage` integration.
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+[![Resend](https://img.shields.io/badge/Resend-000000?style=for-the-badge&logo=resend&logoColor=white)](https://resend.com/)
+[![FormSubmit](https://img.shields.io/badge/FormSubmit-FF6B6B?style=for-the-badge&logo=mail.ru&logoColor=white)](https://formsubmit.co/)
+[![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=Leaflet&logoColor=white)](https://leafletjs.com/)
+
+- **HTML5**: Semantic structure and accessible DOM layout.
+- **CSS3**: Custom responsive design system using CSS variables, Flexbox, and Grid.
+- **Vanilla JavaScript (ES6+)**: Client-side application state management, dynamic DOM rendering, and local persistence.
+- **Supabase**: Backend-as-a-Service providing passwordless magic-link authentication, Google OAuth, and real-time database synchronization.
+- **Vercel**: Edge network deployment and fast static site hosting.
+- **Resend & FormSubmit**: Email infrastructure supporting contact modal submissions and user communication.
+- **Leaflet & OpenStreetMap**: Interactive geospatial map view and customized location markers across Groningen.
 
 ---
 
