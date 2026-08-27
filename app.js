@@ -4,7 +4,14 @@ const SUPABASE_ANON_KEY = (typeof window !== 'undefined' && window.SUPABASE_ANON
 
 let supabaseClient = null;
 if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PROJECT_ID')) {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            flowType: 'implicit'
+        }
+    });
 }
 let currentUser = null;
 
@@ -467,13 +474,23 @@ function updateLanguageUI() {
 
 function updateAuthBtnState(isLoggedIn) {
     const t = UI_TRANSLATIONS[currentLang];
+    const userAccountBadge = document.getElementById('userAccountBadge');
+    const userAccountEmail = document.getElementById('userAccountEmail');
+
     if (isLoggedIn && currentUser) {
         const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : 'User';
         authBtn.textContent = `${shortEmail} (${t.signOut})`;
         authBtn.classList.add('user-logged-in');
+        if (userAccountBadge && userAccountEmail) {
+            userAccountBadge.style.display = 'flex';
+            userAccountEmail.textContent = `☁️ Synced as ${currentUser.email}`;
+        }
     } else {
         authBtn.textContent = t.signIn;
         authBtn.classList.remove('user-logged-in');
+        if (userAccountBadge) {
+            userAccountBadge.style.display = 'none';
+        }
     }
 }
 
@@ -481,23 +498,39 @@ async function initAuth() {
     if (!supabaseClient) return;
 
     try {
+        // Detect if an error was passed back in hash or query parameters (e.g. expired link)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const queryParams = new URLSearchParams(window.location.search);
+        const errorDesc = hashParams.get('error_description') || queryParams.get('error_description');
+        if (errorDesc) {
+            console.error('Supabase auth error:', errorDesc);
+            alert('Sign In Notice: ' + decodeURIComponent(errorDesc.replace(/\+/g, ' ')));
+        }
+
+        // Fetch existing active session
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session && session.user) {
             currentUser = session.user;
-            onUserLoggedIn();
+            await onUserLoggedIn();
         }
 
+        // Listen for auth state changes
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            console.log('Supabase auth event:', event, session?.user?.email);
             if (session && session.user) {
                 currentUser = session.user;
-                onUserLoggedIn();
-            } else {
+                await onUserLoggedIn();
+                // Clean hash from URL bar if access token was passed in hash
+                if (window.location.hash && window.location.hash.includes('access_token')) {
+                    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                }
+            } else if (event === 'SIGNED_OUT') {
                 currentUser = null;
                 onUserLoggedOut();
             }
         });
     } catch (err) {
-        console.log('Auth init note:', err);
+        console.error('Auth init error:', err);
     }
 }
 
@@ -965,7 +998,7 @@ function setupEventListeners() {
         const { error } = await supabaseClient.auth.signInWithOtp({
             email: email,
             options: {
-                emailRedirectTo: window.location.href
+                emailRedirectTo: window.location.origin
             }
         });
 

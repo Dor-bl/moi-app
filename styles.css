@@ -589,6 +589,29 @@ textarea:focus {
     color: var(--accent-color);
 }
 
+.user-account-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0 1rem 0;
+    padding: 0.5rem 0.75rem;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.user-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
 .completed-list {
     display: flex;
     flex-direction: column;
