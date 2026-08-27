@@ -181,6 +181,15 @@ const BUCKET_LIST = [
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
         title: { en: 'Taste authentic Groninger Mosterdsoep', nl: 'Proef authentieke Groningse Mosterdsoep' },
         tip: { en: 'A rich, creamy local specialty made with coarse Groninger mustard and crispy bacon bits (spekjes).', nl: 'Een rijke, romige lokale specialiteit gemaakt met grove Groningse mosterd en knapperige spekjes.' }
+    },
+    {
+        id: '23',
+        coords: [53.2301, 6.5435],
+        category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
+        title: { en: 'Try the famous Broodje Kip Cowboy at Slagerij Oosterhof', nl: 'Eet een Broodje Kip Cowboy bij Slagerij Oosterhof' },
+        tip: { en: 'A legendary local specialty in Winkelcentrum Paddepoel: tender warm seasoned chicken thigh fillet on a fresh roll with lettuce and sauce.', nl: 'Een legendarische lokale favoriet in Winkelcentrum Paddepoel: malse warme gekruide kipdijfilet op een vers broodje met sla en saus.' },
+        url: 'https://www.slagerijoosterhof.nl/',
+        urlLabel: { en: 'Slagerij Oosterhof Website 🥪', nl: 'Slagerij Oosterhof Website 🥪' }
     }
 ];
 
@@ -189,7 +198,7 @@ const MILESTONES = [
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
     { threshold: 10, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
     { threshold: 15, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 22, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    { threshold: 23, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const CATEGORY_BADGES = [
