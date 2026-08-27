@@ -687,7 +687,7 @@ function renderMapMarkers() {
     filteredList.forEach(item => {
         const isCompleted = !!completedItems[item.id];
         
-        const pinColor = isCompleted ? '#10B981' : '#F59E0B';
+        const pinColor = isCompleted ? '#047857' : '#B45309';
         const customIcon = L.divIcon({
             className: 'custom-map-pin',
             html: `<div style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
