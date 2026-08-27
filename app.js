@@ -270,6 +270,7 @@ const UI_TRANSLATIONS = {
         noMemories: 'No memories yet. Go explore Groningen!',
         copied: 'Copied to Clipboard!',
         shareText: "I just unlocked '{milestone}' status on MoiCheck! I've completed {completed}/{total} classic Groningen experiences.",
+        shareTextInitial: "I just started my Groningen journey as a '{milestone}' on MoiCheck! I've completed {completed}/{total} classic Groningen experiences.",
         contactTitle: 'Contact Us',
         contactSubtitle: 'Have a tip for a Groningen bucket list item, feedback, or just want to say Moi?',
         contactName: 'Name',
@@ -320,6 +321,7 @@ const UI_TRANSLATIONS = {
         noMemories: 'Nog geen herinneringen. Ga Groningen ontdekken!',
         copied: 'Gekopieerd naar klembord!',
         shareText: "Ik heb net de status '{milestone}' ontgrendeld op MoiCheck! Ik heb {completed}/{total} klassieke Groningse ervaringen voltooid.",
+        shareTextInitial: "Ik ben net begonnen aan mijn Groningen-reis als '{milestone}' op MoiCheck! Ik heb {completed}/{total} klassieke Groningse ervaringen voltooid.",
         contactTitle: 'Contact',
         contactSubtitle: 'Heb je een tip voor een Groningse bucketlist ervaring, feedback of wil je gewoon Moi zeggen?',
         contactName: 'Naam',
@@ -1152,7 +1154,8 @@ function setupEventListeners() {
         const totalCount = BUCKET_LIST.length;
         const milestoneTitle = getMilestoneObj(completedCount).title[currentLang];
         
-        const text = t.shareText
+        const templateText = completedCount === 0 ? (t.shareTextInitial || t.shareText) : t.shareText;
+        const text = templateText
             .replace('{milestone}', milestoneTitle)
             .replace('{completed}', completedCount)
             .replace('{total}', totalCount);
