@@ -676,6 +676,9 @@ function renderMapMarkers() {
         ? BUCKET_LIST 
         : BUCKET_LIST.filter(item => item.category.en === currentFilter);
 
+    // ⚡ Bolt: Use DocumentFragment to batch DOM insertions and avoid layout thrashing
+    const fragment = document.createDocumentFragment();
+
     filteredList.forEach(item => {
         const isCompleted = !!completedItems[item.id];
         
@@ -744,8 +747,10 @@ function renderList() {
 
         card.addEventListener('click', () => openDetailModal(item));
         
-        listContainer.appendChild(card);
+        fragment.appendChild(card);
     });
+
+    listContainer.appendChild(fragment);
 
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
@@ -855,6 +860,9 @@ function renderBadges() {
     badgesGrid.innerHTML = '';
     const t = UI_TRANSLATIONS[currentLang];
 
+    // ⚡ Bolt: Use DocumentFragment to batch DOM insertions and avoid layout thrashing
+    const fragment = document.createDocumentFragment();
+
     CATEGORY_BADGES.forEach(badge => {
         const categoryItems = BUCKET_LIST.filter(item => item.category.en === badge.category);
         const total = categoryItems.length;
@@ -871,8 +879,10 @@ function renderBadges() {
                 <span class="badge-progress-tag">${isUnlocked ? t.unlockedTag : `${completedCount} / ${total}`}</span>
             </div>
         `;
-        badgesGrid.appendChild(card);
+        fragment.appendChild(card);
     });
+
+    badgesGrid.appendChild(fragment);
 }
 
 function saveState() {
