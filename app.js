@@ -483,7 +483,7 @@ function updateAuthBtnState(isLoggedIn) {
         authBtn.classList.add('user-logged-in');
         if (userAccountBadge && userAccountEmail) {
             userAccountBadge.style.display = 'flex';
-            userAccountEmail.textContent = `☁️ Synced as ${currentUser.email}`;
+            userAccountEmail.textContent = `☁️ Synced as ${currentUser.email || shortEmail}`;
         }
     } else {
         authBtn.textContent = t.signIn;
@@ -504,7 +504,7 @@ async function initAuth() {
         const errorDesc = hashParams.get('error_description') || queryParams.get('error_description');
         if (errorDesc) {
             console.error('Supabase auth error:', errorDesc);
-            alert('Sign In Notice: ' + decodeURIComponent(errorDesc.replace(/\+/g, ' ')));
+            alert('Sign In Notice: ' + errorDesc);
         }
 
         // Fetch existing active session
@@ -525,8 +525,10 @@ async function initAuth() {
                     window.history.replaceState(null, '', window.location.pathname + window.location.search);
                 }
             } else if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                onUserLoggedOut();
+                if (currentUser) {
+                    currentUser = null;
+                    onUserLoggedOut();
+                }
             }
         });
     } catch (err) {
@@ -951,8 +953,6 @@ function setupEventListeners() {
     authBtn.addEventListener('click', async () => {
         if (currentUser && supabaseClient) {
             await supabaseClient.auth.signOut();
-            currentUser = null;
-            onUserLoggedOut();
         } else {
             authActions.style.display = 'block';
             magicLinkSuccess.style.display = 'none';
