@@ -50,7 +50,7 @@ const BUCKET_LIST = [
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Climb the Martinitoren (d\'Olle Grieze)', nl: 'Beklim de Martinitoren (d\'Olle Grieze)' },
         tip: { en: '300+ steps to the top for the best view over the province.', nl: '300+ treden naar de top voor het beste uitzicht over de provincie.' },
-        url: 'https://de-martinitoren.nl',
+        url: 'https://www.visitgroningen.nl/nl/locaties/2176611183/martinitoren',
         urlLabel: { en: 'Martinitoren Info & Tickets 🎟️', nl: 'Martinitoren Info & Tickets 🎟️' }
     },
     {
@@ -59,7 +59,7 @@ const BUCKET_LIST = [
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Explore the colorful houses at Reitdiephaven', nl: 'Ontdek de kleurrijke huizen bij Reitdiephaven' },
         tip: { en: 'The classic postcard photo spot on the city’s edge.', nl: 'De bekende ansichtkaart fotospot aan de rand van de stad.' },
-        url: 'https://www.visitgroningen.nl/en/location/reitdiephaven',
+        url: 'https://www.visitgroningen.nl/nl/locaties/2778627751/reitdiephaven',
         urlLabel: { en: 'Reitdiephaven Visitor Guide ⚓', nl: 'Reitdiephaven Bezoekersgids ⚓' }
     },
     {
@@ -204,7 +204,7 @@ const BUCKET_LIST = [
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'See the Hangende Keukens in Appingedam', nl: 'Bekijk de Hangende keukens in Appingedam' },
         tip: { en: 'Famous historic kitchens suspended over the Damsterdiep canal in Appingedam.', nl: 'Beroemde historische keukens die boven het water van het Damsterdiep in Appingedam zweven.' },
-        url: 'https://www.visitgroningen.nl/en/location/hangende-keukens',
+        url: 'https://www.visitgroningen.nl/nl/locaties/196787074/hangende-keukens',
         urlLabel: { en: 'Hangende Keukens Info 🏛️', nl: 'Hangende Keukens Info 🏛️' }
     },
     {
