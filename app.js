@@ -295,7 +295,7 @@ const UI_TRANSLATIONS = {
         filterDaily: 'Daily Life',
         filterClassics: 'Classics',
         completedText: '{completed} of {total} completed',
-        whyLocals: 'Why locals do it:',
+        tipLabel: 'Local tip:',
         addMemory: 'Add a Memory',
         memoryPlaceholder: 'How was it? Who were you with?',
         markComplete: 'Mark as Complete',
@@ -346,7 +346,7 @@ const UI_TRANSLATIONS = {
         filterDaily: 'Dagelijks',
         filterClassics: 'Klassiekers',
         completedText: '{completed} van de {total} voltooid',
-        whyLocals: 'Waarom locals dit doen:',
+        tipLabel: 'Tip van locals:',
         addMemory: 'Herinnering toevoegen',
         memoryPlaceholder: 'Hoe was het? Met wie was je?',
         markComplete: 'Markeer als voltooid',
@@ -933,7 +933,7 @@ function openDetailModal(item) {
     modalCategory.textContent = item.category[currentLang];
     modalTitle.textContent = item.title[currentLang];
     modalTip.textContent = item.tip[currentLang];
-    document.querySelector('.modal-tip strong').textContent = t.whyLocals;
+    document.querySelector('.modal-tip strong').textContent = t.tipLabel;
 
     const modalLinkContainer = document.getElementById('modalLinkContainer');
     if (item.url) {
