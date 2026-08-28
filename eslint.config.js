@@ -13,7 +13,6 @@ export default [
         ...globals.es2021,
         L: "readonly",
         supabase: "readonly",
-        CONFIG: "readonly",
       },
     },
     rules: {
