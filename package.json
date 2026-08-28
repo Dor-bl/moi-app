@@ -1,0 +1,15 @@
+{
+  "name": "moi-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MoiCheck - Groningen Bucket List App",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "eslint": "^9.20.1",
+    "globals": "^16.0.0"
+  }
+}
