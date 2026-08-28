@@ -20,8 +20,8 @@ const BUCKET_LIST = [
         id: '1',
         coords: [53.2192, 6.5670],
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
-        title: { en: 'Eat your first Groninger Eierbal', nl: 'Eet je eerste Groningse Eierbal' },
-        tip: { en: 'Grab one hot from a snackbar or the automatic wall (automatiek).', nl: 'Haal er een warm uit de snackbar of uit de automatiek.' }
+        title: { en: 'Eat your first Groninger Eierbal (Aaierbal)', nl: 'Eet je eerste Groningse Eierbal (Aaierbal)' },
+        tip: { en: 'Grab one hot from a snackbar or the automatic wall (automatiek). Aaierbal is eierbal in Gronings.', nl: 'Haal er een warm uit de snackbar of uit de automatiek. Aaierbal is eierbal in het Gronings.' }
     },
     {
         id: '2',
@@ -41,8 +41,8 @@ const BUCKET_LIST = [
         id: '4',
         coords: [53.2172, 6.5639],
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
-        title: { en: 'Buy Kruidkoek or Groninger Koek', nl: 'Koop Kruidkoek of Groninger Koek' },
-        tip: { en: 'A spiced local slice, great with butter alongside coffee.', nl: 'Een gekruide lokale koek, heerlijk met boter bij de koffie.' }
+        title: { en: 'Buy Kruidkoek or Groninger Koek (Grunneger kouk)', nl: 'Koop Kruidkoek of Groninger Koek (Grunneger kouk)' },
+        tip: { en: 'A spiced local cake (Grunneger kouk is Groninger koek), great with butter alongside coffee.', nl: 'Een gekruide lokale koek (Grunneger kouk is Groninger koek), heerlijk met boter bij de koffie.' }
     },
     {
         id: '5',
@@ -50,7 +50,7 @@ const BUCKET_LIST = [
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Climb the Martinitoren (d\'Olle Grieze)', nl: 'Beklim de Martinitoren (d\'Olle Grieze)' },
         tip: { en: '300+ steps to the top for the best view over the province.', nl: '300+ treden naar de top voor het beste uitzicht over de provincie.' },
-        url: 'https://de-martinitoren.nl',
+        url: 'https://www.visitgroningen.nl/nl/locaties/2176611183/martinitoren',
         urlLabel: { en: 'Martinitoren Info & Tickets 🎟️', nl: 'Martinitoren Info & Tickets 🎟️' }
     },
     {
@@ -59,7 +59,7 @@ const BUCKET_LIST = [
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Explore the colorful houses at Reitdiephaven', nl: 'Ontdek de kleurrijke huizen bij Reitdiephaven' },
         tip: { en: 'The classic postcard photo spot on the city’s edge.', nl: 'De bekende ansichtkaart fotospot aan de rand van de stad.' },
-        url: 'https://www.visitgroningen.nl/en/location/reitdiephaven',
+        url: 'https://www.visitgroningen.nl/nl/locaties/2778627751/reitdiephaven',
         urlLabel: { en: 'Reitdiephaven Visitor Guide ⚓', nl: 'Reitdiephaven Bezoekersgids ⚓' }
     },
     {
@@ -197,15 +197,51 @@ const BUCKET_LIST = [
         tip: { en: 'A legendary local specialty in Winkelcentrum Paddepoel: tender warm seasoned chicken thigh fillet on a fresh roll with lettuce and sauce.', nl: 'Een legendarische lokale favoriet in Winkelcentrum Paddepoel: malse warme gekruide kipdijfilet op een vers broodje met sla en saus.' },
         url: 'https://www.slagerijoosterhof.nl/',
         urlLabel: { en: 'Slagerij Oosterhof Website 🥪', nl: 'Slagerij Oosterhof Website 🥪' }
+    },
+    {
+        id: '24',
+        coords: [53.3211, 6.8576],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'See the Hangende Keukens in Appingedam', nl: 'Bekijk de Hangende keukens in Appingedam' },
+        tip: { en: 'Famous historic kitchens suspended over the Damsterdiep canal in Appingedam.', nl: 'Beroemde historische keukens die boven het water van het Damsterdiep in Appingedam zweven.' },
+        url: 'https://www.visitgroningen.nl/nl/locaties/196787074/hangende-keukens',
+        urlLabel: { en: 'Hangende Keukens Info 🏛️', nl: 'Hangende Keukens Info 🏛️' }
+    },
+    {
+        id: '25',
+        coords: [53.3622, 6.3860],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'Explore Landgoed Borg Verhildersum in Leens', nl: 'Bezoek Landgoed Borg Verhildersum in Leens' },
+        tip: { en: 'A historic 19th-century estate, mansion, and gardens showcasing Groninger estate life.', nl: 'Een prachtig historisch landgoed met borg, tuinen en museum in het Hoogeland.' },
+        url: 'https://www.verhildersum.nl',
+        urlLabel: { en: 'Borg Verhildersum Website 🏰', nl: 'Borg Verhildersum Website 🏰' }
+    },
+    {
+        id: '26',
+        coords: [53.2185, 6.7725],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'Visit Landgoed Fraeylemaborg in Slochteren', nl: 'Bezoek Landgoed Fraeylemaborg in Slochteren' },
+        tip: { en: 'An impressive historic estate surrounded by a large English-style park in Slochteren.', nl: 'Een indrukwekkende historische borg omgeven door een groot park in Engelse landschapsstijl.' },
+        url: 'https://fraeylemaborg.nl',
+        urlLabel: { en: 'Fraeylemaborg Website 🏰', nl: 'Fraeylemaborg Website 🏰' }
+    },
+    {
+        id: '27',
+        coords: [53.4068, 6.6713],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'Tour the Menkemaborg in Uithuizen', nl: 'Bezoek de Menkemaborg in Uithuizen' },
+        tip: { en: 'One of the best-preserved Groninger borgen with 18th-century interiors and beautiful gardens.', nl: 'Een van de best bewaarde Groninger borgen met een prachtig ingericht interieur en baroktuinen.' },
+        url: 'https://www.menkemaborg.nl',
+        urlLabel: { en: 'Menkemaborg Website 🏰', nl: 'Menkemaborg Website 🏰' }
     }
 ];
 
 const MILESTONES = [
     { threshold: 0, title: { en: 'Newcomer', nl: 'Nieuwkomer' } },
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
-    { threshold: 10, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
-    { threshold: 15, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 23, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    { threshold: 12, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
+    { threshold: 19, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
+    { threshold: 27, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const CATEGORY_BADGES = [
