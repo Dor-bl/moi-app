@@ -1268,16 +1268,6 @@ function setupEventListeners() {
         const subjectVal = document.getElementById('contactSubject').value;
         const messageVal = document.getElementById('contactMessage').value;
 
-        const submissions = JSON.parse(localStorage.getItem('moiCheckMessages')) || [];
-        submissions.push({
-            date: new Date().toISOString(),
-            name: nameVal,
-            email: emailVal,
-            subject: subjectVal,
-            message: messageVal
-        });
-        localStorage.setItem('moiCheckMessages', JSON.stringify(submissions));
-
         const targetEmail = atob('ZGJsYXl6ZXJAZ21haWwuY29t');
         
         try {
