@@ -233,6 +233,15 @@ const BUCKET_LIST = [
         tip: { en: 'One of the best-preserved Groninger borgen with 18th-century interiors and beautiful gardens.', nl: 'Een van de best bewaarde Groninger borgen met een prachtig ingericht interieur en baroktuinen.' },
         url: 'https://www.menkemaborg.nl',
         urlLabel: { en: 'Menkemaborg Website 🏰', nl: 'Menkemaborg Website 🏰' }
+    },
+    {
+        id: '28',
+        coords: [53.2064, 6.5917],
+        category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
+        title: { en: 'Get an FC Groningen T-shirt or jersey', nl: 'Scoor een FC Groningen T-shirt of shirt' },
+        tip: { en: 'Show your green-and-white pride around town or at the Euroborg stadium.', nl: 'Laat je groen-witte trots zien in de stad of in het Euroborg stadion.' },
+        url: 'https://webshop.fcgroningen.nl',
+        urlLabel: { en: 'FC Groningen Fanstore 🟢⚪', nl: 'FC Groningen Fanstore 🟢⚪' }
     }
 ];
 
@@ -241,7 +250,7 @@ const MILESTONES = [
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
     { threshold: 12, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
     { threshold: 19, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 27, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    { threshold: 28, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const CATEGORY_BADGES = [
