@@ -296,9 +296,19 @@ const CATEGORY_BADGES = [
         category: 'Groningen Classics',
         icon: '👑',
         title: { en: 'Groningen Legend', nl: 'Groningse Legende' },
-        desc: { 
-            en: 'Completed every historic expedition & classic tradition!', 
-            nl: 'Elke historische expeditie en klassieke traditie voltooid!' 
+        desc: {
+            en: 'Completed every historic expedition & classic tradition!',
+            nl: 'Elke historische expeditie en klassieke traditie voltooid!'
+        }
+    },
+    {
+        id: 'nature_spotter',
+        category: 'Nature & Wildlife',
+        icon: '🦭',
+        title: { en: 'Wadden Wildlife Spotter', nl: 'Waddennatuur Spotter' },
+        desc: {
+            en: 'Spotted all the wildlife the Groningen countryside and coast have to offer!',
+            nl: 'Alle natuur en dieren van het Groningse landschap en de kust gespot!'
         }
     }
 ];
@@ -310,6 +320,7 @@ const UI_TRANSLATIONS = {
         filterCulture: 'Culture',
         filterDaily: 'Daily Life',
         filterClassics: 'Classics',
+        filterNature: 'Nature',
         completedText: '{completed} of {total} completed',
         tipLabel: 'Local tip:',
         addMemory: 'Add a Memory',
@@ -367,6 +378,7 @@ const UI_TRANSLATIONS = {
         filterCulture: 'Cultuur',
         filterDaily: 'Dagelijks',
         filterClassics: 'Klassiekers',
+        filterNature: 'Natuur',
         completedText: '{completed} van de {total} voltooid',
         tipLabel: 'Tip van locals:',
         addMemory: 'Herinnering toevoegen',
@@ -541,7 +553,8 @@ function updateLanguageUI() {
         'Food & Drink': t.filterFood,
         'Culture & Sights': t.filterCulture,
         'Daily Life': t.filterDaily,
-        'Groningen Classics': t.filterClassics
+        'Groningen Classics': t.filterClassics,
+        'Nature & Wildlife': t.filterNature
     };
 
     filterPills.forEach(pill => {
