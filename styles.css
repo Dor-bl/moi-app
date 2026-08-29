@@ -16,6 +16,42 @@
     --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 }
 
+[data-theme="dark"] {
+    --bg-color: #0F172A;
+    --text-color: #F8FAFC;
+    --text-light: #94A3B8;
+    --primary-color: #10B981;
+    --primary-rgb: 16, 185, 129;
+    --accent-color: #F59E0B;
+    --accent-rgb: 245, 158, 11;
+    --accent-dark-color: #FBBF24;
+    --accent-dark-rgb: 251, 191, 36;
+    --accent-light-color: #FCD34D;
+    --card-bg: #1E293B;
+    --border-color: #334155;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg-color: #0F172A;
+        --text-color: #F8FAFC;
+        --text-light: #94A3B8;
+        --primary-color: #10B981;
+        --primary-rgb: 16, 185, 129;
+        --accent-color: #F59E0B;
+        --accent-rgb: 245, 158, 11;
+        --accent-dark-color: #FBBF24;
+        --accent-dark-rgb: 251, 191, 36;
+        --accent-light-color: #FCD34D;
+        --card-bg: #1E293B;
+        --border-color: #334155;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    }
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -50,6 +86,68 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.theme-toggle-btn {
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 32px;
+    height: 32px;
+}
+
+.theme-toggle-btn:hover {
+    background-color: var(--bg-color);
+    border-color: var(--primary-color);
+}
+
+.theme-toggle-btn .sun-icon {
+    display: none;
+}
+.theme-toggle-btn .moon-icon {
+    display: block;
+}
+
+[data-theme="dark"] .theme-toggle-btn .sun-icon {
+    display: block;
+}
+[data-theme="dark"] .theme-toggle-btn .moon-icon {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .theme-toggle-btn .sun-icon {
+        display: block;
+    }
+    :root:not([data-theme="light"]) .theme-toggle-btn .moon-icon {
+        display: none;
+    }
+}
+
+[data-theme="dark"] .leaflet-tile-pane {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .leaflet-tile-pane {
+        filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+    }
+}
+
+[data-theme="dark"] .google-btn {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .google-btn:hover {
+    background-color: var(--bg-color);
 }
 
 .auth-btn {

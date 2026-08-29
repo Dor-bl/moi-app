@@ -448,7 +448,29 @@ const magicLinkSuccess = document.getElementById('magicLinkSuccess');
 const magicSuccessClose = document.getElementById('magicSuccessClose');
 const authActions = document.getElementById('authActions');
 
+// Theme Toggle Element
+const themeToggle = document.getElementById('themeToggle');
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    }
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+}
+
 function init() {
+    initTheme();
     updateLanguageUI();
     renderList();
     updateProgress();
@@ -995,6 +1017,11 @@ function openProfileModal() {
 }
 
 function setupEventListeners() {
+    // Theme Toggle event
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+
     // Auth Modal events
     authBtn.addEventListener('click', async () => {
         if (currentUser && supabaseClient) {
