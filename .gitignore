@@ -1,3 +1,14 @@
-node_modules/
-config.js
+# Credentials and Environment files
 .env
+.env.local
+.env.production
+.env.development
+config.js
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
