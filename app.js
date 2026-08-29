@@ -762,6 +762,9 @@ function renderList() {
         ? BUCKET_LIST 
         : BUCKET_LIST.filter(item => item.category.en === currentFilter);
 
+    // Performance Optimization: Use DocumentFragment to batch DOM insertions
+    const fragment = document.createDocumentFragment();
+
     filteredList.forEach(item => {
         const isCompleted = !!completedItems[item.id];
         
@@ -790,8 +793,10 @@ function renderList() {
 
         card.addEventListener('click', () => openDetailModal(item));
         
-        listContainer.appendChild(card);
+        fragment.appendChild(card);
     });
+
+    listContainer.appendChild(fragment);
 
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
@@ -901,6 +906,9 @@ function renderBadges() {
     badgesGrid.innerHTML = '';
     const t = UI_TRANSLATIONS[currentLang];
 
+    // Performance Optimization: Use DocumentFragment to batch DOM insertions
+    const fragment = document.createDocumentFragment();
+
     CATEGORY_BADGES.forEach(badge => {
         const categoryItems = BUCKET_LIST.filter(item => item.category.en === badge.category);
         const total = categoryItems.length;
@@ -917,8 +925,10 @@ function renderBadges() {
                 <span class="badge-progress-tag">${isUnlocked ? t.unlockedTag : `${completedCount} / ${total}`}</span>
             </div>
         `;
-        badgesGrid.appendChild(card);
+        fragment.appendChild(card);
     });
+
+    badgesGrid.appendChild(fragment);
 }
 
 function saveState() {
@@ -980,6 +990,9 @@ function openProfileModal() {
     if (completedArr.length === 0) {
         completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
     } else {
+        // Performance Optimization: Use DocumentFragment to batch DOM insertions
+        const fragment = document.createDocumentFragment();
+
         completedArr.forEach(item => {
             const div = document.createElement('div');
             div.className = 'completed-item';
@@ -987,8 +1000,10 @@ function openProfileModal() {
                 <h4>${item.title[currentLang]}</h4>
                 ${item.note ? `<p>"${item.note}"</p>` : ''}
             `;
-            completedList.appendChild(div);
+            fragment.appendChild(div);
         });
+
+        completedList.appendChild(fragment);
     }
     
     profileModal.classList.add('active');
