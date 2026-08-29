@@ -37,6 +37,12 @@
                 <h1>MoiCheck</h1>
             </div>
             <div class="header-actions">
+                <button id="settingsBtn" class="settings-btn" aria-label="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
                 <div class="lang-toggle" id="langToggle">
                     <button class="lang-btn active" data-lang="en">EN</button>
                     <button class="lang-btn" data-lang="nl">NL</button>
@@ -137,6 +143,33 @@
                 <span class="badge-toast-tag" id="badgeToastTag">BADGE UNLOCKED! 🎉</span>
                 <h4 id="badgeToastTitle">Groninger Foodie</h4>
                 <p id="badgeToastDesc">You tasted all classic Groningen delicacies!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeSettingsModal">&times;</button>
+            <h2 id="settingsModalTitle">Settings</h2>
+            <p id="settingsModalSubtitle" style="color: var(--text-light); margin-bottom: 1.5rem;">Customize your app preferences.</p>
+            
+            <div class="settings-group">
+                <h3 id="txtThemeHeader" style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Appearance</h3>
+                <div class="theme-options">
+                    <button class="theme-option-btn" data-theme-option="light">
+                        <span class="theme-icon" aria-hidden="true">☀️</span>
+                        <span id="txtThemeLight">Light</span>
+                    </button>
+                    <button class="theme-option-btn" data-theme-option="dark">
+                        <span class="theme-icon" aria-hidden="true">🌙</span>
+                        <span id="txtThemeDark">Dark</span>
+                    </button>
+                    <button class="theme-option-btn" data-theme-option="system">
+                        <span class="theme-icon" aria-hidden="true">💻</span>
+                        <span id="txtThemeSystem">System</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
