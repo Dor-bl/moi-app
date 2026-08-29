@@ -432,7 +432,7 @@ h1 {
 
 .filter-pill.active {
     background-color: var(--text-color);
-    color: white;
+    color: var(--card-bg);
     border-color: var(--text-color);
 }
 
