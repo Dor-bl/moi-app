@@ -337,7 +337,13 @@ const UI_TRANSLATIONS = {
         gotIt: 'Got It',
         achievementBadges: 'Achievement Badges',
         badgeUnlockedTag: 'BADGE UNLOCKED! 🎉',
-        unlockedTag: 'Unlocked ✓'
+        unlockedTag: 'Unlocked ✓',
+        settingsTitle: 'Settings',
+        settingsSubtitle: 'Customize your app preferences.',
+        themeAppearance: 'Appearance',
+        themeLight: 'Light',
+        themeDark: 'Dark',
+        themeSystem: 'System'
     },
     nl: {
         filterAll: 'Alles',
@@ -388,7 +394,13 @@ const UI_TRANSLATIONS = {
         gotIt: 'Begrepen',
         achievementBadges: 'Prestatiebadges',
         badgeUnlockedTag: 'BADGE ONTGRENDELD! 🎉',
-        unlockedTag: 'Ontgrendeld ✓'
+        unlockedTag: 'Ontgrendeld ✓',
+        settingsTitle: 'Instellingen',
+        settingsSubtitle: 'Pas je app-voorkeuren aan.',
+        themeAppearance: 'Weergave',
+        themeLight: 'Licht',
+        themeDark: 'Donker',
+        themeSystem: 'Systeem'
     }
 };
 
@@ -448,25 +460,38 @@ const magicLinkSuccess = document.getElementById('magicLinkSuccess');
 const magicSuccessClose = document.getElementById('magicSuccessClose');
 const authActions = document.getElementById('authActions');
 
-// Theme Toggle Element
-const themeToggle = document.getElementById('themeToggle');
+// Settings Modal Elements
+const settingsModal = document.getElementById('settingsModal');
+const settingsBtn = document.getElementById('settingsBtn');
+const closeSettingsModalBtn = document.getElementById('closeSettingsModal');
+const themeOptionBtns = document.querySelectorAll('.theme-option-btn');
 
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
+function applyTheme(themeOption) {
+    if (themeOption === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (themeOption === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
     } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+        document.documentElement.removeAttribute('data-theme');
     }
+    updateThemeButtonsUI(themeOption);
 }
 
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 
-        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
+function updateThemeButtonsUI(currentOption) {
+    themeOptionBtns.forEach(btn => {
+        const option = btn.dataset.themeOption;
+        btn.classList.toggle('active', option === currentOption);
+    });
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'system';
+    applyTheme(savedTheme);
+}
+
+function setTheme(themeOption) {
+    localStorage.setItem('theme', themeOption);
+    applyTheme(themeOption);
 }
 
 function init() {
@@ -526,6 +551,14 @@ function updateLanguageUI() {
     select.options[1].text = t.optFeedback;
     select.options[2].text = t.optBug;
     select.options[3].text = t.optMoi;
+
+    // Settings modal translations
+    document.getElementById('settingsModalTitle').textContent = t.settingsTitle;
+    document.getElementById('settingsModalSubtitle').textContent = t.settingsSubtitle;
+    document.getElementById('txtThemeHeader').textContent = t.themeAppearance;
+    document.getElementById('txtThemeLight').textContent = t.themeLight;
+    document.getElementById('txtThemeDark').textContent = t.themeDark;
+    document.getElementById('txtThemeSystem').textContent = t.themeSystem;
 
     // Auth modal & header translations
     document.getElementById('authModalTitle').textContent = t.authTitle;
@@ -1017,10 +1050,25 @@ function openProfileModal() {
 }
 
 function setupEventListeners() {
-    // Theme Toggle event
-    if (themeToggle) {
-        themeToggle.addEventListener('click', toggleTheme);
+    // Settings Modal events
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.classList.add('active');
+        });
     }
+
+    if (closeSettingsModalBtn) {
+        closeSettingsModalBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('active');
+        });
+    }
+
+    themeOptionBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const option = e.currentTarget.dataset.themeOption;
+            setTheme(option);
+        });
+    });
 
     // Auth Modal events
     authBtn.addEventListener('click', async () => {
@@ -1185,7 +1233,7 @@ function setupEventListeners() {
         contactSuccess.style.display = 'block';
     });
     
-    [detailModal, profileModal, contactModal, authModal].forEach(modal => {
+    [detailModal, profileModal, contactModal, authModal, settingsModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.classList.remove('active');
