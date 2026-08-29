@@ -242,6 +242,13 @@ const BUCKET_LIST = [
         tip: { en: 'Show your green-and-white pride around town or at the Euroborg stadium.', nl: 'Laat je groen-witte trots zien in de stad of in het Euroborg stadion.' },
         url: 'https://webshop.fcgroningen.nl',
         urlLabel: { en: 'FC Groningen Fanstore 🟢⚪', nl: 'FC Groningen Fanstore 🟢⚪' }
+    },
+    {
+        id: '29',
+        coords: [53.2117, 6.5744],
+        category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
+        title: { en: 'Get fries at Friet van Piet on the Meeuwerderweg', nl: 'Haal friet bij Friet van Piet aan de Meeuwerderweg' },
+        tip: { en: 'A beloved neighbourhood friettent in the Oosterpoort — fresh, hand-cut fries worth the queue.', nl: 'Een geliefde buurtfriettent in de Oosterpoort — verse friet waar je best even voor in de rij staat.' }
     }
 ];
 
@@ -250,7 +257,7 @@ const MILESTONES = [
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
     { threshold: 12, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
     { threshold: 19, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 28, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    { threshold: 29, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const CATEGORY_BADGES = [
