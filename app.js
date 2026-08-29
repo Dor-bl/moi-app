@@ -686,12 +686,6 @@ function renderMapMarkers() {
         ? BUCKET_LIST 
         : BUCKET_LIST.filter(item => item.category.en === currentFilter);
 
-    // ⚡ Bolt Performance Optimization:
-    // Use a DocumentFragment to batch all DOM insertions.
-    // Impact: Reduces browser reflows/repaints from O(N) to O(1) when rendering the list,
-    // improving render speed.
-    const fragment = document.createDocumentFragment();
-
     filteredList.forEach(item => {
         const isCompleted = !!completedItems[item.id];
         
@@ -727,6 +721,7 @@ function renderMapMarkers() {
 
 function renderList() {
     listContainer.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     
     const filteredList = currentFilter === 'All' 
         ? BUCKET_LIST 
