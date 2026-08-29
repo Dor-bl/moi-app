@@ -813,6 +813,16 @@ textarea:focus {
     font-size: inherit;
 }
 
+.privacy-note {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.privacy-note a {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
 .form-group {
     margin-bottom: 1.25rem;
 }
