@@ -249,6 +249,24 @@ const BUCKET_LIST = [
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
         title: { en: 'Get fries at Friet van Piet on the Meeuwerderweg', nl: 'Haal friet bij Friet van Piet aan de Meeuwerderweg' },
         tip: { en: 'A beloved neighbourhood friettent in the Oosterpoort — fresh, hand-cut fries worth the queue.', nl: 'Een geliefde buurtfriettent in de Oosterpoort — verse friet waar je best even voor in de rij staat.' }
+    },
+    {
+        id: '30',
+        coords: [53.2340, 6.6040],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Spot herons and waterfowl at Kardinge', nl: 'Spot reigers en watervogels bij Kardinge' },
+        tip: { en: 'A short bike ride northeast of downtown; the reedbeds around Kardingerplas are home to grey herons, great white egrets, grebes, and geese year-round.', nl: 'Een korte fietstocht ten noordoosten van het centrum; het rietland rond de Kardingerplas is het hele jaar door thuis aan blauwe reigers, grote zilverreigers, futen en ganzen.' },
+        url: 'https://www.natuurmonumenten.nl/natuurgebieden/kardinge',
+        urlLabel: { en: 'Kardinge Nature Area Info 🦢', nl: 'Natuurgebied Kardinge Info 🦢' }
+    },
+    {
+        id: '31',
+        coords: [53.3710, 6.2380],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Go birdwatching in Nationaal Park Lauwersmeer', nl: 'Ga vogels kijken in Nationaal Park Lauwersmeer' },
+        tip: { en: 'Hides like Ezumakeeg and Jaap Deensgat draw spoonbills, geese, and birds of prey — best in autumn and winter when migratory flocks pass through.', nl: 'Vogelkijkhutten zoals Ezumakeeg en Jaap Deensgat trekken lepelaars, ganzen en roofvogels — het mooist in herfst en winter tijdens de vogeltrek.' },
+        url: 'https://www.np-lauwersmeer.nl/doen-zien/vogels-kijken/',
+        urlLabel: { en: 'Lauwersmeer Birdwatching Guide 🦅', nl: 'Lauwersmeer Vogels Kijken Gids 🦅' }
     }
 ];
 
@@ -257,7 +275,7 @@ const MILESTONES = [
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
     { threshold: 12, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
     { threshold: 19, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 29, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    { threshold: 31, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const CATEGORY_BADGES = [
@@ -296,9 +314,19 @@ const CATEGORY_BADGES = [
         category: 'Groningen Classics',
         icon: '👑',
         title: { en: 'Groningen Legend', nl: 'Groningse Legende' },
-        desc: { 
-            en: 'Completed every historic expedition & classic tradition!', 
-            nl: 'Elke historische expeditie en klassieke traditie voltooid!' 
+        desc: {
+            en: 'Completed every historic expedition & classic tradition!',
+            nl: 'Elke historische expeditie en klassieke traditie voltooid!'
+        }
+    },
+    {
+        id: 'nature_spotter',
+        category: 'Nature & Wildlife',
+        icon: '🦭',
+        title: { en: 'Wadden Wildlife Spotter', nl: 'Waddennatuur Spotter' },
+        desc: {
+            en: 'Spotted all the wildlife the Groningen countryside and coast have to offer!',
+            nl: 'Alle natuur en dieren van het Groningse landschap en de kust gespot!'
         }
     }
 ];
@@ -310,6 +338,7 @@ const UI_TRANSLATIONS = {
         filterCulture: 'Culture',
         filterDaily: 'Daily Life',
         filterClassics: 'Classics',
+        filterNature: 'Nature',
         completedText: '{completed} of {total} completed',
         tipLabel: 'Local tip:',
         addMemory: 'Add a Memory',
@@ -367,6 +396,7 @@ const UI_TRANSLATIONS = {
         filterCulture: 'Cultuur',
         filterDaily: 'Dagelijks',
         filterClassics: 'Klassiekers',
+        filterNature: 'Natuur',
         completedText: '{completed} van de {total} voltooid',
         tipLabel: 'Tip van locals:',
         addMemory: 'Herinnering toevoegen',
@@ -541,7 +571,8 @@ function updateLanguageUI() {
         'Food & Drink': t.filterFood,
         'Culture & Sights': t.filterCulture,
         'Daily Life': t.filterDaily,
-        'Groningen Classics': t.filterClassics
+        'Groningen Classics': t.filterClassics,
+        'Nature & Wildlife': t.filterNature
     };
 
     filterPills.forEach(pill => {
