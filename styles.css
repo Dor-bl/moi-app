@@ -153,6 +153,15 @@ body {
     :root:not([data-theme="light"]) .leaflet-tile-pane {
         filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
     }
+
+    :root:not([data-theme="light"]) .google-btn {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+    }
+
+    :root:not([data-theme="light"]) .google-btn:hover {
+        background-color: var(--bg-color);
+    }
 }
 
 [data-theme="dark"] .google-btn {
