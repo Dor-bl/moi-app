@@ -466,15 +466,18 @@ const settingsBtn = document.getElementById('settingsBtn');
 const closeSettingsModalBtn = document.getElementById('closeSettingsModal');
 const themeOptionBtns = document.querySelectorAll('.theme-option-btn');
 
+const ALLOWED_THEMES = ['light', 'dark', 'system'];
+
 function applyTheme(themeOption) {
-    if (themeOption === 'dark') {
+    const validTheme = ALLOWED_THEMES.includes(themeOption) ? themeOption : 'system';
+    if (validTheme === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
-    } else if (themeOption === 'light') {
+    } else if (validTheme === 'light') {
         document.documentElement.setAttribute('data-theme', 'light');
     } else {
         document.documentElement.removeAttribute('data-theme');
     }
-    updateThemeButtonsUI(themeOption);
+    updateThemeButtonsUI(validTheme);
 }
 
 function updateThemeButtonsUI(currentOption) {
@@ -485,13 +488,24 @@ function updateThemeButtonsUI(currentOption) {
 }
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'system';
+    let savedTheme = localStorage.getItem('moiCheckTheme');
+    if (!savedTheme) {
+        savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            localStorage.setItem('moiCheckTheme', savedTheme);
+            localStorage.removeItem('theme');
+        }
+    }
+    if (!ALLOWED_THEMES.includes(savedTheme)) {
+        savedTheme = 'system';
+    }
     applyTheme(savedTheme);
 }
 
 function setTheme(themeOption) {
-    localStorage.setItem('theme', themeOption);
-    applyTheme(themeOption);
+    const validTheme = ALLOWED_THEMES.includes(themeOption) ? themeOption : 'system';
+    localStorage.setItem('moiCheckTheme', validTheme);
+    applyTheme(validTheme);
 }
 
 function init() {
@@ -553,6 +567,9 @@ function updateLanguageUI() {
     select.options[3].text = t.optMoi;
 
     // Settings modal translations
+    if (settingsBtn) {
+        settingsBtn.setAttribute('aria-label', t.settingsTitle);
+    }
     document.getElementById('settingsModalTitle').textContent = t.settingsTitle;
     document.getElementById('settingsModalSubtitle').textContent = t.settingsSubtitle;
     document.getElementById('txtThemeHeader').textContent = t.themeAppearance;
