@@ -373,10 +373,25 @@ h1 {
 
 /* Custom Map Popup Styling */
 .leaflet-popup-content-wrapper {
+    background-color: var(--card-bg);
+    color: var(--text-color);
     border-radius: 14px;
     padding: 0.25rem;
     font-family: 'Plus Jakarta Sans', sans-serif;
     box-shadow: var(--shadow-md);
+}
+
+.leaflet-popup-tip {
+    background-color: var(--card-bg);
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+    color: var(--text-light);
+    padding: 6px 6px 0 0;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+    color: var(--text-color);
 }
 
 .map-popup-card {
