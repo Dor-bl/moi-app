@@ -362,6 +362,7 @@ const UI_TRANSLATIONS = {
         contactBtnText: 'Contact & Suggestions',
         successTitle: 'Moi! Bedankt!',
         successText: 'Thanks for your message! We appreciate your input on making Groningen awesome for expats.',
+        contactError: 'We could not send your message right now. Please try again.',
         optSuggest: 'Suggest a Groningen Item 💡',
         optFeedback: 'General Feedback 💬',
         optBug: 'Report an Issue 🐛',
@@ -420,6 +421,7 @@ const UI_TRANSLATIONS = {
         contactBtnText: 'Contact & Suggesties',
         successTitle: 'Moi! Bedankt!',
         successText: 'Bedankt voor je bericht! We waarderen je input om Groningen geweldig te maken voor expats.',
+        contactError: 'We konden je bericht nu niet versturen. Probeer het opnieuw.',
         optSuggest: 'Tip een Gronings item 💡',
         optFeedback: 'Algemene feedback 💬',
         optBug: 'Meld een probleem 🐛',
@@ -1260,6 +1262,7 @@ function setupEventListeners() {
         
         const submitBtn = document.getElementById('contactSubmitBtn');
         const originalBtnText = submitBtn.textContent;
+        const t = UI_TRANSLATIONS[currentLang];
         submitBtn.disabled = true;
         submitBtn.textContent = '...';
 
@@ -1271,7 +1274,7 @@ function setupEventListeners() {
         const targetEmail = atob('ZGJsYXl6ZXJAZ21haWwuY29t');
         
         try {
-            await fetch(`https://formsubmit.co/ajax/${targetEmail}`, {
+            const response = await fetch(`https://formsubmit.co/ajax/${targetEmail}`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -1285,14 +1288,19 @@ function setupEventListeners() {
                     _captcha: 'false'
                 })
             });
+            if (!response.ok) {
+                throw new Error(`FormSubmit request failed with status ${response.status}`);
+            }
+
+            contactForm.style.display = 'none';
+            contactSuccess.style.display = 'block';
         } catch (err) {
             console.log('Email delivery note:', err);
+            alert(t.contactError);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
         }
-
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalBtnText;
-        contactForm.style.display = 'none';
-        contactSuccess.style.display = 'block';
     });
     
     [detailModal, profileModal, contactModal, authModal, settingsModal].forEach(modal => {
