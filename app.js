@@ -977,11 +977,7 @@ function toggleComplete(id, event = null) {
     // on every toggle, significantly improving responsiveness.
     const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
     if (card) {
-        if (!isCompleted) {
-            card.classList.add('completed');
-        } else {
-            card.classList.remove('completed');
-        }
+        card.classList.toggle('completed', !isCompleted);
     }
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
