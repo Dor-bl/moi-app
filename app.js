@@ -1295,7 +1295,7 @@ function setupEventListeners() {
             contactForm.style.display = 'none';
             contactSuccess.style.display = 'block';
         } catch (err) {
-            console.log('Email delivery note:', err);
+            console.error('Email delivery note:', err);
             alert(t.contactError);
         } finally {
             submitBtn.disabled = false;
