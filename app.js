@@ -971,10 +971,6 @@ function toggleComplete(id, event = null) {
     
     saveState();
 
-    // ⚡ Bolt Performance Optimization:
-    // Replaced full O(N) renderList() with O(1) targeted DOM update.
-    // Impact: Prevents destroying and re-creating all DOM nodes and event listeners
-    // on every toggle, significantly improving responsiveness.
     const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
     if (card) {
         card.classList.toggle('completed', !isCompleted);
