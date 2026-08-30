@@ -970,7 +970,23 @@ function toggleComplete(id, event = null) {
     }
     
     saveState();
-    renderList();
+
+    // ⚡ Bolt Performance Optimization:
+    // Replaced full O(N) renderList() with O(1) targeted DOM update.
+    // Impact: Prevents destroying and re-creating all DOM nodes and event listeners
+    // on every toggle, significantly improving responsiveness.
+    const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
+    if (card) {
+        if (!isCompleted) {
+            card.classList.add('completed');
+        } else {
+            card.classList.remove('completed');
+        }
+    }
+    if (currentView === 'map' && leafletMap) {
+        renderMapMarkers();
+    }
+
     updateProgress();
     
     if (detailModal.classList.contains('active') && selectedItemId === id) {
