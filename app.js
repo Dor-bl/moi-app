@@ -972,7 +972,15 @@ function toggleComplete(id, event = null) {
     }
     
     saveState();
-    renderList();
+
+    const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
+    if (card) {
+        card.classList.toggle('completed', !isCompleted);
+    }
+    if (currentView === 'map' && leafletMap) {
+        renderMapMarkers();
+    }
+
     updateProgress();
     
     if (detailModal.classList.contains('active') && selectedItemId === id) {
