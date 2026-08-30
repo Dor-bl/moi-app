@@ -767,11 +767,14 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
 
     try {
         if (isCompleted) {
+            // Keep the original completion date: this also runs when only the note
+            // is edited, and a fresh timestamp would overwrite it in the cloud.
+            const existing = completedItems[itemId];
             await supabaseClient.from('user_progress').upsert({
                 user_id: currentUser.id,
                 item_id: itemId,
                 note: note,
-                date: new Date().toISOString()
+                date: (existing && existing.date) || new Date().toISOString()
             });
         } else {
             await supabaseClient.from('user_progress')
@@ -1109,6 +1112,11 @@ function updateModalButtonState(isCompleted) {
     modalUncheckBtn.style.display = isCompleted ? 'block' : 'none';
 }
 
+function memoryTimestamp(value) {
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
 function formatMemoryDate(value) {
     if (!value) return '';
     const parsed = new Date(value);
@@ -1129,7 +1137,7 @@ function openProfileModal() {
     const completedArr = Object.entries(completedItems).map(([id, data]) => {
         const item = BUCKET_LIST.find(i => i.id === id);
         return item ? { ...item, ...data } : null;
-    }).filter(Boolean).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }).filter(Boolean).sort((a, b) => memoryTimestamp(b.date) - memoryTimestamp(a.date));
     
     if (completedArr.length === 0) {
         completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
