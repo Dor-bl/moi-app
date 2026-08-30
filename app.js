@@ -344,7 +344,8 @@ const UI_TRANSLATIONS = {
         addMemory: 'Add a Memory',
         memoryPlaceholder: 'How was it? Who were you with?',
         markComplete: 'Mark as Complete',
-        completedBtn: 'Completed',
+        saveMemory: 'Save Memory',
+        markNotDone: 'Mark as not done',
         yourJourney: 'Your Journey',
         shareMilestone: 'Share Milestone',
         completedMemories: 'Completed Memories',
@@ -403,7 +404,8 @@ const UI_TRANSLATIONS = {
         addMemory: 'Herinnering toevoegen',
         memoryPlaceholder: 'Hoe was het? Met wie was je?',
         markComplete: 'Markeer als voltooid',
-        completedBtn: 'Voltooid',
+        saveMemory: 'Herinnering opslaan',
+        markNotDone: 'Markeer als niet gedaan',
         yourJourney: 'Jouw Reis',
         shareMilestone: 'Mijlpaal Delen',
         completedMemories: 'Voltooide Herinneringen',
@@ -479,6 +481,7 @@ const modalTitle = document.getElementById('modalTitle');
 const modalTip = document.getElementById('modalTip');
 const memoryNote = document.getElementById('memoryNote');
 const modalCheckBtn = document.getElementById('modalCheckBtn');
+const modalUncheckBtn = document.getElementById('modalUncheckBtn');
 const closeDetailModalBtn = document.getElementById('closeDetailModal');
 
 // Profile Modal Elements
@@ -591,8 +594,9 @@ function updateLanguageUI() {
 
     document.querySelector('.memory-section h3').textContent = t.addMemory;
     memoryNote.placeholder = t.memoryPlaceholder;
+    modalUncheckBtn.textContent = t.markNotDone;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
-    document.querySelector('#profileModal h3').textContent = t.completedMemories;
+    document.getElementById('txtCompletedMemories').textContent = t.completedMemories;
     const txtCatBadges = document.getElementById('txtCategoryBadges');
     if (txtCatBadges) txtCatBadges.textContent = t.achievementBadges;
     shareBtn.textContent = t.shareMilestone;
@@ -961,7 +965,10 @@ function toggleComplete(id, event = null) {
         delete completedItems[id];
         syncItemToCloud(id, false);
     } else {
-        const noteVal = memoryNote.value || '';
+        // The textarea only holds a note for the item whose detail modal is open.
+        // Reading it for any other item would copy the last-viewed item's text.
+        const isEditingThisItem = detailModal.classList.contains('active') && selectedItemId === id;
+        const noteVal = isEditingThisItem ? (memoryNote.value || '') : '';
         completedItems[id] = {
             date: new Date().toISOString(),
             note: noteVal
@@ -1090,15 +1097,27 @@ function openDetailModal(item) {
     detailModal.classList.add('active');
 }
 
+function closeDetailModal() {
+    detailModal.classList.remove('active');
+    selectedItemId = null;
+    memoryNote.value = '';
+}
+
 function updateModalButtonState(isCompleted) {
     const t = UI_TRANSLATIONS[currentLang];
-    if (isCompleted) {
-        modalCheckBtn.textContent = t.completedBtn;
-        modalCheckBtn.classList.add('completed');
-    } else {
-        modalCheckBtn.textContent = t.markComplete;
-        modalCheckBtn.classList.remove('completed');
-    }
+    modalCheckBtn.textContent = isCompleted ? t.saveMemory : t.markComplete;
+    modalUncheckBtn.style.display = isCompleted ? 'block' : 'none';
+}
+
+function formatMemoryDate(value) {
+    if (!value) return '';
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleDateString(currentLang === 'nl' ? 'nl-NL' : 'en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
 }
 
 function openProfileModal() {
@@ -1108,11 +1127,9 @@ function openProfileModal() {
     renderBadges();
     
     const completedArr = Object.entries(completedItems).map(([id, data]) => {
-        return {
-            ...BUCKET_LIST.find(i => i.id === id),
-            ...data
-        };
-    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+        const item = BUCKET_LIST.find(i => i.id === id);
+        return item ? { ...item, ...data } : null;
+    }).filter(Boolean).sort((a, b) => new Date(b.date) - new Date(a.date));
     
     if (completedArr.length === 0) {
         completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
@@ -1120,10 +1137,25 @@ function openProfileModal() {
         completedArr.forEach(item => {
             const div = document.createElement('div');
             div.className = 'completed-item';
-            div.innerHTML = `
-                <h4>${item.title[currentLang]}</h4>
-                ${item.note ? `<p>"${item.note}"</p>` : ''}
-            `;
+
+            const title = document.createElement('h4');
+            title.textContent = item.title[currentLang];
+            div.appendChild(title);
+
+            const dateLabel = formatMemoryDate(item.date);
+            if (dateLabel) {
+                const dateEl = document.createElement('span');
+                dateEl.className = 'completed-date';
+                dateEl.textContent = dateLabel;
+                div.appendChild(dateEl);
+            }
+
+            if (item.note) {
+                const noteEl = document.createElement('p');
+                noteEl.textContent = `"${item.note}"`;
+                div.appendChild(noteEl);
+            }
+
             completedList.appendChild(div);
         });
     }
@@ -1238,10 +1270,7 @@ function setupEventListeners() {
     });
     
     // Modals
-    closeDetailModalBtn.addEventListener('click', () => {
-        detailModal.classList.remove('active');
-        selectedItemId = null;
-    });
+    closeDetailModalBtn.addEventListener('click', closeDetailModal);
     
     closeProfileModalBtn.addEventListener('click', () => {
         profileModal.classList.remove('active');
@@ -1313,7 +1342,10 @@ function setupEventListeners() {
     
     [detailModal, profileModal, contactModal, authModal, settingsModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
+            if (e.target !== modal) return;
+            if (modal === detailModal) {
+                closeDetailModal();
+            } else {
                 modal.classList.remove('active');
             }
         });
@@ -1327,14 +1359,18 @@ function setupEventListeners() {
             completedItems[selectedItemId].note = memoryNote.value;
             saveState();
             syncItemToCloud(selectedItemId, true, memoryNote.value);
-            detailModal.classList.remove('active');
+            closeDetailModal();
         } else {
             const rect = modalCheckBtn.getBoundingClientRect();
             toggleComplete(selectedItemId, { clientX: rect.left + rect.width/2, clientY: rect.top });
-            setTimeout(() => {
-                detailModal.classList.remove('active');
-            }, 600);
+            setTimeout(closeDetailModal, 600);
         }
+    });
+
+    modalUncheckBtn.addEventListener('click', () => {
+        if (!selectedItemId || !completedItems[selectedItemId]) return;
+        toggleComplete(selectedItemId);
+        closeDetailModal();
     });
 
     shareBtn.addEventListener('click', async () => {

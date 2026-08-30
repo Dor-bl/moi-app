@@ -726,8 +726,11 @@ textarea:focus {
     color: white;
 }
 
-.primary-btn.completed {
-    background-color: var(--text-light);
+.secondary-btn {
+    background: none;
+    color: var(--text-light);
+    border: 1px solid var(--border-color);
+    margin-top: 0.5rem;
 }
 
 .share-btn {
@@ -788,6 +791,13 @@ textarea:focus {
 
 .completed-item h4 {
     font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.completed-date {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--text-light);
     margin-bottom: 0.25rem;
 }
 
