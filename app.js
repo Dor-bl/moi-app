@@ -344,7 +344,9 @@ const UI_TRANSLATIONS = {
         addMemory: 'Add a Memory',
         memoryPlaceholder: 'How was it? Who were you with?',
         markComplete: 'Mark as Complete',
-        completedBtn: 'Completed',
+        completedSection: 'Completed',
+        saveNote: 'Save Note',
+        markNotDone: 'Mark as not done',
         yourJourney: 'Your Journey',
         shareMilestone: 'Share Milestone',
         completedMemories: 'Completed Memories',
@@ -360,6 +362,7 @@ const UI_TRANSLATIONS = {
         contactMessage: 'Message',
         sendMessage: 'Send Message',
         contactBtnText: 'Contact & Suggestions',
+        contactPrivacyNote: 'See our <a href="privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for how we handle this information.',
         successTitle: 'Moi! Bedankt!',
         successText: 'Thanks for your message! We appreciate your input on making Groningen awesome for expats.',
         contactError: 'We could not send your message right now. Please try again.',
@@ -375,6 +378,7 @@ const UI_TRANSLATIONS = {
         signOut: 'Sign Out',
         authTitle: 'Sign In / Sign Up',
         authSubtitle: 'Sync your Groningen memories & progress across all your devices.',
+        authPrivacyNote: 'By continuing, you agree to our <a href="privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.',
         continueGoogle: 'Continue with Google',
         orText: 'OR',
         sendMagicLink: 'Send Magic Sign-In Link ✨',
@@ -389,7 +393,8 @@ const UI_TRANSLATIONS = {
         themeAppearance: 'Appearance',
         themeLight: 'Light',
         themeDark: 'Dark',
-        themeSystem: 'System'
+        themeSystem: 'System',
+        footerPrivacy: 'Privacy Policy'
     },
     nl: {
         filterAll: 'Alles',
@@ -403,7 +408,9 @@ const UI_TRANSLATIONS = {
         addMemory: 'Herinnering toevoegen',
         memoryPlaceholder: 'Hoe was het? Met wie was je?',
         markComplete: 'Markeer als voltooid',
-        completedBtn: 'Voltooid',
+        completedSection: 'Voltooid',
+        saveNote: 'Notitie opslaan',
+        markNotDone: 'Markeer als niet gedaan',
         yourJourney: 'Jouw Reis',
         shareMilestone: 'Mijlpaal Delen',
         completedMemories: 'Voltooide Herinneringen',
@@ -419,6 +426,7 @@ const UI_TRANSLATIONS = {
         contactMessage: 'Bericht',
         sendMessage: 'Verstuur Bericht',
         contactBtnText: 'Contact & Suggesties',
+        contactPrivacyNote: 'Bekijk ons <a href="privacy.html" target="_blank" rel="noopener noreferrer">privacybeleid</a> om te zien hoe we hiermee omgaan.',
         successTitle: 'Moi! Bedankt!',
         successText: 'Bedankt voor je bericht! We waarderen je input om Groningen geweldig te maken voor expats.',
         contactError: 'We konden je bericht nu niet versturen. Probeer het opnieuw.',
@@ -434,6 +442,7 @@ const UI_TRANSLATIONS = {
         signOut: 'Uitloggen',
         authTitle: 'Inloggen / Registreren',
         authSubtitle: 'Synchroniseer je Groningse herinneringen & voortgang op al je apparaten.',
+        authPrivacyNote: 'Door verder te gaan ga je akkoord met ons <a href="privacy.html" target="_blank" rel="noopener noreferrer">privacybeleid</a>.',
         continueGoogle: 'Verder met Google',
         orText: 'OF',
         sendMagicLink: 'Stuur Magische Inloglink ✨',
@@ -448,7 +457,8 @@ const UI_TRANSLATIONS = {
         themeAppearance: 'Weergave',
         themeLight: 'Licht',
         themeDark: 'Donker',
-        themeSystem: 'Systeem'
+        themeSystem: 'Systeem',
+        footerPrivacy: 'Privacybeleid'
     }
 };
 
@@ -458,6 +468,10 @@ let currentLang = localStorage.getItem('moiCheckLang') || 'en';
 let currentFilter = 'All';
 let currentView = 'list';
 let selectedItemId = null;
+// null = no explicit choice yet, so the section auto-collapses once it grows.
+let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
+let resortTimer = null;
+let listNeedsResort = false;
 let leafletMap = null;
 let markersGroup = null;
 
@@ -479,6 +493,7 @@ const modalTitle = document.getElementById('modalTitle');
 const modalTip = document.getElementById('modalTip');
 const memoryNote = document.getElementById('memoryNote');
 const modalCheckBtn = document.getElementById('modalCheckBtn');
+const modalUncheckBtn = document.getElementById('modalUncheckBtn');
 const closeDetailModalBtn = document.getElementById('closeDetailModal');
 
 // Profile Modal Elements
@@ -591,8 +606,9 @@ function updateLanguageUI() {
 
     document.querySelector('.memory-section h3').textContent = t.addMemory;
     memoryNote.placeholder = t.memoryPlaceholder;
+    modalUncheckBtn.textContent = t.markNotDone;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
-    document.querySelector('#profileModal h3').textContent = t.completedMemories;
+    document.getElementById('txtCompletedMemories').textContent = t.completedMemories;
     const txtCatBadges = document.getElementById('txtCategoryBadges');
     if (txtCatBadges) txtCatBadges.textContent = t.achievementBadges;
     shareBtn.textContent = t.shareMilestone;
@@ -606,6 +622,7 @@ function updateLanguageUI() {
     document.getElementById('lblContactMessage').textContent = t.contactMessage;
     document.getElementById('contactSubmitBtn').textContent = t.sendMessage;
     document.getElementById('contactBtn').textContent = t.contactBtnText;
+    document.getElementById('contactPrivacyNote').innerHTML = t.contactPrivacyNote;
     document.getElementById('contactSuccessTitle').textContent = t.successTitle;
     document.getElementById('contactSuccessText').textContent = t.successText;
 
@@ -626,9 +643,13 @@ function updateLanguageUI() {
     document.getElementById('txtThemeDark').textContent = t.themeDark;
     document.getElementById('txtThemeSystem').textContent = t.themeSystem;
 
+    const footerPrivacyLink = document.getElementById('footerPrivacyLink');
+    if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
+
     // Auth modal & header translations
     document.getElementById('authModalTitle').textContent = t.authTitle;
     document.getElementById('authModalSubtitle').textContent = t.authSubtitle;
+    document.getElementById('authPrivacyNote').innerHTML = t.authPrivacyNote;
     document.getElementById('txtGoogleBtn').textContent = t.continueGoogle;
     document.getElementById('txtAuthOr').textContent = t.orText;
     document.getElementById('lblMagicEmail').textContent = t.contactEmail;
@@ -763,11 +784,14 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
 
     try {
         if (isCompleted) {
+            // Keep the original completion date: this also runs when only the note
+            // is edited, and a fresh timestamp would overwrite it in the cloud.
+            const existing = completedItems[itemId];
             await supabaseClient.from('user_progress').upsert({
                 user_id: currentUser.id,
                 item_id: itemId,
                 note: note,
-                date: new Date().toISOString()
+                date: (existing && existing.date) || new Date().toISOString()
             });
         } else {
             await supabaseClient.from('user_progress')
@@ -792,6 +816,7 @@ function setLanguage(lang) {
     }
     
     if (detailModal.classList.contains('active') && selectedItemId) {
+        persistOpenNote();
         const item = BUCKET_LIST.find(i => i.id === selectedItemId);
         if (item) openDetailModal(item);
     }
@@ -804,6 +829,11 @@ function switchView(view) {
         mapViewBtn.classList.remove('active');
         listContainer.style.display = 'grid';
         mapWrapper.style.display = 'none';
+        // A completion made from map view leaves the list unsorted; catch up on return.
+        if (listNeedsResort) {
+            listNeedsResort = false;
+            renderList();
+        }
     } else {
         mapViewBtn.classList.add('active');
         listViewBtn.classList.remove('active');
@@ -876,6 +906,59 @@ function renderMapMarkers() {
     });
 }
 
+function isCompletedCollapsed(count) {
+    if (completedCollapsedPref === null) return count > 2;
+    return completedCollapsedPref === 'true';
+}
+
+function buildCard(item) {
+    const isCompleted = !!completedItems[item.id];
+
+    const card = document.createElement('div');
+    card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
+    card.dataset.id = item.id;
+
+    card.innerHTML = `
+        <div class="checkbox-container">
+            <div class="checkbox" data-id="${item.id}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+        </div>
+        <div class="card-content">
+            <span class="card-category">${item.category[currentLang]}</span>
+            <h3 class="card-title">${item.title[currentLang]}</h3>
+            <p class="card-tip">${item.tip[currentLang]}</p>
+        </div>
+    `;
+
+    return card;
+}
+
+function buildCompletedDivider(count, collapsed) {
+    const t = UI_TRANSLATIONS[currentLang];
+
+    const divider = document.createElement('button');
+    divider.type = 'button';
+    divider.className = `completed-divider ${collapsed ? 'collapsed' : ''}`;
+    divider.setAttribute('aria-expanded', String(!collapsed));
+    divider.innerHTML = `
+        <span class="completed-divider-label">
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            ${t.completedSection}
+        </span>
+        <span class="completed-divider-count">${count}</span>
+        <svg aria-hidden="true" class="completed-divider-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    `;
+
+    divider.addEventListener('click', () => {
+        completedCollapsedPref = String(!collapsed);
+        localStorage.setItem('moiCheckCompletedCollapsed', completedCollapsedPref);
+        renderList();
+    });
+
+    return divider;
+}
+
 function renderList() {
     listContainer.innerHTML = '';
     
@@ -883,34 +966,26 @@ function renderList() {
         ? BUCKET_LIST 
         : BUCKET_LIST.filter(item => item.category.en === currentFilter);
 
+    // Completed items sink below a divider, keeping what is left to do at the top.
+    // Both partitions keep the original BUCKET_LIST order.
+    const todo = filteredList.filter(item => !completedItems[item.id]);
+    const done = filteredList.filter(item => !!completedItems[item.id]);
+
     // ⚡ Bolt Performance Optimization:
     // Use a DocumentFragment to batch all DOM insertions.
     // Impact: Reduces browser reflows/repaints from O(N) to O(1) when rendering the list,
     // improving render speed.
     const fragment = document.createDocumentFragment();
 
-    filteredList.forEach(item => {
-        const isCompleted = !!completedItems[item.id];
-        
-        const card = document.createElement('div');
-        card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
-        card.dataset.id = item.id;
-        
-        card.innerHTML = `
-            <div class="checkbox-container">
-                <div class="checkbox" data-id="${item.id}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-            </div>
-            <div class="card-content">
-                <span class="card-category">${item.category[currentLang]}</span>
-                <h3 class="card-title">${item.title[currentLang]}</h3>
-                <p class="card-tip">${item.tip[currentLang]}</p>
-            </div>
-        `;
-        
-        fragment.appendChild(card);
-    });
+    todo.forEach(item => fragment.appendChild(buildCard(item)));
+
+    if (done.length > 0) {
+        const collapsed = isCompletedCollapsed(done.length);
+        fragment.appendChild(buildCompletedDivider(done.length, collapsed));
+        if (!collapsed) {
+            done.forEach(item => fragment.appendChild(buildCard(item)));
+        }
+    }
 
     listContainer.appendChild(fragment);
 
@@ -946,6 +1021,20 @@ function updateProgress() {
     profileProgressText.textContent = t.completedText.replace('{completed}', completedCount).replace('{total}', totalCount);
 }
 
+// The checked card stays put while the confetti plays, then re-sorts into (or out
+// of) the completed section. Deliberately not immediate: a card that teleports away
+// mid-celebration reads as if the app lost it. Rapid toggles coalesce into one render.
+function scheduleListResort() {
+    clearTimeout(resortTimer);
+    listNeedsResort = true;
+    resortTimer = setTimeout(() => {
+        resortTimer = null;
+        if (currentView !== 'list') return;
+        listNeedsResort = false;
+        renderList();
+    }, 700);
+}
+
 function toggleComplete(id, event = null) {
     const isCompleted = !!completedItems[id];
     
@@ -953,7 +1042,10 @@ function toggleComplete(id, event = null) {
         delete completedItems[id];
         syncItemToCloud(id, false);
     } else {
-        const noteVal = memoryNote.value || '';
+        // The textarea only holds a note for the item whose detail modal is open.
+        // Reading it for any other item would copy the last-viewed item's text.
+        const isEditingThisItem = detailModal.classList.contains('active') && selectedItemId === id;
+        const noteVal = isEditingThisItem ? (memoryNote.value || '') : '';
         completedItems[id] = {
             date: new Date().toISOString(),
             note: noteVal
@@ -969,6 +1061,7 @@ function toggleComplete(id, event = null) {
     if (card) {
         card.classList.toggle('completed', !isCompleted);
     }
+    scheduleListResort();
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
     }
@@ -1082,15 +1175,49 @@ function openDetailModal(item) {
     detailModal.classList.add('active');
 }
 
+// A note only belongs to an item that is already completed; for anything else the
+// textarea is a draft that the "Mark as Complete" path picks up. Called on every way
+// out of the modal so typing is never silently discarded.
+function persistOpenNote() {
+    if (!selectedItemId) return;
+    const entry = completedItems[selectedItemId];
+    if (!entry) return;
+
+    const note = memoryNote.value;
+    if (note === (entry.note || '')) return;
+
+    entry.note = note;
+    saveState();
+    syncItemToCloud(selectedItemId, true, note);
+}
+
+function closeDetailModal() {
+    persistOpenNote();
+    detailModal.classList.remove('active');
+    selectedItemId = null;
+    memoryNote.value = '';
+}
+
 function updateModalButtonState(isCompleted) {
     const t = UI_TRANSLATIONS[currentLang];
-    if (isCompleted) {
-        modalCheckBtn.textContent = t.completedBtn;
-        modalCheckBtn.classList.add('completed');
-    } else {
-        modalCheckBtn.textContent = t.markComplete;
-        modalCheckBtn.classList.remove('completed');
-    }
+    modalCheckBtn.textContent = isCompleted ? t.saveNote : t.markComplete;
+    modalUncheckBtn.style.display = isCompleted ? 'block' : 'none';
+}
+
+function memoryTimestamp(value) {
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function formatMemoryDate(value) {
+    if (!value) return '';
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleDateString(currentLang === 'nl' ? 'nl-NL' : 'en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
 }
 
 function openProfileModal() {
@@ -1100,11 +1227,9 @@ function openProfileModal() {
     renderBadges();
     
     const completedArr = Object.entries(completedItems).map(([id, data]) => {
-        return {
-            ...BUCKET_LIST.find(i => i.id === id),
-            ...data
-        };
-    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+        const item = BUCKET_LIST.find(i => i.id === id);
+        return item ? { ...item, ...data } : null;
+    }).filter(Boolean).sort((a, b) => memoryTimestamp(b.date) - memoryTimestamp(a.date));
     
     if (completedArr.length === 0) {
         completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
@@ -1112,10 +1237,25 @@ function openProfileModal() {
         completedArr.forEach(item => {
             const div = document.createElement('div');
             div.className = 'completed-item';
-            div.innerHTML = `
-                <h4>${item.title[currentLang]}</h4>
-                ${item.note ? `<p>"${item.note}"</p>` : ''}
-            `;
+
+            const title = document.createElement('h4');
+            title.textContent = item.title[currentLang];
+            div.appendChild(title);
+
+            const dateLabel = formatMemoryDate(item.date);
+            if (dateLabel) {
+                const dateEl = document.createElement('span');
+                dateEl.className = 'completed-date';
+                dateEl.textContent = dateLabel;
+                div.appendChild(dateEl);
+            }
+
+            if (item.note) {
+                const noteEl = document.createElement('p');
+                noteEl.textContent = `"${item.note}"`;
+                div.appendChild(noteEl);
+            }
+
             completedList.appendChild(div);
         });
     }
@@ -1251,10 +1391,7 @@ function setupEventListeners() {
     });
     
     // Modals
-    closeDetailModalBtn.addEventListener('click', () => {
-        detailModal.classList.remove('active');
-        selectedItemId = null;
-    });
+    closeDetailModalBtn.addEventListener('click', closeDetailModal);
     
     closeProfileModalBtn.addEventListener('click', () => {
         profileModal.classList.remove('active');
@@ -1326,7 +1463,10 @@ function setupEventListeners() {
     
     [detailModal, profileModal, contactModal, authModal, settingsModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
+            if (e.target !== modal) return;
+            if (modal === detailModal) {
+                closeDetailModal();
+            } else {
                 modal.classList.remove('active');
             }
         });
@@ -1337,17 +1477,18 @@ function setupEventListeners() {
         
         const isCompleted = !!completedItems[selectedItemId];
         if (isCompleted) {
-            completedItems[selectedItemId].note = memoryNote.value;
-            saveState();
-            syncItemToCloud(selectedItemId, true, memoryNote.value);
-            detailModal.classList.remove('active');
+            closeDetailModal();
         } else {
             const rect = modalCheckBtn.getBoundingClientRect();
             toggleComplete(selectedItemId, { clientX: rect.left + rect.width/2, clientY: rect.top });
-            setTimeout(() => {
-                detailModal.classList.remove('active');
-            }, 600);
+            setTimeout(closeDetailModal, 600);
         }
+    });
+
+    modalUncheckBtn.addEventListener('click', () => {
+        if (!selectedItemId || !completedItems[selectedItemId]) return;
+        toggleComplete(selectedItemId);
+        closeDetailModal();
     });
 
     shareBtn.addEventListener('click', async () => {

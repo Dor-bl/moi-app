@@ -487,6 +487,53 @@ h1 {
     margin: 0 auto;
 }
 
+.completed-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.25rem;
+    margin-top: 0.5rem;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.25rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    cursor: pointer;
+}
+
+.completed-divider:hover {
+    color: var(--primary-color);
+}
+
+.completed-divider-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.completed-divider-count {
+    background-color: var(--border-color);
+    color: var(--text-light);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.completed-divider-chevron {
+    margin-left: auto;
+    transition: transform 0.2s;
+}
+
+.completed-divider.collapsed .completed-divider-chevron {
+    transform: rotate(-90deg);
+}
+
 .bucket-card {
     background-color: var(--card-bg);
     border-radius: var(--border-radius);
@@ -726,8 +773,11 @@ textarea:focus {
     color: white;
 }
 
-.primary-btn.completed {
-    background-color: var(--text-light);
+.secondary-btn {
+    background: none;
+    color: var(--text-light);
+    border: 1px solid var(--border-color);
+    margin-top: 0.5rem;
 }
 
 .share-btn {
@@ -791,6 +841,13 @@ textarea:focus {
     margin-bottom: 0.25rem;
 }
 
+.completed-date {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+}
+
 .completed-item p {
     font-size: 0.875rem;
     color: var(--text-light);
@@ -830,6 +887,16 @@ textarea:focus {
     text-decoration: underline;
     font-family: inherit;
     font-size: inherit;
+}
+
+.privacy-note {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.privacy-note a {
+    color: var(--primary-color);
+    font-weight: 700;
 }
 
 .form-group {
