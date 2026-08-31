@@ -344,7 +344,7 @@ const UI_TRANSLATIONS = {
         addMemory: 'Add a Memory',
         memoryPlaceholder: 'How was it? Who were you with?',
         markComplete: 'Mark as Complete',
-        saveMemory: 'Save Memory',
+        saveNote: 'Save Note',
         markNotDone: 'Mark as not done',
         yourJourney: 'Your Journey',
         shareMilestone: 'Share Milestone',
@@ -404,7 +404,7 @@ const UI_TRANSLATIONS = {
         addMemory: 'Herinnering toevoegen',
         memoryPlaceholder: 'Hoe was het? Met wie was je?',
         markComplete: 'Markeer als voltooid',
-        saveMemory: 'Herinnering opslaan',
+        saveNote: 'Notitie opslaan',
         markNotDone: 'Markeer als niet gedaan',
         yourJourney: 'Jouw Reis',
         shareMilestone: 'Mijlpaal Delen',
@@ -799,6 +799,7 @@ function setLanguage(lang) {
     }
     
     if (detailModal.classList.contains('active') && selectedItemId) {
+        persistOpenNote();
         const item = BUCKET_LIST.find(i => i.id === selectedItemId);
         if (item) openDetailModal(item);
     }
@@ -1100,7 +1101,24 @@ function openDetailModal(item) {
     detailModal.classList.add('active');
 }
 
+// A note only belongs to an item that is already completed; for anything else the
+// textarea is a draft that the "Mark as Complete" path picks up. Called on every way
+// out of the modal so typing is never silently discarded.
+function persistOpenNote() {
+    if (!selectedItemId) return;
+    const entry = completedItems[selectedItemId];
+    if (!entry) return;
+
+    const note = memoryNote.value;
+    if (note === (entry.note || '')) return;
+
+    entry.note = note;
+    saveState();
+    syncItemToCloud(selectedItemId, true, note);
+}
+
 function closeDetailModal() {
+    persistOpenNote();
     detailModal.classList.remove('active');
     selectedItemId = null;
     memoryNote.value = '';
@@ -1108,7 +1126,7 @@ function closeDetailModal() {
 
 function updateModalButtonState(isCompleted) {
     const t = UI_TRANSLATIONS[currentLang];
-    modalCheckBtn.textContent = isCompleted ? t.saveMemory : t.markComplete;
+    modalCheckBtn.textContent = isCompleted ? t.saveNote : t.markComplete;
     modalUncheckBtn.style.display = isCompleted ? 'block' : 'none';
 }
 
@@ -1364,9 +1382,6 @@ function setupEventListeners() {
         
         const isCompleted = !!completedItems[selectedItemId];
         if (isCompleted) {
-            completedItems[selectedItemId].note = memoryNote.value;
-            saveState();
-            syncItemToCloud(selectedItemId, true, memoryNote.value);
             closeDetailModal();
         } else {
             const rect = modalCheckBtn.getBoundingClientRect();
