@@ -345,6 +345,8 @@ const UI_TRANSLATIONS = {
         memoryPlaceholder: 'How was it? Who were you with?',
         markComplete: 'Mark as Complete',
         completedSection: 'Completed',
+        remainingCount: '{count} left',
+        allDone: 'all done',
         saveNote: 'Save Note',
         markNotDone: 'Mark as not done',
         yourJourney: 'Your Journey',
@@ -409,6 +411,8 @@ const UI_TRANSLATIONS = {
         memoryPlaceholder: 'Hoe was het? Met wie was je?',
         markComplete: 'Markeer als voltooid',
         completedSection: 'Voltooid',
+        remainingCount: 'nog {count}',
+        allDone: 'helemaal klaar',
         saveNote: 'Notitie opslaan',
         markNotDone: 'Markeer als niet gedaan',
         yourJourney: 'Jouw Reis',
@@ -580,7 +584,7 @@ function init() {
     initAuth();
 }
 
-function updateLanguageUI() {
+function renderFilterPills() {
     const t = UI_TRANSLATIONS[currentLang];
 
     const categoryKeys = {
@@ -594,8 +598,38 @@ function updateLanguageUI() {
 
     filterPills.forEach(pill => {
         const cat = pill.dataset.filter;
-        if (categoryKeys[cat]) pill.textContent = categoryKeys[cat];
+        const label = categoryKeys[cat];
+        if (!label) return;
+
+        const items = cat === 'All' ? BUCKET_LIST : BUCKET_LIST.filter(i => i.category.en === cat);
+        const remaining = items.filter(i => !completedItems[i.id]).length;
+
+        pill.innerHTML = '';
+
+        const labelEl = document.createElement('span');
+        labelEl.textContent = label;
+        pill.appendChild(labelEl);
+
+        const countEl = document.createElement('span');
+        countEl.className = 'filter-pill-count';
+        countEl.textContent = remaining > 0 ? remaining : '✓';
+        // The badge on its own reads as a bare number; the pill's aria-label below
+        // says what it counts, so hide this from the accessibility tree.
+        countEl.setAttribute('aria-hidden', 'true');
+        pill.appendChild(countEl);
+
+        const status = remaining > 0
+            ? t.remainingCount.replace('{count}', remaining)
+            : t.allDone;
+        pill.setAttribute('aria-label', `${label}, ${status}`);
     });
+}
+
+function updateLanguageUI() {
+    const t = UI_TRANSLATIONS[currentLang];
+
+    // The pills are rendered by updateProgress(), which both callers of this
+    // function already invoke; rendering here too would just rebuild them twice.
 
     langBtns.forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === currentLang);
@@ -1027,6 +1061,8 @@ function updateProgress() {
     currentMilestone.textContent = milestoneTitle;
     profileMilestone.textContent = milestoneTitle;
     profileProgressText.textContent = t.completedText.replace('{completed}', completedCount).replace('{total}', totalCount);
+
+    renderFilterPills();
 }
 
 // The checked card stays put while the confetti plays, then re-sorts into (or out
@@ -1369,10 +1405,12 @@ function setupEventListeners() {
 
     // Filters
     filterPills.forEach(pill => {
-        pill.addEventListener('click', (e) => {
+        pill.addEventListener('click', () => {
+            // Bind to the pill itself, not the event target: the label and count
+            // are child spans, so e.target is often not the button.
             filterPills.forEach(p => p.classList.remove('active'));
-            e.target.classList.add('active');
-            currentFilter = e.target.dataset.filter;
+            pill.classList.add('active');
+            currentFilter = pill.dataset.filter;
             renderList();
         });
     });
