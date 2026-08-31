@@ -360,6 +360,7 @@ const UI_TRANSLATIONS = {
         contactMessage: 'Message',
         sendMessage: 'Send Message',
         contactBtnText: 'Contact & Suggestions',
+        contactPrivacyNote: 'See our <a href="privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for how we handle this information.',
         successTitle: 'Moi! Bedankt!',
         successText: 'Thanks for your message! We appreciate your input on making Groningen awesome for expats.',
         contactError: 'We could not send your message right now. Please try again.',
@@ -375,6 +376,7 @@ const UI_TRANSLATIONS = {
         signOut: 'Sign Out',
         authTitle: 'Sign In / Sign Up',
         authSubtitle: 'Sync your Groningen memories & progress across all your devices.',
+        authPrivacyNote: 'By continuing, you agree to our <a href="privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.',
         continueGoogle: 'Continue with Google',
         orText: 'OR',
         sendMagicLink: 'Send Magic Sign-In Link ✨',
@@ -389,7 +391,8 @@ const UI_TRANSLATIONS = {
         themeAppearance: 'Appearance',
         themeLight: 'Light',
         themeDark: 'Dark',
-        themeSystem: 'System'
+        themeSystem: 'System',
+        footerPrivacy: 'Privacy Policy'
     },
     nl: {
         filterAll: 'Alles',
@@ -419,6 +422,7 @@ const UI_TRANSLATIONS = {
         contactMessage: 'Bericht',
         sendMessage: 'Verstuur Bericht',
         contactBtnText: 'Contact & Suggesties',
+        contactPrivacyNote: 'Bekijk ons <a href="privacy.html" target="_blank" rel="noopener noreferrer">privacybeleid</a> om te zien hoe we hiermee omgaan.',
         successTitle: 'Moi! Bedankt!',
         successText: 'Bedankt voor je bericht! We waarderen je input om Groningen geweldig te maken voor expats.',
         contactError: 'We konden je bericht nu niet versturen. Probeer het opnieuw.',
@@ -434,6 +438,7 @@ const UI_TRANSLATIONS = {
         signOut: 'Uitloggen',
         authTitle: 'Inloggen / Registreren',
         authSubtitle: 'Synchroniseer je Groningse herinneringen & voortgang op al je apparaten.',
+        authPrivacyNote: 'Door verder te gaan ga je akkoord met ons <a href="privacy.html" target="_blank" rel="noopener noreferrer">privacybeleid</a>.',
         continueGoogle: 'Verder met Google',
         orText: 'OF',
         sendMagicLink: 'Stuur Magische Inloglink ✨',
@@ -448,7 +453,8 @@ const UI_TRANSLATIONS = {
         themeAppearance: 'Weergave',
         themeLight: 'Licht',
         themeDark: 'Donker',
-        themeSystem: 'Systeem'
+        themeSystem: 'Systeem',
+        footerPrivacy: 'Privacybeleid'
     }
 };
 
@@ -606,6 +612,7 @@ function updateLanguageUI() {
     document.getElementById('lblContactMessage').textContent = t.contactMessage;
     document.getElementById('contactSubmitBtn').textContent = t.sendMessage;
     document.getElementById('contactBtn').textContent = t.contactBtnText;
+    document.getElementById('contactPrivacyNote').innerHTML = t.contactPrivacyNote;
     document.getElementById('contactSuccessTitle').textContent = t.successTitle;
     document.getElementById('contactSuccessText').textContent = t.successText;
 
@@ -626,9 +633,13 @@ function updateLanguageUI() {
     document.getElementById('txtThemeDark').textContent = t.themeDark;
     document.getElementById('txtThemeSystem').textContent = t.themeSystem;
 
+    const footerPrivacyLink = document.getElementById('footerPrivacyLink');
+    if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
+
     // Auth modal & header translations
     document.getElementById('authModalTitle').textContent = t.authTitle;
     document.getElementById('authModalSubtitle').textContent = t.authSubtitle;
+    document.getElementById('authPrivacyNote').innerHTML = t.authPrivacyNote;
     document.getElementById('txtGoogleBtn').textContent = t.continueGoogle;
     document.getElementById('txtAuthOr').textContent = t.orText;
     document.getElementById('lblMagicEmail').textContent = t.contactEmail;
