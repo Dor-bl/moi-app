@@ -965,14 +965,6 @@ function buildCard(item) {
         </div>
     `;
 
-    const checkbox = card.querySelector('.checkbox');
-    checkbox.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleComplete(item.id, e);
-    });
-
-    card.addEventListener('click', () => openDetailModal(item));
-
     return card;
 }
 
@@ -1308,6 +1300,27 @@ function openProfileModal() {
 }
 
 function setupEventListeners() {
+    // ⚡ Bolt Performance Optimization:
+    // Event delegation on listContainer reduces memory usage by attaching one event listener
+    // instead of creating new listeners for every card and checkbox on every render.
+    listContainer.addEventListener('click', (e) => {
+        const card = e.target.closest('.bucket-card');
+        if (!card) return;
+
+        const id = card.dataset.id;
+
+        const checkbox = e.target.closest('.checkbox');
+        if (checkbox) {
+            toggleComplete(id, e);
+            return;
+        }
+
+        const item = BUCKET_LIST.find(i => i.id === id);
+        if (item) {
+            openDetailModal(item);
+        }
+    });
+
     // Settings Modal events
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
