@@ -628,7 +628,8 @@ function renderFilterPills() {
 function updateLanguageUI() {
     const t = UI_TRANSLATIONS[currentLang];
 
-    renderFilterPills();
+    // The pills are rendered by updateProgress(), which both callers of this
+    // function already invoke; rendering here too would just rebuild them twice.
 
     langBtns.forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === currentLang);
