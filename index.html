@@ -116,6 +116,7 @@
                 <textarea id="memoryNote" placeholder="How was it? Who were you with?"></textarea>
                 <div class="modal-actions">
                     <button class="btn primary-btn" id="modalCheckBtn">Mark as Complete</button>
+                    <button class="btn secondary-btn" id="modalUncheckBtn" style="display: none;">Mark as not done</button>
                 </div>
             </div>
         </div>
@@ -141,7 +142,7 @@
                 <!-- Badges will be injected here -->
             </div>
 
-            <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Completed Memories</h3>
+            <h3 id="txtCompletedMemories" style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Completed Memories</h3>
             <div class="completed-list" id="completedList">
                 <!-- Completed items will be injected here -->
             </div>
