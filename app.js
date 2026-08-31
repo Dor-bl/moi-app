@@ -344,6 +344,7 @@ const UI_TRANSLATIONS = {
         addMemory: 'Add a Memory',
         memoryPlaceholder: 'How was it? Who were you with?',
         markComplete: 'Mark as Complete',
+        completedSection: 'Completed',
         saveNote: 'Save Note',
         markNotDone: 'Mark as not done',
         yourJourney: 'Your Journey',
@@ -407,6 +408,7 @@ const UI_TRANSLATIONS = {
         addMemory: 'Herinnering toevoegen',
         memoryPlaceholder: 'Hoe was het? Met wie was je?',
         markComplete: 'Markeer als voltooid',
+        completedSection: 'Voltooid',
         saveNote: 'Notitie opslaan',
         markNotDone: 'Markeer als niet gedaan',
         yourJourney: 'Jouw Reis',
@@ -466,6 +468,10 @@ let currentLang = localStorage.getItem('moiCheckLang') || 'en';
 let currentFilter = 'All';
 let currentView = 'list';
 let selectedItemId = null;
+// null = no explicit choice yet, so the section auto-collapses once it grows.
+let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
+let resortTimer = null;
+let listNeedsResort = false;
 let leafletMap = null;
 let markersGroup = null;
 
@@ -823,6 +829,11 @@ function switchView(view) {
         mapViewBtn.classList.remove('active');
         listContainer.style.display = 'grid';
         mapWrapper.style.display = 'none';
+        // A completion made from map view leaves the list unsorted; catch up on return.
+        if (listNeedsResort) {
+            listNeedsResort = false;
+            renderList();
+        }
     } else {
         mapViewBtn.classList.add('active');
         listViewBtn.classList.remove('active');
@@ -895,6 +906,67 @@ function renderMapMarkers() {
     });
 }
 
+function isCompletedCollapsed(count) {
+    if (completedCollapsedPref === null) return count > 2;
+    return completedCollapsedPref === 'true';
+}
+
+function buildCard(item) {
+    const isCompleted = !!completedItems[item.id];
+
+    const card = document.createElement('div');
+    card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
+    card.dataset.id = item.id;
+
+    card.innerHTML = `
+        <div class="checkbox-container">
+            <div class="checkbox" data-id="${item.id}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+        </div>
+        <div class="card-content">
+            <span class="card-category">${item.category[currentLang]}</span>
+            <h3 class="card-title">${item.title[currentLang]}</h3>
+            <p class="card-tip">${item.tip[currentLang]}</p>
+        </div>
+    `;
+
+    const checkbox = card.querySelector('.checkbox');
+    checkbox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleComplete(item.id, e);
+    });
+
+    card.addEventListener('click', () => openDetailModal(item));
+
+    return card;
+}
+
+function buildCompletedDivider(count, collapsed) {
+    const t = UI_TRANSLATIONS[currentLang];
+
+    const divider = document.createElement('button');
+    divider.type = 'button';
+    divider.className = `completed-divider ${collapsed ? 'collapsed' : ''}`;
+    divider.setAttribute('aria-expanded', String(!collapsed));
+    divider.innerHTML = `
+        <span class="completed-divider-label">
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            ${t.completedSection}
+        </span>
+        <span class="completed-divider-count">${count}</span>
+        <svg aria-hidden="true" class="completed-divider-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    `;
+
+    divider.addEventListener('click', () => {
+        completedCollapsedPref = String(!collapsed);
+        localStorage.setItem('moiCheckCompletedCollapsed', completedCollapsedPref);
+        renderList();
+    });
+
+    return divider;
+}
+
 function renderList() {
     listContainer.innerHTML = '';
     
@@ -902,42 +974,26 @@ function renderList() {
         ? BUCKET_LIST 
         : BUCKET_LIST.filter(item => item.category.en === currentFilter);
 
+    // Completed items sink below a divider, keeping what is left to do at the top.
+    // Both partitions keep the original BUCKET_LIST order.
+    const todo = filteredList.filter(item => !completedItems[item.id]);
+    const done = filteredList.filter(item => !!completedItems[item.id]);
+
     // ⚡ Bolt Performance Optimization:
     // Use a DocumentFragment to batch all DOM insertions.
     // Impact: Reduces browser reflows/repaints from O(N) to O(1) when rendering the list,
     // improving render speed.
     const fragment = document.createDocumentFragment();
 
-    filteredList.forEach(item => {
-        const isCompleted = !!completedItems[item.id];
-        
-        const card = document.createElement('div');
-        card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
-        card.dataset.id = item.id;
-        
-        card.innerHTML = `
-            <div class="checkbox-container">
-                <div class="checkbox" data-id="${item.id}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-            </div>
-            <div class="card-content">
-                <span class="card-category">${item.category[currentLang]}</span>
-                <h3 class="card-title">${item.title[currentLang]}</h3>
-                <p class="card-tip">${item.tip[currentLang]}</p>
-            </div>
-        `;
-        
-        const checkbox = card.querySelector('.checkbox');
-        checkbox.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleComplete(item.id, e);
-        });
+    todo.forEach(item => fragment.appendChild(buildCard(item)));
 
-        card.addEventListener('click', () => openDetailModal(item));
-        
-        fragment.appendChild(card);
-    });
+    if (done.length > 0) {
+        const collapsed = isCompletedCollapsed(done.length);
+        fragment.appendChild(buildCompletedDivider(done.length, collapsed));
+        if (!collapsed) {
+            done.forEach(item => fragment.appendChild(buildCard(item)));
+        }
+    }
 
     listContainer.appendChild(fragment);
 
@@ -973,6 +1029,20 @@ function updateProgress() {
     profileProgressText.textContent = t.completedText.replace('{completed}', completedCount).replace('{total}', totalCount);
 }
 
+// The checked card stays put while the confetti plays, then re-sorts into (or out
+// of) the completed section. Deliberately not immediate: a card that teleports away
+// mid-celebration reads as if the app lost it. Rapid toggles coalesce into one render.
+function scheduleListResort() {
+    clearTimeout(resortTimer);
+    listNeedsResort = true;
+    resortTimer = setTimeout(() => {
+        resortTimer = null;
+        if (currentView !== 'list') return;
+        listNeedsResort = false;
+        renderList();
+    }, 700);
+}
+
 function toggleComplete(id, event = null) {
     const isCompleted = !!completedItems[id];
     
@@ -999,6 +1069,7 @@ function toggleComplete(id, event = null) {
     if (card) {
         card.classList.toggle('completed', !isCompleted);
     }
+    scheduleListResort();
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
     }
