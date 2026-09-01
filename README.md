@@ -104,7 +104,7 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
      for all using (auth.uid() = user_id);
    ```
 3. Copy your project **URL** and **anon Key** from `Project Settings -> API`.
-4. Paste them at the top of `app.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY`.
+4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`.
 
 ---
 
