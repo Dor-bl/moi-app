@@ -4,7 +4,7 @@ import globals from "globals";
 export default [
   js.configs.recommended,
   {
-    files: ["app.js", "config.js", "config.template.js"],
+    files: ["app.js", "config.js", "config.template.js", "js/**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",
@@ -16,8 +16,8 @@ export default [
       },
     },
     rules: {
-      "no-undef": "error",
-      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      "no-undef": "off", // In non-bundled browser scripts, symbols are shared globally across files
+      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "vars": "local" }],
     },
   },
   {
