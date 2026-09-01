@@ -1,3 +1,5 @@
+// Application Core - Main UI Orchestration & Event Dispatching
+
 // State
 let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
 let currentLang = localStorage.getItem('moiCheckLang') || 'en';
@@ -343,9 +345,15 @@ function renderList() {
         ? BUCKET_LIST 
         : BUCKET_LIST.filter(item => item.category.en === currentFilter);
 
+    // Completed items sink below a divider, keeping what is left to do at the top.
+    // Both partitions keep the original BUCKET_LIST order.
     const todo = filteredList.filter(item => !completedItems[item.id]);
     const done = filteredList.filter(item => !!completedItems[item.id]);
 
+    // ⚡ Bolt Performance Optimization:
+    // Use a DocumentFragment to batch all DOM insertions.
+    // Impact: Reduces browser reflows/repaints from O(N) to O(1) when rendering the list,
+    // improving render speed.
     const fragment = document.createDocumentFragment();
 
     todo.forEach(item => fragment.appendChild(buildCard(item)));
@@ -384,6 +392,9 @@ function updateProgress() {
     renderFilterPills();
 }
 
+// The checked card stays put while the confetti plays, then re-sorts into (or out
+// of) the completed section. Deliberately not immediate: a card that teleports away
+// mid-celebration reads as if the app lost it. Rapid toggles coalesce into one render.
 function scheduleListResort() {
     clearTimeout(resortTimer);
     listNeedsResort = true;
@@ -503,6 +514,9 @@ function openDetailModal(item) {
     detailModal.classList.add('active');
 }
 
+// A note only belongs to an item that is already completed; for anything else the
+// textarea is a draft that the "Mark as Complete" path picks up. Called on every way
+// out of the modal so typing is never silently discarded.
 function persistOpenNote() {
     if (!selectedItemId) return;
     const entry = completedItems[selectedItemId];
@@ -589,6 +603,9 @@ function openProfileModal() {
 }
 
 function setupEventListeners() {
+    // ⚡ Bolt Performance Optimization:
+    // Event delegation on listContainer reduces memory usage by attaching one event listener
+    // instead of creating new listeners for every card and checkbox on every render.
     listContainer.addEventListener('click', (e) => {
         const card = e.target.closest('.bucket-card');
         if (!card) return;
@@ -705,6 +722,8 @@ function setupEventListeners() {
     // Filters
     filterPills.forEach(pill => {
         pill.addEventListener('click', () => {
+            // Bind to the pill itself, not the event target: the label and count
+            // are child spans, so e.target is often not the button.
             filterPills.forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             currentFilter = pill.dataset.filter;

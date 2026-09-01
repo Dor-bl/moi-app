@@ -1,3 +1,6 @@
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud
+// Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
+
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
 const SUPABASE_ANON_KEY = (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) ? window.SUPABASE_ANON_KEY : '';
@@ -141,6 +144,8 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
 
     try {
         if (isCompleted) {
+            // Keep the original completion date: this also runs when only the note
+            // is edited, and a fresh timestamp would overwrite it in the cloud.
             const existing = completedItems[itemId];
             await supabaseClient.from('user_progress').upsert({
                 user_id: currentUser.id,

@@ -1,3 +1,6 @@
+// Utils Module - Shared Global Exports: getMilestoneObj, showBadgeToast, saveState, createConfetti
+// Dependencies: Expects MILESTONES, UI_TRANSLATIONS, currentLang, completedItems.
+
 let toastTimeout = null;
 
 function getMilestoneObj(count) {

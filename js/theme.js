@@ -1,3 +1,6 @@
+// Theme Module - Shared Global Exports: ALLOWED_THEMES, applyTheme, updateThemeButtonsUI, initTheme, setTheme
+// Dependencies: Expects .theme-option-btn elements in the DOM.
+
 const ALLOWED_THEMES = ['light', 'dark', 'system'];
 
 function applyTheme(themeOption) {
