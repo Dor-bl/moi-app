@@ -233,7 +233,7 @@ const BUCKET_LIST = [
         coords: [53.2107852, 6.5740967],
         category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
         title: { en: 'Get fries at Friet van Piet on the Meeuwerderweg', nl: 'Haal friet bij Friet van Piet aan de Meeuwerderweg' },
-        tip: { en: 'A beloved neighbourhood friettent in the Oosterpoort — fresh, hand-cut fries worth the queue.', nl: 'Een geliefde buurtfriettent in the Oosterpoort — verse friet waar je best even voor in de rij staat.' }
+        tip: { en: 'A beloved neighbourhood friettent in the Oosterpoort — fresh, hand-cut fries worth the queue.', nl: 'Een geliefde buurtfriettent in de Oosterpoort — verse friet waar je best even voor in de rij staat.' }
     },
     {
         id: '30',
