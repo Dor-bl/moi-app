@@ -141,11 +141,12 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
 
     try {
         if (isCompleted) {
+            const existing = completedItems[itemId];
             await supabaseClient.from('user_progress').upsert({
                 user_id: currentUser.id,
                 item_id: itemId,
                 note: note,
-                date: new Date().toISOString()
+                date: (existing && existing.date) || new Date().toISOString()
             });
         } else {
             await supabaseClient.from('user_progress')
