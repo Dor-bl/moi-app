@@ -13,6 +13,15 @@ let listNeedsResort = false;
 let leafletMap = null;
 let markersGroup = null;
 
+// ⚡ Bolt Performance Optimization:
+// Pre-compute items by category to replace O(N) filtering with O(1) map lookups during render cycles.
+const itemsByCategory = BUCKET_LIST.reduce((acc, item) => {
+    const cat = item.category.en;
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+}, {});
+
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
 const mapWrapper = document.getElementById('mapWrapper');
@@ -93,7 +102,7 @@ function renderFilterPills() {
         const label = categoryKeys[cat];
         if (!label) return;
 
-        const items = cat === 'All' ? BUCKET_LIST : BUCKET_LIST.filter(i => i.category.en === cat);
+        const items = cat === 'All' ? BUCKET_LIST : (itemsByCategory[cat] || []);
         const remaining = items.filter(i => !completedItems[i.id]).length;
 
         pill.innerHTML = '';
@@ -250,7 +259,7 @@ function renderMapMarkers() {
     const t = UI_TRANSLATIONS[currentLang];
     const filteredList = currentFilter === 'All' 
         ? BUCKET_LIST 
-        : BUCKET_LIST.filter(item => item.category.en === currentFilter);
+        : (itemsByCategory[currentFilter] || []);
 
     filteredList.forEach(item => {
         const isCompleted = !!completedItems[item.id];
@@ -343,7 +352,7 @@ function renderList() {
     
     const filteredList = currentFilter === 'All' 
         ? BUCKET_LIST 
-        : BUCKET_LIST.filter(item => item.category.en === currentFilter);
+        : (itemsByCategory[currentFilter] || []);
 
     // Completed items sink below a divider, keeping what is left to do at the top.
     // Both partitions keep the original BUCKET_LIST order.
@@ -451,7 +460,7 @@ function checkBadgeUnlocks(itemId, wasCompleted) {
     const badge = CATEGORY_BADGES.find(b => b.category === categoryName);
     if (!badge) return;
 
-    const categoryItems = BUCKET_LIST.filter(i => i.category.en === categoryName);
+    const categoryItems = itemsByCategory[categoryName] || [];
     const total = categoryItems.length;
     const completedCount = categoryItems.filter(i => !!completedItems[i.id]).length;
 
@@ -467,7 +476,7 @@ function renderBadges() {
     const t = UI_TRANSLATIONS[currentLang];
 
     CATEGORY_BADGES.forEach(badge => {
-        const categoryItems = BUCKET_LIST.filter(item => item.category.en === badge.category);
+        const categoryItems = itemsByCategory[badge.category] || [];
         const total = categoryItems.length;
         const completedCount = categoryItems.filter(item => !!completedItems[item.id]).length;
         const isUnlocked = total > 0 && completedCount === total;
