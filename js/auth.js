@@ -25,9 +25,10 @@ let currentUser = null;
 let authGeneration = 0;
 
 // Cloud writes that have left the browser but not yet completed. Account
-// deletion waits for these: an upsert landing after the fallback row delete
-// would quietly recreate the row, and one landing inside the RPC's transaction
-// would make the auth delete fail on the foreign key.
+// deletion waits for these: an upsert landing inside the RPC's transaction
+// would make the auth delete fail on the foreign key, and one landing after it
+// would fail on that same key and surface as a stray error, so the RPC only
+// starts once the wire is quiet.
 const pendingCloudWrites = new Set();
 
 function trackCloudWrite(request) {
@@ -296,8 +297,8 @@ function isMissingRpcError(error) {
 // True while deleteUserAccountAndData() is running. Cloud sync and item writes
 // must not start in that window: the auth listener calls onUserLoggedIn() for
 // every session-bearing event, TOKEN_REFRESHED included, and the sync that
-// would start there could race the RPC or recreate rows after the fallback
-// delete.
+// would start there could send writes outside the awaited snapshot to race the
+// RPC, or repopulate local storage from rows that are about to be deleted.
 let deletionInProgress = false;
 
 // GDPR Art. 17: remove everything we hold for the signed-in person. The

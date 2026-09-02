@@ -876,6 +876,10 @@ function setupEventListeners() {
         // longer the one signed in here. Close it rather than delete whoever
         // is signed in now.
         if (!currentUser || currentUser.id !== deleteModalUserId) {
+            // The trigger is inside the profile modal, which closes too (and is
+            // hidden outright if we were signed out), so land on the profile
+            // button rather than on an element that is about to disappear.
+            deleteModalReturnFocus = profileBtn;
             closeDeleteAccountModal();
             profileModal.classList.remove('active');
             return;
