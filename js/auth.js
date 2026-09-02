@@ -190,15 +190,25 @@ async function initAuth() {
 
         // Fetch existing active session
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user) {
+        if (isDeletedUserSession(session)) {
+            await discardDeletedUserSession(session.user.id);
+        } else if (session && session.user) {
+            if (deletedUserId()) localStorage.removeItem(DELETED_USER_KEY);
             currentUser = session.user;
             await onUserLoggedIn();
+        } else if (deletedUserId()) {
+            localStorage.removeItem(DELETED_USER_KEY);
         }
 
         // Listen for auth state changes
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             console.log('Supabase auth event:', event, session?.user?.email);
+            if (isDeletedUserSession(session)) {
+                // A refresh or restore of an account deleted from this browser.
+                return;
+            }
             if (session && session.user) {
+                if (deletedUserId()) localStorage.removeItem(DELETED_USER_KEY);
                 currentUser = session.user;
                 await onUserLoggedIn();
                 // Clean hash from URL bar if access token was passed in hash
@@ -337,10 +347,11 @@ async function handleAccountDeletedElsewhere(userId) {
     console.warn('This account was deleted from another tab; clearing the local copy here.');
     authGeneration++;
     // Same decision as the deleting tab: another account may already hold
-    // this device (its session stored by a third tab), in which case stored
-    // progress is left alone and only this tab's memory is dropped.
+    // this device (its session stored by a third tab), in which case only
+    // this tab's known items are quarantined from storage.
+    const knownItemIds = Object.keys(completedItems);
     try {
-        await clearLocalProgressUnlessTakenOver(userId);
+        await clearLocalProgressUnlessTakenOver(userId, knownItemIds);
     } catch (err) {
         console.warn('Could not clear stored progress:', err);
         completedItems = {};
@@ -452,6 +463,70 @@ function sessionStorageKey() {
     return `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
 }
 
+// Durable marker for an account deleted from this browser. supabase-js
+// restores an unexpired session from storage without checking that the user
+// still exists, so where the stored entry could not be removed (no Web Locks,
+// a lock that never came free) the next page load would show the deleted
+// account as signed in until a token refresh failed. Start-up and the auth
+// listener ignore a session whose user matches this marker, and remove that
+// exact entry when they safely can. The marker is cleared once the stored
+// session belongs to someone else or is gone.
+const DELETED_USER_KEY = 'moiCheckDeletedUser';
+
+function deletedUserId() {
+    try {
+        return localStorage.getItem(DELETED_USER_KEY);
+    } catch (err) {
+        console.warn('Could not read the deleted-user marker:', err);
+        return null;
+    }
+}
+
+function isDeletedUserSession(session) {
+    return !!(session && session.user && session.user.id && session.user.id === deletedUserId());
+}
+
+// Take the session Web Lock for at most `timeoutMs`. Another tab's auth
+// operation can hold it, and nothing after the commit may wait forever.
+// Resolves { ran: true, result } or { ran: false, reason }.
+async function withSessionLock(fn, timeoutMs) {
+    if (!hasWebLocks()) return { ran: false, reason: 'no-locks' };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const result = await navigator.locks.request(
+            `lock:${sessionStorageKey()}`,
+            { mode: 'exclusive', signal: controller.signal },
+            async () => fn()
+        );
+        return { ran: true, result };
+    } catch (err) {
+        if (err && err.name === 'AbortError') return { ran: false, reason: 'timeout' };
+        throw err;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// Remove the stored session entry only if it belongs to `userId`.
+function removeStoredSessionIfUser(userId) {
+    if (storedSessionUserId() !== userId) return false;
+    localStorage.removeItem(sessionStorageKey());
+    return true;
+}
+
+// On start-up: a stored session for an account deleted from this browser is
+// ignored and, when the lock allows, removed. Never touches anyone else's.
+async function discardDeletedUserSession(userId) {
+    const { ran, result } = await withSessionLock(() => removeStoredSessionIfUser(userId), deleteAttemptTimeoutMs());
+    if (ran && result) {
+        localStorage.removeItem(DELETED_USER_KEY);
+        console.warn('Removed the stored session of an account deleted from this browser.');
+    } else {
+        console.warn('Ignoring the stored session of an account deleted from this browser.');
+    }
+}
+
 // Who holds this device's session, read straight from storage. Safe to call
 // while holding the session lock (getSession() would take that lock again).
 function storedSessionUserId() {
@@ -472,16 +547,20 @@ function storedSessionUserId() {
 // that already spares it, and guest writes were this device's to clear. Where
 // Web Locks do not exist the check is best effort.
 //
-// On a takeover the stored value is left alone but *not* adopted into memory:
-// local progress is not partitioned per account (#52), so it may still be the
-// deleted account's, and this tab's follow-up sync for the replacement would
-// upload it under their name. Memory starts empty and the sync fills it from
-// the replacement's own cloud rows.
-async function clearLocalProgressUnlessTakenOver(userId) {
+// On a takeover the stored value is not adopted into memory and the deleted
+// account's items are quarantined out of it: local progress is not
+// partitioned per account (#52), so whatever the replacement's tabs stored may
+// still carry the deleted list, and a later sync (this tab's, or a reload's)
+// would upload it under their name. `knownItemIds` are the items this tab held
+// for the deleted account; exactly those are removed from storage, anything
+// else (the replacement's own ticks) is left. Memory starts empty and the sync
+// fills it from the replacement's cloud rows.
+async function clearLocalProgressUnlessTakenOver(userId, knownItemIds) {
     const decide = () => {
         const holder = storedSessionUserId();
         if (holder !== null && holder !== userId) {
-            console.warn('Another account holds this device; leaving stored progress untouched and starting from an empty list here.');
+            console.warn('Another account holds this device; quarantining the deleted account\'s items from stored progress.');
+            quarantineStoredItems(knownItemIds);
             completedItems = {};
             return false;
         }
@@ -489,10 +568,33 @@ async function clearLocalProgressUnlessTakenOver(userId) {
         saveState();
         return true;
     };
-    if (hasWebLocks()) {
-        return navigator.locks.request(`lock:${sessionStorageKey()}`, { mode: 'exclusive' }, async () => decide());
+    const { ran, result, reason } = await withSessionLock(decide, deleteAttemptTimeoutMs());
+    if (ran) return result;
+    if (reason === 'no-locks') return decide();
+    // The lock never came free: leave storage alone rather than guess, but
+    // never keep the deleted list in memory.
+    console.warn('Session lock unavailable; leaving stored progress untouched.');
+    completedItems = {};
+    return false;
+}
+
+function quarantineStoredItems(itemIds) {
+    if (!itemIds || itemIds.length === 0) return;
+    let stored;
+    try {
+        stored = JSON.parse(localStorage.getItem('moiCheckState')) || {};
+    } catch (err) {
+        console.warn('Could not read stored progress:', err);
+        return;
     }
-    return decide();
+    let changed = false;
+    itemIds.forEach(id => {
+        if (Object.prototype.hasOwnProperty.call(stored, id)) {
+            delete stored[id];
+            changed = true;
+        }
+    });
+    if (changed) localStorage.setItem('moiCheckState', JSON.stringify(stored));
 }
 
 // End the initiating session and nothing else. signOut() on the shared client
@@ -513,27 +615,23 @@ async function endInitiatingSession(asInitiator, session, userId) {
         console.warn('Server-side sign-out did not answer in time; continuing with local cleanup.');
     }
 
-    const storageKey = sessionStorageKey();
-    const removeIfOurs = () => {
-        let stored = null;
-        try {
-            stored = JSON.parse(localStorage.getItem(storageKey));
-        } catch (err) {
-            console.warn('Could not read the stored session:', err);
-        }
-        if (!stored || !stored.user || stored.user.id !== userId) return false;
-        localStorage.removeItem(storageKey);
-        return true;
-    };
-    let removed = false;
-    if (hasWebLocks()) {
-        removed = await navigator.locks.request(`lock:${storageKey}`, { mode: 'exclusive' }, async () => removeIfOurs());
+    // The marker goes first: whatever happens below, start-up will not
+    // restore this account from storage.
+    try {
+        localStorage.setItem(DELETED_USER_KEY, userId);
+    } catch (err) {
+        console.warn('Could not record the deleted-user marker:', err);
+    }
+    // Without a cross-tab lock, or when it does not come free in time, the
+    // check and the removal could straddle another tab installing a
+    // different account, so storage is not touched: the marker keeps the
+    // entry from being restored, and the library drops it at its next refresh.
+    const { ran, result } = await withSessionLock(() => removeStoredSessionIfUser(userId), deleteAttemptTimeoutMs());
+    const removed = ran && result;
+    if (removed) {
+        localStorage.removeItem(DELETED_USER_KEY);
     } else {
-        // Without a cross-tab lock the check and the removal could straddle
-        // another tab installing a different account, so do not touch storage:
-        // the token is revoked server-side and the account is gone, so the
-        // library drops the session by itself at its next refresh.
-        console.warn('Web Locks unavailable; leaving the stored session to expire on its own.');
+        console.warn('Stored session left in place; the deleted-user marker keeps it from being restored.');
     }
 
     if (currentUser && currentUser.id === userId) {
@@ -544,6 +642,9 @@ async function endInitiatingSession(asInitiator, session, userId) {
 }
 
 async function performAccountDeletion(userId, state) {
+    // The items this tab holds for the account: exactly what gets quarantined
+    // from shared storage if another account takes over this device.
+    const knownItemIds = Object.keys(completedItems);
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session || !session.user || session.user.id !== userId) {
         throw new Error('Session changed before deletion started');
@@ -625,7 +726,7 @@ async function performAccountDeletion(userId, state) {
         // Clear the local copy: leaving it would make syncCloudProgress()
         // upload it all again on the next sign-in. Unless another account has
         // taken over this device meanwhile; see the helper.
-        await clearLocalProgressUnlessTakenOver(userId);
+        await clearLocalProgressUnlessTakenOver(userId, knownItemIds);
     } catch (err) {
         console.warn('Could not clear local progress after deletion:', err);
         // Memory must not keep the deleted list either way; storage is left
