@@ -118,8 +118,6 @@ function finishMagicLinkSignIn(pending) {
             type: pending.type
         });
 
-        // Whatever the outcome, the hash in the address bar is spent.
-        clearMagicLinkFromUrl();
         finishBtn.disabled = false;
 
         if (error) {
@@ -154,8 +152,12 @@ async function initAuth() {
             alert('Sign In Notice: ' + errorDesc);
         }
 
+        // Take the hash out of the address bar straight away — it is a
+        // bearer credential and should not sit there to be copied, bookmarked
+        // or sent as a Referer. The tap verifies from memory.
         const pendingMagicLink = getPendingMagicLink();
         if (pendingMagicLink) {
+            clearMagicLinkFromUrl();
             finishMagicLinkSignIn(pendingMagicLink);
         }
 

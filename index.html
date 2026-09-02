@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="no-referrer-when-downgrade">
+    <!-- Sign-in links carry a token hash in the query string; cross-origin
+         requests (the CDNs above) must only ever see the origin. -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>MoiCheck - Groningen Bucket List</title>
     <meta name="description" content="A bucket list for Groningen — the things to eat, see and do. Made for newcomers and expats.">
     <meta name="theme-color" content="#009639">

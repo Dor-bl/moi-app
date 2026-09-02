@@ -109,9 +109,9 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 6. Set up **custom SMTP** before letting anyone else sign in — see the troubleshooting note below.
 7. Under **Authentication -> Emails**, change the link in **both** the *Confirm signup* and *Magic Link* templates from `{{ .ConfirmationURL }}` to:
    ```
-   {{ .SiteURL }}/?token_hash={{ .TokenHash }}&type=email
+   {{ .SiteURL }}/?token_hash={{ .TokenHash }}&amp;type=email
    ```
-   Mail scanners (Outlook, Office 365, most corporate filters) prefetch every link in a message. With the default link that first fetch hits Supabase's verify endpoint and uses up the one-time token, so the person taps a dead link seconds later. With this link the page loads and shows a *Finish Signing In* button; nothing is verified until they tap it. Until you change the templates the old flow keeps working — the app handles both.
+   (`&amp;` rather than `&` because the template is HTML; browsers decode it when the link is clicked.) Mail scanners (Outlook, Office 365, most corporate filters) prefetch every link in a message. With the default link that first fetch hits Supabase's verify endpoint and uses up the one-time token, so the person taps a dead link seconds later. With this link the page loads and shows a *Finish Signing In* button; nothing is verified until they tap it. Until you change the templates the old flow keeps working — the app handles both.
 
 ### Troubleshooting: magic links fail with a 500
 
