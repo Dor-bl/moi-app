@@ -658,7 +658,7 @@ function openProfileModal() {
 }
 
 function closeProfileModal() {
-    closeProfileModal();
+    profileModal.classList.remove('active');
     profileModal.setAttribute('inert', '');
 }
 
