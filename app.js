@@ -836,9 +836,15 @@ function setupEventListeners() {
         deleteAccountModal.classList.remove('active');
         // Closed means gone for keyboard and assistive tech, not just transparent.
         deleteAccountModal.setAttribute('inert', '');
-        if (deleteModalReturnFocus && typeof deleteModalReturnFocus.focus === 'function') {
-            deleteModalReturnFocus.focus();
+        // The saved target may have vanished meanwhile: a sign-out from
+        // another tab hides the delete trigger. Fall back to a visible control.
+        const canTakeFocus = el => !!el && typeof el.focus === 'function' && el.isConnected
+            && !el.disabled && el.getClientRects().length > 0;
+        let target = deleteModalReturnFocus;
+        if (!canTakeFocus(target)) {
+            target = profileModal.classList.contains('active') ? closeProfileModalBtn : profileBtn;
         }
+        target.focus();
         deleteModalReturnFocus = null;
     };
 

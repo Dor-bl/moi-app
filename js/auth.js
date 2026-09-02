@@ -260,12 +260,7 @@ async function syncCloudProgress() {
                     note: row.note || ''
                 };
             });
-            const ownerId = currentUser.id;
-            await withStateLock(() => {
-                saveState();
-                localStorage.setItem(STATE_OWNER_KEY, ownerId);
-            });
-            if (stale()) return;
+            saveState();
 
             const localEntries = Object.entries(completedItems);
             for (let [itemId, localData] of localEntries) {
@@ -300,35 +295,29 @@ function isMissingRpcError(error) {
 }
 
 // Errors that say nothing about whether the RPC ran: the request never got an
-// answer (postgrest-js reports those with an empty code) or a gateway answered
-// in the database's place (5xx). The function may well have committed.
+// answer (postgrest-js reports a failed or aborted fetch with an empty or
+// non-string code) or a gateway answered in the database's place (5xx). The
+// function may well have committed.
 function isAmbiguousRpcError(error) {
     if (!error) return false;
-    const code = error.code || '';
-    return code === '' || /^5\d\d$/.test(code);
+    const code = error.code;
+    if (typeof code !== 'string' || code === '') return true;
+    if (/^5\d\d$/.test(code)) return true;
+    return /abort/i.test(error.message || '');
 }
-
-// Set by syncCloudProgress(): whose account the local progress in this browser
-// was last merged with. Deletion clears local progress only while it is still
-// the initiator's; another tab of a different account may have taken over.
-const STATE_OWNER_KEY = 'moiCheckStateOwner';
-
-// Local progress and its owner marker are two storage keys written by every
-// tab; readers that decide on the pair (the deletion's compare-and-clear) and
-// writers of the pair take this lock so no tab sees or overwrites a half
-// update. Falls through without serialisation only where Web Locks do not
-// exist.
-const STATE_LOCK = 'lock:moiCheckState';
 
 function hasWebLocks() {
     return typeof navigator !== 'undefined' && !!navigator.locks && typeof navigator.locks.request === 'function';
 }
 
-async function withStateLock(fn) {
-    if (hasWebLocks()) {
-        return navigator.locks.request(STATE_LOCK, { mode: 'exclusive' }, async () => fn());
-    }
-    return fn();
+// Each delete_user() attempt is bounded: fetch has no timeout of its own, and a
+// stalled request would otherwise keep the dialog busy forever. A timed-out
+// attempt counts as unanswered (it may still commit server-side).
+const DELETE_ATTEMPT_TIMEOUT_MS = 15000;
+
+function deleteAttemptTimeoutMs() {
+    const override = typeof window !== 'undefined' ? window.MOICHECK_DELETE_TIMEOUT_MS : undefined;
+    return Number.isFinite(override) && override > 0 ? override : DELETE_ATTEMPT_TIMEOUT_MS;
 }
 
 // True while deleteUserAccountAndData() is running. Cloud sync and item writes
@@ -406,6 +395,54 @@ async function currentSessionUserId() {
 // Where supabase-js persists the session: sb-<project ref>-auth-token.
 function sessionStorageKey() {
     return `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+}
+
+// Who holds this device's session, read straight from storage. Safe to call
+// while holding the session lock (getSession() would take that lock again).
+function storedSessionUserId() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(sessionStorageKey()));
+        return stored && stored.user ? stored.user.id : null;
+    } catch (err) {
+        console.warn('Could not read the stored session:', err);
+        return null;
+    }
+}
+
+// Adopt whatever progress this device has stored (a replacement account's, or
+// nothing) so the deleted account's list does not linger in memory.
+function adoptStoredProgress() {
+    try {
+        completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
+    } catch (err) {
+        console.warn('Could not read stored progress:', err);
+        completedItems = {};
+    }
+}
+
+// Clear local progress after a deletion, unless another account has signed in
+// on this device meanwhile (another tab). The decision keys off the stored
+// session and runs under the same Web Lock supabase-js takes to write it, so
+// a replacement sign-in cannot slip in between the check and the clear; any
+// write a signed-in replacement makes therefore comes after a holder check
+// that already spares it, and guest writes were this device's to clear. Where
+// Web Locks do not exist the check is best effort.
+async function clearLocalProgressUnlessTakenOver(userId) {
+    const decide = () => {
+        const holder = storedSessionUserId();
+        if (holder !== null && holder !== userId) {
+            console.warn('Local progress now belongs to another account; leaving it in place.');
+            adoptStoredProgress();
+            return false;
+        }
+        completedItems = {};
+        saveState();
+        return true;
+    };
+    if (hasWebLocks()) {
+        return navigator.locks.request(`lock:${sessionStorageKey()}`, { mode: 'exclusive' }, async () => decide());
+    }
+    return decide();
 }
 
 // End the initiating session and nothing else. signOut() on the shared client
@@ -487,7 +524,13 @@ async function performAccountDeletion(userId, state) {
     let rpcError = null;
     let sawAmbiguous = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
-        ({ error: rpcError } = await asInitiator.rpc('delete_user'));
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), deleteAttemptTimeoutMs());
+        try {
+            ({ error: rpcError } = await asInitiator.rpc('delete_user').abortSignal(controller.signal));
+        } finally {
+            clearTimeout(timer);
+        }
         if (!rpcError || !isAmbiguousRpcError(rpcError)) break;
         sawAmbiguous = true;
         console.warn(`delete_user() attempt ${attempt} got no usable answer:`, rpcError.message);
@@ -518,25 +561,19 @@ async function performAccountDeletion(userId, state) {
     // is always a committed outcome.
     try {
         // Clear the local copy: leaving it would make syncCloudProgress()
-        // upload it all again on the next sign-in. But only while it is still
-        // the initiator's. Another account may have taken over this device
-        // meanwhile (another tab of theirs writes the same storage), and its
-        // local-only progress is not ours to wipe; adopt what that tab stored
-        // instead so the in-memory copy of the deleted list does not linger.
-        await withStateLock(() => {
-            const owner = localStorage.getItem(STATE_OWNER_KEY);
-            if (!owner || owner === userId) {
-                completedItems = {};
-                saveState();
-                localStorage.removeItem(STATE_OWNER_KEY);
-            } else {
-                console.warn('Local progress now belongs to another account; leaving it in place.');
-                completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
-            }
-        });
+        // upload it all again on the next sign-in. Unless another account has
+        // taken over this device meanwhile; see the helper.
+        await clearLocalProgressUnlessTakenOver(userId);
     } catch (err) {
         console.warn('Could not clear local progress after deletion:', err);
-        completedItems = {};
+        // Same decision without the lock: never replace a replacement
+        // account's progress with an empty list.
+        const holder = storedSessionUserId();
+        if (holder !== null && holder !== userId) {
+            adoptStoredProgress();
+        } else {
+            completedItems = {};
+        }
     }
 
     // End only the session that was just deleted. If another account signed in
