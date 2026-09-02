@@ -311,25 +311,38 @@ function isCompletedCollapsed(count) {
     return completedCollapsedPref === 'true';
 }
 
+const cardCache = new Map();
+
 function buildCard(item) {
     const isCompleted = !!completedItems[item.id];
+    let card = cardCache.get(item.id);
 
-    const card = document.createElement('div');
-    card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
-    card.dataset.id = item.id;
-
-    card.innerHTML = `
-        <div class="checkbox-container">
-            <div class="checkbox" data-id="${item.id}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    if (!card) {
+        card = document.createElement('div');
+        card.dataset.id = item.id;
+        card.innerHTML = `
+            <div class="checkbox-container">
+                <div class="checkbox" data-id="${item.id}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
             </div>
-        </div>
-        <div class="card-content">
-            <span class="card-category">${item.category[currentLang]}</span>
-            <h3 class="card-title">${item.title[currentLang]}</h3>
-            <p class="card-tip">${item.tip[currentLang]}</p>
-        </div>
-    `;
+            <div class="card-content">
+                <span class="card-category"></span>
+                <h3 class="card-title"></h3>
+                <p class="card-tip"></p>
+            </div>
+        `;
+        cardCache.set(item.id, card);
+    }
+
+    card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
+
+    if (card.dataset.lang !== currentLang) {
+        card.querySelector('.card-category').textContent = item.category[currentLang];
+        card.querySelector('.card-title').textContent = item.title[currentLang];
+        card.querySelector('.card-tip').textContent = item.tip[currentLang];
+        card.dataset.lang = currentLang;
+    }
 
     return card;
 }
