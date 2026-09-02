@@ -261,6 +261,7 @@ async function syncCloudProgress() {
                 };
             });
             saveState();
+            localStorage.setItem(STATE_OWNER_KEY, currentUser.id);
 
             const localEntries = Object.entries(completedItems);
             for (let [itemId, localData] of localEntries) {
@@ -294,6 +295,20 @@ function isMissingRpcError(error) {
     return error.code === '42883' && /\bdelete_user\b/.test(error.message || '');
 }
 
+// Errors that say nothing about whether the RPC ran: the request never got an
+// answer (postgrest-js reports those with an empty code) or a gateway answered
+// in the database's place (5xx). The function may well have committed.
+function isAmbiguousRpcError(error) {
+    if (!error) return false;
+    const code = error.code || '';
+    return code === '' || /^5\d\d$/.test(code);
+}
+
+// Set by syncCloudProgress(): whose account the local progress in this browser
+// was last merged with. Deletion clears local progress only while it is still
+// the initiator's; another tab of a different account may have taken over.
+const STATE_OWNER_KEY = 'moiCheckStateOwner';
+
 // True while deleteUserAccountAndData() is running. Cloud sync and item writes
 // must not start in that window: the auth listener calls onUserLoggedIn() for
 // every session-bearing event, TOKEN_REFRESHED included, and the sync that
@@ -326,7 +341,7 @@ async function deleteUserAccountAndData(expectedUserId) {
     }
 
     const initiatorId = currentUser.id;
-    const state = { committed: false };
+    const state = { committed: false, uncertain: false };
     deletionInProgress = true;
     try {
         return await performAccountDeletion(initiatorId, state);
@@ -336,8 +351,10 @@ async function deleteUserAccountAndData(expectedUserId) {
         // while we ran: another account that took over this device (another
         // tab), or the initiator itself when the deletion failed before the
         // RPC committed. Rerun the sign-in sync for them. Never for the
-        // initiator after a commit: that account no longer exists.
-        if (currentUser && (currentUser.id !== initiatorId || !state.committed)) {
+        // initiator after a commit (that account no longer exists), nor when
+        // we cannot tell (the message asks them to reload instead).
+        const initiatorMayRemain = !state.committed && !state.uncertain;
+        if (currentUser && (currentUser.id !== initiatorId || initiatorMayRemain)) {
             onUserLoggedIn();
         }
     }
@@ -437,8 +454,24 @@ async function performAccountDeletion(userId, state) {
     // no honest partial: rows deleted while the account and its other sessions
     // live on would be re-uploaded from any other device's local copy, so the
     // person is told deletion is not available here and nothing is touched.
-    const { error: rpcError } = await asInitiator.rpc('delete_user');
+    // A lost response is not a rollback: the function may have committed and
+    // only the answer gone missing. The call is idempotent (a second run
+    // finds nothing left to delete and succeeds), so retry a couple of times
+    // and only then give up as "unknown", never as "nothing happened".
+    let rpcError = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        ({ error: rpcError } = await asInitiator.rpc('delete_user'));
+        if (!rpcError || !isAmbiguousRpcError(rpcError)) break;
+        console.warn(`delete_user() attempt ${attempt} got no usable answer:`, rpcError.message);
+        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+    }
     if (rpcError) {
+        if (isAmbiguousRpcError(rpcError)) {
+            state.uncertain = true;
+            const uncertain = new Error('Lost the connection while deleting the account; outcome unknown');
+            uncertain.code = 'DELETE_UNCERTAIN';
+            throw uncertain;
+        }
         if (isMissingRpcError(rpcError)) {
             console.warn('delete_user() RPC is not configured; nothing deleted. See README.');
             const notConfigured = new Error('Account deletion is not configured on this project');
@@ -449,11 +482,21 @@ async function performAccountDeletion(userId, state) {
     }
     state.committed = true;
 
-    // Wipe the local copy before signing out: the SIGNED_OUT handler re-renders
-    // the list and should find it already empty. Leaving it would also make
-    // syncCloudProgress() upload it all again on the next sign-in.
-    completedItems = {};
-    saveState();
+    // Clear the local copy: leaving it would make syncCloudProgress() upload
+    // it all again on the next sign-in. But only while it is still the
+    // initiator's. Another account may have taken over this device meanwhile
+    // (another tab of theirs writes the same storage), and its local-only
+    // progress is not ours to wipe; adopt what that tab stored instead so the
+    // in-memory copy of the deleted account's list does not linger here.
+    const owner = localStorage.getItem(STATE_OWNER_KEY);
+    if (!owner || owner === userId) {
+        completedItems = {};
+        saveState();
+        localStorage.removeItem(STATE_OWNER_KEY);
+    } else {
+        console.warn('Local progress now belongs to another account; leaving it in place.');
+        completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
+    }
 
     // End only the session that was just deleted. If another account signed in
     // on this device meanwhile (another tab), its stored session is left in

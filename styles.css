@@ -845,6 +845,13 @@ textarea:focus {
     transform: none;
 }
 
+/* Cancel and Close are disabled while a deletion runs; show it. */
+.delete-modal-content .secondary-btn:disabled,
+.delete-modal-content .close-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .delete-modal-content h2 {
     color: var(--danger-color);
 }
@@ -1009,7 +1016,7 @@ textarea:focus {
 }
 
 .auth-error {
-    color: #dc2626;
+    color: var(--danger-color);
     font-size: 0.9rem;
     min-height: 1.2em;
     margin: 0 0 0.75rem;

@@ -907,8 +907,9 @@ function setupEventListeners() {
         } catch (err) {
             console.error('Account deletion failed:', err);
             setDeletionBusy(false);
-            deleteAccountError.textContent = err && err.code === 'DELETE_NOT_CONFIGURED'
-                ? t.deleteNotConfigured
+            const code = err && err.code;
+            deleteAccountError.textContent = code === 'DELETE_NOT_CONFIGURED' ? t.deleteNotConfigured
+                : code === 'DELETE_UNCERTAIN' ? t.deleteUncertain
                 : t.deleteError;
         } finally {
             confirmDeleteAccountBtn.textContent = UI_TRANSLATIONS[currentLang].confirmDelete;
