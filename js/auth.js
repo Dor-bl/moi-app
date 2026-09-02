@@ -332,18 +332,24 @@ function announceAccountDeleted(userId) {
     }
 }
 
-function handleAccountDeletedElsewhere(userId) {
+async function handleAccountDeletedElsewhere(userId) {
     if (!currentUser || currentUser.id !== userId) return;
     console.warn('This account was deleted from another tab; clearing the local copy here.');
     authGeneration++;
-    completedItems = {};
+    // Same decision as the deleting tab: another account may already hold
+    // this device (its session stored by a third tab), in which case stored
+    // progress is left alone and only this tab's memory is dropped.
     try {
-        saveState();
+        await clearLocalProgressUnlessTakenOver(userId);
     } catch (err) {
         console.warn('Could not clear stored progress:', err);
+        completedItems = {};
     }
-    currentUser = null;
-    onUserLoggedOut();
+    // Re-check after the await: this tab may itself have switched accounts.
+    if (currentUser && currentUser.id === userId) {
+        currentUser = null;
+        onUserLoggedOut();
+    }
 }
 
 function hasWebLocks() {
