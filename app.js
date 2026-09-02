@@ -800,16 +800,48 @@ function setupEventListeners() {
         profileModal.classList.remove('active');
     });
 
-    // Account deletion: confirmation modal on top of the profile modal.
+    // Account deletion: confirmation dialog on top of the profile modal. Focus
+    // moves into it on open, stays inside while it is open (Tab wraps, Escape
+    // closes) and returns to where it came from on close, so keyboard and
+    // screen-reader users cannot wander into the controls behind it.
+    let deleteModalReturnFocus = null;
+
     const closeDeleteAccountModal = () => {
         // Never dismiss while the request is in flight.
         if (confirmDeleteAccountBtn.disabled) return;
         deleteAccountModal.classList.remove('active');
+        if (deleteModalReturnFocus && typeof deleteModalReturnFocus.focus === 'function') {
+            deleteModalReturnFocus.focus();
+        }
+        deleteModalReturnFocus = null;
     };
 
     deleteAccountBtn.addEventListener('click', () => {
         deleteAccountError.textContent = '';
+        deleteModalReturnFocus = document.activeElement;
         deleteAccountModal.classList.add('active');
+        // Cancel is the safe place to land in a destructive dialog.
+        cancelDeleteAccountBtn.focus();
+    });
+
+    deleteAccountModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeDeleteAccountModal();
+            return;
+        }
+        if (e.key !== 'Tab') return;
+        const focusables = Array.from(deleteAccountModal.querySelectorAll('button:not([disabled])'));
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
     });
 
     cancelDeleteAccountBtn.addEventListener('click', closeDeleteAccountModal);
@@ -826,6 +858,9 @@ function setupEventListeners() {
         try {
             const { authDeleted } = await deleteUserAccountAndData();
             confirmDeleteAccountBtn.disabled = false;
+            // The trigger is hidden now that we are signed out; land on the
+            // profile button instead.
+            deleteModalReturnFocus = profileBtn;
             closeDeleteAccountModal();
             profileModal.classList.remove('active');
             // The SIGNED_OUT handler has already put the UI back into guest mode.

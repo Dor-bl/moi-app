@@ -18,6 +18,12 @@ if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PRO
 }
 let currentUser = null;
 
+// Bumped on every sign-in, sign-out and account deletion. Cloud sync waits on
+// the network, and whatever it fetched must not be applied once the account it
+// was fetched for is no longer the current one: a slow response could otherwise
+// repopulate local storage after a sign-out or deletion had cleared it.
+let authGeneration = 0;
+
 function updateAuthBtnState(isLoggedIn) {
     const t = UI_TRANSLATIONS[currentLang];
     const authBtn = document.getElementById('authBtn');
@@ -197,6 +203,7 @@ async function initAuth() {
 }
 
 async function onUserLoggedIn() {
+    authGeneration++;
     updateAuthBtnState(true);
     await syncCloudProgress();
     renderList();
@@ -204,6 +211,7 @@ async function onUserLoggedIn() {
 }
 
 function onUserLoggedOut() {
+    authGeneration++;
     updateAuthBtnState(false);
     renderList();
     updateProgress();
@@ -212,11 +220,18 @@ function onUserLoggedOut() {
 async function syncCloudProgress() {
     if (!supabaseClient || !currentUser) return;
 
+    const generation = authGeneration;
+    const stale = () => generation !== authGeneration;
+
     try {
         const { data, error } = await supabaseClient
             .from('user_progress')
             .select('*')
             .eq('user_id', currentUser.id);
+
+        // The account changed (sign-out, deletion, another sign-in) while the
+        // request was in flight: this data belongs to a session that is over.
+        if (stale()) return;
 
         if (error) {
             console.log('Cloud sync note:', error.message);
@@ -234,6 +249,7 @@ async function syncCloudProgress() {
 
             const localEntries = Object.entries(completedItems);
             for (let [itemId, localData] of localEntries) {
+                if (stale()) return;
                 const cloudMatch = data.find(d => d.item_id === itemId);
                 if (!cloudMatch) {
                     await supabaseClient.from('user_progress').upsert({
@@ -258,10 +274,11 @@ function isMissingRpcError(error) {
     return !!error && (error.code === 'PGRST202' || error.code === '42883');
 }
 
-// GDPR Art. 17: remove everything we hold for the signed-in person. Cloud rows
-// go first, then the auth record through the delete_user() RPC (README), then
-// the local copy, then the session. Throws on any failure before the local
-// wipe so the session stays intact and the person can simply try again.
+// GDPR Art. 17: remove everything we hold for the signed-in person. The
+// delete_user() RPC (README) removes the cloud rows and the auth record
+// together, then the local copy is cleared and the session ended. Throws on
+// any failure before anything local is touched, so the session stays intact
+// and the person can simply try again.
 // Resolves to { authDeleted } — false when the project has no delete_user()
 // function, in which case only the progress rows are gone.
 async function deleteUserAccountAndData() {
@@ -269,21 +286,28 @@ async function deleteUserAccountAndData() {
         throw new Error('Not signed in');
     }
 
-    // Progress rows first: auth.users cannot be deleted while user_progress
-    // still references it, and a project without the RPC still gets its
-    // data wiped this way. RLS lets a user delete only their own rows.
-    const { error: rowsError } = await supabaseClient
-        .from('user_progress')
-        .delete()
-        .eq('user_id', currentUser.id);
-    if (rowsError) throw rowsError;
+    const userId = currentUser.id;
 
+    // From here on nothing fetched for this account may land in local state: a
+    // cloud sync still waiting on the network would otherwise restore the list
+    // after the wipe below, or upsert rows behind the RPC's back.
+    authGeneration++;
+
+    // The RPC removes the progress rows and the auth record in one transaction,
+    // so either everything goes or nothing does. Only a project that has not
+    // created delete_user() yet falls back to deleting the rows directly (RLS
+    // scopes that to the caller's own rows); its auth record then stays.
     let authDeleted = true;
     const { error: rpcError } = await supabaseClient.rpc('delete_user');
     if (rpcError) {
         if (!isMissingRpcError(rpcError)) throw rpcError;
         authDeleted = false;
-        console.warn('delete_user() RPC is not configured; auth record left in place. See README.');
+        console.warn('delete_user() RPC is not configured; deleting progress rows only. See README.');
+        const { error: rowsError } = await supabaseClient
+            .from('user_progress')
+            .delete()
+            .eq('user_id', userId);
+        if (rowsError) throw rowsError;
     }
 
     // Wipe the local copy before signing out: the SIGNED_OUT handler re-renders

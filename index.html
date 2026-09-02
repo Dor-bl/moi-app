@@ -303,7 +303,7 @@
     <!-- Account deletion confirmation. Kept after the profile modal in the DOM
          so it stacks on top of it. -->
     <div class="modal-overlay" id="deleteAccountModal">
-        <div class="modal-content delete-modal-content">
+        <div class="modal-content delete-modal-content" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalWarning">
             <button class="close-btn" id="closeDeleteAccountModal">&times;</button>
             <h2 id="deleteModalTitle">Delete your account?</h2>
             <p id="deleteModalWarning" class="delete-warning">This permanently deletes your account and every completed item and note stored in the cloud. It cannot be undone.</p>

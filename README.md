@@ -142,8 +142,9 @@ grant execute on function delete_user() to authenticated;
 
 The function runs as its owner (`security definer`) but only ever deletes the caller's own
 rows, `set search_path = ''` stops it from being hijacked through a rogue schema, and the
-grants keep it callable by signed-in users only. It deletes the progress rows itself so the
-whole removal is one transaction and cannot leave a half-deleted account behind.
+grants keep it callable by signed-in users only. The app calls it before touching anything
+else, and it deletes the progress rows and the auth record together, so the whole removal is
+one transaction: either everything goes or nothing does.
 
 If your `user_progress` table predates the `on delete cascade` in the snippet above, add it now
 so nothing can ever block the auth delete:
@@ -154,10 +155,11 @@ alter table user_progress add constraint user_progress_user_id_fkey
   foreign key (user_id) references auth.users (id) on delete cascade;
 ```
 
-Until the function exists the app still works: it wipes the progress rows, signs the person
-out and tells them their sign-in record has to be removed by hand (delete the user under
-*Authentication -> Users*). Any other RPC error aborts the flow with the session intact so they
-can retry.
+Until the function exists the app still works: it deletes the progress rows directly (RLS
+scopes that to the caller's own rows), signs the person out and tells them their sign-in
+record has to be removed by hand (delete the user under *Authentication -> Users*). Any other
+RPC error aborts the flow before anything is deleted, with the session intact, so they can
+retry.
 
 ### Troubleshooting: magic links fail with a 500
 
