@@ -315,15 +315,47 @@ async function deleteUserAccountAndData() {
         throw new Error('Account deletion already in progress');
     }
 
+    const initiatorId = currentUser.id;
     deletionInProgress = true;
     try {
-        return await performAccountDeletion(currentUser.id);
+        return await performAccountDeletion(initiatorId);
     } finally {
         deletionInProgress = false;
+        // If another account took over this device while we ran (another
+        // tab), its sign-in sync was blocked by the flag; run it now.
+        if (currentUser && currentUser.id !== initiatorId) {
+            onUserLoggedIn();
+        }
     }
 }
 
+// Every destructive request below goes through a client pinned to the
+// initiating session's access token. The shared client reads its token from
+// storage at request time, and another tab signing in as someone else in the
+// meantime would swap it under us, so the RPC could delete the wrong account.
+function clientForSession(session) {
+    return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${session.access_token}` } },
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storageKey: 'moicheck-account-deletion'
+        }
+    });
+}
+
+async function currentSessionUserId() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    return session && session.user ? session.user.id : null;
+}
+
 async function performAccountDeletion(userId) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session || !session.user || session.user.id !== userId) {
+        throw new Error('Session changed before deletion started');
+    }
+    const asInitiator = clientForSession(session);
 
     // From here on nothing fetched for this account may land in local state: a
     // cloud sync still waiting on the network would otherwise restore the list
@@ -335,17 +367,24 @@ async function performAccountDeletion(userId) {
     // start meanwhile: deletionInProgress is already set.
     await Promise.allSettled([...pendingCloudWrites]);
 
+    // Last identity check before anything irreversible: if this device now
+    // holds a different account, the person who confirmed is no longer the
+    // one signed in here, so nothing is deleted.
+    if ((await currentSessionUserId()) !== userId) {
+        throw new Error('Session changed while waiting for pending writes');
+    }
+
     // The RPC removes the progress rows and the auth record in one transaction,
     // so either everything goes or nothing does. Only a project that has not
     // created delete_user() yet falls back to deleting the rows directly (RLS
     // scopes that to the caller's own rows); its auth record then stays.
     let authDeleted = true;
-    const { error: rpcError } = await supabaseClient.rpc('delete_user');
+    const { error: rpcError } = await asInitiator.rpc('delete_user');
     if (rpcError) {
         if (!isMissingRpcError(rpcError)) throw rpcError;
         authDeleted = false;
         console.warn('delete_user() RPC is not configured; deleting progress rows only. See README.');
-        const { error: rowsError } = await supabaseClient
+        const { error: rowsError } = await asInitiator
             .from('user_progress')
             .delete()
             .eq('user_id', userId);
@@ -357,6 +396,14 @@ async function performAccountDeletion(userId) {
     // syncCloudProgress() upload it all again on the next sign-in.
     completedItems = {};
     saveState();
+
+    // Only end the session that was just deleted. If another account signed in
+    // on this device meanwhile (another tab), that session is not ours to end;
+    // the caller re-runs its sign-in sync once the deletion flag clears.
+    if ((await currentSessionUserId()) !== userId) {
+        console.warn('Another account signed in during deletion; leaving its session in place.');
+        return { authDeleted, sessionChanged: true };
+    }
 
     // supabase-js still calls /auth/v1/logout here, and the server answers 403
     // because the user no longer exists. The browser logs that failed request
@@ -374,7 +421,7 @@ async function performAccountDeletion(userId) {
         clearLocalSession();
     }
 
-    return { authDeleted };
+    return { authDeleted, sessionChanged: false };
 }
 
 // Last resort when supabase-js could not sign out: remove its persisted session
