@@ -208,6 +208,7 @@ function updateLanguageUI() {
     document.getElementById('deleteModalWarning').textContent = t.deleteModalWarning;
     document.getElementById('deleteModalLocalNote').textContent = t.deleteModalLocalNote;
     cancelDeleteAccountBtn.textContent = t.cancel;
+    closeDeleteAccountModalBtn.setAttribute('aria-label', t.closeDialog);
     // Mid-deletion the button reads "Deleting…"; leave that alone.
     if (!confirmDeleteAccountBtn.disabled) {
         confirmDeleteAccountBtn.textContent = t.confirmDelete;
@@ -810,6 +811,8 @@ function setupEventListeners() {
         // Never dismiss while the request is in flight.
         if (confirmDeleteAccountBtn.disabled) return;
         deleteAccountModal.classList.remove('active');
+        // Closed means gone for keyboard and assistive tech, not just transparent.
+        deleteAccountModal.setAttribute('inert', '');
         if (deleteModalReturnFocus && typeof deleteModalReturnFocus.focus === 'function') {
             deleteModalReturnFocus.focus();
         }
@@ -819,12 +822,15 @@ function setupEventListeners() {
     deleteAccountBtn.addEventListener('click', () => {
         deleteAccountError.textContent = '';
         deleteModalReturnFocus = document.activeElement;
+        // Lift inert before focusing: an inert subtree cannot take focus.
+        deleteAccountModal.removeAttribute('inert');
         deleteAccountModal.classList.add('active');
         // Cancel is the safe place to land in a destructive dialog.
         cancelDeleteAccountBtn.focus();
     });
 
     deleteAccountModal.addEventListener('keydown', (e) => {
+        if (!deleteAccountModal.classList.contains('active')) return;
         if (e.key === 'Escape') {
             e.preventDefault();
             closeDeleteAccountModal();

@@ -301,10 +301,11 @@
     </div>
 
     <!-- Account deletion confirmation. Kept after the profile modal in the DOM
-         so it stacks on top of it. -->
-    <div class="modal-overlay" id="deleteAccountModal">
+         so it stacks on top of it. `inert` keeps the closed dialog out of the
+         accessibility tree and the tab order; app.js lifts it only while open. -->
+    <div class="modal-overlay" id="deleteAccountModal" inert>
         <div class="modal-content delete-modal-content" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalWarning">
-            <button class="close-btn" id="closeDeleteAccountModal">&times;</button>
+            <button class="close-btn" id="closeDeleteAccountModal" aria-label="Close">&times;</button>
             <h2 id="deleteModalTitle">Delete your account?</h2>
             <p id="deleteModalWarning" class="delete-warning">This permanently deletes your account and every completed item and note stored in the cloud. It cannot be undone.</p>
             <p id="deleteModalLocalNote" class="privacy-note" style="margin-bottom: 1.25rem;">Progress saved in this browser is cleared as well. Copies on other devices stay there until you clear that browser's site data.</p>

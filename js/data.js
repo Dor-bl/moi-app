@@ -396,6 +396,7 @@ const UI_TRANSLATIONS = {
         cancel: 'Cancel',
         confirmDelete: 'Yes, delete everything',
         deleting: 'Deleting…',
+        closeDialog: 'Close',
         deleteSuccess: 'Your account and data have been deleted. Moi, and thanks for using MoiCheck!',
         deleteDataSuccess: 'Your progress and notes have been deleted and you are signed out. Your sign-in record could not be removed automatically — email us (see the Privacy Policy) and we will finish the removal.',
         deleteError: 'We could not complete the deletion. Your account is still active. Please try again, or email us via the Privacy Policy page.'
@@ -479,6 +480,7 @@ const UI_TRANSLATIONS = {
         cancel: 'Annuleren',
         confirmDelete: 'Ja, verwijder alles',
         deleting: 'Verwijderen…',
+        closeDialog: 'Sluiten',
         deleteSuccess: 'Je account en gegevens zijn verwijderd. Moi, en bedankt voor het gebruiken van MoiCheck!',
         deleteDataSuccess: 'Je voortgang en notities zijn verwijderd en je bent uitgelogd. Je inloggegevens konden niet automatisch worden verwijderd — mail ons (zie het privacybeleid) en wij ronden de verwijdering af.',
         deleteError: 'De verwijdering kon niet worden afgerond. Je account is nog actief. Probeer het opnieuw of mail ons via de privacybeleid-pagina.'

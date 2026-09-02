@@ -24,6 +24,20 @@ let currentUser = null;
 // repopulate local storage after a sign-out or deletion had cleared it.
 let authGeneration = 0;
 
+// Cloud writes that have left the browser but not yet completed. Account
+// deletion waits for these: an upsert landing after the fallback row delete
+// would quietly recreate the row, and one landing inside the RPC's transaction
+// would make the auth delete fail on the foreign key.
+const pendingCloudWrites = new Set();
+
+function trackCloudWrite(request) {
+    const promise = Promise.resolve(request);
+    pendingCloudWrites.add(promise);
+    const done = () => pendingCloudWrites.delete(promise);
+    promise.then(done, done);
+    return promise;
+}
+
 function updateAuthBtnState(isLoggedIn) {
     const t = UI_TRANSLATIONS[currentLang];
     const authBtn = document.getElementById('authBtn');
@@ -252,12 +266,12 @@ async function syncCloudProgress() {
                 if (stale()) return;
                 const cloudMatch = data.find(d => d.item_id === itemId);
                 if (!cloudMatch) {
-                    await supabaseClient.from('user_progress').upsert({
+                    await trackCloudWrite(supabaseClient.from('user_progress').upsert({
                         user_id: currentUser.id,
                         item_id: itemId,
                         note: localData.note || '',
                         date: localData.date || new Date().toISOString()
-                    });
+                    }));
                 }
             }
         }
@@ -290,8 +304,12 @@ async function deleteUserAccountAndData() {
 
     // From here on nothing fetched for this account may land in local state: a
     // cloud sync still waiting on the network would otherwise restore the list
-    // after the wipe below, or upsert rows behind the RPC's back.
+    // after the wipe below, or start new upserts behind the RPC's back.
     authGeneration++;
+
+    // Writes already on the wire cannot be cancelled, so let them finish
+    // before anything is deleted (see pendingCloudWrites).
+    await Promise.allSettled([...pendingCloudWrites]);
 
     // The RPC removes the progress rows and the auth record in one transaction,
     // so either everything goes or nothing does. Only a project that has not
@@ -324,10 +342,31 @@ async function deleteUserAccountAndData() {
     // avoids asking the server to revoke other sessions that are already gone.
     const { error: signOutError } = await supabaseClient.auth.signOut({ scope: 'local' });
     if (signOutError) {
-        console.warn('Sign-out after account deletion reported:', signOutError.message);
+        // Anything other than the 401/403/404 the library swallows (a network
+        // error, say) leaves the session in storage and currentUser set while
+        // the account is already gone. Drop the session ourselves rather than
+        // report success with the UI still signed in.
+        console.warn('Sign-out after account deletion failed; clearing the stored session directly:', signOutError.message);
+        clearLocalSession();
     }
 
     return { authDeleted };
+}
+
+// Last resort when supabase-js could not sign out: remove its persisted session
+// (stored under sb-<project-ref>-auth-token) and put the UI into guest mode.
+function clearLocalSession() {
+    try {
+        Object.keys(localStorage)
+            .filter(key => key.startsWith('sb-') && key.endsWith('-auth-token'))
+            .forEach(key => localStorage.removeItem(key));
+    } catch (err) {
+        console.warn('Could not clear the stored session:', err);
+    }
+    if (currentUser) {
+        currentUser = null;
+        onUserLoggedOut();
+    }
 }
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {
@@ -338,17 +377,17 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
             // Keep the original completion date: this also runs when only the note
             // is edited, and a fresh timestamp would overwrite it in the cloud.
             const existing = completedItems[itemId];
-            await supabaseClient.from('user_progress').upsert({
+            await trackCloudWrite(supabaseClient.from('user_progress').upsert({
                 user_id: currentUser.id,
                 item_id: itemId,
                 note: note,
                 date: (existing && existing.date) || new Date().toISOString()
-            });
+            }));
         } else {
-            await supabaseClient.from('user_progress')
+            await trackCloudWrite(supabaseClient.from('user_progress')
                 .delete()
                 .eq('user_id', currentUser.id)
-                .eq('item_id', itemId);
+                .eq('item_id', itemId));
         }
     } catch (err) {
         console.log('Cloud update note:', err);
