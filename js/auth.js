@@ -292,9 +292,12 @@ async function deleteUserAccountAndData() {
     completedItems = {};
     saveState();
 
-    // Local scope only. The access token now belongs to a user that no longer
-    // exists, so the server-side logout call could only fail; supabase-js
-    // still fires SIGNED_OUT, which puts the UI back into guest mode.
+    // supabase-js still calls /auth/v1/logout here, and the server answers 403
+    // because the user no longer exists. The browser logs that failed request
+    // in the console; nothing else is wrong. The library treats 401/403/404 on
+    // logout as "already signed out", clears the local session and fires
+    // SIGNED_OUT, which puts the UI back into guest mode. Local scope just
+    // avoids asking the server to revoke other sessions that are already gone.
     const { error: signOutError } = await supabaseClient.auth.signOut({ scope: 'local' });
     if (signOutError) {
         console.warn('Sign-out after account deletion reported:', signOutError.message);
