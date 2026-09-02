@@ -232,10 +232,10 @@ function onUserLoggedOut() {
 }
 
 async function syncCloudProgress() {
-    if (!supabaseClient || !currentUser) return;
+    if (!supabaseClient || !currentUser || deletionInProgress) return;
 
     const generation = authGeneration;
-    const stale = () => generation !== authGeneration;
+    const stale = () => generation !== authGeneration || deletionInProgress;
 
     try {
         const { data, error } = await supabaseClient
@@ -280,13 +280,25 @@ async function syncCloudProgress() {
     }
 }
 
-// PostgREST answers a call to a function that does not exist with PGRST202;
-// Postgres itself says 42883 (undefined_function). Either means the project
-// has not run the delete_user() snippet from the README yet, which is a
-// different situation from the function existing and failing.
+// "The project has not run the delete_user() snippet from the README yet" is a
+// different situation from the function existing and failing, and only the
+// former may fall back to deleting rows directly. PostgREST reports a function
+// missing from its schema cache as PGRST202. Postgres reports 42883
+// (undefined_function) too, but it raises the same code from inside a function
+// body when *that* calls something undefined (a trigger, say), so 42883 only
+// counts when the message names delete_user itself.
 function isMissingRpcError(error) {
-    return !!error && (error.code === 'PGRST202' || error.code === '42883');
+    if (!error) return false;
+    if (error.code === 'PGRST202') return true;
+    return error.code === '42883' && /\bdelete_user\b/.test(error.message || '');
 }
+
+// True while deleteUserAccountAndData() is running. Cloud sync and item writes
+// must not start in that window: the auth listener calls onUserLoggedIn() for
+// every session-bearing event, TOKEN_REFRESHED included, and the sync that
+// would start there could race the RPC or recreate rows after the fallback
+// delete.
+let deletionInProgress = false;
 
 // GDPR Art. 17: remove everything we hold for the signed-in person. The
 // delete_user() RPC (README) removes the cloud rows and the auth record
@@ -299,8 +311,19 @@ async function deleteUserAccountAndData() {
     if (!supabaseClient || !currentUser) {
         throw new Error('Not signed in');
     }
+    if (deletionInProgress) {
+        throw new Error('Account deletion already in progress');
+    }
 
-    const userId = currentUser.id;
+    deletionInProgress = true;
+    try {
+        return await performAccountDeletion(currentUser.id);
+    } finally {
+        deletionInProgress = false;
+    }
+}
+
+async function performAccountDeletion(userId) {
 
     // From here on nothing fetched for this account may land in local state: a
     // cloud sync still waiting on the network would otherwise restore the list
@@ -308,7 +331,8 @@ async function deleteUserAccountAndData() {
     authGeneration++;
 
     // Writes already on the wire cannot be cancelled, so let them finish
-    // before anything is deleted (see pendingCloudWrites).
+    // before anything is deleted (see pendingCloudWrites). No new ones can
+    // start meanwhile: deletionInProgress is already set.
     await Promise.allSettled([...pendingCloudWrites]);
 
     // The RPC removes the progress rows and the auth record in one transaction,
@@ -370,7 +394,7 @@ function clearLocalSession() {
 }
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {
-    if (!supabaseClient || !currentUser) return;
+    if (!supabaseClient || !currentUser || deletionInProgress) return;
 
     try {
         if (isCompleted) {
