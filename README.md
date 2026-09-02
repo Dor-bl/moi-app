@@ -105,7 +105,7 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
    ```
 3. Copy your project **URL** and **anon Key** from `Project Settings -> API`.
 4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`.
-5. Under **Authentication -> URL Configuration**, add your deployed origin (e.g. `https://moi-app-six.vercel.app`) to **Site URL** and **Redirect URLs**. The app passes `window.location.origin` as the redirect target, so an origin that is not listed will bounce users back without a session.
+5. Under **Authentication -> URL Configuration**, set **Site URL** to your production origin (`https://moicheck.nl`) and add it to **Redirect URLs** as well. Add any other origin you sign in from too, such as a Vercel preview URL or `http://localhost:8000`. The app passes `window.location.origin` as the redirect target, so an origin that is not listed will bounce users back without a session.
 6. Set up **custom SMTP** before letting anyone else sign in — see the troubleshooting note below.
 
 ### Troubleshooting: magic links fail with a 500
