@@ -30,6 +30,7 @@ export default [
         syncCloudProgress: "readonly",
         syncItemToCloud: "readonly",
         describeMagicLinkError: "readonly",
+        deleteUserAccountAndData: "readonly",
         getMilestoneObj: "readonly",
         showBadgeToast: "readonly",
         saveState: "readonly",

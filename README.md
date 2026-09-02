@@ -90,7 +90,7 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 2. In your Supabase SQL Editor, run this snippet to create the `user_progress` table:
    ```sql
    create table user_progress (
-     user_id uuid references auth.users not null,
+     user_id uuid references auth.users on delete cascade not null,
      item_id text not null,
      note text,
      date timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -112,6 +112,52 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
    {{ .SiteURL }}/?token_hash={{ .TokenHash }}&amp;type=email
    ```
    (`&amp;` rather than `&` because the template is HTML; browsers decode it when the link is clicked.) Mail scanners (Outlook, Office 365, most corporate filters) prefetch every link in a message. With the default link that first fetch hits Supabase's verify endpoint and uses up the one-time token, so the person taps a dead link seconds later. With this link the page loads and shows a *Finish Signing In* button; nothing is verified until they tap it. Then search the whole template for `ConfirmationURL` — it must appear **nowhere**, including as the visible text of a "copy and paste this link" line. Scanners read URLs out of plain text just as readily as out of `href`, so one leftover mention burns the token and the new link arrives dead. Until you change the templates the old flow keeps working — the app handles both.
+
+### Account deletion (GDPR right to erasure)
+
+Signed-in users can delete their account from the profile modal (*Delete my account & data*).
+The app deletes their `user_progress` rows itself, but the anon key cannot touch `auth.users`,
+so the auth record is removed through a `delete_user()` database function. Run this in the
+SQL Editor once:
+
+```sql
+create or replace function delete_user()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated';
+  end if;
+  delete from public.user_progress where user_id = auth.uid();
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke execute on function delete_user() from public, anon;
+grant execute on function delete_user() to authenticated;
+```
+
+The function runs as its owner (`security definer`) but only ever deletes the caller's own
+rows, `set search_path = ''` stops it from being hijacked through a rogue schema, and the
+grants keep it callable by signed-in users only. It deletes the progress rows itself so the
+whole removal is one transaction and cannot leave a half-deleted account behind.
+
+If your `user_progress` table predates the `on delete cascade` in the snippet above, add it now
+so nothing can ever block the auth delete:
+
+```sql
+alter table user_progress drop constraint user_progress_user_id_fkey;
+alter table user_progress add constraint user_progress_user_id_fkey
+  foreign key (user_id) references auth.users (id) on delete cascade;
+```
+
+Until the function exists the app still works: it wipes the progress rows, signs the person
+out and tells them their sign-in record has to be removed by hand (delete the user under
+*Authentication -> Users*). Any other RPC error aborts the flow with the session intact so they
+can retry.
 
 ### Troubleshooting: magic links fail with a 500
 

@@ -88,6 +88,14 @@ const authActions = document.getElementById('authActions');
 const settingsModal = document.getElementById('settingsModal');
 const settingsBtn = document.getElementById('settingsBtn');
 const closeSettingsModalBtn = document.getElementById('closeSettingsModal');
+
+// Account deletion elements
+const deleteAccountModal = document.getElementById('deleteAccountModal');
+const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const confirmDeleteAccountBtn = document.getElementById('confirmDeleteAccountBtn');
+const cancelDeleteAccountBtn = document.getElementById('cancelDeleteAccountBtn');
+const closeDeleteAccountModalBtn = document.getElementById('closeDeleteAccountModal');
+const deleteAccountError = document.getElementById('deleteAccountError');
 const themeOptionBtns = document.querySelectorAll('.theme-option-btn');
 
 function init() {
@@ -191,6 +199,19 @@ function updateLanguageUI() {
 
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
+
+    // Account deletion (profile modal section + confirmation modal)
+    document.getElementById('txtAccountHeader').textContent = t.accountHeader;
+    document.getElementById('txtDeleteAccountNotice').textContent = t.deleteAccountNotice;
+    deleteAccountBtn.textContent = t.deleteAccountBtn;
+    document.getElementById('deleteModalTitle').textContent = t.deleteModalTitle;
+    document.getElementById('deleteModalWarning').textContent = t.deleteModalWarning;
+    document.getElementById('deleteModalLocalNote').textContent = t.deleteModalLocalNote;
+    cancelDeleteAccountBtn.textContent = t.cancel;
+    // Mid-deletion the button reads "Deleting…"; leave that alone.
+    if (!confirmDeleteAccountBtn.disabled) {
+        confirmDeleteAccountBtn.textContent = t.confirmDelete;
+    }
 
     // Auth modal & header translations
     document.getElementById('authModalTitle').textContent = t.authTitle;
@@ -778,6 +799,45 @@ function setupEventListeners() {
     closeProfileModalBtn.addEventListener('click', () => {
         profileModal.classList.remove('active');
     });
+
+    // Account deletion: confirmation modal on top of the profile modal.
+    const closeDeleteAccountModal = () => {
+        // Never dismiss while the request is in flight.
+        if (confirmDeleteAccountBtn.disabled) return;
+        deleteAccountModal.classList.remove('active');
+    };
+
+    deleteAccountBtn.addEventListener('click', () => {
+        deleteAccountError.textContent = '';
+        deleteAccountModal.classList.add('active');
+    });
+
+    cancelDeleteAccountBtn.addEventListener('click', closeDeleteAccountModal);
+    closeDeleteAccountModalBtn.addEventListener('click', closeDeleteAccountModal);
+
+    confirmDeleteAccountBtn.addEventListener('click', async () => {
+        if (confirmDeleteAccountBtn.disabled) return;
+        const t = UI_TRANSLATIONS[currentLang];
+
+        confirmDeleteAccountBtn.disabled = true;
+        confirmDeleteAccountBtn.textContent = t.deleting;
+        deleteAccountError.textContent = '';
+
+        try {
+            const { authDeleted } = await deleteUserAccountAndData();
+            confirmDeleteAccountBtn.disabled = false;
+            closeDeleteAccountModal();
+            profileModal.classList.remove('active');
+            // The SIGNED_OUT handler has already put the UI back into guest mode.
+            alert(authDeleted ? t.deleteSuccess : t.deleteDataSuccess);
+        } catch (err) {
+            console.error('Account deletion failed:', err);
+            confirmDeleteAccountBtn.disabled = false;
+            deleteAccountError.textContent = t.deleteError;
+        } finally {
+            confirmDeleteAccountBtn.textContent = UI_TRANSLATIONS[currentLang].confirmDelete;
+        }
+    });
     
     profileBtn.addEventListener('click', openProfileModal);
 
@@ -843,11 +903,13 @@ function setupEventListeners() {
         }
     });
     
-    [detailModal, profileModal, contactModal, authModal, settingsModal].forEach(modal => {
+    [detailModal, profileModal, contactModal, authModal, settingsModal, deleteAccountModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target !== modal) return;
             if (modal === detailModal) {
                 closeDetailModal();
+            } else if (modal === deleteAccountModal) {
+                closeDeleteAccountModal();
             } else {
                 modal.classList.remove('active');
             }

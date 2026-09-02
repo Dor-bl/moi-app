@@ -1,4 +1,4 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, deleteUserAccountAndData
 // Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
@@ -23,8 +23,14 @@ function updateAuthBtnState(isLoggedIn) {
     const authBtn = document.getElementById('authBtn');
     const userAccountBadge = document.getElementById('userAccountBadge');
     const userAccountEmail = document.getElementById('userAccountEmail');
+    const accountDangerZone = document.getElementById('accountDangerZone');
 
     if (!authBtn) return;
+
+    // The delete-account section only makes sense with a cloud account to delete.
+    if (accountDangerZone) {
+        accountDangerZone.style.display = (isLoggedIn && currentUser) ? 'block' : 'none';
+    }
 
     if (isLoggedIn && currentUser) {
         const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : 'User';
@@ -242,6 +248,59 @@ async function syncCloudProgress() {
     } catch (err) {
         console.log('Sync note:', err);
     }
+}
+
+// PostgREST answers a call to a function that does not exist with PGRST202;
+// Postgres itself says 42883 (undefined_function). Either means the project
+// has not run the delete_user() snippet from the README yet, which is a
+// different situation from the function existing and failing.
+function isMissingRpcError(error) {
+    return !!error && (error.code === 'PGRST202' || error.code === '42883');
+}
+
+// GDPR Art. 17: remove everything we hold for the signed-in person. Cloud rows
+// go first, then the auth record through the delete_user() RPC (README), then
+// the local copy, then the session. Throws on any failure before the local
+// wipe so the session stays intact and the person can simply try again.
+// Resolves to { authDeleted } — false when the project has no delete_user()
+// function, in which case only the progress rows are gone.
+async function deleteUserAccountAndData() {
+    if (!supabaseClient || !currentUser) {
+        throw new Error('Not signed in');
+    }
+
+    // Progress rows first: auth.users cannot be deleted while user_progress
+    // still references it, and a project without the RPC still gets its
+    // data wiped this way. RLS lets a user delete only their own rows.
+    const { error: rowsError } = await supabaseClient
+        .from('user_progress')
+        .delete()
+        .eq('user_id', currentUser.id);
+    if (rowsError) throw rowsError;
+
+    let authDeleted = true;
+    const { error: rpcError } = await supabaseClient.rpc('delete_user');
+    if (rpcError) {
+        if (!isMissingRpcError(rpcError)) throw rpcError;
+        authDeleted = false;
+        console.warn('delete_user() RPC is not configured; auth record left in place. See README.');
+    }
+
+    // Wipe the local copy before signing out: the SIGNED_OUT handler re-renders
+    // the list and should find it already empty. Leaving it would also make
+    // syncCloudProgress() upload it all again on the next sign-in.
+    completedItems = {};
+    saveState();
+
+    // Local scope only. The access token now belongs to a user that no longer
+    // exists, so the server-side logout call could only fail; supabase-js
+    // still fires SIGNED_OUT, which puts the UI back into guest mode.
+    const { error: signOutError } = await supabaseClient.auth.signOut({ scope: 'local' });
+    if (signOutError) {
+        console.warn('Sign-out after account deletion reported:', signOutError.message);
+    }
+
+    return { authDeleted };
 }
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {
