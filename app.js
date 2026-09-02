@@ -13,14 +13,28 @@ let listNeedsResort = false;
 let leafletMap = null;
 let markersGroup = null;
 
-// ⚡ Bolt Performance Optimization:
-// Pre-compute items by category to replace O(N) filtering with O(1) map lookups during render cycles.
+// BUCKET_LIST is static, so it is indexed once at load and the lookups below read
+// from these maps. Each category's array keeps BUCKET_LIST order, which renderList's
+// todo/done partition relies on.
 const itemsByCategory = BUCKET_LIST.reduce((acc, item) => {
     const cat = item.category.en;
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
     return acc;
 }, {});
+
+// Lookup by id. Null-prototype: ids reaching this map come from persisted state
+// (localStorage and the cloud sync), so a stale key like "constructor" must miss
+// rather than inherit.
+const itemsById = BUCKET_LIST.reduce((acc, item) => {
+    acc[item.id] = item;
+    return acc;
+}, Object.create(null));
+
+// The list, the map pins and the filter pills all narrow to the same set.
+function getFilteredItems(filter) {
+    return filter === 'All' ? BUCKET_LIST : (itemsByCategory[filter] || []);
+}
 
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
@@ -102,7 +116,7 @@ function renderFilterPills() {
         const label = categoryKeys[cat];
         if (!label) return;
 
-        const items = cat === 'All' ? BUCKET_LIST : (itemsByCategory[cat] || []);
+        const items = getFilteredItems(cat);
         const remaining = items.filter(i => !completedItems[i.id]).length;
 
         pill.innerHTML = '';
@@ -206,7 +220,7 @@ function setLanguage(lang) {
     
     if (detailModal.classList.contains('active') && selectedItemId) {
         persistOpenNote();
-        const item = BUCKET_LIST.find(i => i.id === selectedItemId);
+        const item = itemsById[selectedItemId];
         if (item) openDetailModal(item);
     }
 }
@@ -257,9 +271,7 @@ function renderMapMarkers() {
     markersGroup.clearLayers();
 
     const t = UI_TRANSLATIONS[currentLang];
-    const filteredList = currentFilter === 'All' 
-        ? BUCKET_LIST 
-        : (itemsByCategory[currentFilter] || []);
+    const filteredList = getFilteredItems(currentFilter);
 
     filteredList.forEach(item => {
         const isCompleted = !!completedItems[item.id];
@@ -350,9 +362,7 @@ function buildCompletedDivider(count, collapsed) {
 function renderList() {
     listContainer.innerHTML = '';
     
-    const filteredList = currentFilter === 'All' 
-        ? BUCKET_LIST 
-        : (itemsByCategory[currentFilter] || []);
+    const filteredList = getFilteredItems(currentFilter);
 
     // Completed items sink below a divider, keeping what is left to do at the top.
     // Both partitions keep the original BUCKET_LIST order.
@@ -453,7 +463,7 @@ function toggleComplete(id, event = null) {
 
 function checkBadgeUnlocks(itemId, wasCompleted) {
     if (wasCompleted) return;
-    const item = BUCKET_LIST.find(i => i.id === itemId);
+    const item = itemsById[itemId];
     if (!item) return;
 
     const categoryName = item.category.en;
@@ -575,7 +585,7 @@ function openProfileModal() {
     renderBadges();
     
     const completedArr = Object.entries(completedItems).map(([id, data]) => {
-        const item = BUCKET_LIST.find(i => i.id === id);
+        const item = itemsById[id];
         return item ? { ...item, ...data } : null;
     }).filter(Boolean).sort((a, b) => memoryTimestamp(b.date) - memoryTimestamp(a.date));
     
@@ -627,7 +637,7 @@ function setupEventListeners() {
             return;
         }
 
-        const item = BUCKET_LIST.find(i => i.id === id);
+        const item = itemsById[id];
         if (item) {
             openDetailModal(item);
         }
