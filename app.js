@@ -210,7 +210,7 @@ function updateLanguageUI() {
     cancelDeleteAccountBtn.textContent = t.cancel;
     closeDeleteAccountModalBtn.setAttribute('aria-label', t.closeDialog);
     // Mid-deletion the button reads "Deleting…"; leave that alone.
-    if (!confirmDeleteAccountBtn.disabled) {
+    if (confirmDeleteAccountBtn.getAttribute('aria-disabled') !== 'true') {
         confirmDeleteAccountBtn.textContent = t.confirmDelete;
     }
 
@@ -806,10 +806,23 @@ function setupEventListeners() {
     // closes) and returns to where it came from on close, so keyboard and
     // screen-reader users cannot wander into the controls behind it.
     let deleteModalReturnFocus = null;
+    // The account the confirmation was opened for. Another tab can switch
+    // accounts while the dialog sits open; the confirm must then not run.
+    let deleteModalUserId = null;
+    // Set while the request is in flight. Confirm stays focusable (aria-disabled
+    // rather than disabled) so focus does not fall out of the dialog.
+    let deletionBusy = false;
+
+    const setDeletionBusy = (busy) => {
+        deletionBusy = busy;
+        confirmDeleteAccountBtn.setAttribute('aria-disabled', busy ? 'true' : 'false');
+        confirmDeleteAccountBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+    };
 
     const closeDeleteAccountModal = () => {
         // Never dismiss while the request is in flight.
-        if (confirmDeleteAccountBtn.disabled) return;
+        if (deletionBusy) return;
+        deleteModalUserId = null;
         deleteAccountModal.classList.remove('active');
         // Closed means gone for keyboard and assistive tech, not just transparent.
         deleteAccountModal.setAttribute('inert', '');
@@ -820,7 +833,9 @@ function setupEventListeners() {
     };
 
     deleteAccountBtn.addEventListener('click', () => {
+        if (!currentUser) return;
         deleteAccountError.textContent = '';
+        deleteModalUserId = currentUser.id;
         deleteModalReturnFocus = document.activeElement;
         // Lift inert before focusing: an inert subtree cannot take focus.
         deleteAccountModal.removeAttribute('inert');
@@ -854,27 +869,39 @@ function setupEventListeners() {
     closeDeleteAccountModalBtn.addEventListener('click', closeDeleteAccountModal);
 
     confirmDeleteAccountBtn.addEventListener('click', async () => {
-        if (confirmDeleteAccountBtn.disabled) return;
+        if (deletionBusy) return;
         const t = UI_TRANSLATIONS[currentLang];
 
-        confirmDeleteAccountBtn.disabled = true;
+        // Stale confirmation: the account this dialog was opened for is no
+        // longer the one signed in here. Close it rather than delete whoever
+        // is signed in now.
+        if (!currentUser || currentUser.id !== deleteModalUserId) {
+            closeDeleteAccountModal();
+            profileModal.classList.remove('active');
+            return;
+        }
+        const targetUserId = deleteModalUserId;
+
+        setDeletionBusy(true);
         confirmDeleteAccountBtn.textContent = t.deleting;
         deleteAccountError.textContent = '';
 
         try {
-            const { authDeleted } = await deleteUserAccountAndData();
-            confirmDeleteAccountBtn.disabled = false;
+            await deleteUserAccountAndData(targetUserId);
+            setDeletionBusy(false);
             // The trigger is hidden now that we are signed out; land on the
             // profile button instead.
             deleteModalReturnFocus = profileBtn;
             closeDeleteAccountModal();
             profileModal.classList.remove('active');
-            // The SIGNED_OUT handler has already put the UI back into guest mode.
-            alert(authDeleted ? t.deleteSuccess : t.deleteDataSuccess);
+            // The UI is already back in guest mode.
+            alert(t.deleteSuccess);
         } catch (err) {
             console.error('Account deletion failed:', err);
-            confirmDeleteAccountBtn.disabled = false;
-            deleteAccountError.textContent = t.deleteError;
+            setDeletionBusy(false);
+            deleteAccountError.textContent = err && err.code === 'DELETE_NOT_CONFIGURED'
+                ? t.deleteNotConfigured
+                : t.deleteError;
         } finally {
             confirmDeleteAccountBtn.textContent = UI_TRANSLATIONS[currentLang].confirmDelete;
         }

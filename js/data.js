@@ -398,7 +398,7 @@ const UI_TRANSLATIONS = {
         deleting: 'Deleting…',
         closeDialog: 'Close',
         deleteSuccess: 'Your account and data have been deleted. Moi, and thanks for using MoiCheck!',
-        deleteDataSuccess: 'Your progress and notes have been deleted and you are signed out. Your sign-in record could not be removed automatically — email us (see the Privacy Policy) and we will finish the removal.',
+        deleteNotConfigured: 'Account deletion is not available on this deployment yet, so nothing was removed. Email us via the Privacy Policy page and we will delete your account by hand.',
         deleteError: 'We could not complete the deletion. Your account is still active. Please try again, or email us via the Privacy Policy page.'
     },
     nl: {
@@ -482,7 +482,7 @@ const UI_TRANSLATIONS = {
         deleting: 'Verwijderen…',
         closeDialog: 'Sluiten',
         deleteSuccess: 'Je account en gegevens zijn verwijderd. Moi, en bedankt voor het gebruiken van MoiCheck!',
-        deleteDataSuccess: 'Je voortgang en notities zijn verwijderd en je bent uitgelogd. Je inloggegevens konden niet automatisch worden verwijderd — mail ons (zie het privacybeleid) en wij ronden de verwijdering af.',
+        deleteNotConfigured: 'Accountverwijdering is op deze installatie nog niet beschikbaar, er is dus niets verwijderd. Mail ons via de privacybeleid-pagina en wij verwijderen je account handmatig.',
         deleteError: 'De verwijdering kon niet worden afgerond. Je account is nog actief. Probeer het opnieuw of mail ons via de privacybeleid-pagina.'
     }
 };

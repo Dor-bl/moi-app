@@ -839,7 +839,7 @@ textarea:focus {
     color: white;
 }
 
-.danger-btn:disabled {
+.danger-btn[aria-disabled="true"] {
     opacity: 0.6;
     cursor: wait;
     transform: none;

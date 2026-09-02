@@ -281,9 +281,9 @@ async function syncCloudProgress() {
 }
 
 // "The project has not run the delete_user() snippet from the README yet" is a
-// different situation from the function existing and failing, and only the
-// former may fall back to deleting rows directly. PostgREST reports a function
-// missing from its schema cache as PGRST202. Postgres reports 42883
+// different situation from the function existing and failing: the former gets
+// a "not available here" message, the latter a "try again". PostgREST reports
+// a function missing from its schema cache as PGRST202. Postgres reports 42883
 // (undefined_function) too, but it raises the same code from inside a function
 // body when *that* calls something undefined (a trigger, say), so 42883 only
 // counts when the message names delete_user itself.
@@ -302,14 +302,23 @@ let deletionInProgress = false;
 
 // GDPR Art. 17: remove everything we hold for the signed-in person. The
 // delete_user() RPC (README) removes the cloud rows and the auth record
-// together, then the local copy is cleared and the session ended. Throws on
-// any failure before anything local is touched, so the session stays intact
-// and the person can simply try again.
-// Resolves to { authDeleted } — false when the project has no delete_user()
-// function, in which case only the progress rows are gone.
-async function deleteUserAccountAndData() {
+// together, then the local copy is cleared and the initiating session ended.
+// Throws on any failure before anything local is touched, so the session
+// stays intact and the person can simply try again; a project without the
+// function throws with code DELETE_NOT_CONFIGURED and deletes nothing, since
+// rows deleted while the account lives on would come straight back from any
+// other device's local copy.
+//
+// expectedUserId is the account the confirmation dialog was opened for; the
+// call is refused if this device has since switched to another account.
+// Resolves to { sessionChanged }: true when another account took over this
+// device during the deletion and was therefore left signed in.
+async function deleteUserAccountAndData(expectedUserId) {
     if (!supabaseClient || !currentUser) {
         throw new Error('Not signed in');
+    }
+    if (expectedUserId && currentUser.id !== expectedUserId) {
+        throw new Error('Session changed since the confirmation was opened');
     }
     if (deletionInProgress) {
         throw new Error('Account deletion already in progress');
@@ -350,6 +359,50 @@ async function currentSessionUserId() {
     return session && session.user ? session.user.id : null;
 }
 
+// Where supabase-js persists the session: sb-<project ref>-auth-token.
+function sessionStorageKey() {
+    return `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+}
+
+// End the initiating session and nothing else. signOut() on the shared client
+// would act on whatever session storage holds by then, which another tab may
+// have replaced, so instead: revoke the captured token server-side (best
+// effort; for a deleted user it just answers 403) and remove the stored
+// session only if it still belongs to the initiator. The removal runs under
+// the same Web Lock supabase-js uses for that storage key, so no tab can swap
+// the entry between the check and the removal.
+async function endInitiatingSession(asInitiator, session, userId) {
+    const { error: revokeError } = await asInitiator.auth.admin.signOut(session.access_token, 'local');
+    if (revokeError) {
+        console.warn('Server-side sign-out after deletion reported:', revokeError.message);
+    }
+
+    const storageKey = sessionStorageKey();
+    const removeIfOurs = () => {
+        let stored = null;
+        try {
+            stored = JSON.parse(localStorage.getItem(storageKey));
+        } catch (err) {
+            console.warn('Could not read the stored session:', err);
+        }
+        if (!stored || !stored.user || stored.user.id !== userId) return false;
+        localStorage.removeItem(storageKey);
+        return true;
+    };
+    let removed;
+    if (typeof navigator !== 'undefined' && navigator.locks && navigator.locks.request) {
+        removed = await navigator.locks.request(`lock:${storageKey}`, { mode: 'exclusive' }, async () => removeIfOurs());
+    } else {
+        removed = removeIfOurs();
+    }
+
+    if (currentUser && currentUser.id === userId) {
+        currentUser = null;
+        onUserLoggedOut();
+    }
+    return removed;
+}
+
 async function performAccountDeletion(userId) {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session || !session.user || session.user.id !== userId) {
@@ -375,20 +428,19 @@ async function performAccountDeletion(userId) {
     }
 
     // The RPC removes the progress rows and the auth record in one transaction,
-    // so either everything goes or nothing does. Only a project that has not
-    // created delete_user() yet falls back to deleting the rows directly (RLS
-    // scopes that to the caller's own rows); its auth record then stays.
-    let authDeleted = true;
+    // so either everything goes or nothing does. Without the function there is
+    // no honest partial: rows deleted while the account and its other sessions
+    // live on would be re-uploaded from any other device's local copy, so the
+    // person is told deletion is not available here and nothing is touched.
     const { error: rpcError } = await asInitiator.rpc('delete_user');
     if (rpcError) {
-        if (!isMissingRpcError(rpcError)) throw rpcError;
-        authDeleted = false;
-        console.warn('delete_user() RPC is not configured; deleting progress rows only. See README.');
-        const { error: rowsError } = await asInitiator
-            .from('user_progress')
-            .delete()
-            .eq('user_id', userId);
-        if (rowsError) throw rowsError;
+        if (isMissingRpcError(rpcError)) {
+            console.warn('delete_user() RPC is not configured; nothing deleted. See README.');
+            const notConfigured = new Error('Account deletion is not configured on this project');
+            notConfigured.code = 'DELETE_NOT_CONFIGURED';
+            throw notConfigured;
+        }
+        throw rpcError;
     }
 
     // Wipe the local copy before signing out: the SIGNED_OUT handler re-renders
@@ -397,47 +449,16 @@ async function performAccountDeletion(userId) {
     completedItems = {};
     saveState();
 
-    // Only end the session that was just deleted. If another account signed in
-    // on this device meanwhile (another tab), that session is not ours to end;
-    // the caller re-runs its sign-in sync once the deletion flag clears.
-    if ((await currentSessionUserId()) !== userId) {
+    // End only the session that was just deleted. If another account signed in
+    // on this device meanwhile (another tab), its stored session is left in
+    // place; the caller re-runs its sign-in sync once the deletion flag clears.
+    const removed = await endInitiatingSession(asInitiator, session, userId);
+    const sessionChanged = !removed && (await currentSessionUserId()) !== null;
+    if (sessionChanged) {
         console.warn('Another account signed in during deletion; leaving its session in place.');
-        return { authDeleted, sessionChanged: true };
     }
 
-    // supabase-js still calls /auth/v1/logout here, and the server answers 403
-    // because the user no longer exists. The browser logs that failed request
-    // in the console; nothing else is wrong. The library treats 401/403/404 on
-    // logout as "already signed out", clears the local session and fires
-    // SIGNED_OUT, which puts the UI back into guest mode. Local scope just
-    // avoids asking the server to revoke other sessions that are already gone.
-    const { error: signOutError } = await supabaseClient.auth.signOut({ scope: 'local' });
-    if (signOutError) {
-        // Anything other than the 401/403/404 the library swallows (a network
-        // error, say) leaves the session in storage and currentUser set while
-        // the account is already gone. Drop the session ourselves rather than
-        // report success with the UI still signed in.
-        console.warn('Sign-out after account deletion failed; clearing the stored session directly:', signOutError.message);
-        clearLocalSession();
-    }
-
-    return { authDeleted, sessionChanged: false };
-}
-
-// Last resort when supabase-js could not sign out: remove its persisted session
-// (stored under sb-<project-ref>-auth-token) and put the UI into guest mode.
-function clearLocalSession() {
-    try {
-        Object.keys(localStorage)
-            .filter(key => key.startsWith('sb-') && key.endsWith('-auth-token'))
-            .forEach(key => localStorage.removeItem(key));
-    } catch (err) {
-        console.warn('Could not clear the stored session:', err);
-    }
-    if (currentUser) {
-        currentUser = null;
-        onUserLoggedOut();
-    }
+    return { sessionChanged };
 }
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {

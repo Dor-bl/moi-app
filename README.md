@@ -116,9 +116,8 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 ### Account deletion (GDPR right to erasure)
 
 Signed-in users can delete their account from the profile modal (*Delete my account & data*).
-The app deletes their `user_progress` rows itself, but the anon key cannot touch `auth.users`,
-so the auth record is removed through a `delete_user()` database function. Run this in the
-SQL Editor once:
+The anon key cannot touch `auth.users`, so the whole removal runs through a `delete_user()`
+database function. Run this in the SQL Editor once:
 
 ```sql
 create or replace function delete_user()
@@ -155,11 +154,12 @@ alter table user_progress add constraint user_progress_user_id_fkey
   foreign key (user_id) references auth.users (id) on delete cascade;
 ```
 
-Until the function exists the app still works: it deletes the progress rows directly (RLS
-scopes that to the caller's own rows), signs the person out and tells them their sign-in
-record has to be removed by hand (delete the user under *Authentication -> Users*). Any other
-RPC error aborts the flow before anything is deleted, with the session intact, so they can
-retry.
+Until the function exists the app deletes nothing: it tells the person that deletion is not
+available on this deployment and to email instead (then delete the user under
+*Authentication -> Users*). Deleting only the progress rows would not be honest — the account
+and its sessions on other devices would live on, and those devices would upload their local
+copies right back. Any other RPC error aborts the flow before anything is deleted, with the
+session intact, so they can retry.
 
 ### Troubleshooting: magic links fail with a 500
 
