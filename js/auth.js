@@ -326,14 +326,18 @@ async function deleteUserAccountAndData(expectedUserId) {
     }
 
     const initiatorId = currentUser.id;
+    const state = { committed: false };
     deletionInProgress = true;
     try {
-        return await performAccountDeletion(initiatorId);
+        return await performAccountDeletion(initiatorId, state);
     } finally {
         deletionInProgress = false;
-        // If another account took over this device while we ran (another
-        // tab), its sign-in sync was blocked by the flag; run it now.
-        if (currentUser && currentUser.id !== initiatorId) {
+        // Whoever is signed in now had their sync blocked or invalidated
+        // while we ran: another account that took over this device (another
+        // tab), or the initiator itself when the deletion failed before the
+        // RPC committed. Rerun the sign-in sync for them. Never for the
+        // initiator after a commit: that account no longer exists.
+        if (currentUser && (currentUser.id !== initiatorId || !state.committed)) {
             onUserLoggedIn();
         }
     }
@@ -404,7 +408,7 @@ async function endInitiatingSession(asInitiator, session, userId) {
     return removed;
 }
 
-async function performAccountDeletion(userId) {
+async function performAccountDeletion(userId, state) {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session || !session.user || session.user.id !== userId) {
         throw new Error('Session changed before deletion started');
@@ -443,6 +447,7 @@ async function performAccountDeletion(userId) {
         }
         throw rpcError;
     }
+    state.committed = true;
 
     // Wipe the local copy before signing out: the SIGNED_OUT handler re-renders
     // the list and should find it already empty. Leaving it would also make

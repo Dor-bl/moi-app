@@ -817,6 +817,10 @@ function setupEventListeners() {
         deletionBusy = busy;
         confirmDeleteAccountBtn.setAttribute('aria-disabled', busy ? 'true' : 'false');
         confirmDeleteAccountBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+        // Dismissal is unavailable while the request runs; say so to
+        // assistive tech rather than silently ignoring these controls.
+        cancelDeleteAccountBtn.disabled = busy;
+        closeDeleteAccountModalBtn.disabled = busy;
     };
 
     const closeDeleteAccountModal = () => {
