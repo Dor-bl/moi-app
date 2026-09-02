@@ -209,6 +209,11 @@ function updateLanguageUI() {
     if (!magicFinishBtn.disabled) {
         magicFinishBtn.textContent = magicFinishBtn.dataset.retry ? t.magicFinishRetry : t.magicFinishBtn;
     }
+    // The error line is only ever shown in the retry state; keep it in step
+    // with the language switch too.
+    if (magicFinishBtn.dataset.retry) {
+        document.getElementById('magicFinishError').textContent = t.magicFinishExpired;
+    }
 
     updateAuthBtnState(!!currentUser);
 }
