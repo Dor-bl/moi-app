@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="no-referrer-when-downgrade">
+    <!-- Sign-in links carry a token hash in the query string; cross-origin
+         requests (the CDN scripts further down this head) must only ever
+         see the origin. -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>MoiCheck - Groningen Bucket List</title>
     <meta name="description" content="A bucket list for Groningen — the things to eat, see and do. Made for newcomers and expats.">
     <meta name="theme-color" content="#009639">
@@ -275,6 +278,17 @@
                 <h3 id="magicSuccessTitle">Check Your Inbox!</h3>
                 <p id="magicSuccessText">We've sent a magic sign-in link to your email. Click it to log in instantly on this device.</p>
                 <button class="btn primary-btn" id="magicSuccessClose">Got It</button>
+            </div>
+
+            <!-- Shown when the page is opened from a magic link. Nothing is verified
+                 until the visitor taps, so a mail scanner prefetching the link cannot
+                 consume the token. -->
+            <div id="magicFinish" class="contact-success" style="display: none;">
+                <div class="success-icon">🔑</div>
+                <h3 id="magicFinishTitle">Almost there!</h3>
+                <p id="magicFinishText">Tap the button to finish signing in on this device.</p>
+                <p id="magicFinishError" class="auth-error" role="alert"></p>
+                <button class="btn primary-btn" id="magicFinishBtn">Finish Signing In</button>
             </div>
         </div>
     </div>
