@@ -29,6 +29,7 @@ export default [
         onUserLoggedOut: "readonly",
         syncCloudProgress: "readonly",
         syncItemToCloud: "readonly",
+        describeMagicLinkError: "readonly",
         getMilestoneObj: "readonly",
         showBadgeToast: "readonly",
         saveState: "readonly",

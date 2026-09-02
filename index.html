@@ -13,12 +13,25 @@
     <link rel="icon" href="assets/brand/favicon-16.png" sizes="16x16" type="image/png">
     <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="canonical" href="https://moicheck.nl/">
 
+    <!-- Share previews. Scrapers (WhatsApp, Signal, Slack, X) do not resolve
+         relative URLs, so og:url and og:image must be absolute. -->
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="MoiCheck">
+    <meta property="og:url" content="https://moicheck.nl/">
     <meta property="og:title" content="MoiCheck — Groningen Bucket List">
     <meta property="og:description" content="The things to eat, see and do in Groningen. Tick them off as you go.">
-    <meta property="og:image" content="/assets/brand/og-image.png">
+    <meta property="og:image" content="https://moicheck.nl/assets/brand/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="MoiCheck — a bucket list for Groningen">
+    <meta property="og:locale" content="en_GB">
+    <meta property="og:locale:alternate" content="nl_NL">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MoiCheck — Groningen Bucket List">
+    <meta name="twitter:description" content="The things to eat, see and do in Groningen. Tick them off as you go.">
+    <meta name="twitter:image" content="https://moicheck.nl/assets/brand/og-image.png">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
