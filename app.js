@@ -14,7 +14,8 @@ let leafletMap = null;
 let markersGroup = null;
 
 // BUCKET_LIST is static, so it is indexed once at load and the lookups below read
-// from these maps. Both preserve BUCKET_LIST order, which renderList relies on.
+// from these maps. Each category's array keeps BUCKET_LIST order, which renderList's
+// todo/done partition relies on.
 const itemsByCategory = BUCKET_LIST.reduce((acc, item) => {
     const cat = item.category.en;
     if (!acc[cat]) acc[cat] = [];
@@ -22,8 +23,9 @@ const itemsByCategory = BUCKET_LIST.reduce((acc, item) => {
     return acc;
 }, {});
 
-// Null-prototype: ids reaching this map come from persisted state (localStorage and
-// the cloud sync), so a stale key like "constructor" must miss rather than inherit.
+// Lookup by id. Null-prototype: ids reaching this map come from persisted state
+// (localStorage and the cloud sync), so a stale key like "constructor" must miss
+// rather than inherit.
 const itemsById = BUCKET_LIST.reduce((acc, item) => {
     acc[item.id] = item;
     return acc;
