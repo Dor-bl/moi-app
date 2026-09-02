@@ -320,6 +320,15 @@ function deleteAttemptTimeoutMs() {
     return Number.isFinite(override) && override > 0 ? override : DELETE_ATTEMPT_TIMEOUT_MS;
 }
 
+// Resolves true once `promise` settles, false if `ms` pass first. The promise
+// itself is left running; the caller decides what a timeout means.
+function settlesWithin(promise, ms) {
+    return Promise.race([
+        Promise.resolve(promise).then(() => true, () => true),
+        new Promise(resolve => setTimeout(() => resolve(false), ms))
+    ]);
+}
+
 // True while deleteUserAccountAndData() is running. Cloud sync and item writes
 // must not start in that window: the auth listener calls onUserLoggedIn() for
 // every session-bearing event, TOKEN_REFRESHED included, and the sync that
@@ -453,9 +462,14 @@ async function clearLocalProgressUnlessTakenOver(userId) {
 // the same Web Lock supabase-js uses for that storage key, so no tab can swap
 // the entry between the check and the removal.
 async function endInitiatingSession(asInitiator, session, userId) {
-    const { error: revokeError } = await asInitiator.auth.admin.signOut(session.access_token, 'local');
-    if (revokeError) {
-        console.warn('Server-side sign-out after deletion reported:', revokeError.message);
+    // Bounded: this runs after the commit, and a stalled request must not
+    // hold up the local cleanup. The request may still complete on its own.
+    const revoke = asInitiator.auth.admin.signOut(session.access_token, 'local').then(
+        ({ error }) => { if (error) console.warn('Server-side sign-out after deletion reported:', error.message); },
+        err => console.warn('Server-side sign-out after deletion failed:', err)
+    );
+    if (!(await settlesWithin(revoke, deleteAttemptTimeoutMs()))) {
+        console.warn('Server-side sign-out did not answer in time; continuing with local cleanup.');
     }
 
     const storageKey = sessionStorageKey();
@@ -502,8 +516,14 @@ async function performAccountDeletion(userId, state) {
 
     // Writes already on the wire cannot be cancelled, so let them finish
     // before anything is deleted (see pendingCloudWrites). No new ones can
-    // start meanwhile: deletionInProgress is already set.
-    await Promise.allSettled([...pendingCloudWrites]);
+    // start meanwhile: deletionInProgress is already set. The wait is
+    // bounded: a stalled write must not keep the dialog busy forever, so the
+    // deletion gives up before the RPC (nothing deleted, retry later); the
+    // write stays tracked and a retry waits for it again.
+    const writesSettled = await settlesWithin(Promise.allSettled([...pendingCloudWrites]), deleteAttemptTimeoutMs());
+    if (!writesSettled) {
+        throw new Error('Cloud writes still pending after the wait; deletion not started');
+    }
 
     // Last identity check before anything irreversible: if this device now
     // holds a different account, the person who confirmed is no longer the

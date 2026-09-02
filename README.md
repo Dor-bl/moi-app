@@ -159,7 +159,10 @@ available on this deployment and to email instead (then delete the user under
 *Authentication -> Users*). Deleting only the progress rows would not be honest — the account
 and its sessions on other devices would live on, and those devices would upload their local
 copies right back. Any other RPC error aborts the flow before anything is deleted, with the
-session intact, so they can retry.
+session intact, so they can retry — with one exception: a lost response, timeout or gateway
+error may arrive *after* the function committed, so the app retries the (idempotent) call and,
+if it still gets no answer, reports the outcome as unknown and asks the person to reload rather
+than claim their account is intact.
 
 ### Troubleshooting: magic links fail with a 500
 
