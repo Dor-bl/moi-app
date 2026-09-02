@@ -105,6 +105,31 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
    ```
 3. Copy your project **URL** and **anon Key** from `Project Settings -> API`.
 4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`.
+5. Under **Authentication -> URL Configuration**, add your deployed origin (e.g. `https://moi-app-six.vercel.app`) to **Site URL** and **Redirect URLs**. The app passes `window.location.origin` as the redirect target, so an origin that is not listed will bounce users back without a session.
+6. Set up **custom SMTP** before letting anyone else sign in — see the troubleshooting note below.
+
+### Troubleshooting: magic links fail with a 500
+
+If `POST /auth/v1/otp` returns **500 (Internal Server Error)** — typically for everyone
+except the project owner — the request reached Supabase and failed inside it. The client
+sent a valid request; a malformed one would come back as a 400 or 422. The two causes,
+in order of likelihood:
+
+1. **Supabase's built-in email service refused to send.** It only delivers to addresses
+   belonging to the project's team members, and is rate limited to a handful of messages
+   per hour. That is exactly why your own sign-in works and every new user's fails. Fix it
+   by configuring **custom SMTP** under *Authentication -> Emails -> SMTP Settings*
+   (Resend, Postmark, SendGrid, Mailgun and friends all have free tiers). The built-in
+   sender is for development only and is not meant to reach real users.
+2. **A database error while creating the user.** A trigger on `auth.users` (for example a
+   `handle_new_user` function that inserts into a profiles table) that throws will fail the
+   whole sign-up transaction. This repo's schema defines no such trigger, so this only
+   applies if one was added by hand in the SQL editor.
+
+To tell them apart, open *Logs -> Auth Logs* in the Supabase dashboard and read the `msg`
+field on the failing request. `Error sending magic link email` points at cause 1;
+`Database error saving new user` points at cause 2. The Edge Logs entry — the one showing
+just `POST | 500 | /auth/v1/otp` — carries no body and cannot distinguish them.
 
 ---
 

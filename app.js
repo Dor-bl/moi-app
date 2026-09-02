@@ -720,7 +720,15 @@ function setupEventListeners() {
         submitBtn.textContent = UI_TRANSLATIONS[currentLang].sendMagicLink;
 
         if (error) {
-            alert(error.message);
+            // Log the full error: a magic link failure is almost always server-side
+            // (Supabase email delivery or a database error creating the user), and
+            // error.message alone hides the status and code needed to tell them apart.
+            console.error('Magic link sign-in failed:', {
+                status: error.status,
+                code: error.code,
+                message: error.message
+            });
+            alert(describeMagicLinkError(error));
         } else {
             authActions.style.display = 'none';
             magicLinkSuccess.style.display = 'block';

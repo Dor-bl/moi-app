@@ -1,4 +1,4 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError
 // Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
@@ -41,6 +41,24 @@ function updateAuthBtnState(isLoggedIn) {
             userAccountBadge.style.display = 'none';
         }
     }
+}
+
+// Turn a Supabase sign-in error into something a visitor can act on. A 5xx here
+// means the request reached Supabase and failed inside it, so telling the user to
+// check their email address (what the raw message often implies) sends them the
+// wrong way; see README "Magic links fail with a 500" for the project-side fixes.
+function describeMagicLinkError(error) {
+    const status = error && error.status;
+
+    if (status === 429) {
+        return 'Too many sign-in attempts. Please wait a minute and try again.';
+    }
+
+    if (status >= 500) {
+        return 'Sign-in is temporarily unavailable — the email could not be sent. This is on our side, not yours. Please try again later.';
+    }
+
+    return (error && error.message) || 'Could not send the magic link. Please try again.';
 }
 
 async function initAuth() {
