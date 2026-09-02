@@ -112,24 +112,42 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 
 If `POST /auth/v1/otp` returns **500 (Internal Server Error)** — typically for everyone
 except the project owner — the request reached Supabase and failed inside it. The client
-sent a valid request; a malformed one would come back as a 400 or 422. The two causes,
+sent a valid request; a malformed one would come back as a 400 or 422.
+
+Read the real cause in *Logs -> Auth Logs* in the Supabase dashboard, on the failing
+request's `error` field. The Edge Logs entry — the one showing just
+`POST | 500 | /auth/v1/otp` — carries no body and cannot tell you anything. The causes,
 in order of likelihood:
 
-1. **Supabase's built-in email service refused to send.** It only delivers to addresses
-   belonging to the project's team members, and is rate limited to a handful of messages
-   per hour. That is exactly why your own sign-in works and every new user's fails. Fix it
-   by configuring **custom SMTP** under *Authentication -> Emails -> SMTP Settings*
-   (Resend, Postmark, SendGrid, Mailgun and friends all have free tiers). The built-in
-   sender is for development only and is not meant to reach real users.
-2. **A database error while creating the user.** A trigger on `auth.users` (for example a
-   `handle_new_user` function that inserts into a profiles table) that throws will fail the
-   whole sign-up transaction. This repo's schema defines no such trigger, so this only
-   applies if one was added by hand in the SQL editor.
+1. **The email provider refused the recipient.** Most transactional senders will only
+   deliver to your own account address until you verify a domain you control, and they
+   reject everything else outright. With Resend the log reads:
 
-To tell them apart, open *Logs -> Auth Logs* in the Supabase dashboard and read the `msg`
-field on the failing request. `Error sending magic link email` points at cause 1;
-`Database error saving new user` points at cause 2. The Edge Logs entry — the one showing
-just `POST | 500 | /auth/v1/otp` — carries no body and cannot distinguish them.
+   ```
+   gomail: could not send email 1: 550 "You can only send testing emails to your own
+   email address (you@example.com). To send emails to other recipients, please verify
+   a domain at resend.com/domains, and change the `from` address to an email using
+   this domain."
+   ```
+
+   Verify a domain with the provider, add the DNS records it asks for (SPF, DKIM, and
+   ideally DMARC), then set the sender in *Authentication -> Emails -> SMTP Settings* to
+   an address on that verified domain — `noreply@yourdomain.nl`, not `onboarding@resend.dev`.
+   A `*.vercel.app` subdomain cannot be used: verification needs DNS records you can only
+   add on a domain you own.
+2. **No custom SMTP configured at all.** Supabase's built-in sender only delivers to the
+   project's team members and is rate limited to a handful of messages per hour, so it
+   fails the same way for real users. It is for development only.
+3. **A database error while creating the user.** A trigger on `auth.users` (for example a
+   `handle_new_user` function that inserts into a profiles table) that throws will fail the
+   sign-up. The log says `Database error saving new user`. This repo's schema defines no
+   such trigger, so this only applies if one was added by hand in the SQL editor.
+
+Note that a failed send does not necessarily undo the sign-up: the auth event is logged
+with an `actor_id`, and the address can be left behind as an unconfirmed row in
+*Authentication -> Users*. After fixing delivery, check that list — a leftover unconfirmed
+row is harmless, but it means the person is already "registered" and will get a sign-in
+link rather than a fresh sign-up on their next attempt.
 
 ---
 
