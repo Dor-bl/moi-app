@@ -306,6 +306,46 @@ function isAmbiguousRpcError(error) {
     return /abort/i.test(error.message || '');
 }
 
+// Other tabs of the same account keep their own in-memory copy and can write
+// it back to storage after this tab has cleared it (a delayed sync, an edit).
+// deletionInProgress and authGeneration only reach this tab, so the commit is
+// announced on a channel and every listening tab of that account invalidates
+// its sync, drops its copy and goes to guest mode.
+const AUTH_CHANNEL_NAME = 'moicheck-auth';
+const authChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(AUTH_CHANNEL_NAME) : null;
+
+if (authChannel) {
+    authChannel.onmessage = (event) => {
+        const message = event && event.data;
+        if (message && message.type === 'account-deleted' && message.userId) {
+            handleAccountDeletedElsewhere(message.userId);
+        }
+    };
+}
+
+function announceAccountDeleted(userId) {
+    if (!authChannel) return;
+    try {
+        authChannel.postMessage({ type: 'account-deleted', userId });
+    } catch (err) {
+        console.warn('Could not announce the deletion to other tabs:', err);
+    }
+}
+
+function handleAccountDeletedElsewhere(userId) {
+    if (!currentUser || currentUser.id !== userId) return;
+    console.warn('This account was deleted from another tab; clearing the local copy here.');
+    authGeneration++;
+    completedItems = {};
+    try {
+        saveState();
+    } catch (err) {
+        console.warn('Could not clear stored progress:', err);
+    }
+    currentUser = null;
+    onUserLoggedOut();
+}
+
 function hasWebLocks() {
     return typeof navigator !== 'undefined' && !!navigator.locks && typeof navigator.locks.request === 'function';
 }
@@ -418,17 +458,6 @@ function storedSessionUserId() {
     }
 }
 
-// Adopt whatever progress this device has stored (a replacement account's, or
-// nothing) so the deleted account's list does not linger in memory.
-function adoptStoredProgress() {
-    try {
-        completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
-    } catch (err) {
-        console.warn('Could not read stored progress:', err);
-        completedItems = {};
-    }
-}
-
 // Clear local progress after a deletion, unless another account has signed in
 // on this device meanwhile (another tab). The decision keys off the stored
 // session and runs under the same Web Lock supabase-js takes to write it, so
@@ -436,12 +465,18 @@ function adoptStoredProgress() {
 // write a signed-in replacement makes therefore comes after a holder check
 // that already spares it, and guest writes were this device's to clear. Where
 // Web Locks do not exist the check is best effort.
+//
+// On a takeover the stored value is left alone but *not* adopted into memory:
+// local progress is not partitioned per account (#52), so it may still be the
+// deleted account's, and this tab's follow-up sync for the replacement would
+// upload it under their name. Memory starts empty and the sync fills it from
+// the replacement's own cloud rows.
 async function clearLocalProgressUnlessTakenOver(userId) {
     const decide = () => {
         const holder = storedSessionUserId();
         if (holder !== null && holder !== userId) {
-            console.warn('Local progress now belongs to another account; leaving it in place.');
-            adoptStoredProgress();
+            console.warn('Another account holds this device; leaving stored progress untouched and starting from an empty list here.');
+            completedItems = {};
             return false;
         }
         completedItems = {};
@@ -579,6 +614,7 @@ async function performAccountDeletion(userId, state) {
     // The account is gone from here on. Nothing below may surface as "still
     // active": each cleanup step is best effort and isolated, and the result
     // is always a committed outcome.
+    announceAccountDeleted(userId);
     try {
         // Clear the local copy: leaving it would make syncCloudProgress()
         // upload it all again on the next sign-in. Unless another account has
@@ -586,14 +622,9 @@ async function performAccountDeletion(userId, state) {
         await clearLocalProgressUnlessTakenOver(userId);
     } catch (err) {
         console.warn('Could not clear local progress after deletion:', err);
-        // Same decision without the lock: never replace a replacement
-        // account's progress with an empty list.
-        const holder = storedSessionUserId();
-        if (holder !== null && holder !== userId) {
-            adoptStoredProgress();
-        } else {
-            completedItems = {};
-        }
+        // Memory must not keep the deleted list either way; storage is left
+        // alone when it might now be someone else's.
+        completedItems = {};
     }
 
     // End only the session that was just deleted. If another account signed in

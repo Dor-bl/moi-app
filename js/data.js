@@ -399,7 +399,7 @@ const UI_TRANSLATIONS = {
         closeDialog: 'Close',
         deleteSuccess: 'Your account and data have been deleted. Moi, and thanks for using MoiCheck!',
         deleteNotConfigured: 'Account deletion is not available on this deployment yet, so nothing was removed. Email us via the Privacy Policy page and we will delete your account by hand.',
-        deleteUncertain: 'We lost the connection while deleting your account, so we cannot tell whether it went through. Reload the page: if you are still signed in, try again; if not, your account has been deleted.',
+        deleteUncertain: 'We lost the connection while deleting your account, so we cannot tell whether it went through. Reload the page and try again if you still appear signed in. To be certain either way, email us via the Privacy Policy page and we will check.',
         deleteError: 'We could not complete the deletion. Your account is still active. Please try again, or email us via the Privacy Policy page.'
     },
     nl: {
@@ -484,7 +484,7 @@ const UI_TRANSLATIONS = {
         closeDialog: 'Sluiten',
         deleteSuccess: 'Je account en gegevens zijn verwijderd. Moi, en bedankt voor het gebruiken van MoiCheck!',
         deleteNotConfigured: 'Accountverwijdering is op deze installatie nog niet beschikbaar, er is dus niets verwijderd. Mail ons via de privacybeleid-pagina en wij verwijderen je account handmatig.',
-        deleteUncertain: 'De verbinding viel weg tijdens het verwijderen, dus we weten niet of het gelukt is. Herlaad de pagina: ben je nog ingelogd, probeer het dan opnieuw; zo niet, dan is je account verwijderd.',
+        deleteUncertain: 'De verbinding viel weg tijdens het verwijderen, dus we weten niet of het gelukt is. Herlaad de pagina en probeer het opnieuw als je nog ingelogd lijkt. Wil je zekerheid, mail ons dan via de privacybeleid-pagina en wij controleren het.',
         deleteError: 'De verwijdering kon niet worden afgerond. Je account is nog actief. Probeer het opnieuw of mail ons via de privacybeleid-pagina.'
     }
 };
