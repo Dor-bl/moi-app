@@ -111,7 +111,7 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
    ```
    {{ .SiteURL }}/?token_hash={{ .TokenHash }}&amp;type=email
    ```
-   (`&amp;` rather than `&` because the template is HTML; browsers decode it when the link is clicked.) Mail scanners (Outlook, Office 365, most corporate filters) prefetch every link in a message. With the default link that first fetch hits Supabase's verify endpoint and uses up the one-time token, so the person taps a dead link seconds later. With this link the page loads and shows a *Finish Signing In* button; nothing is verified until they tap it. Until you change the templates the old flow keeps working — the app handles both.
+   (`&amp;` rather than `&` because the template is HTML; browsers decode it when the link is clicked.) Mail scanners (Outlook, Office 365, most corporate filters) prefetch every link in a message. With the default link that first fetch hits Supabase's verify endpoint and uses up the one-time token, so the person taps a dead link seconds later. With this link the page loads and shows a *Finish Signing In* button; nothing is verified until they tap it. Then search the whole template for `ConfirmationURL` — it must appear **nowhere**, including as the visible text of a "copy and paste this link" line. Scanners read URLs out of plain text just as readily as out of `href`, so one leftover mention burns the token and the new link arrives dead. Until you change the templates the old flow keeps working — the app handles both.
 
 ### Troubleshooting: magic links fail with a 500
 
