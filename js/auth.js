@@ -260,8 +260,12 @@ async function syncCloudProgress() {
                     note: row.note || ''
                 };
             });
-            saveState();
-            localStorage.setItem(STATE_OWNER_KEY, currentUser.id);
+            const ownerId = currentUser.id;
+            await withStateLock(() => {
+                saveState();
+                localStorage.setItem(STATE_OWNER_KEY, ownerId);
+            });
+            if (stale()) return;
 
             const localEntries = Object.entries(completedItems);
             for (let [itemId, localData] of localEntries) {
@@ -308,6 +312,24 @@ function isAmbiguousRpcError(error) {
 // was last merged with. Deletion clears local progress only while it is still
 // the initiator's; another tab of a different account may have taken over.
 const STATE_OWNER_KEY = 'moiCheckStateOwner';
+
+// Local progress and its owner marker are two storage keys written by every
+// tab; readers that decide on the pair (the deletion's compare-and-clear) and
+// writers of the pair take this lock so no tab sees or overwrites a half
+// update. Falls through without serialisation only where Web Locks do not
+// exist.
+const STATE_LOCK = 'lock:moiCheckState';
+
+function hasWebLocks() {
+    return typeof navigator !== 'undefined' && !!navigator.locks && typeof navigator.locks.request === 'function';
+}
+
+async function withStateLock(fn) {
+    if (hasWebLocks()) {
+        return navigator.locks.request(STATE_LOCK, { mode: 'exclusive' }, async () => fn());
+    }
+    return fn();
+}
 
 // True while deleteUserAccountAndData() is running. Cloud sync and item writes
 // must not start in that window: the auth listener calls onUserLoggedIn() for
@@ -411,11 +433,15 @@ async function endInitiatingSession(asInitiator, session, userId) {
         localStorage.removeItem(storageKey);
         return true;
     };
-    let removed;
-    if (typeof navigator !== 'undefined' && navigator.locks && navigator.locks.request) {
+    let removed = false;
+    if (hasWebLocks()) {
         removed = await navigator.locks.request(`lock:${storageKey}`, { mode: 'exclusive' }, async () => removeIfOurs());
     } else {
-        removed = removeIfOurs();
+        // Without a cross-tab lock the check and the removal could straddle
+        // another tab installing a different account, so do not touch storage:
+        // the token is revoked server-side and the account is gone, so the
+        // library drops the session by itself at its next refresh.
+        console.warn('Web Locks unavailable; leaving the stored session to expire on its own.');
     }
 
     if (currentUser && currentUser.id === userId) {
@@ -459,14 +485,19 @@ async function performAccountDeletion(userId, state) {
     // finds nothing left to delete and succeeds), so retry a couple of times
     // and only then give up as "unknown", never as "nothing happened".
     let rpcError = null;
+    let sawAmbiguous = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
         ({ error: rpcError } = await asInitiator.rpc('delete_user'));
         if (!rpcError || !isAmbiguousRpcError(rpcError)) break;
+        sawAmbiguous = true;
         console.warn(`delete_user() attempt ${attempt} got no usable answer:`, rpcError.message);
         if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
     }
     if (rpcError) {
-        if (isAmbiguousRpcError(rpcError)) {
+        // A definite error on a retry only describes that retry: an earlier
+        // unanswered attempt may already have committed (and, say, the token
+        // then failed). Only a success can settle it; otherwise it is unknown.
+        if (sawAmbiguous || isAmbiguousRpcError(rpcError)) {
             state.uncertain = true;
             const uncertain = new Error('Lost the connection while deleting the account; outcome unknown');
             uncertain.code = 'DELETE_UNCERTAIN';
@@ -482,27 +513,52 @@ async function performAccountDeletion(userId, state) {
     }
     state.committed = true;
 
-    // Clear the local copy: leaving it would make syncCloudProgress() upload
-    // it all again on the next sign-in. But only while it is still the
-    // initiator's. Another account may have taken over this device meanwhile
-    // (another tab of theirs writes the same storage), and its local-only
-    // progress is not ours to wipe; adopt what that tab stored instead so the
-    // in-memory copy of the deleted account's list does not linger here.
-    const owner = localStorage.getItem(STATE_OWNER_KEY);
-    if (!owner || owner === userId) {
+    // The account is gone from here on. Nothing below may surface as "still
+    // active": each cleanup step is best effort and isolated, and the result
+    // is always a committed outcome.
+    try {
+        // Clear the local copy: leaving it would make syncCloudProgress()
+        // upload it all again on the next sign-in. But only while it is still
+        // the initiator's. Another account may have taken over this device
+        // meanwhile (another tab of theirs writes the same storage), and its
+        // local-only progress is not ours to wipe; adopt what that tab stored
+        // instead so the in-memory copy of the deleted list does not linger.
+        await withStateLock(() => {
+            const owner = localStorage.getItem(STATE_OWNER_KEY);
+            if (!owner || owner === userId) {
+                completedItems = {};
+                saveState();
+                localStorage.removeItem(STATE_OWNER_KEY);
+            } else {
+                console.warn('Local progress now belongs to another account; leaving it in place.');
+                completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
+            }
+        });
+    } catch (err) {
+        console.warn('Could not clear local progress after deletion:', err);
         completedItems = {};
-        saveState();
-        localStorage.removeItem(STATE_OWNER_KEY);
-    } else {
-        console.warn('Local progress now belongs to another account; leaving it in place.');
-        completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
     }
 
     // End only the session that was just deleted. If another account signed in
     // on this device meanwhile (another tab), its stored session is left in
     // place; the caller re-runs its sign-in sync once the deletion flag clears.
-    const removed = await endInitiatingSession(asInitiator, session, userId);
-    const sessionChanged = !removed && (await currentSessionUserId()) !== null;
+    try {
+        await endInitiatingSession(asInitiator, session, userId);
+    } catch (err) {
+        console.warn('Could not end the stored session after deletion:', err);
+        if (currentUser && currentUser.id === userId) {
+            currentUser = null;
+            onUserLoggedOut();
+        }
+    }
+
+    let sessionChanged = false;
+    try {
+        const holder = await currentSessionUserId();
+        sessionChanged = holder !== null && holder !== userId;
+    } catch (err) {
+        console.warn('Could not read the session after deletion:', err);
+    }
     if (sessionChanged) {
         console.warn('Another account signed in during deletion; leaving its session in place.');
     }

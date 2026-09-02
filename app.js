@@ -651,7 +651,15 @@ function openProfileModal() {
         });
     }
     
+    // Lift inert first: the modal's controls (including the destructive
+    // delete trigger) must only be reachable while it is actually shown.
+    profileModal.removeAttribute('inert');
     profileModal.classList.add('active');
+}
+
+function closeProfileModal() {
+    closeProfileModal();
+    profileModal.setAttribute('inert', '');
 }
 
 function setupEventListeners() {
@@ -797,9 +805,7 @@ function setupEventListeners() {
     // Modals
     closeDetailModalBtn.addEventListener('click', closeDetailModal);
     
-    closeProfileModalBtn.addEventListener('click', () => {
-        profileModal.classList.remove('active');
-    });
+    closeProfileModalBtn.addEventListener('click', closeProfileModal);
 
     // Account deletion: confirmation dialog on top of the profile modal. Focus
     // moves into it on open, stays inside while it is open (Tab wraps, Escape
@@ -885,7 +891,7 @@ function setupEventListeners() {
             // button rather than on an element that is about to disappear.
             deleteModalReturnFocus = profileBtn;
             closeDeleteAccountModal();
-            profileModal.classList.remove('active');
+            closeProfileModal();
             return;
         }
         const targetUserId = deleteModalUserId;
@@ -901,7 +907,7 @@ function setupEventListeners() {
             // profile button instead.
             deleteModalReturnFocus = profileBtn;
             closeDeleteAccountModal();
-            profileModal.classList.remove('active');
+            closeProfileModal();
             // The UI is already back in guest mode.
             alert(t.deleteSuccess);
         } catch (err) {
@@ -987,6 +993,8 @@ function setupEventListeners() {
                 closeDetailModal();
             } else if (modal === deleteAccountModal) {
                 closeDeleteAccountModal();
+            } else if (modal === profileModal) {
+                closeProfileModal();
             } else {
                 modal.classList.remove('active');
             }
