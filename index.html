@@ -276,6 +276,17 @@
                 <p id="magicSuccessText">We've sent a magic sign-in link to your email. Click it to log in instantly on this device.</p>
                 <button class="btn primary-btn" id="magicSuccessClose">Got It</button>
             </div>
+
+            <!-- Shown when the page is opened from a magic link. Nothing is verified
+                 until the visitor taps, so a mail scanner prefetching the link cannot
+                 consume the token. -->
+            <div id="magicFinish" class="contact-success" style="display: none;">
+                <div class="success-icon">🔑</div>
+                <h3 id="magicFinishTitle">Almost there!</h3>
+                <p id="magicFinishText">Tap the button to finish signing in on this device.</p>
+                <p id="magicFinishError" class="auth-error" role="alert"></p>
+                <button class="btn primary-btn" id="magicFinishBtn">Finish Signing In</button>
+            </div>
         </div>
     </div>
 

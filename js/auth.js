@@ -1,4 +1,4 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn
 // Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
@@ -61,6 +61,86 @@ function describeMagicLinkError(error) {
     return (error && error.message) || 'Could not send the magic link. Please try again.';
 }
 
+// Magic links no longer point at Supabase's verify endpoint. Mail scanners
+// (Outlook, Office 365, most corporate filters) prefetch every link in a
+// message, and that first fetch used up the one-time token before the person
+// ever tapped it. The email template now links here with a token hash instead
+// (see README), and nothing is verified until the visitor presses the button —
+// a scanner fetching this page gets HTML and consumes nothing.
+function getPendingMagicLink() {
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get('token_hash');
+    if (!tokenHash) return null;
+    return { tokenHash, type: params.get('type') || 'email' };
+}
+
+function clearMagicLinkFromUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('token_hash');
+    url.searchParams.delete('type');
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+}
+
+function finishMagicLinkSignIn(pending) {
+    const authModal = document.getElementById('authModal');
+    const authActions = document.getElementById('authActions');
+    const magicLinkSuccess = document.getElementById('magicLinkSuccess');
+    const finish = document.getElementById('magicFinish');
+    const finishBtn = document.getElementById('magicFinishBtn');
+    const finishError = document.getElementById('magicFinishError');
+    if (!authModal || !finish || !finishBtn) return;
+
+    const t = () => UI_TRANSLATIONS[currentLang];
+
+    authActions.style.display = 'none';
+    magicLinkSuccess.style.display = 'none';
+    finishError.textContent = '';
+    delete finishBtn.dataset.retry;
+    finishBtn.disabled = false;
+    finishBtn.textContent = t().magicFinishBtn;
+    finish.style.display = 'block';
+    authModal.classList.add('active');
+
+    finishBtn.onclick = async () => {
+        // After a failed attempt the button turns into "request a new link":
+        // the hash is single-use, so retrying the same one cannot succeed.
+        if (finishBtn.dataset.retry) {
+            finish.style.display = 'none';
+            authActions.style.display = 'block';
+            return;
+        }
+
+        finishBtn.disabled = true;
+        finishBtn.textContent = '...';
+
+        const { error } = await supabaseClient.auth.verifyOtp({
+            token_hash: pending.tokenHash,
+            type: pending.type
+        });
+
+        // Whatever the outcome, the hash in the address bar is spent.
+        clearMagicLinkFromUrl();
+        finishBtn.disabled = false;
+
+        if (error) {
+            console.error('Magic link verification failed:', {
+                status: error.status,
+                code: error.code,
+                message: error.message
+            }, error);
+            finishError.textContent = t().magicFinishExpired;
+            finishBtn.dataset.retry = '1';
+            finishBtn.textContent = t().magicFinishRetry;
+            return;
+        }
+
+        // onAuthStateChange picks up the new session; just put the modal back.
+        finish.style.display = 'none';
+        authActions.style.display = 'block';
+        authModal.classList.remove('active');
+    };
+}
+
 async function initAuth() {
     if (!supabaseClient) return;
 
@@ -72,6 +152,11 @@ async function initAuth() {
         if (errorDesc) {
             console.error('Supabase auth error:', errorDesc);
             alert('Sign In Notice: ' + errorDesc);
+        }
+
+        const pendingMagicLink = getPendingMagicLink();
+        if (pendingMagicLink) {
+            finishMagicLinkSignIn(pendingMagicLink);
         }
 
         // Fetch existing active session

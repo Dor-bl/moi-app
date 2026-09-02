@@ -203,6 +203,12 @@ function updateLanguageUI() {
     document.getElementById('magicSuccessTitle').textContent = t.magicTitle;
     document.getElementById('magicSuccessText').textContent = t.magicText;
     document.getElementById('magicSuccessClose').textContent = t.gotIt;
+    document.getElementById('magicFinishTitle').textContent = t.magicFinishTitle;
+    document.getElementById('magicFinishText').textContent = t.magicFinishText;
+    const magicFinishBtn = document.getElementById('magicFinishBtn');
+    if (!magicFinishBtn.disabled) {
+        magicFinishBtn.textContent = magicFinishBtn.dataset.retry ? t.magicFinishRetry : t.magicFinishBtn;
+    }
 
     updateAuthBtnState(!!currentUser);
 }
@@ -670,6 +676,7 @@ function setupEventListeners() {
         } else {
             authActions.style.display = 'block';
             magicLinkSuccess.style.display = 'none';
+            document.getElementById('magicFinish').style.display = 'none';
             authModal.classList.add('active');
         }
     });
