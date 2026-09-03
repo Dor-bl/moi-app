@@ -658,8 +658,12 @@ function openProfileModal() {
 }
 
 function closeProfileModal() {
+    const hadFocus = profileModal.contains(document.activeElement);
     profileModal.classList.remove('active');
     profileModal.setAttribute('inert', '');
+    // An inert subtree drops focus to the document; hand it back to the
+    // control that opened the modal instead.
+    if (hadFocus || document.activeElement === document.body) profileBtn.focus();
 }
 
 function setupEventListeners() {

@@ -602,19 +602,18 @@ function sessionWriteRefused(value) {
 // checking that the user still exists): a committed deletion is finished
 // under the lock, and a pending one is first resolved with the server, or
 // left alone when that is not possible.
-// One storage key per account, so records of different accounts never
-// share a value: two tabs deleting two accounts each write their own entry,
-// and neither read-modify-write can drop the other's. (Within one account,
-// attempt ids settle who may clear a pending record, and every cleanup step
-// is idempotent, so a lost settle only repeats a step.) The older single
-// key, which held a bare user id, one record, or a map of records, is
-// migrated into per-account keys on first read.
+// One storage key per account for the committed record, and one per attempt
+// for a pending one, so no two writers ever share a value: two tabs deleting
+// two accounts write their own entries, and two tabs deleting the same
+// account each keep their own attempt until it is answered. A definite
+// error removes only its own attempt; a commit replaces them all with the
+// committed record. Every cleanup step is idempotent, so a lost settle only
+// repeats a step. The older formats (a single key holding a bare user id,
+// one record or a map; a per-account record in phase pending) are migrated
+// on first read.
 const DELETED_USER_KEY = 'moiCheckDeletedUser';
 const DELETION_RECORD_PREFIX = 'moiCheckDeletedUser:';
-// Which account took over this device while a record was pending, kept
-// beside the record rather than in it, so marking a takeover never rewrites
-// (and never downgrades) a record another tab may have advanced meanwhile.
-const TAKEOVER_PREFIX = 'moiCheckTakenOver:';
+const DELETION_ATTEMPT_PREFIX = 'moiCheckDeletionAttempt:';
 // A settled record stays as a tombstone for this long: a token refresh still
 // in flight somewhere could otherwise put the deleted account's session back
 // after the cleanup (see sessionStorageAdapter). Longer than an access token
@@ -625,11 +624,30 @@ function deletionRecordKey(userId) {
     return DELETION_RECORD_PREFIX + userId;
 }
 
+function deletionAttemptKey(userId, attempt) {
+    return `${DELETION_ATTEMPT_PREFIX}${userId}:${attempt}`;
+}
+
 function normalizeDeletionRecord(userId, record) {
     if (!record || typeof record !== 'object') {
         return { userId, phase: 'committed', progressPending: true, sessionPending: true };
     }
     return Object.assign({}, record, { userId, phase: record.phase === 'pending' ? 'pending' : 'committed' });
+}
+
+// A stable list of the storage keys with a prefix, taken before anything
+// below may remove one (pruning an expired tombstone shifts the indexes).
+function storageKeysWithPrefix(prefix) {
+    const keys = [];
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(prefix)) keys.push(key);
+        }
+    } catch (err) {
+        console.warn('Could not list storage keys:', err);
+    }
+    return keys;
 }
 
 function migrateLegacyDeletionRecords() {
@@ -656,8 +674,11 @@ function migrateLegacyDeletionRecords() {
     }
     try {
         Object.keys(legacy).forEach(userId => {
-            if (!localStorage.getItem(deletionRecordKey(userId))) {
-                localStorage.setItem(deletionRecordKey(userId), JSON.stringify(normalizeDeletionRecord(userId, legacy[userId])));
+            const record = normalizeDeletionRecord(userId, legacy[userId]);
+            if (record.phase === 'pending') {
+                localStorage.setItem(deletionAttemptKey(userId, record.attempt || 'legacy'), JSON.stringify({ userId, attempt: record.attempt || 'legacy' }));
+            } else if (!localStorage.getItem(deletionRecordKey(userId))) {
+                localStorage.setItem(deletionRecordKey(userId), JSON.stringify(record));
             }
         });
         localStorage.removeItem(DELETED_USER_KEY);
@@ -666,6 +687,14 @@ function migrateLegacyDeletionRecords() {
     }
 }
 
+function readPendingAttempts(userId) {
+    const prefix = `${DELETION_ATTEMPT_PREFIX}${userId}:`;
+    return storageKeysWithPrefix(prefix).map(key => key.slice(prefix.length)).sort();
+}
+
+// The record of one account as it stands: the committed record if there is
+// one (a tombstone past its expiry is pruned), else a pending record
+// standing for every unanswered attempt, else null.
 function readDeletionRecord(userId) {
     migrateLegacyDeletionRecords();
     let raw;
@@ -675,36 +704,48 @@ function readDeletionRecord(userId) {
         console.warn('Could not read a deletion record:', err);
         return null;
     }
-    if (!raw) return null;
-    let record;
-    try {
-        record = normalizeDeletionRecord(userId, JSON.parse(raw));
-    } catch {
-        record = normalizeDeletionRecord(userId, null);
+    if (raw) {
+        let record;
+        try {
+            record = normalizeDeletionRecord(userId, JSON.parse(raw));
+        } catch {
+            record = normalizeDeletionRecord(userId, null);
+        }
+        if (record.phase === 'pending') {
+            // A per-account pending record from the previous format: it
+            // becomes an attempt of its own.
+            try {
+                localStorage.setItem(deletionAttemptKey(userId, record.attempt || 'legacy'), JSON.stringify({ userId, attempt: record.attempt || 'legacy' }));
+                localStorage.removeItem(deletionRecordKey(userId));
+            } catch (err) {
+                console.warn('Could not migrate a pending record:', err);
+            }
+        } else if (record.done && typeof record.expiresAt === 'number' && record.expiresAt <= Date.now()) {
+            removeDeletionRecord(userId);
+        } else {
+            return record;
+        }
     }
-    if (record.done && typeof record.expiresAt === 'number' && record.expiresAt <= Date.now()) {
-        removeDeletionRecord(userId);
-        return null;
-    }
-    return record;
+    const attempts = readPendingAttempts(userId);
+    if (attempts.length === 0) return null;
+    return { userId, phase: 'pending', attempt: attempts[0], attempts };
 }
 
 // Every record, keyed by user id.
 function readDeletionRecords() {
     migrateLegacyDeletionRecords();
+    const userIds = new Set();
+    storageKeysWithPrefix(DELETION_RECORD_PREFIX).forEach(key => userIds.add(key.slice(DELETION_RECORD_PREFIX.length)));
+    storageKeysWithPrefix(DELETION_ATTEMPT_PREFIX).forEach(key => {
+        const rest = key.slice(DELETION_ATTEMPT_PREFIX.length);
+        const cut = rest.lastIndexOf(':');
+        if (cut > 0) userIds.add(rest.slice(0, cut));
+    });
     const records = {};
-    try {
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith(DELETION_RECORD_PREFIX)) {
-                const userId = key.slice(DELETION_RECORD_PREFIX.length);
-                const record = readDeletionRecord(userId);
-                if (record) records[userId] = record;
-            }
-        }
-    } catch (err) {
-        console.warn('Could not read the deletion records:', err);
-    }
+    userIds.forEach(userId => {
+        const record = readDeletionRecord(userId);
+        if (record) records[userId] = record;
+    });
     return records;
 }
 
@@ -719,9 +760,16 @@ function writeDeletionRecord(record) {
 function removeDeletionRecord(userId) {
     try {
         localStorage.removeItem(deletionRecordKey(userId));
-        localStorage.removeItem(TAKEOVER_PREFIX + userId);
     } catch (err) {
         console.warn('Could not remove a deletion record:', err);
+    }
+}
+
+function removePendingAttempts(userId, attempts) {
+    try {
+        attempts.forEach(attempt => localStorage.removeItem(deletionAttemptKey(userId, attempt)));
+    } catch (err) {
+        console.warn('Could not remove a deletion attempt:', err);
     }
 }
 
@@ -735,30 +783,30 @@ function isDeletedUserSession(session) {
 
 // Before anything irreversible: record the attempt and prove the record is
 // there. A browser that cannot keep it would not remember a commit either,
-// so the deletion does not start. The record is shared by every tab, so it
-// carries an attempt id: another tab's attempt for the same account may
-// still be unanswered, and only the attempt that wrote a pending record may
-// clear it. A record that already says committed (another tab got there
-// first) is never replaced: the caller finishes and reports that outcome.
-// Resolves { attempt, existed } (existed: a pending record of this account
-// was already there, so an earlier attempt may yet commit),
-// { alreadyCommitted: true }, or null.
+// so the deletion does not start. Each attempt has its own key: another
+// tab's attempt for the same account may still be unanswered, and a definite
+// error removes only the attempt it answers. A record that already says
+// committed (another tab got there first) is never replaced: the caller
+// finishes and reports that outcome. Resolves { attempt, existed } (existed:
+// other attempts of this account are still unanswered, so one of them may
+// yet commit), { alreadyCommitted: true }, or null.
 function recordPendingDeletion(userId) {
     const earlier = readDeletionRecord(userId);
     if (earlier && earlier.phase === 'committed') return { alreadyCommitted: true };
     const existed = !!(earlier && earlier.phase === 'pending');
     const attempt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    writeDeletionRecord({ userId, phase: 'pending', attempt });
-    const check = readDeletionRecord(userId);
-    if (!(check && check.phase === 'pending' && check.attempt === attempt)) return null;
+    try {
+        localStorage.setItem(deletionAttemptKey(userId, attempt), JSON.stringify({ userId, attempt }));
+        if (localStorage.getItem(deletionAttemptKey(userId, attempt)) === null) return null;
+    } catch (err) {
+        console.warn('Could not record the deletion attempt:', err);
+        return null;
+    }
     return { attempt, existed };
 }
 
 function clearPendingDeletion(userId, attempt) {
-    const current = readDeletionRecord(userId);
-    if (current && current.phase === 'pending' && current.attempt === attempt) {
-        removeDeletionRecord(userId);
-    }
+    removePendingAttempts(userId, [attempt]);
 }
 
 // The RPC has committed: rewrite the record as committed, with both cleanup
@@ -767,10 +815,15 @@ function clearPendingDeletion(userId, attempt) {
 // stays as it is: the next load retries the idempotent RPC, which finds
 // nothing left, and finishes the cleanup from there.
 function commitDeletionRecord(userId) {
+    const attempts = readPendingAttempts(userId);
     writeDeletionRecord({ userId, phase: 'committed', progressPending: true, sessionPending: true });
     const check = readDeletionRecord(userId);
     const ok = !!(check && check.phase === 'committed');
-    if (!ok) console.warn('Could not record the commit; the pending record stays and the next load finishes the job.');
+    if (ok) {
+        removePendingAttempts(userId, attempts);
+    } else {
+        console.warn('Could not record the commit; the pending record stays and the next load finishes the job.');
+    }
     return ok;
 }
 
@@ -908,33 +961,31 @@ async function endInitiatingSession(asInitiator, session, userId) {
 // recorded here. Whatever those deletions left on this device is theirs now,
 // except what this page holds in memory: it was loaded from the shared store
 // (#52) and may be another account's list, which their sync would otherwise
-// upload under their name. Memory starts empty, once per record and account.
-// A committed record's cleanup is settled by the takeover and the record
-// goes; a pending record (an unanswered deletion of someone else's account)
-// is not theirs to settle and stays, marked as taken over, until that
-// account's credentials return.
+// upload under their name. So memory starts empty, once per page for each
+// such record and account: the store itself may still carry the other
+// account's list (a takeover leaves it alone, a failed sync keeps it), so
+// every page load starts over, while later session events of the same
+// account (a token refresh) do not empty what the account has since done.
+// A committed record's cleanup is settled by the takeover and becomes a
+// tombstone; a pending record (an unanswered deletion of someone else's
+// account) is not theirs to settle and stays until that account's
+// credentials return.
+const takeoversThisPage = new Set();
+
 function takeOverFromDeletedAccounts(newUserId) {
     const records = readDeletionRecords();
     let emptyMemory = false;
     Object.keys(records).forEach(userId => {
         if (userId === newUserId) return;
         const record = records[userId];
-        if (record.phase === 'committed') {
-            // A finished tombstone has nothing left on this device; it stays
-            // to refuse that account's session until it expires.
-            if (record.done) return;
+        if (record.phase === 'committed' && !record.done) {
             settleDeletionRecord(userId, { progressPending: false, sessionPending: false });
+        }
+        const seen = `${userId}>${newUserId}`;
+        if (!takeoversThisPage.has(seen)) {
+            takeoversThisPage.add(seen);
             emptyMemory = true;
-            return;
         }
-        let takenOverBy = null;
-        try {
-            takenOverBy = localStorage.getItem(TAKEOVER_PREFIX + userId);
-            if (takenOverBy !== newUserId) localStorage.setItem(TAKEOVER_PREFIX + userId, newUserId);
-        } catch (err) {
-            console.warn('Could not record the takeover:', err);
-        }
-        if (takenOverBy !== newUserId) emptyMemory = true;
     });
     if (emptyMemory) completedItems = {};
 }
@@ -991,15 +1042,11 @@ async function resolvePendingDeletion(marker, verifiedSession) {
         return readDeletionRecord(userId);
     }
     if (!isAmbiguousRpcError(error) && isMissingRpcError(error)) {
-        // Only the record this resolution started from: another tab may have
-        // written a newer attempt, or committed, while the answer was out.
-        const current = readDeletionRecord(userId);
-        if (current && current.phase === 'pending' && current.attempt === marker.attempt) {
-            console.warn('delete_user() is not configured, so the unfinished deletion cannot have happened.');
-            removeDeletionRecord(userId);
-            return null;
-        }
-        return current;
+        // Only the attempts this resolution started from: another tab may
+        // have written a newer one, or committed, while the answer was out.
+        console.warn('delete_user() is not configured, so the unfinished deletion cannot have happened.');
+        removePendingAttempts(userId, marker.attempts || [marker.attempt]);
+        return readDeletionRecord(userId);
     }
     console.warn('The unfinished deletion could not be settled:', error.message);
     return marker;
