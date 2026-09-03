@@ -285,25 +285,34 @@ async function deleteUserAccountAndData(targetUserId) {
     // Bump authGeneration so any in-flight cloud sync responses are discarded immediately
     authGeneration++;
 
-    // Timeout safeguard (15s): avoid leaving the dialog busy indefinitely if the connection hangs
-    let timeoutId;
-    const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => {
-            const err = new Error('Deletion request timed out');
-            err.code = 'DELETE_ERROR';
-            reject(err);
-        }, 15000);
-    });
+    // Timeout safeguard (15s): actively abort the in-flight request if the connection hangs
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     let rpcResult;
     try {
-        rpcResult = await Promise.race([supabaseClient.rpc('delete_user'), timeoutPromise]);
+        const query = supabaseClient.rpc('delete_user');
+        rpcResult = await (typeof query.abortSignal === 'function'
+            ? query.abortSignal(controller.signal)
+            : query);
+    } catch (err) {
+        if (controller.signal.aborted || (err && err.name === 'AbortError')) {
+            const timeoutErr = new Error('Deletion request timed out');
+            timeoutErr.code = 'DELETE_ERROR';
+            throw timeoutErr;
+        }
+        throw err;
     } finally {
         clearTimeout(timeoutId);
     }
 
     const { error: rpcError } = rpcResult;
     if (rpcError) {
+        if (controller.signal.aborted) {
+            const timeoutErr = new Error('Deletion request timed out');
+            timeoutErr.code = 'DELETE_ERROR';
+            throw timeoutErr;
+        }
         if (isMissingRpcError(rpcError)) {
             const err = new Error('delete_user() RPC is not configured');
             err.code = 'DELETE_NOT_CONFIGURED';
