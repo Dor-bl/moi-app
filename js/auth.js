@@ -174,17 +174,23 @@ function finishMagicLinkSignIn(pending) {
         // record proves void and the sign-in is completed here, or it stays
         // unknown and the person is told.
         const verified = data && data.session && data.session.user ? data.session : null;
-        const record = readDeletedUserMarker();
-        if (verified && record && record.userId === verified.user.id && record.phase === 'pending') {
+        const record = verified ? readDeletionRecord(verified.user.id) : null;
+        if (verified && record && record.phase === 'pending') {
             const outcome = await resolvePendingDeletion(record, verified);
+            // Whatever account this page held in memory before, storage now
+            // holds the verified session (or nothing, once the cleanup ran),
+            // so memory is set from the outcome, never from what was there.
             if (outcome && outcome.phase === 'committed') {
                 await finishPendingDeletionCleanup(outcome);
-                if (currentUser && currentUser.id === verified.user.id) currentUser = null;
+                currentUser = null;
                 onUserLoggedOut();
                 alert(t().deleteSuccess);
             } else if (outcome) {
+                currentUser = null;
+                onUserLoggedOut();
                 alert(t().deleteUncertain);
-            } else if (!currentUser) {
+            } else {
+                if (hasDeletionRecords()) takeOverFromDeletedAccounts(verified.user.id);
                 currentUser = verified.user;
                 await onUserLoggedIn();
             }
@@ -218,17 +224,18 @@ async function initAuth() {
         // closed while the RPC was out (outcome unknown), or right after the
         // commit, or the session lock was held. Settle what can be settled
         // before any session is restored.
-        let pendingDeletion = readDeletedUserMarker();
-        if (pendingDeletion) {
+        const deletionRecords = readDeletionRecords();
+        for (const recordedUserId of Object.keys(deletionRecords)) {
             try {
-                if (pendingDeletion.phase === 'pending') {
-                    pendingDeletion = await resolvePendingDeletion(pendingDeletion);
+                let record = deletionRecords[recordedUserId];
+                if (record.phase === 'pending') {
+                    record = await resolvePendingDeletion(record);
                 }
-                if (pendingDeletion && pendingDeletion.phase === 'committed') {
-                    await finishPendingDeletionCleanup(pendingDeletion);
+                if (record && record.phase === 'committed') {
+                    await finishPendingDeletionCleanup(record);
                 }
             } catch (err) {
-                // The marker stays, so the session below is still ignored.
+                // The record stays, so that account's session is still ignored.
                 console.warn('Could not finish the pending deletion cleanup:', err);
             }
         }
@@ -238,7 +245,7 @@ async function initAuth() {
         if (isDeletedUserSession(session)) {
             console.warn('Not restoring the stored session of an account deleted (or being deleted) from this browser.');
         } else if (session && session.user) {
-            if (deletedUserId()) takeOverFromDeletedAccount();
+            if (hasDeletionRecords()) takeOverFromDeletedAccounts(session.user.id);
             currentUser = session.user;
             await onUserLoggedIn();
         }
@@ -256,7 +263,7 @@ async function initAuth() {
                 return;
             }
             if (session && session.user) {
-                if (deletedUserId()) takeOverFromDeletedAccount();
+                if (hasDeletionRecords()) takeOverFromDeletedAccounts(session.user.id);
                 currentUser = session.user;
                 await onUserLoggedIn();
                 // Clean hash from URL bar if access token was passed in hash
@@ -569,48 +576,97 @@ function sessionStorageAdapter() {
 // left alone when that is not possible.
 const DELETED_USER_KEY = 'moiCheckDeletedUser';
 
-function readDeletedUserMarker() {
+// Every record, keyed by user id: one browser can hold records of several
+// accounts (an unanswered deletion of one, then another signing in and
+// deleting too), and none may overwrite another's. Older formats (a bare
+// user id, a single record) read as one committed record with both steps
+// pending.
+function readDeletionRecords() {
     let raw;
     try {
         raw = localStorage.getItem(DELETED_USER_KEY);
     } catch (err) {
-        console.warn('Could not read the deleted-user marker:', err);
-        return null;
+        console.warn('Could not read the deletion records:', err);
+        return {};
     }
-    if (!raw) return null;
+    if (!raw) return {};
+    let parsed = null;
     try {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object' && parsed.userId) {
-            if (parsed.phase !== 'pending') parsed.phase = 'committed';
-            return parsed;
-        }
+        parsed = JSON.parse(raw);
     } catch {
-        // An older marker held the bare user id; treat everything as pending.
+        // A bare user id from the oldest format.
     }
-    return { userId: raw, phase: 'committed', progressPending: true, sessionPending: true };
+    if (!parsed || typeof parsed !== 'object') {
+        return { [raw]: { userId: raw, phase: 'committed', progressPending: true, sessionPending: true } };
+    }
+    if (parsed.userId) parsed = { [parsed.userId]: parsed };
+    const records = {};
+    Object.keys(parsed).forEach(id => {
+        const record = parsed[id];
+        if (!record || typeof record !== 'object') return;
+        records[id] = Object.assign({}, record, { userId: id, phase: record.phase === 'pending' ? 'pending' : 'committed' });
+    });
+    return records;
+}
+
+function writeDeletionRecords(records) {
+    try {
+        if (Object.keys(records).length === 0) {
+            localStorage.removeItem(DELETED_USER_KEY);
+        } else {
+            localStorage.setItem(DELETED_USER_KEY, JSON.stringify(records));
+        }
+    } catch (err) {
+        console.warn('Could not write the deletion records:', err);
+    }
+}
+
+function readDeletionRecord(userId) {
+    return readDeletionRecords()[userId] || null;
+}
+
+function writeDeletionRecord(record) {
+    const records = readDeletionRecords();
+    records[record.userId] = record;
+    writeDeletionRecords(records);
+}
+
+function removeDeletionRecord(userId) {
+    const records = readDeletionRecords();
+    if (!Object.prototype.hasOwnProperty.call(records, userId)) return;
+    delete records[userId];
+    writeDeletionRecords(records);
+}
+
+function hasDeletionRecords() {
+    return Object.keys(readDeletionRecords()).length > 0;
+}
+
+function isDeletedUserSession(session) {
+    return !!(session && session.user && session.user.id && readDeletionRecord(session.user.id));
 }
 
 // Before anything irreversible: record the attempt and prove the record is
 // there. A browser that cannot keep it would not remember a commit either,
-// so the deletion does not start. The record is browser-wide, so it carries
-// an attempt id: another tab's attempt for the same account may still be
-// unanswered, and only the attempt that wrote a pending record may clear
-// it. Resolves { attempt, existed } (existed: a pending record of this
+// so the deletion does not start. The record is shared by every tab, so it
+// carries an attempt id: another tab's attempt for the same account may
+// still be unanswered, and only the attempt that wrote a pending record may
+// clear it. Resolves { attempt, existed } (existed: a pending record of this
 // account was already there, so an earlier attempt may yet commit), or null.
 function recordPendingDeletion(userId) {
-    const earlier = readDeletedUserMarker();
-    const existed = !!(earlier && earlier.userId === userId && earlier.phase === 'pending');
+    const earlier = readDeletionRecord(userId);
+    const existed = !!(earlier && earlier.phase === 'pending');
     const attempt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    writeDeletedUserMarker({ userId, phase: 'pending', attempt });
-    const check = readDeletedUserMarker();
-    if (!(check && check.userId === userId && check.phase === 'pending' && check.attempt === attempt)) return null;
+    writeDeletionRecord({ userId, phase: 'pending', attempt });
+    const check = readDeletionRecord(userId);
+    if (!(check && check.phase === 'pending' && check.attempt === attempt)) return null;
     return { attempt, existed };
 }
 
 function clearPendingDeletion(userId, attempt) {
-    const current = readDeletedUserMarker();
-    if (current && current.userId === userId && current.phase === 'pending' && current.attempt === attempt) {
-        clearDeletedUserMarker();
+    const current = readDeletionRecord(userId);
+    if (current && current.phase === 'pending' && current.attempt === attempt) {
+        removeDeletionRecord(userId);
     }
 }
 
@@ -620,49 +676,24 @@ function clearPendingDeletion(userId, attempt) {
 // stays as it is: the next load retries the idempotent RPC, which finds
 // nothing left, and finishes the cleanup from there.
 function commitDeletionRecord(userId) {
-    writeDeletedUserMarker({ userId, phase: 'committed', progressPending: true, sessionPending: true });
-    const check = readDeletedUserMarker();
-    const ok = !!(check && check.userId === userId && check.phase === 'committed');
+    writeDeletionRecord({ userId, phase: 'committed', progressPending: true, sessionPending: true });
+    const check = readDeletionRecord(userId);
+    const ok = !!(check && check.phase === 'committed');
     if (!ok) console.warn('Could not record the commit; the pending record stays and the next load finishes the job.');
     return ok;
 }
 
-function deletedUserId() {
-    const marker = readDeletedUserMarker();
-    return marker ? marker.userId : null;
-}
-
-function writeDeletedUserMarker(marker) {
-    try {
-        localStorage.setItem(DELETED_USER_KEY, JSON.stringify(marker));
-    } catch (err) {
-        console.warn('Could not record the deleted-user marker:', err);
-    }
-}
-
-function clearDeletedUserMarker() {
-    try {
-        localStorage.removeItem(DELETED_USER_KEY);
-    } catch (err) {
-        console.warn('Could not clear the deleted-user marker:', err);
-    }
-}
-
-// Record which cleanup steps still stand; drop the marker once none does.
+// Record which cleanup steps still stand; drop the record once none does.
 // Only a committed record has steps to settle; a pending one is left alone.
-function settleDeletedUserMarker(userId, patch) {
-    const current = readDeletedUserMarker();
-    if (!current || current.userId !== userId || current.phase !== 'committed') return;
+function settleDeletionRecord(userId, patch) {
+    const current = readDeletionRecord(userId);
+    if (!current || current.phase !== 'committed') return;
     const next = Object.assign({}, current, patch);
     if (!next.progressPending && !next.sessionPending) {
-        clearDeletedUserMarker();
+        removeDeletionRecord(userId);
     } else {
-        writeDeletedUserMarker(next);
+        writeDeletionRecord(next);
     }
-}
-
-function isDeletedUserSession(session) {
-    return !!(session && session.user && session.user.id && session.user.id === deletedUserId());
 }
 
 // Take the session Web Lock for at most `timeoutMs`. Another tab can hold it
@@ -780,18 +811,34 @@ async function endInitiatingSession(asInitiator, session, userId) {
     return ran;
 }
 
-// Another account is signing in while a committed deletion's cleanup is
-// still recorded. Whatever that deletion left on this device is theirs now,
+// An account is signing in while deletions of other accounts are still
+// recorded here. Whatever those deletions left on this device is theirs now,
 // except what this page holds in memory: it was loaded from the shared store
-// (#52) and may be the deleted account's list, which their sync would
-// otherwise upload under their name. Memory starts empty; storage is left to
-// them. A pending record (an unanswered deletion of someone else's account)
-// is not theirs to settle and stays until that account's credentials return.
-function takeOverFromDeletedAccount() {
-    const record = readDeletedUserMarker();
-    if (!record || record.phase !== 'committed') return;
-    completedItems = {};
-    clearDeletedUserMarker();
+// (#52) and may be another account's list, which their sync would otherwise
+// upload under their name. Memory starts empty, once per record and account.
+// A committed record's cleanup is settled by the takeover and the record
+// goes; a pending record (an unanswered deletion of someone else's account)
+// is not theirs to settle and stays, marked as taken over, until that
+// account's credentials return.
+function takeOverFromDeletedAccounts(newUserId) {
+    const records = readDeletionRecords();
+    let emptyMemory = false;
+    let changed = false;
+    Object.keys(records).forEach(userId => {
+        if (userId === newUserId) return;
+        const record = records[userId];
+        if (record.phase === 'committed') {
+            delete records[userId];
+            emptyMemory = true;
+            changed = true;
+        } else if (record.takenOverBy !== newUserId) {
+            records[userId] = Object.assign({}, record, { takenOverBy: newUserId });
+            emptyMemory = true;
+            changed = true;
+        }
+    });
+    if (emptyMemory) completedItems = {};
+    if (changed) writeDeletionRecords(records);
 }
 
 // One delete_user() call, bounded by the attempt timeout. Resolves
@@ -842,11 +889,11 @@ async function resolvePendingDeletion(marker, verifiedSession) {
         console.warn('Finished the unfinished deletion; the account is gone.');
         announceAccountDeleted(userId);
         commitDeletionRecord(userId);
-        return readDeletedUserMarker();
+        return readDeletionRecord(userId);
     }
     if (!isAmbiguousRpcError(error) && isMissingRpcError(error)) {
         console.warn('delete_user() is not configured, so the unfinished deletion cannot have happened.');
-        clearDeletedUserMarker();
+        removeDeletionRecord(userId);
         return null;
     }
     console.warn('The unfinished deletion could not be settled:', error.message);
@@ -901,7 +948,7 @@ async function finishPendingDeletionCleanup(marker) {
         // and stays ignored meanwhile.
         outcome = finish(false);
     }
-    settleDeletedUserMarker(userId, {
+    settleDeletionRecord(userId, {
         progressPending: marker.progressPending && !(ran || reason === 'no-locks'),
         sessionPending: !outcome.sessionSettled
     });
@@ -1019,7 +1066,7 @@ async function performAccountDeletion(userId, state) {
         // alone when it might now be someone else's.
         completedItems = {};
     }
-    settleDeletedUserMarker(userId, { progressPending: !progressSettled });
+    settleDeletionRecord(userId, { progressPending: !progressSettled });
 
     // End only the session that was just deleted. If another account signed in
     // on this device meanwhile (another tab), its stored session is left in
@@ -1034,7 +1081,7 @@ async function performAccountDeletion(userId, state) {
             onUserLoggedOut();
         }
     }
-    settleDeletedUserMarker(userId, { sessionPending: !sessionSettled });
+    settleDeletionRecord(userId, { sessionPending: !sessionSettled });
 
     let sessionChanged = false;
     try {
