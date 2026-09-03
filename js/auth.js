@@ -191,6 +191,10 @@ function finishMagicLinkSignIn(pending) {
                     await onUserLoggedIn();
                 } else {
                     currentUser = null;
+                    // Memory follows the outcome, never what was there;
+                    // storage may be another account's, so nothing is
+                    // written.
+                    completedItems = {};
                     onUserLoggedOut();
                 }
             };
@@ -261,9 +265,8 @@ async function initAuth() {
                 if (record.phase === 'pending') {
                     record = await resolvePendingDeletion(record);
                     // The unknown-outcome message promised to say how it
-                    // ended: a commit or a void record is reported below.
-                    if (!record) resolvedNow.push('void');
-                    else if (record.phase === 'committed') resolvedNow.push('committed');
+                    // ended: a commit is reported below.
+                    if (record && record.phase === 'committed') resolvedNow.push('committed');
                 }
                 if (record && record.phase === 'committed' && record.done) {
                     // Finished earlier; only a session put back since then
@@ -279,8 +282,6 @@ async function initAuth() {
         }
         if (resolvedNow.includes('committed')) {
             alert(UI_TRANSLATIONS[currentLang].deleteSuccess);
-        } else if (resolvedNow.includes('void')) {
-            alert(UI_TRANSLATIONS[currentLang].deleteNotConfigured);
         }
 
         // Fetch existing active session
@@ -306,6 +307,9 @@ async function initAuth() {
                 // whatever account this page still had in memory is stale.
                 if (currentUser) {
                     currentUser = null;
+                    // The list in memory was that account's; storage may be
+                    // someone else's, so it is not written.
+                    completedItems = {};
                     onUserLoggedOut();
                 }
                 return;
@@ -948,10 +952,18 @@ function commitDeletionRecord(userId) {
 // session for a while. Only a committed record has steps to settle; a
 // pending one is left alone.
 function settleDeletionRecord(userId, patch) {
+    // Steps are only ever settled after a confirmed commit; when its record
+    // could not be stored, the pending attempt still stands for the account,
+    // and the step keys are what keep a later retry from redoing the clear
+    // over progress saved since.
     const current = readDeletionRecord(userId);
-    if (!current || current.phase !== 'committed') return;
+    if (!current) return;
     if (patch.progressPending === false) markStepSettled(userId, 'progress');
     if (patch.sessionPending === false) markStepSettled(userId, 'session');
+}
+
+function progressStepSettled(userId) {
+    return readSettledSteps(userId).progress !== null;
 }
 
 // Take the session Web Lock for at most `timeoutMs`. Another tab can hold it
@@ -1031,7 +1043,7 @@ async function clearLocalProgressUnlessTakenOver(userId) {
         // and settled the step meanwhile, storage may already hold new guest
         // progress, and only this tab's memory is dropped.
         const standing = readDeletionRecord(userId);
-        if (standing && standing.phase === 'committed' && !standing.progressPending) {
+        if ((standing && standing.phase === 'committed' && !standing.progressPending) || progressStepSettled(userId)) {
             return;
         }
         const holder = storedSessionUserId();
@@ -1147,9 +1159,8 @@ async function attemptDeleteRpc(client) {
 // the person asked for: the RPC is idempotent, so it is called again with
 // that account's credentials (the session it left behind, refreshed, or a
 // session the server just verified). Success means the account is gone,
-// whichever call did it, and the cleanup runs; the function not existing
-// means nothing could have happened and the record goes; anything else (no
-// answer, a credential the server refuses, no session of that account to
+// whichever call did it, and the cleanup runs; anything else (no answer, a
+// definite error, the function missing now, no session of that account to
 // call with) leaves the outcome unknown: nothing is restored and nothing is
 // wiped, and it is tried again on the next load or the next verified
 // sign-in. Resolves the record as it stands afterwards, or null.
@@ -1179,13 +1190,10 @@ async function resolvePendingDeletion(marker, verifiedSession) {
         // stored session it needs) stay for the next load to record it.
         return { userId, phase: 'committed', progressPending: true, sessionPending: true, unrecorded: true };
     }
-    if (!isAmbiguousRpcError(error) && isMissingRpcError(error)) {
-        // Only the attempts this resolution started from: another tab may
-        // have written a newer one, or committed, while the answer was out.
-        console.warn('delete_user() is not configured, so the unfinished deletion cannot have happened.');
-        removePendingAttempts(userId, marker.attempts || [marker.attempt]);
-        return readDeletionRecord(userId);
-    }
+    // A "function missing" answer to this retry says nothing about the
+    // earlier request either: the function may have been removed, or absent
+    // from a refreshed schema cache, after that one ran. Only a success can
+    // settle it, so it stays unknown like any other definite error.
     // Another tab, or a verified sign-in, may have committed this same
     // deletion while the answer was out: what stands now is what counts.
     const standingNow = readDeletionRecord(userId);
@@ -1224,7 +1232,7 @@ async function finishPendingDeletionCleanup(marker) {
         // hold the deleted account's list: never keep it.
         completedItems = {};
         let cleared = false;
-        if (standing.progressPending) {
+        if (standing.progressPending && !progressStepSettled(userId)) {
             // On a takeover storage is theirs (#52); their sync refills
             // memory.
             if (takenOver) {
@@ -1320,7 +1328,11 @@ async function performAccountDeletion(userId, state) {
     if (!record) {
         throw new Error('Could not record the deletion in this browser; deletion not started');
     }
-    let sawAmbiguous = !!record.existed;
+    // Whether this attempt's own calls ever went unanswered (then its own
+    // record must stay: it may have committed), as opposed to other
+    // attempts standing (then this one's definite answer still cannot vouch
+    // for the account, but its own record is done with).
+    let ownUnanswered = false;
     let rpcError = null;
     let alreadyCommitted = !!record.alreadyCommitted;
     if (alreadyCommitted) {
@@ -1332,11 +1344,12 @@ async function performAccountDeletion(userId, state) {
         for (let attempt = 1; attempt <= 3; attempt++) {
             ({ error: rpcError } = await attemptDeleteRpc(asInitiator));
             if (!rpcError || !isAmbiguousRpcError(rpcError)) break;
-            sawAmbiguous = true;
+            ownUnanswered = true;
             console.warn(`delete_user() attempt ${attempt} got no usable answer:`, rpcError.message);
             if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
         }
     }
+    let othersUnanswered = false;
     if (rpcError) {
         // Another tab's attempt for the same account may have committed while
         // this one was out (two tabs can each write their attempt before
@@ -1347,25 +1360,28 @@ async function performAccountDeletion(userId, state) {
             console.warn('The account was deleted by another attempt meanwhile; finishing the cleanup.');
             rpcError = null;
             alreadyCommitted = true;
-        } else if (readPendingAttempts(userId).some(attempt => attempt !== record.attempt)) {
-            // Another attempt is still unanswered and may yet commit: this
-            // error cannot vouch for the account being active.
-            sawAmbiguous = true;
+        } else {
+            // Another attempt still unanswered may yet commit: this error
+            // cannot vouch for the account being active. This attempt's own
+            // record, though, is done with once its own history is definite;
+            // left standing it would keep the other's answer ambiguous too.
+            othersUnanswered = readPendingAttempts(userId).some(attempt => attempt !== record.attempt);
+            if (!ownUnanswered && !isAmbiguousRpcError(rpcError)) clearPendingDeletion(userId, record.attempt);
         }
     }
     if (rpcError) {
         // A definite error on a retry only describes that retry: an earlier
-        // unanswered attempt may already have committed (and, say, the token
-        // then failed). Only a success can settle it; otherwise it is unknown.
-        if (sawAmbiguous || isAmbiguousRpcError(rpcError)) {
+        // unanswered attempt (this one's, or another tab's) may already have
+        // committed (and, say, the token then failed). Only a success can
+        // settle it; otherwise it is unknown.
+        if (ownUnanswered || othersUnanswered || isAmbiguousRpcError(rpcError)) {
             state.uncertain = true;
             const uncertain = new Error('Lost the connection while deleting the account; outcome unknown');
             uncertain.code = 'DELETE_UNCERTAIN';
             throw uncertain;
         }
-        // A definite answer to this attempt: nothing was deleted by it, so
-        // its record goes (another tab's later record is left to that tab).
-        clearPendingDeletion(userId, record.attempt);
+        // A definite answer to this attempt: nothing was deleted by it, and
+        // its record is already gone.
         if (isMissingRpcError(rpcError)) {
             console.warn('delete_user() RPC is not configured; nothing deleted. See README.');
             const notConfigured = new Error('Account deletion is not configured on this project');
