@@ -711,7 +711,9 @@ function setupEventListeners() {
     // Auth Modal events
     authBtn.addEventListener('click', async () => {
         if (currentUser && supabaseClient) {
-            await signOutCurrentUser();
+            // False: the stored sign-in could be neither removed nor marked,
+            // so nothing changed and the person is still signed in.
+            if ((await signOutCurrentUser()) === false) alert(UI_TRANSLATIONS[currentLang].signOutFailed);
         } else {
             authActions.style.display = 'block';
             magicLinkSuccess.style.display = 'none';
