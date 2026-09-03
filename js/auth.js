@@ -1004,11 +1004,13 @@ async function clearLocalProgressUnlessTakenOver(userId) {
     };
     const { ran, reason } = await withSessionLock(decide, deleteAttemptTimeoutMs());
     if (ran) return true;
-    if (reason === 'no-locks') {
-        decide();
-        return true;
-    }
-    console.warn('Session lock unavailable; stored progress is cleared on the next load instead.');
+    // Without the lock (no Web Locks at all, or one that never came free)
+    // the check-and-clear could straddle another tab installing a
+    // replacement account and wipe their progress, so storage is not
+    // touched and the step stays pending; only this page's memory goes.
+    console.warn(reason === 'no-locks'
+        ? 'No Web Locks; stored progress is left as it is and the step stays pending.'
+        : 'Session lock unavailable; stored progress is cleared on the next load instead.');
     completedItems = {};
     return false;
 }
@@ -1198,26 +1200,28 @@ async function finishPendingDeletionCleanup(marker) {
     // to call the RPC again and record the commit.
     const mayRemoveSession = !marker.unrecorded;
     const { ran, result, reason } = await withSessionLock(() => finish(mayRemoveSession), deleteAttemptTimeoutMs());
-    let outcome = result;
     if (!ran) {
-        if (reason !== 'no-locks') {
-            // Storage waits for a lock; what is on screen does not.
-            console.warn('Session lock unavailable; deletion cleanup deferred to the next load.');
-            completedItems = {};
-            renderList();
-            updateProgress();
-            return;
-        }
-        // No lock anywhere: the progress decision is safe enough (it only
-        // reads the holder), the removal is not; the entry is left to expire
-        // and stays ignored meanwhile.
-        outcome = finish(false);
-    }
-    if (outcome.cleared) {
-        console.warn('Dropped the progress of an account deleted from this browser.');
+        // Without the lock (none at all, or one that never came free) neither
+        // the stored progress nor the session entry is touched: the
+        // check-and-clear could straddle another tab installing a
+        // replacement account. Both steps stay pending; the record keeps the
+        // session from being restored meanwhile. What is on screen does not
+        // wait for a lock.
+        console.warn(reason === 'no-locks'
+            ? 'No Web Locks; deletion cleanup left pending.'
+            : 'Session lock unavailable; deletion cleanup deferred to the next load.');
+        completedItems = {};
         renderList();
         updateProgress();
+        return;
     }
+    // Memory was reset under the lock whether or not this invocation was the
+    // one to clear storage; the screen follows either way.
+    if (result.cleared) {
+        console.warn('Dropped the progress of an account deleted from this browser.');
+    }
+    renderList();
+    updateProgress();
 }
 
 async function performAccountDeletion(userId, state) {
