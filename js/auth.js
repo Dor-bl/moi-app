@@ -21,52 +21,45 @@ const SIGNED_OUT_ENTRY_KEY = 'moiCheckSignedOutSession';
 // sign-in of it does, and lifts it.
 const SIGNED_OUT_USER_PREFIX = 'moiCheckSignedOut:';
 
-// The accounts an explicit sign-in is storing the session of right now, by
-// user id (a magic link being installed, see finishMagicLinkSignIn; an
-// OAuth callback being consumed, below): the one write that goes through
-// the guards on its own account (the sign-out guard above, a session read
-// left running; see sessionWriteRefused), and no other account's. Declared
-// before the client, whose adapter reads it and whose start-up may store
-// the callback's session.
+// The sessions an explicit sign-in is storing right now, by access token
+// (a magic link being installed, see finishMagicLinkSignIn; an OAuth
+// callback being consumed, below): the one write that goes through the
+// guards on its account (the sign-out guard above, a session read left
+// running; see sessionWriteRefused), and no other write, not even another
+// session of the same account landing meanwhile. Declared before the
+// client, whose adapter reads it and whose start-up may store the
+// callback's session.
 const explicitSignIns = new Map();
 
-function beginExplicitSignIn(userId) {
-    explicitSignIns.set(userId, (explicitSignIns.get(userId) || 0) + 1);
+function beginExplicitSignIn(accessToken) {
+    explicitSignIns.set(accessToken, (explicitSignIns.get(accessToken) || 0) + 1);
 }
 
-function endExplicitSignIn(userId) {
-    const left = (explicitSignIns.get(userId) || 0) - 1;
-    if (left > 0) explicitSignIns.set(userId, left);
-    else explicitSignIns.delete(userId);
+function endExplicitSignIn(accessToken) {
+    const left = (explicitSignIns.get(accessToken) || 0) - 1;
+    if (left > 0) explicitSignIns.set(accessToken, left);
+    else explicitSignIns.delete(accessToken);
 }
 
-// The account an access token names (its sub claim), read without
-// verifying it: only ever used to exempt the write of that account's
-// session, which the library stores only after the server said whose the
-// token is.
-function jwtSubject(token) {
-    try {
-        const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-        const sub = JSON.parse(atob(payload)).sub;
-        return typeof sub === 'string' && sub ? sub : null;
-    } catch {
-        return null;
-    }
+// Whether a session value (as stored) is the one an explicit sign-in is
+// storing.
+function isExplicitSignIn(parsed) {
+    return !!(parsed && typeof parsed.access_token === 'string' && explicitSignIns.has(parsed.access_token));
 }
 
 const oauthCallback = (() => {
     try {
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
         const accessToken = params.get('access_token');
-        return accessToken ? { access_token: accessToken, userId: jwtSubject(accessToken) } : null;
+        return accessToken ? { access_token: accessToken } : null;
     } catch {
         return null;
     }
 })();
 // The callback's session is stored by the library while it initialises
-// (after asking the server whose token it is): an explicit sign-in of that
-// account, exempt from its guards until then.
-if (oauthCallback && oauthCallback.userId) beginExplicitSignIn(oauthCallback.userId);
+// (after asking the server whose token it is): an explicit sign-in,
+// exempt from the guards on its account until then.
+if (oauthCallback) beginExplicitSignIn(oauthCallback.access_token);
 
 let supabaseClient = null;
 if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PROJECT_ID')) {
@@ -81,9 +74,9 @@ if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PRO
             storage: sessionStorageAdapter()
         }
     });
-    if (oauthCallback && oauthCallback.userId) {
+    if (oauthCallback) {
         const initialized = supabaseClient.auth.initializePromise;
-        const end = () => endExplicitSignIn(oauthCallback.userId);
+        const end = () => endExplicitSignIn(oauthCallback.access_token);
         if (initialized && typeof initialized.then === 'function') initialized.then(end, end);
         else end();
     }
@@ -214,9 +207,8 @@ function finishMagicLinkSignIn(pending) {
 
         // Verified through a client that stores nothing, so the session is
         // in hand before anything is written: installing it into the shared
-        // client is then the explicit sign-in of exactly that account (see
-        // explicitSignIns), and no other account's write is exempted
-        // meanwhile.
+        // client is then the explicit sign-in of exactly that session (see
+        // explicitSignIns), and no other write is exempted meanwhile.
         let { data, error } = await magicLinkClient().auth.verifyOtp({
             token_hash: pending.tokenHash,
             type: pending.type
@@ -224,14 +216,14 @@ function finishMagicLinkSignIn(pending) {
         const verified = !error && data && data.session && data.session.user ? data.session : null;
         if (!error && !verified) error = new Error('Verification returned no session');
         if (verified) {
-            beginExplicitSignIn(verified.user.id);
+            beginExplicitSignIn(verified.access_token);
             try {
                 ({ error } = await supabaseClient.auth.setSession({
                     access_token: verified.access_token,
                     refresh_token: verified.refresh_token
                 }));
             } finally {
-                endExplicitSignIn(verified.user.id);
+                endExplicitSignIn(verified.access_token);
             }
         }
 
@@ -980,8 +972,8 @@ function sessionStorageAdapter() {
                 localStorage.removeItem(SIGNED_OUT_ENTRY_KEY);
                 // The account is explicitly signed in again: its sign-out
                 // guard (see signOutCurrentUser) has served.
-                const userId = sessionValueUserId(value);
-                if (userId !== null && explicitSignIns.has(userId)) clearSignedOutGuard(userId);
+                const parsed = parseSessionValue(value);
+                if (isExplicitSignIn(parsed)) clearSignedOutGuard(parsed.user.id);
             }
         }),
         removeItem: (key) => locked(key, () => {
@@ -1012,7 +1004,7 @@ function sessionWriteRefused(value) {
         const parsed = JSON.parse(value);
         const userId = parsed && parsed.user && parsed.user.id;
         if (!userId) return false;
-        const explicit = explicitSignIns.has(userId);
+        const explicit = isExplicitSignIn(parsed);
         // An account this browser signed out of (see signOutCurrentUser)
         // comes back only through an explicit sign-in of it: a refresh of
         // it still in flight in some tab when the sign-out ran (finished on
@@ -1160,11 +1152,11 @@ function sweepSignedOutGuards() {
     storageKeysWithPrefix(SIGNED_OUT_USER_PREFIX).forEach(key => signedOutGuardStands(key.slice(SIGNED_OUT_USER_PREFIX.length)));
 }
 
-// The user id a stored session value names, or null.
-function sessionValueUserId(value) {
+// A stored session value parsed, when it names a user; else null.
+function parseSessionValue(value) {
     try {
         const parsed = JSON.parse(value);
-        return parsed && parsed.user && parsed.user.id ? parsed.user.id : null;
+        return parsed && parsed.user && parsed.user.id ? parsed : null;
     } catch {
         return null;
     }
@@ -1673,13 +1665,19 @@ async function signOutCurrentUser() {
     // bring it back, as before the guard existed.
     const guarded = writeSignedOutGuard(userId);
     if (!guarded) console.warn('The sign-out could not be recorded; a refresh in flight elsewhere may restore the account.');
-    const { ran, result: removed } = await withSessionLock(() => removeStoredSessionIfUser(userId), deleteAttemptTimeoutMs());
-    // 'removed', 'marked', 'absent' (storage no longer holds the account),
-    // or null when neither the removal nor the marking could be had.
+    // The entry as it stands with the guard written: only an explicit
+    // sign-in of the account can replace it from here, and one that does
+    // is newer than this sign-out, so it is neither removed, marked nor
+    // revoked (this tab still goes to guest mode).
+    const entry = rawStoredSession();
+    const { ran, result: removed } = await withSessionLock(() => removeStoredSessionIfEntry(userId, entry), deleteAttemptTimeoutMs());
+    // 'removed', 'marked', 'absent' (storage no longer holds the account,
+    // or not as it stood), or null when neither the removal nor the
+    // marking could be had.
     let outcome = null;
     if (ran) outcome = removed ? 'removed' : 'absent';
     else {
-        outcome = markStoredSessionSignedOut(userId);
+        outcome = markStoredSessionSignedOut(userId, entry);
         if (outcome === 'marked') console.warn('No session lock; the stored session is left and marked signed out.');
     }
     if (outcome === null) {
@@ -1688,7 +1686,7 @@ async function signOutCurrentUser() {
         return false;
     }
     if (outcome === 'absent') {
-        console.warn('Storage no longer holds this account; nothing to revoke.');
+        console.warn('Storage no longer holds this account as it stood; nothing to revoke.');
     } else if (session && session.user && session.user.id === userId && session.access_token) {
         try {
             const revoke = clientForSession(session).auth.admin.signOut(session.access_token, 'global');
@@ -1710,14 +1708,15 @@ async function signOutCurrentUser() {
     return true;
 }
 
-// Mark the stored entry signed out, when it is the account's (see
-// isSignedOutEntry), and read the marker back: one that did not land
-// (storage full) would leave the account to be restored on the next load.
-// 'marked', 'absent' (the entry is not this account's), or null.
-function markStoredSessionSignedOut(userId) {
+// Mark the stored entry signed out, when it is the account's and still
+// `entry` (see isSignedOutEntry), and read the marker back: one that did
+// not land (storage full) would leave the account to be restored on the
+// next load. 'marked', 'absent' (the entry is not this account's, or not
+// as it stood), or null.
+function markStoredSessionSignedOut(userId, entry) {
     try {
         const current = rawStoredSession();
-        if (current === null || storedSessionUserId() !== userId) return 'absent';
+        if (entry === null || current !== entry || storedSessionUserId() !== userId) return 'absent';
         localStorage.setItem(SIGNED_OUT_ENTRY_KEY, current);
         return localStorage.getItem(SIGNED_OUT_ENTRY_KEY) === current ? 'marked' : null;
     } catch (err) {
@@ -1754,6 +1753,15 @@ function storedSessionUserId() {
 // above), so nothing can swap the entry between the check and the removal.
 function removeStoredSessionIfUser(userId) {
     if (storedSessionUserId() !== userId) return false;
+    localStorage.removeItem(sessionStorageKey());
+    return true;
+}
+
+// Remove the stored session entry only if it belongs to `userId` and is
+// still exactly `entry` (see signOutCurrentUser). Must run under the
+// session lock, as above.
+function removeStoredSessionIfEntry(userId, entry) {
+    if (entry === null || rawStoredSession() !== entry || storedSessionUserId() !== userId) return false;
     localStorage.removeItem(sessionStorageKey());
     return true;
 }
