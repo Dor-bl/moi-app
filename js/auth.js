@@ -705,25 +705,17 @@ function sessionStorageKey() {
 // cleanup below holds for its check-and-remove; reads are untouched. Without
 // Web Locks the adapter writes straight through and the cleanup does not
 // remove the entry (see endInitiatingSession).
-// The accounts this tab has acted for: the one whose session it loaded
-// with, and every one whose session it stored itself (a sign-in here, a
-// refresh here). The library's removal of the session entry is honoured
-// only for one of them, or for the account this tab is signed in as; see
-// sessionRemovalRefused.
-const accountsOfThisTab = new Set();
-
-function noteAccountOfThisTab(value) {
-    try {
-        const parsed = JSON.parse(value);
-        if (parsed && parsed.user && parsed.user.id) accountsOfThisTab.add(parsed.user.id);
-    } catch {
-        // Not a session; nothing to note.
-    }
-}
-
 function sessionStorageAdapter() {
+    // The session entry as this tab's library last had it: what it loaded
+    // with, then whatever it stored itself (a sign-in here, a refresh
+    // here). The library removes the entry without saying whose session it
+    // means, so its removal is honoured only while the entry still is that
+    // (see sessionRemovalRefused): an entry another tab has rewritten since
+    // (a replacement's sign-in, a fresh refresh of the same account) is
+    // that tab's, whatever accounts this one is signed in as or has used.
+    let entryAsLeft = null;
     try {
-        noteAccountOfThisTab(localStorage.getItem(sessionStorageKey()));
+        entryAsLeft = localStorage.getItem(sessionStorageKey());
     } catch (err) {
         console.warn('Could not read the stored session:', err);
     }
@@ -745,20 +737,21 @@ function sessionStorageAdapter() {
                 return;
             }
             localStorage.setItem(key, value);
-            if (key === sessionStorageKey()) noteAccountOfThisTab(value);
+            if (key === sessionStorageKey()) entryAsLeft = value;
         }),
         removeItem: (key) => locked(key, () => {
             // The library removes a session whose refresh the server
             // refused for good, and on a sign-out, without saying whose: it
-            // is honoured only for the account this tab is signed in as (a
-            // replacement stored by another tab meanwhile is theirs), and
-            // never while a deletion of that account is unanswered (see
+            // is honoured only for the entry as this tab's library left it
+            // (one another tab rewrote since is theirs), and never while a
+            // deletion of that account is unanswered (see
             // sessionRemovalRefused).
-            if (key === sessionStorageKey() && sessionRemovalRefused()) {
-                console.warn('Keeping the stored session: not this tab\'s account, or its deletion is still unanswered.');
+            if (key === sessionStorageKey() && sessionRemovalRefused(entryAsLeft)) {
+                console.warn('Keeping the stored session: not as this tab left it, or its deletion is still unanswered.');
                 return;
             }
             localStorage.removeItem(key);
+            if (key === sessionStorageKey()) entryAsLeft = null;
         })
     };
 }
@@ -785,23 +778,29 @@ function sessionWriteRefused(value) {
 }
 
 // Whether the library's removal of the stored session entry is refused.
-// The library removes it without knowing whose it is, so a refresh of an
-// account this tab acted for, still in flight when another tab stored a
-// replacement, would on failing remove the replacement's entry (the lock
-// orders the two writes, it does not tell them apart): the removal is
-// honoured only while the entry holds the account this tab is signed in
-// as, or one this tab has acted for (loaded with, or stored itself), which
-// covers a tab signed in as nobody as well. And the entry of an account
-// whose deletion is unanswered is removed only by that deletion (the
-// cleanup after its commit, under the lock): a sign-out elsewhere, or a
-// refresh the server refused, would otherwise take away the credentials
-// the retry needs, and the record could never be settled from this browser.
-function sessionRemovalRefused() {
+// The library removes it without knowing whose it is, so a refresh still in
+// flight when another tab rewrote the entry (a replacement's sign-in, or a
+// fresh refresh of the same account) would, on failing, remove what that
+// tab stored (the lock orders the two writes, it does not tell them
+// apart): the removal is honoured only while the entry is exactly what this
+// tab's library loaded or last stored itself, whoever this tab is signed in
+// as. And the entry of an account whose deletion is unanswered is removed
+// only by that deletion (the cleanup after its commit, under the lock): a
+// sign-out elsewhere, or a refresh the server refused, would otherwise take
+// away the credentials the retry needs, and the record could never be
+// settled from this browser.
+function sessionRemovalRefused(entryAsLeft) {
+    let current;
+    try {
+        current = localStorage.getItem(sessionStorageKey());
+    } catch (err) {
+        console.warn('Could not read the stored session:', err);
+        return false;
+    }
+    if (current === null) return false;
+    if (current !== entryAsLeft) return true;
     const holder = storedSessionUserId();
-    if (holder === null) return false;
-    const ownAccount = (currentUser && currentUser.id === holder) || accountsOfThisTab.has(holder);
-    if (!ownAccount) return true;
-    const record = readDeletionRecord(holder);
+    const record = holder === null ? null : readDeletionRecord(holder);
     return !!(record && record.phase === 'pending');
 }
 
@@ -1077,8 +1076,11 @@ function isDeletedUserSession(session) {
 // yet commit), { alreadyCommitted: true }, or
 // { writeFailed: true, existed } when the attempt could not be recorded.
 function recordPendingDeletion(userId) {
+    // A record committed without confirmation (see
+    // settleUnreachableDeletion) is not a commit: the account may still
+    // exist, and only a successful RPC confirms it.
     const earlier = readDeletionRecord(userId);
-    if (earlier && earlier.phase === 'committed') return { alreadyCommitted: true };
+    if (earlier && earlier.phase === 'committed' && !earlier.unconfirmed) return { alreadyCommitted: true };
     const existed = !!(earlier && earlier.phase === 'pending');
     const attempt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     try {
@@ -1092,7 +1094,7 @@ function recordPendingDeletion(userId) {
     // swept the attempts before this one existed: look again, and step back
     // if so.
     const now = readDeletionRecord(userId);
-    if (now && now.phase === 'committed') {
+    if (now && now.phase === 'committed' && !now.unconfirmed) {
         removePendingAttempts(userId, [attempt]);
         return { alreadyCommitted: true };
     }
@@ -1485,8 +1487,10 @@ async function finishPendingDeletionCleanup(marker) {
         renderList();
         updateProgress();
         // Without Web Locks no later load can clear the browser copy either;
-        // the caller tells the person. A lock that timed out is retried.
-        return { localCleanupIncomplete: reason === 'no-locks' };
+        // the caller tells the person, unless the step was settled before
+        // (another tab's clear, a takeover). A lock that timed out is
+        // retried.
+        return { localCleanupIncomplete: reason === 'no-locks' && !progressStepSettled(userId) };
     }
     // Memory was reset under the lock whether or not this invocation was the
     // one to clear storage; the screen follows either way.
@@ -1587,8 +1591,10 @@ async function performAccountDeletion(userId, state) {
         // this one was out (two tabs can each write their attempt before
         // seeing the other's), in which case this error says nothing: the
         // account is gone and the cleanup below is what is left to do.
+        // (A record committed without confirmation is not that: the
+        // account may still exist, so this error stands.)
         const standingNow = readDeletionRecord(userId);
-        if (standingNow && standingNow.phase === 'committed') {
+        if (standingNow && standingNow.phase === 'committed' && !standingNow.unconfirmed) {
             console.warn('The account was deleted by another attempt meanwhile; finishing the cleanup.');
             rpcError = null;
             alreadyCommitted = true;
@@ -1639,7 +1645,9 @@ async function performAccountDeletion(userId, state) {
     // (guest progress saved since would be lost).
     const standing = readDeletionRecord(userId);
     const progressStillPending = !(standing && standing.phase === 'committed' && !standing.progressPending);
-    let progressSettled = false;
+    // A step another attempt settled counts as settled here too (the copy
+    // is not reported as uncleared below).
+    let progressSettled = !progressStillPending;
     if (progressStillPending) {
         try {
             // Clear the local copy: leaving it would make syncCloudProgress()
