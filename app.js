@@ -711,7 +711,7 @@ function setupEventListeners() {
     // Auth Modal events
     authBtn.addEventListener('click', async () => {
         if (currentUser && supabaseClient) {
-            await supabaseClient.auth.signOut();
+            await signOutCurrentUser();
         } else {
             authActions.style.display = 'block';
             magicLinkSuccess.style.display = 'none';

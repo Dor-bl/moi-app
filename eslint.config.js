@@ -32,6 +32,7 @@ export default [
         describeMagicLinkError: "readonly",
         deleteUserAccountAndData: "readonly",
         deletionOutcomeMessage: "readonly",
+        signOutCurrentUser: "readonly",
         getMilestoneObj: "readonly",
         showBadgeToast: "readonly",
         saveState: "readonly",

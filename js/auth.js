@@ -1,4 +1,4 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, deleteUserAccountAndData, deletionOutcomeMessage
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, deleteUserAccountAndData, deletionOutcomeMessage, signOutCurrentUser
 // Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
@@ -1190,6 +1190,42 @@ async function withSessionLock(fn, timeoutMs) {
     }
 }
 
+// The stored session entry as stored (a string, or null), read straight
+// from storage.
+function rawStoredSession() {
+    try {
+        return localStorage.getItem(sessionStorageKey());
+    } catch (err) {
+        console.warn('Could not read the stored session:', err);
+        return null;
+    }
+}
+
+// The explicit sign-out. The library revokes the session server-side and
+// tells the listener, but its own removal of the stored entry is honoured
+// only for the entry as this tab's library left it (see
+// sessionRemovalRefused), which a refresh by another tab may have replaced
+// since. The person's intent is to sign this account out here, so the entry
+// is removed for that account by a compare-and-remove, under the session
+// lock when it can be had (an unlocked one when it cannot: leaving the
+// session behind would sign the person back in on the next load).
+async function signOutCurrentUser() {
+    if (!supabaseClient) return;
+    const userId = currentUser ? currentUser.id : null;
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (err) {
+        console.warn('Sign-out failed:', err);
+    }
+    if (userId === null) return;
+    const { ran } = await withSessionLock(() => removeStoredSessionIfUser(userId), deleteAttemptTimeoutMs());
+    if (!ran) removeStoredSessionIfUser(userId);
+    if (currentUser && currentUser.id === userId) {
+        currentUser = null;
+        onUserLoggedOut();
+    }
+}
+
 // The user of the stored session, read straight from storage, or null.
 function storedSessionUser() {
     try {
@@ -1399,7 +1435,7 @@ function settleUnreachableDeletion(userId) {
 // retry is possible from here any more, and the record is settled without
 // confirmation instead (see settleUnreachableDeletion). Resolves the record
 // as it stands afterwards, or null.
-async function resolvePendingDeletion(marker, verifiedSession) {
+async function resolvePendingDeletion(marker, verifiedSession, retried = false) {
     const { userId } = marker;
     let session = verifiedSession || null;
     if (!session) {
@@ -1407,8 +1443,18 @@ async function resolvePendingDeletion(marker, verifiedSession) {
             console.warn('Outcome of an unfinished deletion is unknown; nothing restored or wiped.');
             return marker;
         }
+        const entryBefore = rawStoredSession();
         const read = await readSessionResultWithin(deleteAttemptTimeoutMs());
         if (read && !read.session && isDefinitiveAuthRejection(read.error)) {
+            // The refusal is final only for the session that was refused.
+            // Another tab may have stored a newer session of the account
+            // meanwhile (its own refresh succeeding), which the adapter kept
+            // from the library's removal: that one is retried with, once.
+            if (rawStoredSession() !== entryBefore && storedSessionUserId() === userId) {
+                if (!retried) return resolvePendingDeletion(marker, null, true);
+                console.warn('The stored session keeps changing under the retry; outcome stays unknown.');
+                return marker;
+            }
             return settleUnreachableDeletion(userId);
         }
         session = read === undefined ? undefined : read.session;
@@ -1631,11 +1677,14 @@ async function performAccountDeletion(userId, state) {
             // landing in between outranks this error just the same.
             othersUnanswered = !!(standingNow && standingNow.phase === 'pending' && standingNow.attempts.some(attempt => attempt !== record.attempt));
             if (!ownUnanswered && !isAmbiguousRpcError(rpcError)) clearPendingDeletion(userId, record.attempt);
+            // (An attempt another tab started after that read counts too.)
             const afterwards = readDeletionRecord(userId);
             if (afterwards && afterwards.phase === 'committed' && !afterwards.unconfirmed) {
                 console.warn('The account was deleted by another attempt meanwhile; finishing the cleanup.');
                 rpcError = null;
                 alreadyCommitted = true;
+            } else if (afterwards && afterwards.phase === 'pending' && afterwards.attempts.some(attempt => attempt !== record.attempt)) {
+                othersUnanswered = true;
             }
         }
     }
