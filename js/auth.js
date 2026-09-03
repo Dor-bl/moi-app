@@ -672,13 +672,16 @@ async function readSessionWithin(timeoutMs) {
 
 // The server refused the stored credentials for good: the refresh token is
 // gone (it went with the account, or a sign-out everywhere revoked it), as
-// opposed to a network failure or a server error, after which the same
-// credentials may still work. auth-js answers the former with an API error
-// (a 4xx) and the latter with a retryable one, and only removes the stored
-// session on the former (the adapter above keeps it while a deletion of the
-// account is unanswered).
+// opposed to a network failure, a server error or a rate limit (429), after
+// which the same credentials may still work. auth-js answers the former
+// with an API error carrying one of these statuses; the transient ones come
+// as a retryable error, or as an API error with another status, and none of
+// them settles anything (the adapter above keeps the stored session of an
+// account whose deletion is unanswered whatever the library concludes).
+const AUTH_REJECTION_STATUSES = [400, 401, 403, 404];
+
 function isDefinitiveAuthRejection(error) {
-    return !!(error && error.name === 'AuthApiError' && error.status >= 400 && error.status < 500);
+    return !!(error && error.name === 'AuthApiError' && AUTH_REJECTION_STATUSES.includes(error.status));
 }
 
 // Who holds the session the shared client sees: a user id, null for nobody,
@@ -702,7 +705,28 @@ function sessionStorageKey() {
 // cleanup below holds for its check-and-remove; reads are untouched. Without
 // Web Locks the adapter writes straight through and the cleanup does not
 // remove the entry (see endInitiatingSession).
+// The accounts this tab has acted for: the one whose session it loaded
+// with, and every one whose session it stored itself (a sign-in here, a
+// refresh here). The library's removal of the session entry is honoured
+// only for one of them, or for the account this tab is signed in as; see
+// sessionRemovalRefused.
+const accountsOfThisTab = new Set();
+
+function noteAccountOfThisTab(value) {
+    try {
+        const parsed = JSON.parse(value);
+        if (parsed && parsed.user && parsed.user.id) accountsOfThisTab.add(parsed.user.id);
+    } catch {
+        // Not a session; nothing to note.
+    }
+}
+
 function sessionStorageAdapter() {
+    try {
+        noteAccountOfThisTab(localStorage.getItem(sessionStorageKey()));
+    } catch (err) {
+        console.warn('Could not read the stored session:', err);
+    }
     const locked = (key, write) => {
         if (!hasWebLocks()) {
             write();
@@ -721,6 +745,7 @@ function sessionStorageAdapter() {
                 return;
             }
             localStorage.setItem(key, value);
+            if (key === sessionStorageKey()) noteAccountOfThisTab(value);
         }),
         removeItem: (key) => locked(key, () => {
             // The library removes a session whose refresh the server
@@ -760,20 +785,22 @@ function sessionWriteRefused(value) {
 }
 
 // Whether the library's removal of the stored session entry is refused.
-// The library removes it without knowing whose it is, so a refresh of this
-// tab's account still in flight when another tab stored a replacement
-// would, on failing, remove the replacement's entry (the lock orders the
-// two writes, it does not tell them apart): the removal is honoured only
-// while the entry holds the account this tab is signed in as, or while
-// this tab is signed in as nobody and has no stake. And the entry of an
-// account whose deletion is unanswered is removed only by that deletion
-// (the cleanup after its commit, under the lock): a sign-out elsewhere, or
-// a refresh the server refused, would otherwise take away the credentials
+// The library removes it without knowing whose it is, so a refresh of an
+// account this tab acted for, still in flight when another tab stored a
+// replacement, would on failing remove the replacement's entry (the lock
+// orders the two writes, it does not tell them apart): the removal is
+// honoured only while the entry holds the account this tab is signed in
+// as, or one this tab has acted for (loaded with, or stored itself), which
+// covers a tab signed in as nobody as well. And the entry of an account
+// whose deletion is unanswered is removed only by that deletion (the
+// cleanup after its commit, under the lock): a sign-out elsewhere, or a
+// refresh the server refused, would otherwise take away the credentials
 // the retry needs, and the record could never be settled from this browser.
 function sessionRemovalRefused() {
     const holder = storedSessionUserId();
     if (holder === null) return false;
-    if (currentUser && currentUser.id !== holder) return true;
+    const ownAccount = (currentUser && currentUser.id === holder) || accountsOfThisTab.has(holder);
+    if (!ownAccount) return true;
     const record = readDeletionRecord(holder);
     return !!(record && record.phase === 'pending');
 }
