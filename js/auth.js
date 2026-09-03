@@ -164,10 +164,17 @@ function finishMagicLinkSignIn(pending) {
         finishBtn.disabled = true;
         finishBtn.textContent = '...';
 
-        const { data, error } = await supabaseClient.auth.verifyOtp({
-            token_hash: pending.tokenHash,
-            type: pending.type
-        });
+        explicitSignInDepth++;
+        let data;
+        let error;
+        try {
+            ({ data, error } = await supabaseClient.auth.verifyOtp({
+                token_hash: pending.tokenHash,
+                type: pending.type
+            }));
+        } finally {
+            explicitSignInDepth--;
+        }
 
         finishBtn.disabled = false;
 
@@ -415,6 +422,24 @@ async function initAuth() {
             // signOutCurrentUser) is no session.
             if (session && isSignedOutEntry()) return;
             if (isDeletedUserSession(session)) {
+                // The event does not say the account holds the entry: the
+                // adapter may have refused its write because another,
+                // unrecorded account holds it. That account is what this tab
+                // keeps (or reconciles to, with memory emptied first, never
+                // uploaded), rather than going to guest mode.
+                const holder = storedSessionUserId();
+                if (holder !== null && holder !== session.user.id && !readDeletionRecord(holder)) {
+                    if (!(currentUser && currentUser.id === holder)) {
+                        const replacement = storedSessionUser();
+                        if (replacement) {
+                            if (hasDeletionRecords()) takeOverFromDeletedAccounts(replacement.id);
+                            completedItems = {};
+                            currentUser = replacement;
+                            await onUserLoggedIn();
+                        }
+                    }
+                    return;
+                }
                 // A refresh or restore of an account deleted (or being
                 // deleted) from this browser. SIGNED_IN is no proof of a
                 // fresh sign-in either (the library re-emits it for an
@@ -707,19 +732,60 @@ function clientForSession(session) {
     });
 }
 
+// A session read left running after its bound: its refresh may still land
+// in storage, long after whoever waited for it moved on (a deletion given
+// up, a sign-out done). Until it settles, the account it read is guarded
+// (see sessionWriteRefused): its session is not stored over another
+// account's entry, and not at all after a sign-out (the guard turned
+// strict), unless an explicit sign-in is what stores it.
+const outstandingReads = new Map();
+
+function guardOutstandingRead(userId, promise, strict = false) {
+    if (userId === null) return;
+    const guard = outstandingReads.get(userId) || { count: 0, strict: false };
+    guard.count++;
+    if (strict) guard.strict = true;
+    outstandingReads.set(userId, guard);
+    promise.then(
+        () => releaseOutstandingRead(userId),
+        () => releaseOutstandingRead(userId)
+    );
+}
+
+function releaseOutstandingRead(userId) {
+    const guard = outstandingReads.get(userId);
+    if (!guard) return;
+    guard.count--;
+    if (guard.count <= 0) outstandingReads.delete(userId);
+}
+
+function makeOutstandingReadStrict(userId) {
+    const guard = outstandingReads.get(userId);
+    if (guard) guard.strict = true;
+}
+
+// An explicit sign-in (a magic link being verified) is the one write that
+// goes through whatever guard stands for its account.
+let explicitSignInDepth = 0;
+
 // The session the shared client holds, read with a bound: getSession() first
 // refreshes an expired token over the network, and fetch has no timeout of
 // its own, so a stalled refresh would otherwise keep the dialog busy forever.
 // Resolves { session, error }: the session (null when there is none) with
 // the error it came with (a refresh the server refused, or could not be
 // reached for), or undefined when it could not be read in time (the read
-// itself is left running).
+// itself is left running, and the account it started from guarded until it
+// settles).
 async function readSessionResultWithin(timeoutMs) {
+    const holderAtStart = storedSessionUserId();
     const read = supabaseClient.auth.getSession().then(
         ({ data, error }) => ({ session: (data && data.session) || null, error: error || null }),
         (err) => ({ session: null, error: err || null })
     );
-    if (!(await settlesWithin(read, timeoutMs))) return undefined;
+    if (!(await settlesWithin(read, timeoutMs))) {
+        guardOutstandingRead(holderAtStart, read);
+        return undefined;
+    }
     return read;
 }
 
@@ -846,6 +912,14 @@ function sessionWriteRefused(value) {
         // not replace a replacement account's entry either: the record that
         // refuses it below exists only once the RPC has been sent.
         if (deletingUserId === userId && holder !== null && holder !== userId) return true;
+        // A read left running (see readSessionResultWithin) may be what
+        // writes this: not over another account's entry, and not at all
+        // after a sign-out, unless an explicit sign-in is writing.
+        const guard = outstandingReads.get(userId);
+        if (guard && explicitSignInDepth === 0) {
+            if (guard.strict) return true;
+            if (holder !== null && holder !== userId) return true;
+        }
         const record = readDeletionRecord(userId);
         if (!record && deletingUserId !== userId) return false;
         if (record && record.phase === 'committed') return true;
@@ -1330,6 +1404,9 @@ async function signOutCurrentUser() {
         return;
     }
     const session = await readSessionWithin(deleteAttemptTimeoutMs());
+    // A read that did not answer keeps running: its refresh must not put
+    // the account back after this sign-out (see readSessionResultWithin).
+    if (session === undefined) makeOutstandingReadStrict(userId);
     if (session && session.user && session.user.id === userId && session.access_token && storedSessionUserId() === userId) {
         try {
             const revoke = clientForSession(session).auth.admin.signOut(session.access_token, 'global');
