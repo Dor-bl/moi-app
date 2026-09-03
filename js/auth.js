@@ -838,7 +838,7 @@ function readSettledSteps(userId) {
             return null;
         }
     };
-    return { progress: read('progress'), session: read('session') };
+    return { progress: read('progress'), session: read('session'), confirmed: read('confirmed') };
 }
 
 function markStepSettled(userId, step, at) {
@@ -952,18 +952,26 @@ function readDeletionRecord(userId) {
             const progressPending = steps.progress === null;
             const sessionPending = steps.session === null;
             const done = !progressPending && !sessionPending;
-            const expiresAt = done ? Math.max(steps.progress, steps.session) + DELETION_TOMBSTONE_MS : undefined;
+            // A record committed without confirmation (see
+            // settleUnreachableDeletion) stays unconfirmed until a confirmed
+            // commit marks its own write-once key: whichever of the two
+            // published the record, a confirmation is never lost to it, and
+            // an unconfirmed record never expires (the account may still
+            // exist, and a sign-in of it is what finishes the deletion).
+            const unconfirmed = record.unconfirmed === true && steps.confirmed === null;
+            const settledAt = Math.max(steps.progress, steps.session, steps.confirmed || 0);
+            const expiresAt = done && !unconfirmed ? settledAt + DELETION_TOMBSTONE_MS : undefined;
             // A tombstone past its expiry goes, unless the deleted account
             // still owns the stored session (put back by a late refresh, and
             // not yet removed): the record must keep refusing it until then.
-            if (done && expiresAt <= Date.now() && storedSessionUserId() !== userId) {
+            if (expiresAt !== undefined && expiresAt <= Date.now() && storedSessionUserId() !== userId) {
                 removeDeletionRecord(userId);
                 return null;
             }
             // Any attempt still beside a committed record is stale (written
             // in the moment between the commit and its sweep of attempts).
             removePendingAttempts(userId, readPendingAttempts(userId));
-            return Object.assign({}, record, { phase: 'committed', progressPending, sessionPending, done, expiresAt });
+            return Object.assign({}, record, { phase: 'committed', progressPending, sessionPending, done, expiresAt, unconfirmed });
         }
     }
     const attempts = readPendingAttempts(userId);
@@ -1002,6 +1010,7 @@ function removeDeletionRecord(userId) {
         localStorage.removeItem(deletionRecordKey(userId));
         localStorage.removeItem(deletionStepKey(userId, 'progress'));
         localStorage.removeItem(deletionStepKey(userId, 'session'));
+        localStorage.removeItem(deletionStepKey(userId, 'confirmed'));
     } catch (err) {
         console.warn('Could not remove a deletion record:', err);
     }
@@ -1075,6 +1084,7 @@ function clearPendingDeletion(userId, attempt) {
 // the idempotent RPC, which finds nothing left, and finishes the cleanup
 // from there. Resolves true once a committed record stands.
 function commitDeletionRecord(userId, extra) {
+    const unconfirmed = !!(extra && extra.unconfirmed);
     const current = readDeletionRecord(userId);
     if (!(current && current.phase === 'committed')) {
         writeDeletionRecord(Object.assign({ userId, phase: 'committed', at: Date.now() }, extra || {}));
@@ -1082,6 +1092,10 @@ function commitDeletionRecord(userId, extra) {
     const check = readDeletionRecord(userId);
     const ok = !!(check && check.phase === 'committed');
     if (ok) {
+        // A confirmed commit is recorded in its own write-once key, so it
+        // stands whichever writer published the record (an unconfirmed
+        // settlement may have got there first, see readDeletionRecord).
+        if (!unconfirmed) markStepSettled(userId, 'confirmed');
         removePendingAttempts(userId, readPendingAttempts(userId));
     } else {
         console.warn('Could not record the commit; the pending record stays and the next load finishes the job.');
@@ -1360,7 +1374,10 @@ async function resolvePendingDeletion(marker, verifiedSession) {
         // A record committed without confirmation (see
         // settleUnreachableDeletion) is confirmed by this answer.
         const current = readDeletionRecord(userId);
-        if (current && current.phase === 'committed') return Object.assign({}, current, { unconfirmed: false });
+        if (current && current.phase === 'committed') {
+            markStepSettled(userId, 'confirmed');
+            return readDeletionRecord(userId) || current;
+        }
         if (commitDeletionRecord(userId)) return readDeletionRecord(userId);
         // The answer is definite even if the record cannot be stored: the
         // cleanup runs on this outcome, while the pending attempt (and the
