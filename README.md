@@ -162,7 +162,10 @@ copies right back. Any other RPC error aborts the flow before anything is delete
 session intact, so they can retry — with one exception: a lost response, timeout or gateway
 error may arrive *after* the function committed, so the app retries the (idempotent) call and,
 if it still gets no answer, reports the outcome as unknown and asks the person to reload rather
-than claim their account is intact.
+than claim their account is intact. The next load calls the function again with the stored
+session; once the server refuses that session for good (its refresh token went with the
+account), no retry is possible from that browser, so it signs the person out, clears its copy
+and says the deletion could not be confirmed from there.
 
 ### Troubleshooting: magic links fail with a 500
 

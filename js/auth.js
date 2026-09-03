@@ -173,9 +173,13 @@ function finishMagicLinkSignIn(pending) {
         // resolvePendingDeletion): the account ends up deleted, or the
         // record proves void and the sign-in is completed here, or it stays
         // unknown and the person is told.
+        // A record settled without confirmation (see
+        // settleUnreachableDeletion) counts as unanswered here too: a session
+        // the server verified for that account exists only if the account
+        // still does, and is what can confirm the deletion.
         const verified = data && data.session && data.session.user ? data.session : null;
         const record = verified ? readDeletionRecord(verified.user.id) : null;
-        if (verified && record && record.phase === 'pending') {
+        if (verified && record && (record.phase === 'pending' || record.unconfirmed)) {
             const outcome = await resolvePendingDeletion(record, verified);
             // Whatever account this page held in memory before, storage now
             // holds the verified session (or nothing, once the cleanup ran),
@@ -198,7 +202,10 @@ function finishMagicLinkSignIn(pending) {
                     onUserLoggedOut();
                 }
             };
-            if (outcome && outcome.phase === 'committed') {
+            // Only an answer to this retry confirms the deletion: a record
+            // still unconfirmed after it means the retry failed with a
+            // session the server verified, so the outcome stays unknown.
+            if (outcome && outcome.phase === 'committed' && !outcome.unconfirmed) {
                 let cleanup = { localCleanupIncomplete: false };
                 try {
                     cleanup = await finishPendingDeletionCleanup(outcome);
@@ -209,16 +216,22 @@ function finishMagicLinkSignIn(pending) {
                     completedItems = {};
                 }
                 await settleMemory();
-                alert(cleanup.localCleanupIncomplete ? t().deleteSuccessLocalPending : t().deleteSuccess);
-            } else if (outcome) {
-                await settleMemory();
-                alert(t().deleteUncertain);
+                alert(deletionOutcomeMessage(false, cleanup.localCleanupIncomplete));
             } else {
                 await settleMemory();
                 alert(t().deleteUncertain);
             }
         }
     };
+}
+
+// What the person is told once a deletion has ended: confirmed by the
+// server, or settled without confirmation (see settleUnreachableDeletion);
+// with the browser copy cleared, or left for them to clear (no Web Locks).
+function deletionOutcomeMessage(unconfirmed, localCleanupIncomplete) {
+    const t = UI_TRANSLATIONS[currentLang];
+    if (unconfirmed) return localCleanupIncomplete ? t.deleteUnconfirmedLocalPending : t.deleteUnconfirmed;
+    return localCleanupIncomplete ? t.deleteSuccessLocalPending : t.deleteSuccess;
 }
 
 async function initAuth() {
@@ -249,6 +262,7 @@ async function initAuth() {
         // before any session is restored.
         const deletionRecords = readDeletionRecords();
         let committedNow = false;
+        let unconfirmedNow = false;
         let localCleanupIncomplete = false;
         for (const recordedUserId of Object.keys(deletionRecords)) {
             try {
@@ -256,8 +270,11 @@ async function initAuth() {
                 if (record.phase === 'pending') {
                     record = await resolvePendingDeletion(record);
                     // The unknown-outcome message promised to say how it
-                    // ended: a commit is reported below.
-                    if (record && record.phase === 'committed') committedNow = true;
+                    // ended: a commit is reported below, confirmed or not.
+                    if (record && record.phase === 'committed') {
+                        committedNow = true;
+                        if (record.unconfirmed) unconfirmedNow = true;
+                    }
                 }
                 if (record && record.phase === 'committed' && record.done) {
                     // Finished earlier; only a session put back since then
@@ -272,15 +289,14 @@ async function initAuth() {
                 console.warn('Could not finish the pending deletion cleanup:', err);
             }
         }
-        if (committedNow) {
-            alert(localCleanupIncomplete
-                ? UI_TRANSLATIONS[currentLang].deleteSuccessLocalPending
-                : UI_TRANSLATIONS[currentLang].deleteSuccess);
-        }
+        if (committedNow) alert(deletionOutcomeMessage(unconfirmedNow, localCleanupIncomplete));
 
         // Fetch existing active session
+        // The entry may also hold a recorded account the library could not
+        // read just now (its refresh failed on the network): the list this
+        // page loaded is treated the same.
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (isDeletedUserSession(session)) {
+        if (isDeletedUserSession(session) || (!(session && session.user) && storedSessionIsRecorded())) {
             console.warn('Not restoring the stored session of an account deleted (or being deleted) from this browser.');
             // What app.js loaded from the shared store may be that account's
             // list: dropped from memory and redrawn, never written.
@@ -580,12 +596,34 @@ function clientForSession(session) {
 // The session the shared client holds, read with a bound: getSession() first
 // refreshes an expired token over the network, and fetch has no timeout of
 // its own, so a stalled refresh would otherwise keep the dialog busy forever.
-// Resolves the session, null when there is none, undefined when it could not
-// be read in time (the read itself is left running).
-async function readSessionWithin(timeoutMs) {
-    const read = supabaseClient.auth.getSession().then(({ data }) => (data && data.session) || null);
+// Resolves { session, error }: the session (null when there is none) with
+// the error it came with (a refresh the server refused, or could not be
+// reached for), or undefined when it could not be read in time (the read
+// itself is left running).
+async function readSessionResultWithin(timeoutMs) {
+    const read = supabaseClient.auth.getSession().then(
+        ({ data, error }) => ({ session: (data && data.session) || null, error: error || null }),
+        (err) => ({ session: null, error: err || null })
+    );
     if (!(await settlesWithin(read, timeoutMs))) return undefined;
     return read;
+}
+
+// The same read, session only.
+async function readSessionWithin(timeoutMs) {
+    const result = await readSessionResultWithin(timeoutMs);
+    return result === undefined ? undefined : result.session;
+}
+
+// The server refused the stored credentials for good: the refresh token is
+// gone (it went with the account, or a sign-out everywhere revoked it), as
+// opposed to a network failure or a server error, after which the same
+// credentials may still work. auth-js answers the former with an API error
+// (a 4xx) and the latter with a retryable one, and only removes the stored
+// session on the former (the adapter above keeps it while a deletion of the
+// account is unanswered).
+function isDefinitiveAuthRejection(error) {
+    return !!(error && error.name === 'AuthApiError' && error.status >= 400 && error.status < 500);
 }
 
 // Who holds the session the shared client sees: a user id, null for nobody,
@@ -629,7 +667,20 @@ function sessionStorageAdapter() {
             }
             localStorage.setItem(key, value);
         }),
-        removeItem: (key) => locked(key, () => localStorage.removeItem(key))
+        removeItem: (key) => locked(key, () => {
+            // The library removes a session whose refresh the server
+            // refused for good, and on a sign-out. While a deletion of that
+            // account is unanswered, those credentials are what the next
+            // load retries with, and their refusal is what settles the
+            // record when no retry is possible any more (see
+            // resolvePendingDeletion): the entry stays until the deletion
+            // is settled, and only its cleanup removes it.
+            if (key === sessionStorageKey() && sessionRemovalRefused()) {
+                console.warn('Keeping the stored session of an account whose deletion is still unanswered.');
+                return;
+            }
+            localStorage.removeItem(key);
+        })
     };
 }
 
@@ -652,6 +703,18 @@ function sessionWriteRefused(value) {
     } catch {
         return false;
     }
+}
+
+// The stored session of an account whose deletion is unanswered is removed
+// only by that deletion (the cleanup after its commit, under the lock),
+// never by the library: a sign-out elsewhere, or a refresh the server
+// refused, would otherwise take away the credentials the retry needs, and
+// the record could never be settled from this browser again.
+function sessionRemovalRefused() {
+    const holder = storedSessionUserId();
+    if (holder === null) return false;
+    const record = readDeletionRecord(holder);
+    return !!(record && record.phase === 'pending');
 }
 
 // Durable, write-ahead record of a deletion. Written and read back before
@@ -896,6 +959,12 @@ function hasDeletionRecords() {
     return Object.keys(readDeletionRecords()).length > 0;
 }
 
+// Whether the stored session entry belongs to an account with a record.
+function storedSessionIsRecorded() {
+    const holder = storedSessionUserId();
+    return holder !== null && !!readDeletionRecord(holder);
+}
+
 function isDeletedUserSession(session) {
     return !!(session && session.user && session.user.id && readDeletionRecord(session.user.id));
 }
@@ -944,10 +1013,10 @@ function clearPendingDeletion(userId, attempt) {
 // cannot be written, the attempts stay as they are: the next load retries
 // the idempotent RPC, which finds nothing left, and finishes the cleanup
 // from there. Resolves true once a committed record stands.
-function commitDeletionRecord(userId) {
+function commitDeletionRecord(userId, extra) {
     const current = readDeletionRecord(userId);
     if (!(current && current.phase === 'committed')) {
-        writeDeletionRecord({ userId, phase: 'committed', at: Date.now() });
+        writeDeletionRecord(Object.assign({ userId, phase: 'committed', at: Date.now() }, extra || {}));
     }
     const check = readDeletionRecord(userId);
     const ok = !!(check && check.phase === 'committed');
@@ -1167,6 +1236,29 @@ async function attemptDeleteRpc(client) {
     }
 }
 
+// The server refused the stored session of an account whose deletion is
+// unanswered, for good: its refresh token is gone. No credentials of the
+// account are left in this browser and none can come back on their own (a
+// deleted account cannot sign in again; only a magic link the server
+// verifies produces a session of it, which is possible only if it still
+// exists, see finishMagicLinkSignIn), so nothing here can call delete_user()
+// for it any more. The unanswered request is what most likely took the
+// credentials away, but that is no proof (a sign-out everywhere revokes them
+// too), so the outcome stays unconfirmed. What is settled is that this
+// browser is done with the account: its sign-in here has ended either way,
+// and the copy it holds is treated as a deleted account's, so the record is
+// committed, flagged unconfirmed, and the cleanup runs as after a commit,
+// with the person told the deletion could not be confirmed from here. A
+// verified sign-in of the account later calls the RPC again and confirms it.
+function settleUnreachableDeletion(userId) {
+    console.warn('The server no longer accepts this browser\'s session of the account; the unfinished deletion cannot be retried from here.');
+    announceAccountDeleted(userId);
+    const current = readDeletionRecord(userId);
+    if (current && current.phase === 'committed') return current;
+    if (commitDeletionRecord(userId, { unconfirmed: true })) return readDeletionRecord(userId);
+    return { userId, phase: 'committed', progressPending: true, sessionPending: true, unrecorded: true, unconfirmed: true };
+}
+
 // A deletion whose answer never arrived (the page closed while the RPC was
 // out, or the outcome was reported as unknown). Whether the account still
 // exists right now proves nothing: the unanswered request may still be
@@ -1178,7 +1270,10 @@ async function attemptDeleteRpc(client) {
 // definite error, the function missing now, no session of that account to
 // call with) leaves the outcome unknown: nothing is restored and nothing is
 // wiped, and it is tried again on the next load or the next verified
-// sign-in. Resolves the record as it stands afterwards, or null.
+// sign-in. Once the server has refused the stored session for good, no
+// retry is possible from here any more, and the record is settled without
+// confirmation instead (see settleUnreachableDeletion). Resolves the record
+// as it stands afterwards, or null.
 async function resolvePendingDeletion(marker, verifiedSession) {
     const { userId } = marker;
     let session = verifiedSession || null;
@@ -1187,7 +1282,11 @@ async function resolvePendingDeletion(marker, verifiedSession) {
             console.warn('Outcome of an unfinished deletion is unknown; nothing restored or wiped.');
             return marker;
         }
-        session = await readSessionWithin(deleteAttemptTimeoutMs());
+        const read = await readSessionResultWithin(deleteAttemptTimeoutMs());
+        if (read && !read.session && isDefinitiveAuthRejection(read.error)) {
+            return settleUnreachableDeletion(userId);
+        }
+        session = read === undefined ? undefined : read.session;
     }
     if (!session || !session.user || session.user.id !== userId || !session.access_token) {
         console.warn('No usable session to finish the unfinished deletion with; outcome stays unknown.');
@@ -1197,8 +1296,10 @@ async function resolvePendingDeletion(marker, verifiedSession) {
     if (!error) {
         console.warn('Finished the unfinished deletion; the account is gone.');
         announceAccountDeleted(userId);
+        // A record committed without confirmation (see
+        // settleUnreachableDeletion) is confirmed by this answer.
         const current = readDeletionRecord(userId);
-        if (current && current.phase === 'committed') return current;
+        if (current && current.phase === 'committed') return Object.assign({}, current, { unconfirmed: false });
         if (commitDeletionRecord(userId)) return readDeletionRecord(userId);
         // The answer is definite even if the record cannot be stored: the
         // cleanup runs on this outcome, while the pending attempt (and the
