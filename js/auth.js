@@ -525,8 +525,11 @@ let deletionInProgress = false;
 //
 // expectedUserId is the account the confirmation dialog was opened for; the
 // call is refused if this device has since switched to another account.
-// Resolves to { sessionChanged }: true when another account took over this
-// device during the deletion and was therefore left signed in.
+// Resolves to { sessionChanged, localCleanupIncomplete }: sessionChanged is
+// true when another account took over this device during the deletion and
+// was therefore left signed in; localCleanupIncomplete is true when the
+// browser copy of the progress could not be cleared and no later load will
+// do it (no Web Locks), which the dialog reports instead of a plain success.
 async function deleteUserAccountAndData(expectedUserId) {
     if (!supabaseClient || !currentUser) {
         throw new Error('Not signed in');
@@ -905,7 +908,8 @@ function isDeletedUserSession(session) {
 // committed (another tab got there first) is never replaced: the caller
 // finishes and reports that outcome. Resolves { attempt, existed } (existed:
 // other attempts of this account are still unanswered, so one of them may
-// yet commit), { alreadyCommitted: true }, or null.
+// yet commit), { alreadyCommitted: true }, or
+// { writeFailed: true, existed } when the attempt could not be recorded.
 function recordPendingDeletion(userId) {
     const earlier = readDeletionRecord(userId);
     if (earlier && earlier.phase === 'committed') return { alreadyCommitted: true };
@@ -913,10 +917,10 @@ function recordPendingDeletion(userId) {
     const attempt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     try {
         localStorage.setItem(deletionAttemptKey(userId, attempt), JSON.stringify({ userId, attempt }));
-        if (localStorage.getItem(deletionAttemptKey(userId, attempt)) === null) return null;
+        if (localStorage.getItem(deletionAttemptKey(userId, attempt)) === null) return { writeFailed: true, existed };
     } catch (err) {
         console.warn('Could not record the deletion attempt:', err);
-        return null;
+        return { writeFailed: true, existed };
     }
     // A commit published between the first look and this write would have
     // swept the attempts before this one existed: look again, and step back
@@ -1339,7 +1343,15 @@ async function performAccountDeletion(userId, state) {
     // tab, or a previous page) is an unanswered RPC that may have committed:
     // only a success can settle it, so this attempt starts out ambiguous.
     const record = recordPendingDeletion(userId);
-    if (!record) {
+    if (record.writeFailed) {
+        // Nothing is sent. But an attempt already unanswered may yet commit,
+        // and that stays what it was: unknown, not "still active".
+        if (record.existed) {
+            state.uncertain = true;
+            const uncertain = new Error('Could not record a new attempt while an earlier one is unanswered; outcome unknown');
+            uncertain.code = 'DELETE_UNCERTAIN';
+            throw uncertain;
+        }
         throw new Error('Could not record the deletion in this browser; deletion not started');
     }
     // Whether this attempt's own calls ever went unanswered (then its own
