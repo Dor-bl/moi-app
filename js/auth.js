@@ -191,13 +191,19 @@ async function initAuth() {
             finishMagicLinkSignIn(pendingMagicLink);
         }
 
-        // A deletion committed in this browser may still have local cleanup
-        // pending (the page closed right after the commit, or the session
-        // lock was held): finish it before any session is restored.
-        const pendingDeletion = readDeletedUserMarker();
+        // A deletion started in this browser may not have finished: the page
+        // closed while the RPC was out (outcome unknown), or right after the
+        // commit, or the session lock was held. Settle what can be settled
+        // before any session is restored.
+        let pendingDeletion = readDeletedUserMarker();
         if (pendingDeletion) {
             try {
-                await finishPendingDeletionCleanup(pendingDeletion);
+                if (pendingDeletion.phase === 'pending') {
+                    pendingDeletion = await resolvePendingDeletion(pendingDeletion);
+                }
+                if (pendingDeletion && pendingDeletion.phase === 'committed') {
+                    await finishPendingDeletionCleanup(pendingDeletion);
+                }
             } catch (err) {
                 // The marker stays, so the session below is still ignored.
                 console.warn('Could not finish the pending deletion cleanup:', err);
@@ -207,11 +213,9 @@ async function initAuth() {
         // Fetch existing active session
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (isDeletedUserSession(session)) {
-            console.warn('Ignoring the stored session of an account deleted from this browser.');
+            console.warn('Not restoring the stored session of an account deleted (or being deleted) from this browser.');
         } else if (session && session.user) {
-            // Someone else is signed in here: whatever a deletion left
-            // pending on this device is theirs now.
-            if (deletedUserId()) clearDeletedUserMarker();
+            if (deletedUserId()) takeOverFromDeletedAccount();
             currentUser = session.user;
             await onUserLoggedIn();
         }
@@ -220,11 +224,19 @@ async function initAuth() {
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             console.log('Supabase auth event:', event, session?.user?.email);
             if (isDeletedUserSession(session)) {
-                // A refresh or restore of an account deleted from this browser.
-                return;
+                const marker = readDeletedUserMarker();
+                if (event === 'SIGNED_IN' && marker && marker.phase === 'pending') {
+                    // A fresh sign-in proves the account still exists, so
+                    // the deletion whose answer never arrived did not happen.
+                    console.warn('The account signed in again; the unfinished deletion did not go through.');
+                    clearDeletedUserMarker();
+                } else {
+                    // A refresh or restore of an account deleted from this browser.
+                    return;
+                }
             }
             if (session && session.user) {
-                if (deletedUserId()) clearDeletedUserMarker();
+                if (deletedUserId()) takeOverFromDeletedAccount();
                 currentUser = session.user;
                 await onUserLoggedIn();
                 // Clean hash from URL bar if access token was passed in hash
@@ -523,15 +535,18 @@ function sessionStorageAdapter() {
     };
 }
 
-// Durable record of a deletion whose local cleanup is not finished: written
-// the moment the RPC commits, before any of the best-effort steps that follow
-// (each of which can wait on a lock or the network, and the page can close
-// meanwhile). While it exists, start-up and the auth listener ignore any
-// session of that user (supabase-js restores an unexpired session from
-// storage without checking that the user still exists), and start-up
-// finishes the pending steps under the lock. { userId, progressPending,
-// sessionPending }: which steps still have to settle; the record is removed
-// once neither does.
+// Durable, write-ahead record of a deletion. Written and read back before
+// the RPC (phase 'pending': the outcome is unknown until the answer comes),
+// rewritten the moment the RPC commits (phase 'committed', with which of the
+// best-effort cleanup steps still have to settle), and removed after a
+// definite pre-commit failure or once every step has settled. The page can
+// close at any point in between, and each step can wait on a lock or the
+// network, so nothing after the RPC is relied on to leave a trace. While the
+// record exists, start-up and the auth listener never restore a session of
+// that user (supabase-js restores an unexpired session from storage without
+// checking that the user still exists): a committed deletion is finished
+// under the lock, and a pending one is first resolved with the server, or
+// left alone when that is not possible.
 const DELETED_USER_KEY = 'moiCheckDeletedUser';
 
 function readDeletedUserMarker() {
@@ -545,11 +560,30 @@ function readDeletedUserMarker() {
     if (!raw) return null;
     try {
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object' && parsed.userId) return parsed;
+        if (parsed && typeof parsed === 'object' && parsed.userId) {
+            if (parsed.phase !== 'pending') parsed.phase = 'committed';
+            return parsed;
+        }
     } catch {
         // An older marker held the bare user id; treat everything as pending.
     }
-    return { userId: raw, progressPending: true, sessionPending: true };
+    return { userId: raw, phase: 'committed', progressPending: true, sessionPending: true };
+}
+
+// Before anything irreversible: record the attempt and prove the record is
+// there. A browser that cannot keep it would not remember a commit either,
+// so the deletion does not start.
+function recordPendingDeletion(userId) {
+    writeDeletedUserMarker({ userId, phase: 'pending' });
+    const check = readDeletedUserMarker();
+    return !!(check && check.userId === userId && check.phase === 'pending');
+}
+
+function clearPendingDeletion(userId) {
+    const current = readDeletedUserMarker();
+    if (current && current.userId === userId && current.phase === 'pending') {
+        clearDeletedUserMarker();
+    }
 }
 
 function deletedUserId() {
@@ -704,6 +738,57 @@ async function endInitiatingSession(asInitiator, session, userId) {
     return ran;
 }
 
+// Another account is signing in while a deletion's record is still here.
+// Whatever that deletion left on this device is theirs now, except what this
+// page holds in memory: it was loaded from the shared store (#52) and may be
+// the deleted account's list, which their sync would otherwise upload under
+// their name. Memory starts empty; storage is left to them.
+function takeOverFromDeletedAccount() {
+    completedItems = {};
+    clearDeletedUserMarker();
+}
+
+// Start-up with a deletion whose answer never arrived (the page closed while
+// the RPC was out, or the outcome was reported as unknown). Ask the server
+// whether the account still exists, with the session it left behind: a user
+// comes back, so nothing happened and the record goes; a definite refusal
+// means the account is gone, so the record becomes a committed one and the
+// cleanup runs. No answer, or no session of that account to ask with, leaves
+// the outcome unknown: nothing is restored and nothing is wiped, and the
+// question is asked again on the next load (or settled by a fresh sign-in).
+async function resolvePendingDeletion(marker) {
+    const { userId } = marker;
+    if (storedSessionUserId() !== userId) {
+        console.warn('Outcome of an unfinished deletion is unknown; nothing restored or wiped.');
+        return marker;
+    }
+    let answer;
+    try {
+        const ask = supabaseClient.auth.getUser().then(({ data, error }) => ({ user: data && data.user, error }));
+        answer = (await settlesWithin(ask, deleteAttemptTimeoutMs())) ? await ask : undefined;
+    } catch (err) {
+        answer = { user: null, error: err };
+    }
+    if (answer === undefined) {
+        console.warn('Could not ask whether the account still exists in time; deletion outcome stays unknown.');
+        return marker;
+    }
+    if (!answer.error && answer.user && answer.user.id === userId) {
+        console.warn('The account still exists; the unfinished deletion did not go through.');
+        clearDeletedUserMarker();
+        return null;
+    }
+    const status = answer.error && answer.error.status;
+    if (status === 400 || status === 401 || status === 403 || status === 404) {
+        console.warn('The account no longer exists; finishing the deletion cleanup.');
+        const committed = { userId, phase: 'committed', progressPending: true, sessionPending: true };
+        writeDeletedUserMarker(committed);
+        return committed;
+    }
+    console.warn('Could not tell whether the account still exists; deletion outcome stays unknown.');
+    return marker;
+}
+
 // Start-up: finish what a deletion could not. The page may have closed right
 // after the commit, or the session lock never came free. Runs before any
 // session is restored, under the same lock, and repeats on later loads until
@@ -723,14 +808,16 @@ async function finishPendingDeletionCleanup(marker) {
         }
         let cleared = false;
         if (marker.progressPending) {
+            // Memory was loaded from the shared store before this ran and
+            // may hold the deleted account's list: never keep it. On a
+            // takeover storage is theirs (#52); their sync refills memory.
+            completedItems = {};
             if (takenOver) {
-                // What this page loaded from storage is the replacement's.
                 console.warn('Another account holds this device; leaving its stored progress alone (#52).');
             } else {
-                completedItems = {};
                 saveState();
-                cleared = true;
             }
+            cleared = true;
         }
         return { sessionSettled, cleared };
     };
@@ -738,7 +825,11 @@ async function finishPendingDeletionCleanup(marker) {
     let outcome = result;
     if (!ran) {
         if (reason !== 'no-locks') {
+            // Storage waits for a lock; what is on screen does not.
             console.warn('Session lock unavailable; deletion cleanup deferred to the next load.');
+            completedItems = {};
+            renderList();
+            updateProgress();
             return;
         }
         // No lock anywhere: the progress decision is safe enough (it only
@@ -751,7 +842,7 @@ async function finishPendingDeletionCleanup(marker) {
         sessionPending: !outcome.sessionSettled
     });
     if (outcome.cleared) {
-        console.warn('Cleared the stored progress of an account deleted from this browser.');
+        console.warn('Dropped the progress of an account deleted from this browser.');
         renderList();
         updateProgress();
     }
@@ -804,6 +895,9 @@ async function performAccountDeletion(userId, state) {
     // only the answer gone missing. The call is idempotent (a second run
     // finds nothing left to delete and succeeds), so retry a couple of times
     // and only then give up as "unknown", never as "nothing happened".
+    if (!recordPendingDeletion(userId)) {
+        throw new Error('Could not record the deletion in this browser; deletion not started');
+    }
     let rpcError = null;
     let sawAmbiguous = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -829,6 +923,8 @@ async function performAccountDeletion(userId, state) {
             uncertain.code = 'DELETE_UNCERTAIN';
             throw uncertain;
         }
+        // A definite answer: nothing was deleted, so nothing is pending.
+        clearPendingDeletion(userId);
         if (isMissingRpcError(rpcError)) {
             console.warn('delete_user() RPC is not configured; nothing deleted. See README.');
             const notConfigured = new Error('Account deletion is not configured on this project');
@@ -841,10 +937,10 @@ async function performAccountDeletion(userId, state) {
 
     // The account is gone from here on. Nothing below may surface as "still
     // active": each cleanup step is best effort and isolated, and the result
-    // is always a committed outcome. The marker goes first, before anything
-    // that can wait: if the page closes now, the next load finishes the job
-    // and never restores this account from storage.
-    writeDeletedUserMarker({ userId, progressPending: true, sessionPending: true });
+    // is always a committed outcome. The record is rewritten first, before
+    // anything that can wait: if the page closes now, the next load finishes
+    // the job and never restores this account from storage.
+    writeDeletedUserMarker({ userId, phase: 'committed', progressPending: true, sessionPending: true });
     announceAccountDeleted(userId);
     let progressSettled = false;
     try {
