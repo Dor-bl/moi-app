@@ -374,6 +374,12 @@ async function initAuth() {
         // Listen for auth state changes
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             console.log('Supabase auth event:', event, session?.user?.email);
+            // The initiator's own refresh while its deletion is out: the
+            // record it sees is this tab's own, the sync is already blocked
+            // (deletionInProgress), and a definite failure afterwards must
+            // find the tab still signed in, since the initiator's sync is
+            // rerun then; the cleanup after a commit ends the session itself.
+            if (deletionInProgress && currentUser && session && session.user && session.user.id === currentUser.id) return;
             if (isDeletedUserSession(session)) {
                 // A refresh or restore of an account deleted (or being
                 // deleted) from this browser. SIGNED_IN is no proof of a
@@ -1212,6 +1218,20 @@ function rawStoredSession() {
 async function signOutCurrentUser() {
     if (!supabaseClient) return;
     const userId = currentUser ? currentUser.id : null;
+    // An account whose deletion is unanswered keeps its stored credentials:
+    // the next load retries delete_user() with them (see
+    // resolvePendingDeletion), and the library's sign-out would revoke them
+    // server-side as well as remove them. This tab goes to guest mode
+    // without touching them.
+    if (userId !== null) {
+        const record = readDeletionRecord(userId);
+        if (record && record.phase === 'pending') {
+            console.warn('Signing out locally only: a deletion of this account is still unanswered, and its credentials are kept for the retry.');
+            currentUser = null;
+            onUserLoggedOut();
+            return;
+        }
+    }
     try {
         await supabaseClient.auth.signOut();
     } catch (err) {
@@ -1373,7 +1393,14 @@ function takeOverFromDeletedAccounts(newUserId) {
             emptyMemory = true;
         }
     });
-    if (emptyMemory) completedItems = {};
+    if (emptyMemory) {
+        // Redrawn at once: the sync that fills memory from the cloud may
+        // stall, and the previous account's list must not stay on screen
+        // meanwhile.
+        completedItems = {};
+        renderList();
+        updateProgress();
+    }
 }
 
 // One delete_user() call, bounded by the attempt timeout. Resolves
@@ -1672,19 +1699,19 @@ async function performAccountDeletion(userId, state) {
             // cannot vouch for the account being active. This attempt's own
             // record, though, is done with once its own history is definite;
             // left standing it would keep the other's answer ambiguous too.
-            // The other attempts are those the record above listed (a fresh
-            // scan could miss one that a commit swept since), and a commit
-            // landing in between outranks this error just the same.
-            othersUnanswered = !!(standingNow && standingNow.phase === 'pending' && standingNow.attempts.some(attempt => attempt !== record.attempt));
+            // The other attempts are those still recorded once this one is
+            // cleared: one that answered definitely meanwhile has cleared
+            // itself (two definite answers converge on a definite failure),
+            // one swept by a commit shows as that commit, which outranks
+            // this error, and one started since counts as unanswered.
             if (!ownUnanswered && !isAmbiguousRpcError(rpcError)) clearPendingDeletion(userId, record.attempt);
-            // (An attempt another tab started after that read counts too.)
             const afterwards = readDeletionRecord(userId);
             if (afterwards && afterwards.phase === 'committed' && !afterwards.unconfirmed) {
                 console.warn('The account was deleted by another attempt meanwhile; finishing the cleanup.');
                 rpcError = null;
                 alreadyCommitted = true;
-            } else if (afterwards && afterwards.phase === 'pending' && afterwards.attempts.some(attempt => attempt !== record.attempt)) {
-                othersUnanswered = true;
+            } else {
+                othersUnanswered = !!(afterwards && afterwards.phase === 'pending' && afterwards.attempts.some(attempt => attempt !== record.attempt));
             }
         }
     }
