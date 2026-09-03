@@ -65,6 +65,15 @@ const shareBtn = document.getElementById('shareBtn');
 const profileMilestone = document.getElementById('profileMilestone');
 const profileProgressText = document.getElementById('profileProgressText');
 const completedList = document.getElementById('completedList');
+const accountDangerZone = document.getElementById('accountDangerZone');
+const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+
+// Delete Account Modal Elements
+const deleteAccountModal = document.getElementById('deleteAccountModal');
+const closeDeleteAccountModalBtn = document.getElementById('closeDeleteAccountModal');
+const confirmDeleteAccountBtn = document.getElementById('confirmDeleteAccountBtn');
+const cancelDeleteAccountBtn = document.getElementById('cancelDeleteAccountBtn');
+const deleteAccountError = document.getElementById('deleteAccountError');
 
 // Contact Modal Elements
 const contactModal = document.getElementById('contactModal');
@@ -158,6 +167,21 @@ function updateLanguageUI() {
     const txtCatBadges = document.getElementById('txtCategoryBadges');
     if (txtCatBadges) txtCatBadges.textContent = t.achievementBadges;
     shareBtn.textContent = t.shareMilestone;
+
+    const txtAccountHeader = document.getElementById('txtAccountHeader');
+    if (txtAccountHeader) txtAccountHeader.textContent = t.accountHeader;
+    const txtDeleteAccountNotice = document.getElementById('txtDeleteAccountNotice');
+    if (txtDeleteAccountNotice) txtDeleteAccountNotice.textContent = t.deleteAccountNotice;
+    if (deleteAccountBtn) deleteAccountBtn.textContent = t.deleteAccountBtn;
+
+    const deleteModalTitle = document.getElementById('deleteModalTitle');
+    if (deleteModalTitle) deleteModalTitle.textContent = t.deleteModalTitle;
+    const deleteModalWarning = document.getElementById('deleteModalWarning');
+    if (deleteModalWarning) deleteModalWarning.textContent = t.deleteModalWarning;
+    const deleteModalLocalNote = document.getElementById('deleteModalLocalNote');
+    if (deleteModalLocalNote) deleteModalLocalNote.textContent = t.deleteModalLocalNote;
+    if (confirmDeleteAccountBtn) confirmDeleteAccountBtn.textContent = t.confirmDelete;
+    if (cancelDeleteAccountBtn) cancelDeleteAccountBtn.textContent = t.cancel;
 
     // Contact modal translations
     document.getElementById('contactModalTitle').textContent = t.contactTitle;
@@ -629,7 +653,18 @@ function openProfileModal() {
         });
     }
     
+    if (accountDangerZone) {
+        accountDangerZone.style.display = (currentUser && supabaseClient) ? 'block' : 'none';
+    }
+    profileModal.removeAttribute('inert');
     profileModal.classList.add('active');
+}
+
+function closeProfileModal() {
+    const hadFocus = profileModal.contains(document.activeElement);
+    profileModal.classList.remove('active');
+    profileModal.setAttribute('inert', '');
+    if (hadFocus || document.activeElement === document.body) profileBtn.focus();
 }
 
 function setupEventListeners() {
@@ -775,9 +810,118 @@ function setupEventListeners() {
     // Modals
     closeDetailModalBtn.addEventListener('click', closeDetailModal);
     
-    closeProfileModalBtn.addEventListener('click', () => {
-        profileModal.classList.remove('active');
-    });
+    closeProfileModalBtn.addEventListener('click', closeProfileModal);
+
+    // Account deletion modal controls
+    let deleteModalReturnFocus = null;
+    let deleteModalUserId = null;
+    let deletionBusy = false;
+
+    const setDeletionBusy = (busy) => {
+        deletionBusy = busy;
+        if (confirmDeleteAccountBtn) {
+            confirmDeleteAccountBtn.setAttribute('aria-disabled', busy ? 'true' : 'false');
+            confirmDeleteAccountBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+        }
+        if (cancelDeleteAccountBtn) cancelDeleteAccountBtn.disabled = busy;
+        if (closeDeleteAccountModalBtn) closeDeleteAccountModalBtn.disabled = busy;
+    };
+
+    const closeDeleteAccountModal = () => {
+        if (deletionBusy) return;
+        deleteModalUserId = null;
+        if (deleteAccountModal) {
+            deleteAccountModal.classList.remove('active');
+            deleteAccountModal.setAttribute('inert', '');
+        }
+        const canTakeFocus = el => !!el && typeof el.focus === 'function' && el.isConnected
+            && !el.disabled && el.getClientRects().length > 0;
+        let target = deleteModalReturnFocus;
+        if (!canTakeFocus(target)) {
+            target = profileModal.classList.contains('active') ? closeProfileModalBtn : profileBtn;
+        }
+        if (target) target.focus();
+        deleteModalReturnFocus = null;
+    };
+
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', () => {
+            if (!currentUser) return;
+            if (deleteAccountError) deleteAccountError.textContent = '';
+            deleteModalUserId = currentUser.id;
+            deleteModalReturnFocus = document.activeElement;
+            if (deleteAccountModal) {
+                deleteAccountModal.removeAttribute('inert');
+                deleteAccountModal.classList.add('active');
+            }
+            if (cancelDeleteAccountBtn) cancelDeleteAccountBtn.focus();
+        });
+    }
+
+    if (deleteAccountModal) {
+        deleteAccountModal.addEventListener('keydown', (e) => {
+            if (!deleteAccountModal.classList.contains('active')) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeDeleteAccountModal();
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            const focusables = Array.from(deleteAccountModal.querySelectorAll('button:not([disabled])'));
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        });
+    }
+
+    if (cancelDeleteAccountBtn) cancelDeleteAccountBtn.addEventListener('click', closeDeleteAccountModal);
+    if (closeDeleteAccountModalBtn) closeDeleteAccountModalBtn.addEventListener('click', closeDeleteAccountModal);
+
+    if (confirmDeleteAccountBtn) {
+        confirmDeleteAccountBtn.addEventListener('click', async () => {
+            if (deletionBusy) return;
+            const t = UI_TRANSLATIONS[currentLang];
+
+            if (!currentUser || currentUser.id !== deleteModalUserId) {
+                deleteModalReturnFocus = profileBtn;
+                closeDeleteAccountModal();
+                closeProfileModal();
+                return;
+            }
+            const targetUserId = deleteModalUserId;
+
+            setDeletionBusy(true);
+            confirmDeleteAccountBtn.textContent = t.deleting;
+            if (deleteAccountError) deleteAccountError.textContent = '';
+
+            try {
+                await deleteUserAccountAndData(targetUserId);
+                setDeletionBusy(false);
+                deleteModalReturnFocus = profileBtn;
+                closeDeleteAccountModal();
+                closeProfileModal();
+                alert(t.deleteSuccess);
+            } catch (err) {
+                console.error('Account deletion failed:', err);
+                setDeletionBusy(false);
+                const code = err && err.code;
+                if (deleteAccountError) {
+                    deleteAccountError.textContent = code === 'DELETE_NOT_CONFIGURED'
+                        ? t.deleteNotConfigured
+                        : t.deleteError;
+                }
+            } finally {
+                confirmDeleteAccountBtn.textContent = UI_TRANSLATIONS[currentLang].confirmDelete;
+            }
+        });
+    }
     
     profileBtn.addEventListener('click', openProfileModal);
 
@@ -843,11 +987,16 @@ function setupEventListeners() {
         }
     });
     
-    [detailModal, profileModal, contactModal, authModal, settingsModal].forEach(modal => {
+    [detailModal, profileModal, contactModal, authModal, settingsModal, deleteAccountModal].forEach(modal => {
+        if (!modal) return;
         modal.addEventListener('click', (e) => {
             if (e.target !== modal) return;
             if (modal === detailModal) {
                 closeDetailModal();
+            } else if (modal === deleteAccountModal) {
+                closeDeleteAccountModal();
+            } else if (modal === profileModal) {
+                closeProfileModal();
             } else {
                 modal.classList.remove('active');
             }
