@@ -374,12 +374,15 @@ async function initAuth() {
         // Listen for auth state changes
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             console.log('Supabase auth event:', event, session?.user?.email);
-            // The initiator's own refresh while its deletion is out: the
+            // The initiator's own session events while its deletion is out
+            // (keyed to the initiator itself, not to whoever this tab is
+            // signed in as by then: a replacement that took over meanwhile
+            // must not be dropped by the initiator's late refresh): the
             // record it sees is this tab's own, the sync is already blocked
             // (deletionInProgress), and a definite failure afterwards must
             // find the tab still signed in, since the initiator's sync is
             // rerun then; the cleanup after a commit ends the session itself.
-            if (deletionInProgress && currentUser && session && session.user && session.user.id === currentUser.id) return;
+            if (deletingUserId !== null && session && session.user && session.user.id === deletingUserId) return;
             if (isDeletedUserSession(session)) {
                 // A refresh or restore of an account deleted (or being
                 // deleted) from this browser. SIGNED_IN is no proof of a
@@ -599,6 +602,9 @@ function settlesWithin(promise, ms) {
 // would start there could send writes outside the awaited snapshot to race the
 // RPC, or repopulate local storage from rows that are about to be deleted.
 let deletionInProgress = false;
+// The account whose deletion this tab is running, for that whole window
+// (see the auth listener and sessionWriteRefused); null otherwise.
+let deletingUserId = null;
 
 // GDPR Art. 17: remove everything we hold for the signed-in person. The
 // delete_user() RPC (README) removes the cloud rows and the auth record
@@ -611,11 +617,13 @@ let deletionInProgress = false;
 //
 // expectedUserId is the account the confirmation dialog was opened for; the
 // call is refused if this device has since switched to another account.
-// Resolves to { sessionChanged, localCleanupIncomplete }: sessionChanged is
-// true when another account took over this device during the deletion and
-// was therefore left signed in; localCleanupIncomplete is true when the
-// browser copy of the progress could not be cleared and no later load will
-// do it (no Web Locks), which the dialog reports instead of a plain success.
+// Resolves to { sessionChanged, localCleanupIncomplete, localCleanupDeferred }:
+// sessionChanged is true when another account took over this device during
+// the deletion and was therefore left signed in; localCleanupIncomplete is
+// true when the browser copy of the progress could not be cleared and no
+// later load will do it (no Web Locks); localCleanupDeferred is true when
+// it could not be cleared now (the session lock never came free) and the
+// next load does it. The dialog reports either instead of a plain success.
 async function deleteUserAccountAndData(expectedUserId) {
     if (!supabaseClient || !currentUser) {
         throw new Error('Not signed in');
@@ -630,10 +638,12 @@ async function deleteUserAccountAndData(expectedUserId) {
     const initiatorId = currentUser.id;
     const state = { committed: false, uncertain: false };
     deletionInProgress = true;
+    deletingUserId = currentUser.id;
     try {
         return await performAccountDeletion(initiatorId, state);
     } finally {
         deletionInProgress = false;
+        deletingUserId = null;
         // Whoever is signed in now had their sync blocked or invalidated
         // while we ran: another account that took over this device (another
         // tab), or the initiator itself when the deletion failed before the
@@ -782,10 +792,14 @@ function sessionWriteRefused(value) {
         const parsed = JSON.parse(value);
         const userId = parsed && parsed.user && parsed.user.id;
         if (!userId) return false;
+        const holder = storedSessionUserId();
+        // The initiator's own late refresh, while its deletion is out, must
+        // not replace a replacement account's entry either: the record that
+        // refuses it below exists only once the RPC has been sent.
+        if (deletingUserId === userId && holder !== null && holder !== userId) return true;
         const record = readDeletionRecord(userId);
         if (!record) return false;
         if (record.phase === 'committed') return true;
-        const holder = storedSessionUserId();
         return holder !== null && holder !== userId;
     } catch {
         return false;
@@ -1474,15 +1488,27 @@ async function resolvePendingDeletion(marker, verifiedSession, retried = false) 
         const read = await readSessionResultWithin(deleteAttemptTimeoutMs());
         if (read && !read.session && isDefinitiveAuthRejection(read.error)) {
             // The refusal is final only for the session that was refused.
-            // Another tab may have stored a newer session of the account
-            // meanwhile (its own refresh succeeding), which the adapter kept
-            // from the library's removal: that one is retried with, once.
-            if (rawStoredSession() !== entryBefore && storedSessionUserId() === userId) {
-                if (!retried) return resolvePendingDeletion(marker, null, true);
-                console.warn('The stored session keeps changing under the retry; outcome stays unknown.');
+            // Another tab may store a newer session of the account (its own
+            // refresh succeeding), which the adapter keeps from the
+            // library's removal: the comparison and the settlement run under
+            // the session lock, so no such write lands in between (and once
+            // the record is published the adapter refuses it), a newer
+            // session found is retried with, once, and without the lock the
+            // record stays pending for a later load.
+            const { ran, result } = await withSessionLock(() => {
+                if (rawStoredSession() !== entryBefore) return { changed: true };
+                return { settled: settleUnreachableDeletion(userId) };
+            }, deleteAttemptTimeoutMs());
+            if (!ran) {
+                console.warn('Session lock unavailable; the refused session is left for a later load to settle.');
                 return marker;
             }
-            return settleUnreachableDeletion(userId);
+            if (result.changed) {
+                if (!retried && storedSessionUserId() === userId) return resolvePendingDeletion(marker, null, true);
+                console.warn('The stored session changed under the retry; outcome stays unknown.');
+                return marker;
+            }
+            return result.settled;
         }
         session = read === undefined ? undefined : read.session;
     }
