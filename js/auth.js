@@ -285,7 +285,24 @@ async function deleteUserAccountAndData(targetUserId) {
     // Bump authGeneration so any in-flight cloud sync responses are discarded immediately
     authGeneration++;
 
-    const { error: rpcError } = await supabaseClient.rpc('delete_user');
+    // Timeout safeguard (15s): avoid leaving the dialog busy indefinitely if the connection hangs
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            const err = new Error('Deletion request timed out');
+            err.code = 'DELETE_ERROR';
+            reject(err);
+        }, 15000);
+    });
+
+    let rpcResult;
+    try {
+        rpcResult = await Promise.race([supabaseClient.rpc('delete_user'), timeoutPromise]);
+    } finally {
+        clearTimeout(timeoutId);
+    }
+
+    const { error: rpcError } = rpcResult;
     if (rpcError) {
         if (isMissingRpcError(rpcError)) {
             const err = new Error('delete_user() RPC is not configured');
