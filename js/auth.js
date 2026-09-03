@@ -181,7 +181,14 @@ function finishMagicLinkSignIn(pending) {
             // holds the verified session (or nothing, once the cleanup ran),
             // so memory is set from the outcome, never from what was there.
             if (outcome && outcome.phase === 'committed') {
-                await finishPendingDeletionCleanup(outcome);
+                try {
+                    await finishPendingDeletionCleanup(outcome);
+                } catch (err) {
+                    // The account is gone either way; the record keeps what
+                    // is left for the next load.
+                    console.warn('Could not finish the deletion cleanup:', err);
+                    completedItems = {};
+                }
                 currentUser = null;
                 onUserLoggedOut();
                 alert(t().deleteSuccess);
@@ -263,7 +270,12 @@ async function initAuth() {
                 // fresh sign-in either (the library re-emits it for an
                 // existing session, on tab focus for one); the magic-link
                 // flow settles a pending record itself, from the server's
-                // answer.
+                // answer. Storage now holds that account (or nothing), so
+                // whatever account this page still had in memory is stale.
+                if (currentUser) {
+                    currentUser = null;
+                    onUserLoggedOut();
+                }
                 return;
             }
             if (session && session.user) {
@@ -614,6 +626,11 @@ function sessionWriteRefused(value) {
 const DELETED_USER_KEY = 'moiCheckDeletedUser';
 const DELETION_RECORD_PREFIX = 'moiCheckDeletedUser:';
 const DELETION_ATTEMPT_PREFIX = 'moiCheckDeletionAttempt:';
+// One key per settled cleanup step of a committed record, written once and
+// never unwritten, so two tabs settling different steps cannot undo each
+// other's, and a stale writer cannot revive a finished tombstone. The
+// record itself is never rewritten after the commit.
+const DELETION_STEP_PREFIX = 'moiCheckDeletionStep:';
 // A settled record stays as a tombstone for this long: a token refresh still
 // in flight somewhere could otherwise put the deleted account's session back
 // after the cleanup (see sessionStorageAdapter). Longer than an access token
@@ -626,6 +643,34 @@ function deletionRecordKey(userId) {
 
 function deletionAttemptKey(userId, attempt) {
     return `${DELETION_ATTEMPT_PREFIX}${userId}:${attempt}`;
+}
+
+function deletionStepKey(userId, step) {
+    return `${DELETION_STEP_PREFIX}${userId}:${step}`;
+}
+
+// When each cleanup step of an account's committed record settled, or null.
+function readSettledSteps(userId) {
+    const read = (step) => {
+        try {
+            const raw = localStorage.getItem(deletionStepKey(userId, step));
+            const at = raw === null ? NaN : Number(raw);
+            return Number.isFinite(at) ? at : null;
+        } catch {
+            return null;
+        }
+    };
+    return { progress: read('progress'), session: read('session') };
+}
+
+function markStepSettled(userId, step, at) {
+    try {
+        if (localStorage.getItem(deletionStepKey(userId, step)) === null) {
+            localStorage.setItem(deletionStepKey(userId, step), String(at || Date.now()));
+        }
+    } catch (err) {
+        console.warn('Could not record a settled cleanup step:', err);
+    }
 }
 
 function normalizeDeletionRecord(userId, record) {
@@ -720,10 +765,24 @@ function readDeletionRecord(userId) {
             } catch (err) {
                 console.warn('Could not migrate a pending record:', err);
             }
-        } else if (record.done && typeof record.expiresAt === 'number' && record.expiresAt <= Date.now()) {
-            removeDeletionRecord(userId);
         } else {
-            return record;
+            // Settled steps live in their own keys; flags a previous format
+            // kept inside the record are carried over once.
+            if (record.progressPending === false) markStepSettled(userId, 'progress', record.expiresAt ? record.expiresAt - DELETION_TOMBSTONE_MS : undefined);
+            if (record.sessionPending === false) markStepSettled(userId, 'session', record.expiresAt ? record.expiresAt - DELETION_TOMBSTONE_MS : undefined);
+            const steps = readSettledSteps(userId);
+            const progressPending = steps.progress === null;
+            const sessionPending = steps.session === null;
+            const done = !progressPending && !sessionPending;
+            const expiresAt = done ? Math.max(steps.progress, steps.session) + DELETION_TOMBSTONE_MS : undefined;
+            if (done && expiresAt <= Date.now()) {
+                removeDeletionRecord(userId);
+                return null;
+            }
+            // Any attempt still beside a committed record is stale (written
+            // in the moment between the commit and its sweep of attempts).
+            removePendingAttempts(userId, readPendingAttempts(userId));
+            return Object.assign({}, record, { phase: 'committed', progressPending, sessionPending, done, expiresAt });
         }
     }
     const attempts = readPendingAttempts(userId);
@@ -760,9 +819,12 @@ function writeDeletionRecord(record) {
 function removeDeletionRecord(userId) {
     try {
         localStorage.removeItem(deletionRecordKey(userId));
+        localStorage.removeItem(deletionStepKey(userId, 'progress'));
+        localStorage.removeItem(deletionStepKey(userId, 'session'));
     } catch (err) {
         console.warn('Could not remove a deletion record:', err);
     }
+    removePendingAttempts(userId, readPendingAttempts(userId));
 }
 
 function removePendingAttempts(userId, attempts) {
@@ -802,6 +864,14 @@ function recordPendingDeletion(userId) {
         console.warn('Could not record the deletion attempt:', err);
         return null;
     }
+    // A commit published between the first look and this write would have
+    // swept the attempts before this one existed: look again, and step back
+    // if so.
+    const now = readDeletionRecord(userId);
+    if (now && now.phase === 'committed') {
+        removePendingAttempts(userId, [attempt]);
+        return { alreadyCommitted: true };
+    }
     return { attempt, existed };
 }
 
@@ -809,37 +879,38 @@ function clearPendingDeletion(userId, attempt) {
     removePendingAttempts(userId, [attempt]);
 }
 
-// The RPC has committed: rewrite the record as committed, with both cleanup
-// steps still to settle, and prove the rewrite landed. If it did not (a
-// larger value can hit a quota the smaller one did not), the pending record
-// stays as it is: the next load retries the idempotent RPC, which finds
-// nothing left, and finishes the cleanup from there.
+// The RPC has committed: publish the committed record (never over one
+// another tab already published, whose settled steps stay settled), prove
+// it landed, and only then sweep the attempts, so an attempt written in
+// between is swept too rather than left behind the record. If the record
+// cannot be written, the attempts stay as they are: the next load retries
+// the idempotent RPC, which finds nothing left, and finishes the cleanup
+// from there. Resolves true once a committed record stands.
 function commitDeletionRecord(userId) {
-    const attempts = readPendingAttempts(userId);
-    writeDeletionRecord({ userId, phase: 'committed', progressPending: true, sessionPending: true });
+    const current = readDeletionRecord(userId);
+    if (!(current && current.phase === 'committed')) {
+        writeDeletionRecord({ userId, phase: 'committed', at: Date.now() });
+    }
     const check = readDeletionRecord(userId);
     const ok = !!(check && check.phase === 'committed');
     if (ok) {
-        removePendingAttempts(userId, attempts);
+        removePendingAttempts(userId, readPendingAttempts(userId));
     } else {
         console.warn('Could not record the commit; the pending record stays and the next load finishes the job.');
     }
     return ok;
 }
 
-// Record which cleanup steps still stand. Once none does, the record stays
+// Record which cleanup steps have settled, each in its own write-once key,
+// so settling is monotonic across tabs. Once both have, the record stands
 // as a tombstone (done, with an expiry) that keeps refusing that account's
 // session for a while. Only a committed record has steps to settle; a
 // pending one is left alone.
 function settleDeletionRecord(userId, patch) {
     const current = readDeletionRecord(userId);
-    if (!current || current.phase !== 'committed' || current.done) return;
-    const next = Object.assign({}, current, patch);
-    if (!next.progressPending && !next.sessionPending) {
-        next.done = true;
-        next.expiresAt = Date.now() + DELETION_TOMBSTONE_MS;
-    }
-    writeDeletionRecord(next);
+    if (!current || current.phase !== 'committed') return;
+    if (patch.progressPending === false) markStepSettled(userId, 'progress');
+    if (patch.sessionPending === false) markStepSettled(userId, 'session');
 }
 
 // Take the session Web Lock for at most `timeoutMs`. Another tab can hold it
@@ -1212,18 +1283,27 @@ async function performAccountDeletion(userId, state) {
     // fails the pending record stays, and the next load settles it by
     // calling the idempotent RPC again. A record another tab already
     // committed is left as it is (its settled steps stay settled).
-    if (!record.alreadyCommitted) commitDeletionRecord(userId);
+    const committedRecorded = commitDeletionRecord(userId);
     announceAccountDeleted(userId);
+    // What is still to do is read afresh: another tab may have committed and
+    // settled steps while the RPC was out, and a settled step is not redone
+    // (guest progress saved since would be lost).
+    const standing = readDeletionRecord(userId);
+    const progressStillPending = !(standing && standing.phase === 'committed' && !standing.progressPending);
     let progressSettled = false;
-    try {
-        // Clear the local copy: leaving it would make syncCloudProgress()
-        // upload it all again on the next sign-in. Unless another account has
-        // taken over this device meanwhile; see the helper.
-        progressSettled = await clearLocalProgressUnlessTakenOver(userId);
-    } catch (err) {
-        console.warn('Could not clear local progress after deletion:', err);
-        // Memory must not keep the deleted list either way; storage is left
-        // alone when it might now be someone else's.
+    if (progressStillPending) {
+        try {
+            // Clear the local copy: leaving it would make syncCloudProgress()
+            // upload it all again on the next sign-in. Unless another account
+            // has taken over this device meanwhile; see the helper.
+            progressSettled = await clearLocalProgressUnlessTakenOver(userId);
+        } catch (err) {
+            console.warn('Could not clear local progress after deletion:', err);
+            // Memory must not keep the deleted list either way; storage is
+            // left alone when it might now be someone else's.
+            completedItems = {};
+        }
+    } else {
         completedItems = {};
     }
     settleDeletionRecord(userId, { progressPending: !progressSettled });
@@ -1231,14 +1311,26 @@ async function performAccountDeletion(userId, state) {
     // End only the session that was just deleted. If another account signed in
     // on this device meanwhile (another tab), its stored session is left in
     // place; the caller re-runs its sign-in sync once the deletion flag clears.
+    // If the commit could not be recorded, the session is kept as well: the
+    // attempt stays pending, and the next load needs those credentials to
+    // call the idempotent RPC again; the record keeps it from being restored
+    // meanwhile.
     let sessionSettled = false;
-    try {
-        sessionSettled = await endInitiatingSession(asInitiator, session, userId);
-    } catch (err) {
-        console.warn('Could not end the stored session after deletion:', err);
+    if (!committedRecorded) {
+        console.warn('Commit not recorded; keeping the stored session for the retry on the next load.');
         if (currentUser && currentUser.id === userId) {
             currentUser = null;
             onUserLoggedOut();
+        }
+    } else {
+        try {
+            sessionSettled = await endInitiatingSession(asInitiator, session, userId);
+        } catch (err) {
+            console.warn('Could not end the stored session after deletion:', err);
+            if (currentUser && currentUser.id === userId) {
+                currentUser = null;
+                onUserLoggedOut();
+            }
         }
     }
     settleDeletionRecord(userId, { sessionPending: !sessionSettled });
