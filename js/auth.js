@@ -669,14 +669,13 @@ function sessionStorageAdapter() {
         }),
         removeItem: (key) => locked(key, () => {
             // The library removes a session whose refresh the server
-            // refused for good, and on a sign-out. While a deletion of that
-            // account is unanswered, those credentials are what the next
-            // load retries with, and their refusal is what settles the
-            // record when no retry is possible any more (see
-            // resolvePendingDeletion): the entry stays until the deletion
-            // is settled, and only its cleanup removes it.
+            // refused for good, and on a sign-out, without saying whose: it
+            // is honoured only for the account this tab is signed in as (a
+            // replacement stored by another tab meanwhile is theirs), and
+            // never while a deletion of that account is unanswered (see
+            // sessionRemovalRefused).
             if (key === sessionStorageKey() && sessionRemovalRefused()) {
-                console.warn('Keeping the stored session of an account whose deletion is still unanswered.');
+                console.warn('Keeping the stored session: not this tab\'s account, or its deletion is still unanswered.');
                 return;
             }
             localStorage.removeItem(key);
@@ -705,14 +704,21 @@ function sessionWriteRefused(value) {
     }
 }
 
-// The stored session of an account whose deletion is unanswered is removed
-// only by that deletion (the cleanup after its commit, under the lock),
-// never by the library: a sign-out elsewhere, or a refresh the server
-// refused, would otherwise take away the credentials the retry needs, and
-// the record could never be settled from this browser again.
+// Whether the library's removal of the stored session entry is refused.
+// The library removes it without knowing whose it is, so a refresh of this
+// tab's account still in flight when another tab stored a replacement
+// would, on failing, remove the replacement's entry (the lock orders the
+// two writes, it does not tell them apart): the removal is honoured only
+// while the entry holds the account this tab is signed in as, or while
+// this tab is signed in as nobody and has no stake. And the entry of an
+// account whose deletion is unanswered is removed only by that deletion
+// (the cleanup after its commit, under the lock): a sign-out elsewhere, or
+// a refresh the server refused, would otherwise take away the credentials
+// the retry needs, and the record could never be settled from this browser.
 function sessionRemovalRefused() {
     const holder = storedSessionUserId();
     if (holder === null) return false;
+    if (currentUser && currentUser.id !== holder) return true;
     const record = readDeletionRecord(holder);
     return !!(record && record.phase === 'pending');
 }
