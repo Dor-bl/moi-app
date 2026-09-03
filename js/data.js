@@ -397,7 +397,7 @@ const UI_TRANSLATIONS = {
         closeDialog: 'Close',
         confirmDelete: 'Yes, delete everything',
         deleting: 'Deleting…',
-        deleteSuccess: 'Your account and data have been deleted. Moi, and thanks for using MoiCheck!',
+        deleteSuccess: "Your account, your cloud progress and notes, and the progress saved in this browser have been deleted. You're welcome back anytime. Moi, and thanks for using MoiCheck.",
         deleteNotConfigured: 'Account deletion is not configured on this installation; no data was removed. Please email us from the privacy policy page and we will delete your account manually.',
         deleteError: 'Could not complete the deletion. Your account is still active. Please try again or email us from the privacy policy page.'
     },
@@ -481,7 +481,7 @@ const UI_TRANSLATIONS = {
         closeDialog: 'Sluiten',
         confirmDelete: 'Ja, verwijder alles',
         deleting: 'Verwijderen…',
-        deleteSuccess: 'Je account en gegevens zijn verwijderd. Moi, en bedankt voor het gebruiken van MoiCheck!',
+        deleteSuccess: 'Je account, je voortgang en notities in de cloud, en de voortgang in deze browser zijn verwijderd. Je bent altijd welkom terug. Moi, en bedankt voor het gebruiken van MoiCheck.',
         deleteNotConfigured: 'Accountverwijdering is op deze installatie nog niet beschikbaar, er is dus niets verwijderd. Mail ons via de privacybeleid-pagina en wij verwijderen je account handmatig.',
         deleteError: 'De verwijdering kon niet worden afgerond. Je account is nog actief. Probeer het opnieuw of mail ons via de privacybeleid-pagina.'
     }
