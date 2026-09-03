@@ -93,7 +93,7 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
      -- on delete cascade: deleting a user (dashboard or a GDPR erasure
      -- request) must take their progress with them. Without it Postgres
      -- refuses with "Database error deleting user".
-     user_id uuid references auth.users on delete cascade not null,
+     user_id uuid references auth.users (id) on delete cascade not null,
      item_id text not null,
      note text,
      date timestamp with time zone default timezone('utc'::text, now()) not null,
