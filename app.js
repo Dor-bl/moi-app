@@ -182,6 +182,7 @@ function updateLanguageUI() {
     if (deleteModalLocalNote) deleteModalLocalNote.textContent = t.deleteModalLocalNote;
     if (confirmDeleteAccountBtn) confirmDeleteAccountBtn.textContent = t.confirmDelete;
     if (cancelDeleteAccountBtn) cancelDeleteAccountBtn.textContent = t.cancel;
+    if (closeDeleteAccountModalBtn) closeDeleteAccountModalBtn.setAttribute('aria-label', t.closeDialog);
 
     // Contact modal translations
     document.getElementById('contactModalTitle').textContent = t.contactTitle;
@@ -834,6 +835,9 @@ function setupEventListeners() {
             deleteAccountModal.classList.remove('active');
             deleteAccountModal.setAttribute('inert', '');
         }
+        if (profileModal && profileModal.classList.contains('active')) {
+            profileModal.removeAttribute('inert');
+        }
         const canTakeFocus = el => !!el && typeof el.focus === 'function' && el.isConnected
             && !el.disabled && el.getClientRects().length > 0;
         let target = deleteModalReturnFocus;
@@ -850,6 +854,9 @@ function setupEventListeners() {
             if (deleteAccountError) deleteAccountError.textContent = '';
             deleteModalUserId = currentUser.id;
             deleteModalReturnFocus = document.activeElement;
+            if (profileModal) {
+                profileModal.setAttribute('inert', '');
+            }
             if (deleteAccountModal) {
                 deleteAccountModal.removeAttribute('inert');
                 deleteAccountModal.classList.add('active');
