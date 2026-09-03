@@ -357,7 +357,18 @@ async function initAuth() {
         // read just now (its refresh failed on the network, or in time): the
         // list this page loaded is treated the same. A session that arrives
         // later reaches the listener below.
-        const session = await readSessionWithin(deleteAttemptTimeoutMs());
+        let session = await readSessionWithin(deleteAttemptTimeoutMs());
+        if (session && isSignedOutEntry()) {
+            // Signed out here without the lock (see signOutCurrentUser):
+            // removed now if the lock can be had, ignored either way.
+            await withSessionLock(() => {
+                if (rawStoredSession() === localStorage.getItem(SIGNED_OUT_ENTRY_KEY)) {
+                    localStorage.removeItem(sessionStorageKey());
+                    localStorage.removeItem(SIGNED_OUT_ENTRY_KEY);
+                }
+            }, deleteAttemptTimeoutMs());
+            session = null;
+        }
         if (isDeletedUserSession(session) || (!(session && session.user) && storedSessionIsRecorded())) {
             console.warn('Not restoring the stored session of an account deleted (or being deleted) from this browser.');
             // What app.js loaded from the shared store may be that account's
@@ -383,6 +394,9 @@ async function initAuth() {
             // find the tab still signed in, since the initiator's sync is
             // rerun then; the cleanup after a commit ends the session itself.
             if (deletingUserId !== null && session && session.user && session.user.id === deletingUserId) return;
+            // An entry this browser signed out of without the lock (see
+            // signOutCurrentUser) is no session.
+            if (session && isSignedOutEntry()) return;
             if (isDeletedUserSession(session)) {
                 // A refresh or restore of an account deleted (or being
                 // deleted) from this browser. SIGNED_IN is no proof of a
@@ -706,7 +720,11 @@ async function readSessionWithin(timeoutMs) {
 const AUTH_REJECTION_STATUSES = [400, 401, 403, 404];
 
 function isDefinitiveAuthRejection(error) {
-    return !!(error && error.name === 'AuthApiError' && AUTH_REJECTION_STATUSES.includes(error.status));
+    if (!error) return false;
+    // auth-js turns the server's session_not_found (the session row is
+    // gone: deleted with the account, or revoked) into this error.
+    if (error.name === 'AuthSessionMissingError') return true;
+    return error.name === 'AuthApiError' && AUTH_REJECTION_STATUSES.includes(error.status);
 }
 
 // Who holds the session the shared client sees: a user id, null for nobody,
@@ -798,8 +816,15 @@ function sessionWriteRefused(value) {
         // refuses it below exists only once the RPC has been sent.
         if (deletingUserId === userId && holder !== null && holder !== userId) return true;
         const record = readDeletionRecord(userId);
-        if (!record) return false;
-        if (record.phase === 'committed') return true;
+        if (!record && deletingUserId !== userId) return false;
+        if (record && record.phase === 'committed') return true;
+        // Without Web Locks the library's read, its refresh and this write
+        // are not one operation: a delayed write of such an account's
+        // session is stored only over that account's own entry, never over
+        // an empty or another account's one it could not have seen. (The
+        // check and the write here are consecutive statements; that is the
+        // limit of what can be had without a lock.)
+        if (!hasWebLocks()) return holder !== userId;
         return holder !== null && holder !== userId;
     } catch {
         return false;
@@ -1111,6 +1136,10 @@ function recordPendingDeletion(userId) {
     const earlier = readDeletionRecord(userId);
     if (earlier && earlier.phase === 'committed' && !earlier.unconfirmed) return { alreadyCommitted: true };
     const existed = !!(earlier && earlier.phase === 'pending');
+    // A record settled without confirmation is a prior unknown outcome as
+    // well: an attempt that cannot even be recorded over it must not be
+    // reported as the account being active.
+    const unknownStands = existed || !!(earlier && earlier.phase === 'committed' && earlier.unconfirmed);
     const attempt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     try {
         localStorage.setItem(deletionAttemptKey(userId, attempt), JSON.stringify({ userId, attempt }));
@@ -1120,11 +1149,11 @@ function recordPendingDeletion(userId) {
             // failed write.
             const swept = readDeletionRecord(userId);
             if (swept && swept.phase === 'committed' && !swept.unconfirmed) return { alreadyCommitted: true };
-            return { writeFailed: true, existed };
+            return { writeFailed: true, existed: unknownStands };
         }
     } catch (err) {
         console.warn('Could not record the deletion attempt:', err);
-        return { writeFailed: true, existed };
+        return { writeFailed: true, existed: unknownStands };
     }
     // A commit published between the first look and this write would have
     // swept the attempts before this one existed: look again, and step back
@@ -1221,43 +1250,84 @@ function rawStoredSession() {
     }
 }
 
-// The explicit sign-out. The library revokes the session server-side and
-// tells the listener, but its own removal of the stored entry is honoured
-// only for the entry as this tab's library left it (see
-// sessionRemovalRefused), which a refresh by another tab may have replaced
-// since. The person's intent is to sign this account out here, so the entry
-// is removed for that account by a compare-and-remove, under the session
-// lock when it can be had (an unlocked one when it cannot: leaving the
-// session behind would sign the person back in on the next load).
+// A stored session entry this browser signed out of without being able to
+// remove it (no session lock to be had): its value is kept here, and an
+// entry still equal to it is treated as no session by start-up and the
+// listener, until a different value replaces it (a new sign-in, a refresh).
+const SIGNED_OUT_ENTRY_KEY = 'moiCheckSignedOutSession';
+
+function isSignedOutEntry() {
+    try {
+        const marker = localStorage.getItem(SIGNED_OUT_ENTRY_KEY);
+        if (marker === null) return false;
+        const current = rawStoredSession();
+        if (current !== null && current === marker) return true;
+        // The entry has changed (or gone): the marker has served.
+        localStorage.removeItem(SIGNED_OUT_ENTRY_KEY);
+        return false;
+    } catch {
+        return false;
+    }
+}
+
+// The explicit sign-out. The library's own sign-out would revoke and remove
+// whatever the entry holds by then, which another tab may have replaced
+// with a different account, so nothing is done through it: the session
+// this tab is signed in as is read (bounded), revoked server-side through a
+// client pinned to its token (everywhere, as the library's sign-out would),
+// and its entry removed by a compare-and-remove under the session lock.
+// Once storage no longer holds that account, nothing is revoked or removed.
+// Without the lock (none to be had, or wedged) the entry is left as it is
+// and marked signed out instead (see isSignedOutEntry): an unlocked
+// check-and-remove could take a replacement's entry with it.
 async function signOutCurrentUser() {
     if (!supabaseClient) return;
     const userId = currentUser ? currentUser.id : null;
-    // An account whose deletion is unanswered keeps its stored credentials:
-    // the next load retries delete_user() with them (see
-    // resolvePendingDeletion), and the library's sign-out would revoke them
-    // server-side as well as remove them. This tab goes to guest mode
-    // without touching them.
-    if (userId !== null) {
-        const record = readDeletionRecord(userId);
-        if (record && record.phase === 'pending') {
-            console.warn('Signing out locally only: a deletion of this account is still unanswered, and its credentials are kept for the retry.');
+    const signedOutHere = () => {
+        if (currentUser && currentUser.id === userId) {
             currentUser = null;
             onUserLoggedOut();
-            return;
         }
-    }
-    try {
-        await supabaseClient.auth.signOut();
-    } catch (err) {
-        console.warn('Sign-out failed:', err);
-    }
+    };
     if (userId === null) return;
-    const { ran } = await withSessionLock(() => removeStoredSessionIfUser(userId), deleteAttemptTimeoutMs());
-    if (!ran) removeStoredSessionIfUser(userId);
-    if (currentUser && currentUser.id === userId) {
-        currentUser = null;
-        onUserLoggedOut();
+    // An account whose deletion is unanswered keeps its stored credentials:
+    // the next load retries delete_user() with them (see
+    // resolvePendingDeletion), and a revoke would end them. This tab goes to
+    // guest mode without touching them.
+    const record = readDeletionRecord(userId);
+    if (record && record.phase === 'pending') {
+        console.warn('Signing out locally only: a deletion of this account is still unanswered, and its credentials are kept for the retry.');
+        signedOutHere();
+        return;
     }
+    const entryBefore = rawStoredSession();
+    const session = await readSessionWithin(deleteAttemptTimeoutMs());
+    if (session && session.user && session.user.id === userId && session.access_token && storedSessionUserId() === userId) {
+        try {
+            const revoke = clientForSession(session).auth.admin.signOut(session.access_token, 'global');
+            if (!(await settlesWithin(revoke, deleteAttemptTimeoutMs()))) {
+                console.warn('Sign-out revoke did not answer in time; signing out locally.');
+            } else {
+                const { error } = await revoke;
+                if (error) console.warn('Sign-out revoke failed (signing out locally):', error.message);
+            }
+        } catch (err) {
+            console.warn('Sign-out revoke failed (signing out locally):', err);
+        }
+    } else {
+        console.warn('Storage no longer holds this account; nothing to revoke.');
+    }
+    const { ran } = await withSessionLock(() => removeStoredSessionIfUser(userId), deleteAttemptTimeoutMs());
+    if (!ran) {
+        try {
+            const current = rawStoredSession();
+            if (current !== null && current === entryBefore) localStorage.setItem(SIGNED_OUT_ENTRY_KEY, current);
+        } catch (err) {
+            console.warn('Could not mark the stored session signed out:', err);
+        }
+        console.warn('No session lock; the stored session is left and marked signed out.');
+    }
+    signedOutHere();
 }
 
 // The user of the stored session, read straight from storage, or null.
