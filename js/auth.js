@@ -214,19 +214,8 @@ function finishMagicLinkSignIn(pending) {
                 await settleMemory();
                 alert(t().deleteUncertain);
             } else {
-                // While the record stood, the adapter may have refused to
-                // store this session (another account held the entry); now
-                // that the record is void it is stored like any sign-in.
-                if (storedSessionUserId() !== verified.user.id) {
-                    try {
-                        await sessionStorageAdapter().setItem(sessionStorageKey(), JSON.stringify(verified));
-                    } catch (err) {
-                        console.warn('Could not store the verified session:', err);
-                    }
-                }
-                if (hasDeletionRecords()) takeOverFromDeletedAccounts(verified.user.id);
-                currentUser = verified.user;
-                await onUserLoggedIn();
+                await settleMemory();
+                alert(t().deleteUncertain);
             }
         }
     };
@@ -293,6 +282,11 @@ async function initAuth() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (isDeletedUserSession(session)) {
             console.warn('Not restoring the stored session of an account deleted (or being deleted) from this browser.');
+            // What app.js loaded from the shared store may be that account's
+            // list: dropped from memory and redrawn, never written.
+            completedItems = {};
+            renderList();
+            updateProgress();
         } else if (session && session.user) {
             if (hasDeletionRecords()) takeOverFromDeletedAccounts(session.user.id);
             currentUser = session.user;
@@ -310,13 +304,12 @@ async function initAuth() {
                 // flow settles a pending record itself, from the server's
                 // answer. Storage now holds that account (or nothing), so
                 // whatever account this page still had in memory is stale.
-                if (currentUser) {
-                    currentUser = null;
-                    // The list in memory was that account's; storage may be
-                    // someone else's, so it is not written.
-                    completedItems = {};
-                    onUserLoggedOut();
-                }
+                // The list in memory may be that account's (a signed-out tab
+                // keeps it too, #52); storage may be someone else's, so it
+                // is dropped without being written, and the screen redrawn.
+                currentUser = null;
+                completedItems = {};
+                onUserLoggedOut();
                 return;
             }
             if (session && session.user) {
@@ -460,12 +453,18 @@ async function handleAccountDeletedElsewhere(userId) {
     // and would write it back to storage on its next edit.
     if (currentUser && currentUser.id !== userId) return;
     console.warn('This account was deleted from another tab; clearing the local copy here.');
+    // A tab signed in as the account may have written the account's rows
+    // to storage after the deleting tab cleared and settled the step (its
+    // own sync answering before this message got through), so it clears
+    // again on its first notification; a signed-out tab, whose sync could
+    // not have run, only drops its memory once the step is settled.
+    const wasSignedInAsAccount = !!(currentUser && currentUser.id === userId);
     authGeneration++;
     // Same decision as the deleting tab: another account may already hold
     // this device (its session stored by a third tab), in which case its
     // stored progress is left alone.
     try {
-        await clearLocalProgressUnlessTakenOver(userId);
+        await clearLocalProgressUnlessTakenOver(userId, { evenIfSettled: wasSignedInAsAccount });
     } catch (err) {
         console.warn('Could not clear stored progress:', err);
         completedItems = {};
@@ -682,10 +681,12 @@ const DELETION_ATTEMPT_PREFIX = 'moiCheckDeletionAttempt:';
 // record itself is never rewritten after the commit.
 const DELETION_STEP_PREFIX = 'moiCheckDeletionStep:';
 // A settled record stays as a tombstone for this long: a token refresh still
-// in flight somewhere could otherwise put the deleted account's session back
-// after the cleanup (see sessionStorageAdapter). Longer than an access token
-// lives.
-const DELETION_TOMBSTONE_MS = 60 * 60 * 1000;
+// in flight somewhere (a tab resumed from suspension, say) could otherwise
+// put the deleted account's session back after the cleanup (see
+// sessionStorageAdapter). A week is the longest access-token lifetime a
+// Supabase project can be configured with, so no still-valid token of the
+// deleted account outlives it.
+const DELETION_TOMBSTONE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function deletionRecordKey(userId) {
     return DELETION_RECORD_PREFIX + userId;
@@ -1044,14 +1045,16 @@ function removeStoredSessionIfUser(userId) {
 // Resolves true when the decision was made, false when the lock never came
 // free (memory is cleared regardless; start-up retries the decision from the
 // marker).
-async function clearLocalProgressUnlessTakenOver(userId) {
+async function clearLocalProgressUnlessTakenOver(userId, { evenIfSettled = false } = {}) {
     const decide = () => {
         completedItems = {};
         // Read what stands while holding the lock: if another tab has cleared
         // and settled the step meanwhile, storage may already hold new guest
-        // progress, and only this tab's memory is dropped.
+        // progress, and only this tab's memory is dropped. Unless this tab's
+        // own late write may be what stands there (see the caller).
         const standing = readDeletionRecord(userId);
-        if ((standing && standing.phase === 'committed' && !standing.progressPending) || progressStepSettled(userId)) {
+        const settled = (standing && standing.phase === 'committed' && !standing.progressPending) || progressStepSettled(userId);
+        if (settled && !evenIfSettled) {
             return;
         }
         const holder = storedSessionUserId();
