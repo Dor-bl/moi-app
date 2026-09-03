@@ -480,6 +480,12 @@ async function initAuth() {
             // An entry this browser signed out of without the lock (see
             // signOutCurrentUser) is no session.
             if (session && isSignedOutEntry()) return;
+            // Nor is the session of an account this browser signed out of
+            // (its guard stands): a refresh in flight when the sign-out ran
+            // still emits its event after the adapter refused its write,
+            // and must not sign the account back in here. An explicit
+            // sign-in of the account lifts the guard before its event.
+            if (session && session.user && signedOutGuardStands(session.user.id)) return;
             if (isDeletedUserSession(session)) {
                 // The event does not say the account holds the entry: the
                 // adapter may have refused its write because another,
