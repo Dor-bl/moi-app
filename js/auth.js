@@ -11,6 +11,11 @@ const SUPABASE_ANON_KEY = (typeof window !== 'undefined' && window.SUPABASE_ANON
 // it can settle a recorded deletion the way a verified magic link does (see
 // initAuth); the library itself asks the server whose token it is before it
 // emits the session, and this does the same.
+// The stored session entry this browser signed out of without being able to
+// remove it; see signOutCurrentUser and isSignedOutEntry. Declared before
+// the client, whose adapter reads it.
+const SIGNED_OUT_ENTRY_KEY = 'moiCheckSignedOutSession';
+
 const oauthCallback = (() => {
     try {
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -422,7 +427,10 @@ async function initAuth() {
                     window.history.replaceState(null, '', window.location.pathname + window.location.search);
                 }
             } else if (event === 'SIGNED_OUT') {
-                if (currentUser) {
+                // The library also says this after a failed late refresh
+                // whose removal the adapter refused (the entry now holds a
+                // replacement, or the initiator itself): storage decides.
+                if (currentUser && storedSessionUserId() !== currentUser.id) {
                     currentUser = null;
                     onUserLoggedOut();
                 }
@@ -770,7 +778,15 @@ function sessionStorageAdapter() {
         return navigator.locks.request(`lock:${key}`, { mode: 'exclusive' }, async () => write());
     };
     return {
-        getItem: (key) => localStorage.getItem(key),
+        getItem: (key) => {
+            const value = localStorage.getItem(key);
+            // An entry this browser signed out of without the lock (see
+            // signOutCurrentUser) is no session to the library either: it
+            // must not refresh it into a new value that would outlive the
+            // marker. A different value is a genuine session.
+            if (key === sessionStorageKey() && value !== null && value === localStorage.getItem(SIGNED_OUT_ENTRY_KEY)) return null;
+            return value;
+        },
         setItem: (key, value) => locked(key, () => {
             // A refresh still in flight (this tab or another) must not put a
             // deleted account's session back after the cleanup removed it:
@@ -780,7 +796,10 @@ function sessionStorageAdapter() {
                 return;
             }
             localStorage.setItem(key, value);
-            if (key === sessionStorageKey()) entryAsLeft = value;
+            if (key === sessionStorageKey()) {
+                entryAsLeft = value;
+                localStorage.removeItem(SIGNED_OUT_ENTRY_KEY);
+            }
         }),
         removeItem: (key) => locked(key, () => {
             // The library removes a session whose refresh the server
@@ -1163,7 +1182,7 @@ function recordPendingDeletion(userId) {
         removePendingAttempts(userId, [attempt]);
         return { alreadyCommitted: true };
     }
-    return { attempt, existed };
+    return { attempt, existed: unknownStands };
 }
 
 function clearPendingDeletion(userId, attempt) {
@@ -1254,8 +1273,6 @@ function rawStoredSession() {
 // remove it (no session lock to be had): its value is kept here, and an
 // entry still equal to it is treated as no session by start-up and the
 // listener, until a different value replaces it (a new sign-in, a refresh).
-const SIGNED_OUT_ENTRY_KEY = 'moiCheckSignedOutSession';
-
 function isSignedOutEntry() {
     try {
         const marker = localStorage.getItem(SIGNED_OUT_ENTRY_KEY);
@@ -1300,7 +1317,6 @@ async function signOutCurrentUser() {
         signedOutHere();
         return;
     }
-    const entryBefore = rawStoredSession();
     const session = await readSessionWithin(deleteAttemptTimeoutMs());
     if (session && session.user && session.user.id === userId && session.access_token && storedSessionUserId() === userId) {
         try {
@@ -1319,9 +1335,11 @@ async function signOutCurrentUser() {
     }
     const { ran } = await withSessionLock(() => removeStoredSessionIfUser(userId), deleteAttemptTimeoutMs());
     if (!ran) {
+        // The entry as it stands now (the read above may have refreshed
+        // it), as long as it still belongs to the account signed out.
         try {
             const current = rawStoredSession();
-            if (current !== null && current === entryBefore) localStorage.setItem(SIGNED_OUT_ENTRY_KEY, current);
+            if (current !== null && storedSessionUserId() === userId) localStorage.setItem(SIGNED_OUT_ENTRY_KEY, current);
         } catch (err) {
             console.warn('Could not mark the stored session signed out:', err);
         }
@@ -1807,7 +1825,9 @@ async function performAccountDeletion(userId, state) {
                 rpcError = null;
                 alreadyCommitted = true;
             } else {
-                othersUnanswered = !!(afterwards && afterwards.phase === 'pending' && afterwards.attempts.some(attempt => attempt !== record.attempt));
+                // A record settled without confirmation is an unanswered
+                // deletion as well: only a success settles it.
+                othersUnanswered = !!(afterwards && ((afterwards.phase === 'pending' && afterwards.attempts.some(attempt => attempt !== record.attempt)) || (afterwards.phase === 'committed' && afterwards.unconfirmed)));
             }
         }
     }
