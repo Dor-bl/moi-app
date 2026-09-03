@@ -5,6 +5,22 @@
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
 const SUPABASE_ANON_KEY = (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) ? window.SUPABASE_ANON_KEY : '';
 
+// A sign-in coming back through the address bar: the implicit-flow OAuth
+// callback (Google) carries its tokens in the hash. Captured before the
+// library consumes and clears it, so the session the server verifies from
+// it can settle a recorded deletion the way a verified magic link does (see
+// initAuth); the library itself asks the server whose token it is before it
+// emits the session, and this does the same.
+const oauthCallback = (() => {
+    try {
+        const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const accessToken = params.get('access_token');
+        return accessToken ? { access_token: accessToken } : null;
+    } catch {
+        return null;
+    }
+})();
+
 let supabaseClient = null;
 if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PROJECT_ID')) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -169,60 +185,81 @@ function finishMagicLinkSignIn(pending) {
 
         // A deletion of this account may still be recorded as unanswered.
         // The listener refused the sign-in for that record; the session the
-        // server just verified is what can settle it (see
-        // resolvePendingDeletion): the account ends up deleted, or the
-        // record proves void and the sign-in is completed here, or it stays
-        // unknown and the person is told.
-        // A record settled without confirmation (see
-        // settleUnreachableDeletion) counts as unanswered here too: a session
-        // the server verified for that account exists only if the account
-        // still does, and is what can confirm the deletion.
+        // server just verified is what can settle it.
         const verified = data && data.session && data.session.user ? data.session : null;
-        const record = verified ? readDeletionRecord(verified.user.id) : null;
-        if (verified && record && (record.phase === 'pending' || record.unconfirmed)) {
-            const outcome = await resolvePendingDeletion(record, verified);
-            // Whatever account this page held in memory before, storage now
-            // holds the verified session (or nothing, once the cleanup ran),
-            // so memory is set from the outcome, never from what was there.
-            // Memory follows whatever session storage holds once this is
-            // over: another account that kept the entry (the verified one's
-            // write was refused while its record stood) stays signed in,
-            // anything else is guest mode.
-            const settleMemory = async () => {
-                const remaining = storedSessionUser();
-                if (remaining && remaining.id !== verified.user.id && !readDeletionRecord(remaining.id)) {
-                    currentUser = remaining;
-                    await onUserLoggedIn();
-                } else {
-                    currentUser = null;
-                    // Memory follows the outcome, never what was there;
-                    // storage may be another account's, so nothing is
-                    // written.
-                    completedItems = {};
-                    onUserLoggedOut();
-                }
-            };
-            // Only an answer to this retry confirms the deletion: a record
-            // still unconfirmed after it means the retry failed with a
-            // session the server verified, so the outcome stays unknown.
-            if (outcome && outcome.phase === 'committed' && !outcome.unconfirmed) {
-                let cleanup = { localCleanupIncomplete: false };
-                try {
-                    cleanup = await finishPendingDeletionCleanup(outcome);
-                } catch (err) {
-                    // The account is gone either way; the record keeps what
-                    // is left for the next load.
-                    console.warn('Could not finish the deletion cleanup:', err);
-                    completedItems = {};
-                }
-                await settleMemory();
-                alert(deletionOutcomeMessage(false, cleanup.localCleanupIncomplete));
-            } else {
-                await settleMemory();
-                alert(t().deleteUncertain);
-            }
+        if (verified && hasUnsettledDeletion(verified.user.id)) await settleVerifiedSignIn(verified);
+    };
+}
+
+// Whether a deletion of the account is recorded as unanswered: still
+// pending, or settled without confirmation (see settleUnreachableDeletion).
+// A session the server verified for that account exists only if the
+// account still does, and is what can settle the record.
+function hasUnsettledDeletion(userId) {
+    const record = readDeletionRecord(userId);
+    return !!(record && (record.phase === 'pending' || record.unconfirmed));
+}
+
+// A sign-in the server verified (a magic link, or an OAuth callback whose
+// token the server named the owner of) for an account with an unsettled
+// deletion: the RPC is called again with that session (see
+// resolvePendingDeletion), so the account ends up deleted, or it stays
+// unknown and the person is told. The listener refuses the session either
+// way while the record stands.
+async function settleVerifiedSignIn(verified) {
+    const t = () => UI_TRANSLATIONS[currentLang];
+    const record = readDeletionRecord(verified.user.id);
+    if (!record) return;
+    const outcome = await resolvePendingDeletion(record, verified);
+    // Whatever account this page held in memory before, storage now holds
+    // the verified session (or nothing, once the cleanup ran), so memory is
+    // set from the outcome, never from what was there. Memory follows
+    // whatever session storage holds once this is over: another account
+    // that kept the entry (the verified one's write was refused while its
+    // record stood) stays signed in, anything else is guest mode.
+    const settleMemory = async () => {
+        const remaining = storedSessionUser();
+        if (remaining && remaining.id !== verified.user.id && !readDeletionRecord(remaining.id)) {
+            currentUser = remaining;
+            await onUserLoggedIn();
+        } else {
+            currentUser = null;
+            // Memory follows the outcome, never what was there; storage may
+            // be another account's, so nothing is written.
+            completedItems = {};
+            onUserLoggedOut();
         }
     };
+    // Only an answer to this retry confirms the deletion: a record still
+    // unconfirmed after it means the retry failed with a session the server
+    // verified, so the outcome stays unknown.
+    if (outcome && outcome.phase === 'committed' && !outcome.unconfirmed) {
+        let cleanup = { localCleanupIncomplete: false };
+        try {
+            cleanup = await finishPendingDeletionCleanup(outcome);
+        } catch (err) {
+            // The account is gone either way; the record keeps what is left
+            // for the next load.
+            console.warn('Could not finish the deletion cleanup:', err);
+            completedItems = {};
+        }
+        await settleMemory();
+        alert(deletionOutcomeMessage(false, cleanup.localCleanupIncomplete));
+    } else {
+        await settleMemory();
+        alert(t().deleteUncertain);
+    }
+}
+
+// The session an OAuth callback carried, once the server has named the
+// owner of its token (bounded: the read goes over the network). Null when
+// it did not, or not in time.
+async function verifiedOAuthSession(callback) {
+    const read = supabaseClient.auth.getUser(callback.access_token)
+        .then(({ data }) => (data && data.user && data.user.id) ? data.user : null, () => null);
+    if (!(await settlesWithin(read, deleteAttemptTimeoutMs()))) return null;
+    const user = await read;
+    return user ? { access_token: callback.access_token, user } : null;
 }
 
 // What the person is told once a deletion has ended: confirmed by the
@@ -260,11 +297,27 @@ async function initAuth() {
         // closed while the RPC was out (outcome unknown), or right after the
         // commit, or the session lock was held. Settle what can be settled
         // before any session is restored.
-        const deletionRecords = readDeletionRecords();
+        let deletionRecords = readDeletionRecords();
+        // A Google sign-in coming back through the address bar for an
+        // account with an unsettled deletion: the listener below would
+        // refuse it like a stale session, but it is a session the server
+        // verifies, and settles the record the way a verified magic link
+        // does. Its account is then left out of the loop below (the retry
+        // has run, and its cleanup with it).
+        let settledByCallback = null;
+        if (oauthCallback && Object.keys(deletionRecords).length > 0) {
+            const verified = await verifiedOAuthSession(oauthCallback);
+            if (verified && hasUnsettledDeletion(verified.user.id)) {
+                await settleVerifiedSignIn(verified);
+                settledByCallback = verified.user.id;
+                deletionRecords = readDeletionRecords();
+            }
+        }
         let committedNow = false;
         let unconfirmedNow = false;
         let localCleanupIncomplete = false;
         for (const recordedUserId of Object.keys(deletionRecords)) {
+            if (recordedUserId === settledByCallback) continue;
             try {
                 let record = deletionRecords[recordedUserId];
                 if (record.phase === 'pending') {
@@ -291,11 +344,13 @@ async function initAuth() {
         }
         if (committedNow) alert(deletionOutcomeMessage(unconfirmedNow, localCleanupIncomplete));
 
-        // Fetch existing active session
+        // Fetch the existing session, with a bound: a refresh that never
+        // answers must not keep start-up (and the guard below) from running.
         // The entry may also hold a recorded account the library could not
-        // read just now (its refresh failed on the network): the list this
-        // page loaded is treated the same.
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        // read just now (its refresh failed on the network, or in time): the
+        // list this page loaded is treated the same. A session that arrives
+        // later reaches the listener below.
+        const session = await readSessionWithin(deleteAttemptTimeoutMs());
         if (isDeletedUserSession(session) || (!(session && session.user) && storedSessionIsRecorded())) {
             console.warn('Not restoring the stored session of an account deleted (or being deleted) from this browser.');
             // What app.js loaded from the shared store may be that account's

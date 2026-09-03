@@ -165,7 +165,8 @@ if it still gets no answer, reports the outcome as unknown and asks the person t
 than claim their account is intact. The next load calls the function again with the stored
 session; once the server refuses that session for good (its refresh token went with the
 account), no retry is possible from that browser, so it signs the person out, clears its copy
-and says the deletion could not be confirmed from there.
+(except in a browser without Web Locks, where it cannot do so safely and says so, as with any
+other deletion) and says the deletion could not be confirmed from there.
 
 ### Troubleshooting: magic links fail with a 500
 
