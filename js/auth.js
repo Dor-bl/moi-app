@@ -280,7 +280,7 @@ async function settleVerifiedSignIn(verified) {
     // that kept the entry (the verified one's write was refused while its
     // record stood) stays signed in, anything else is guest mode.
     const settleMemory = async () => {
-        const remaining = storedSessionUser();
+        const remaining = liveStoredSessionUser();
         if (remaining && remaining.id !== verified.user.id && !readDeletionRecord(remaining.id)) {
             currentUser = remaining;
             await onUserLoggedIn();
@@ -484,16 +484,14 @@ async function initAuth() {
                 // unrecorded account holds it. That account is what this tab
                 // keeps (or reconciles to, with memory emptied first, never
                 // uploaded), rather than going to guest mode.
-                const holder = storedSessionUserId();
+                const replacement = liveStoredSessionUser();
+                const holder = replacement ? replacement.id : null;
                 if (holder !== null && holder !== session.user.id && !readDeletionRecord(holder)) {
                     if (!(currentUser && currentUser.id === holder)) {
-                        const replacement = storedSessionUser();
-                        if (replacement) {
-                            if (hasDeletionRecords()) takeOverFromDeletedAccounts(replacement.id);
-                            completedItems = {};
-                            currentUser = replacement;
-                            await onUserLoggedIn();
-                        }
+                        if (hasDeletionRecords()) takeOverFromDeletedAccounts(replacement.id);
+                        completedItems = {};
+                        currentUser = replacement;
+                        await onUserLoggedIn();
                     }
                     return;
                 }
@@ -1723,6 +1721,17 @@ function markStoredSessionSignedOut(userId, entry) {
         console.warn('Could not mark the stored session signed out:', err);
         return null;
     }
+}
+
+// The user of the stored session as far as memory may follow it: null
+// when the entry is one this browser signed out of (marked, see
+// isSignedOutEntry; or its account's sign-out guard stands), which is no
+// session to sign anyone in with.
+function liveStoredSessionUser() {
+    if (isSignedOutEntry()) return null;
+    const user = storedSessionUser();
+    if (user && signedOutGuardStands(user.id)) return null;
+    return user;
 }
 
 // The user of the stored session, read straight from storage, or null.
