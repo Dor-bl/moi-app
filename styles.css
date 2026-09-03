@@ -238,6 +238,11 @@ body {
     background-color: #F8FAFC;
 }
 
+.google-signin-container {
+    justify-content: center;
+    margin-bottom: 1.25rem;
+}
+
 .auth-divider {
     display: flex;
     align-items: center;

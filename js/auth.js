@@ -1,9 +1,12 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, deleteUserAccountAndData
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData
 // Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
 const SUPABASE_ANON_KEY = (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) ? window.SUPABASE_ANON_KEY : '';
+// Public OAuth client ID (the same one pasted into Supabase's Google provider).
+// Optional: without it the app falls back to Supabase's redirect flow.
+const GOOGLE_CLIENT_ID = (typeof window !== 'undefined' && window.GOOGLE_CLIENT_ID) ? window.GOOGLE_CLIENT_ID : '';
 
 let supabaseClient = null;
 if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PROJECT_ID')) {
@@ -145,8 +148,126 @@ function finishMagicLinkSignIn(pending) {
     };
 }
 
+// Google sign-in runs on this origin instead of bouncing through Supabase's
+// OAuth callback, so Google's consent screen names this site and the app
+// rather than "<project>.supabase.co". Google Identity Services hands the
+// browser an ID token; Supabase verifies it in signInWithIdToken. The nonce
+// ties the token to this page load: Google embeds the SHA-256 of the value
+// we give it, Supabase hashes the raw value we send back and compares.
+// With no client ID configured the redirect-based button stays in place, so
+// this ships safely before the dashboard side is set up.
+let googleNonce = '';
+
+function randomHex(byteLength) {
+    const bytes = crypto.getRandomValues(new Uint8Array(byteLength));
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sha256Hex(text) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function googleIdentityReady() {
+    return !!(window.google && window.google.accounts && window.google.accounts.id);
+}
+
+function loadGoogleIdentity() {
+    return new Promise((resolve, reject) => {
+        if (googleIdentityReady()) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Google Identity Services script failed to load'));
+        document.head.appendChild(script);
+    });
+}
+
+async function initGoogleSignIn() {
+    if (!supabaseClient || !GOOGLE_CLIENT_ID) return;
+    // crypto.subtle only exists in secure contexts (https and localhost); the
+    // redirect flow still works everywhere else.
+    if (!window.crypto || !window.crypto.subtle) return;
+
+    const container = document.getElementById('googleSignInContainer');
+    const fallbackBtn = document.getElementById('googleAuthBtn');
+    if (!container || !fallbackBtn) return;
+
+    try {
+        await loadGoogleIdentity();
+        googleNonce = randomHex(32);
+        const hashedNonce = await sha256Hex(googleNonce);
+        window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            nonce: hashedNonce,
+            callback: onGoogleCredential
+        });
+        renderGoogleButton();
+        fallbackBtn.style.display = 'none';
+        container.style.display = 'flex';
+    } catch (err) {
+        // Script blocked or failed: leave the redirect-based button as it is.
+        console.warn('Google sign-in on this origin unavailable, using redirect flow:', err);
+    }
+}
+
+// Idempotent: called on init and again on language or theme changes, since
+// Google renders the button with a fixed locale and colour scheme.
+function renderGoogleButton() {
+    const container = document.getElementById('googleSignInContainer');
+    if (!container || !googleIdentityReady()) return;
+
+    const root = document.documentElement;
+    const dark = root.getAttribute('data-theme') === 'dark'
+        || (!root.hasAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    container.innerHTML = '';
+    window.google.accounts.id.renderButton(container, {
+        type: 'standard',
+        theme: dark ? 'filled_black' : 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'pill',
+        logo_alignment: 'left',
+        locale: currentLang === 'nl' ? 'nl' : 'en'
+    });
+}
+
+async function onGoogleCredential(response) {
+    if (!response || !response.credential) return;
+
+    const { error } = await supabaseClient.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+        nonce: googleNonce
+    });
+
+    if (error) {
+        console.error('Google sign-in failed:', {
+            status: error.status,
+            code: error.code,
+            message: error.message
+        }, error);
+        alert(error.message);
+        return;
+    }
+
+    // onAuthStateChange picks up the session; just put the modal away.
+    const authModal = document.getElementById('authModal');
+    if (authModal) authModal.classList.remove('active');
+}
+
 async function initAuth() {
     if (!supabaseClient) return;
+
+    // Not awaited: the button swaps in when Google's script arrives, and the
+    // rest of auth setup should not wait on a third-party download.
+    initGoogleSignIn();
 
     try {
         // Detect if an error was passed back in hash or query parameters (e.g. expired link)

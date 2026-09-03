@@ -13,6 +13,9 @@ function applyTheme(themeOption) {
         document.documentElement.removeAttribute('data-theme');
     }
     updateThemeButtonsUI(validTheme);
+    // Google renders its sign-in button in a fixed colour scheme; redraw it
+    // to match. Guarded because not every page loads the auth module.
+    if (typeof renderGoogleButton === 'function') renderGoogleButton();
 }
 
 function updateThemeButtonsUI(currentOption) {

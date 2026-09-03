@@ -222,6 +222,7 @@ function updateLanguageUI() {
     document.getElementById('authModalSubtitle').textContent = t.authSubtitle;
     document.getElementById('authPrivacyNote').innerHTML = t.authPrivacyNote;
     document.getElementById('txtGoogleBtn').textContent = t.continueGoogle;
+    renderGoogleButton();
     document.getElementById('txtAuthOr').textContent = t.orText;
     document.getElementById('lblMagicEmail').textContent = t.contactEmail;
     document.getElementById('magicLinkSubmitBtn').textContent = t.sendMagicLink;
