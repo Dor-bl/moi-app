@@ -919,7 +919,7 @@ function setupEventListeners() {
             closeDeleteAccountModal();
             closeProfileModal();
             // The UI is already back in guest mode.
-            alert(outcome && outcome.localCleanupIncomplete ? t.deleteSuccessLocalPending : t.deleteSuccess);
+            alert(deletionOutcomeMessage(false, outcome || {}));
         } catch (err) {
             console.error('Account deletion failed:', err);
             setDeletionBusy(false);

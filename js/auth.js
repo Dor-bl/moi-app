@@ -1,4 +1,4 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, deleteUserAccountAndData
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, deleteUserAccountAndData, deletionOutcomeMessage
 // Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
@@ -244,7 +244,7 @@ async function settleVerifiedSignIn(verified) {
             completedItems = {};
         }
         await settleMemory();
-        alert(deletionOutcomeMessage(false, cleanup.localCleanupIncomplete));
+        alert(deletionOutcomeMessage(false, cleanup));
     } else {
         await settleMemory();
         alert(t().deleteUncertain);
@@ -265,10 +265,15 @@ async function verifiedOAuthSession(callback) {
 // What the person is told once a deletion has ended: confirmed by the
 // server, or settled without confirmation (see settleUnreachableDeletion);
 // with the browser copy cleared, or left for them to clear (no Web Locks).
-function deletionOutcomeMessage(unconfirmed, localCleanupIncomplete) {
+function deletionOutcomeMessage(unconfirmed, cleanup) {
     const t = UI_TRANSLATIONS[currentLang];
-    if (unconfirmed) return localCleanupIncomplete ? t.deleteUnconfirmedLocalPending : t.deleteUnconfirmed;
-    return localCleanupIncomplete ? t.deleteSuccessLocalPending : t.deleteSuccess;
+    const incomplete = !!(cleanup && cleanup.localCleanupIncomplete);
+    let message;
+    if (unconfirmed) message = incomplete ? t.deleteUnconfirmedLocalPending : t.deleteUnconfirmed;
+    else message = incomplete ? t.deleteSuccessLocalPending : t.deleteSuccess;
+    // A clear the lock never came free for is done on the next load.
+    if (cleanup && cleanup.localCleanupDeferred) message += ' ' + t.deleteLocalDeferred;
+    return message;
 }
 
 async function initAuth() {
@@ -316,6 +321,7 @@ async function initAuth() {
         let committedNow = false;
         let unconfirmedNow = false;
         let localCleanupIncomplete = false;
+        let localCleanupDeferred = false;
         for (const recordedUserId of Object.keys(deletionRecords)) {
             if (recordedUserId === settledByCallback) continue;
             try {
@@ -336,13 +342,14 @@ async function initAuth() {
                 } else if (record && record.phase === 'committed') {
                     const cleanup = await finishPendingDeletionCleanup(record);
                     if (cleanup && cleanup.localCleanupIncomplete) localCleanupIncomplete = true;
+                    if (cleanup && cleanup.localCleanupDeferred) localCleanupDeferred = true;
                 }
             } catch (err) {
                 // The record stays, so that account's session is still ignored.
                 console.warn('Could not finish the pending deletion cleanup:', err);
             }
         }
-        if (committedNow) alert(deletionOutcomeMessage(unconfirmedNow, localCleanupIncomplete));
+        if (committedNow) alert(deletionOutcomeMessage(unconfirmedNow, { localCleanupIncomplete, localCleanupDeferred }));
 
         // Fetch the existing session, with a bound: a refresh that never
         // answers must not keep start-up (and the guard below) from running.
@@ -482,10 +489,12 @@ function isMissingRpcError(error) {
 
 // Errors that say nothing about whether the RPC ran: the request never got an
 // answer (postgrest-js reports a failed or aborted fetch with an empty or
-// non-string code) or a gateway answered in the database's place (5xx). The
-// function may well have committed.
+// non-string code) or a gateway answered in the database's place (an HTTP
+// 5xx, whatever code its body carries; see attemptDeleteRpc). The function
+// may well have committed.
 function isAmbiguousRpcError(error) {
     if (!error) return false;
+    if (typeof error.status === 'number' && error.status >= 500) return true;
     const code = error.code;
     if (typeof code !== 'string' || code === '') return true;
     if (/^5\d\d$/.test(code)) return true;
@@ -1085,7 +1094,14 @@ function recordPendingDeletion(userId) {
     const attempt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     try {
         localStorage.setItem(deletionAttemptKey(userId, attempt), JSON.stringify({ userId, attempt }));
-        if (localStorage.getItem(deletionAttemptKey(userId, attempt)) === null) return { writeFailed: true, existed };
+        if (localStorage.getItem(deletionAttemptKey(userId, attempt)) === null) {
+            // The key can also be gone because another tab committed and
+            // swept the attempts in between: that is the commit, not a
+            // failed write.
+            const swept = readDeletionRecord(userId);
+            if (swept && swept.phase === 'committed' && !swept.unconfirmed) return { alreadyCommitted: true };
+            return { writeFailed: true, existed };
+        }
     } catch (err) {
         console.warn('Could not record the deletion attempt:', err);
         return { writeFailed: true, existed };
@@ -1332,9 +1348,14 @@ async function attemptDeleteRpc(client) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), deleteAttemptTimeoutMs());
     try {
-        return await client.rpc('delete_user').abortSignal(controller.signal);
+        const result = await client.rpc('delete_user').abortSignal(controller.signal);
+        // The HTTP status travels beside the error: a gateway answering in
+        // the database's place says 5xx with whatever body it likes, and
+        // the body's code (if any) is not the database's.
+        if (result && result.error && typeof result.status === 'number') result.error.status = result.status;
+        return result;
     } catch (err) {
-        return { error: { code: '', message: `${(err && err.name) || 'FetchError'}: ${(err && err.message) || ''}`, details: '', hint: '' } };
+        return { error: { code: '', message: `${(err && err.name) || 'FetchError'}: ${(err && err.message) || ''}`, details: '', hint: '', status: 0 }, status: 0 };
     } finally {
         clearTimeout(timer);
     }
@@ -1489,8 +1510,10 @@ async function finishPendingDeletionCleanup(marker) {
         // Without Web Locks no later load can clear the browser copy either;
         // the caller tells the person, unless the step was settled before
         // (another tab's clear, a takeover). A lock that timed out is
-        // retried.
-        return { localCleanupIncomplete: reason === 'no-locks' && !progressStepSettled(userId) };
+        // retried on the next load, and the person is told that too rather
+        // than told the copy is gone.
+        const settled = progressStepSettled(userId);
+        return { localCleanupIncomplete: reason === 'no-locks' && !settled, localCleanupDeferred: reason === 'timeout' && !settled };
     }
     // Memory was reset under the lock whether or not this invocation was the
     // one to clear storage; the screen follows either way.
@@ -1603,8 +1626,17 @@ async function performAccountDeletion(userId, state) {
             // cannot vouch for the account being active. This attempt's own
             // record, though, is done with once its own history is definite;
             // left standing it would keep the other's answer ambiguous too.
-            othersUnanswered = readPendingAttempts(userId).some(attempt => attempt !== record.attempt);
+            // The other attempts are those the record above listed (a fresh
+            // scan could miss one that a commit swept since), and a commit
+            // landing in between outranks this error just the same.
+            othersUnanswered = !!(standingNow && standingNow.phase === 'pending' && standingNow.attempts.some(attempt => attempt !== record.attempt));
             if (!ownUnanswered && !isAmbiguousRpcError(rpcError)) clearPendingDeletion(userId, record.attempt);
+            const afterwards = readDeletionRecord(userId);
+            if (afterwards && afterwards.phase === 'committed' && !afterwards.unconfirmed) {
+                console.warn('The account was deleted by another attempt meanwhile; finishing the cleanup.');
+                rpcError = null;
+                alreadyCommitted = true;
+            }
         }
     }
     if (rpcError) {
@@ -1708,9 +1740,14 @@ async function performAccountDeletion(userId, state) {
     }
 
     // Without Web Locks the stored progress could not be cleared safely and
-    // no later load will do it either: the person is told, rather than told
-    // the browser copy is gone.
-    return { sessionChanged, localCleanupIncomplete: !progressSettled && !hasWebLocks() };
+    // no later load will do it either; with them, a clear the lock never
+    // came free for is done on the next load. Either way the person is
+    // told, rather than told the browser copy is gone.
+    return {
+        sessionChanged,
+        localCleanupIncomplete: !progressSettled && !hasWebLocks(),
+        localCleanupDeferred: !progressSettled && hasWebLocks()
+    };
 }
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {

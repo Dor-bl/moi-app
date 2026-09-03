@@ -31,6 +31,7 @@ export default [
         syncItemToCloud: "readonly",
         describeMagicLinkError: "readonly",
         deleteUserAccountAndData: "readonly",
+        deletionOutcomeMessage: "readonly",
         getMilestoneObj: "readonly",
         showBadgeToast: "readonly",
         saveState: "readonly",
