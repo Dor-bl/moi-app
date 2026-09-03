@@ -1128,8 +1128,12 @@ async function resolvePendingDeletion(marker, verifiedSession) {
         console.warn('Finished the unfinished deletion; the account is gone.');
         announceAccountDeleted(userId);
         const current = readDeletionRecord(userId);
-        if (!(current && current.phase === 'committed')) commitDeletionRecord(userId);
-        return readDeletionRecord(userId);
+        if (current && current.phase === 'committed') return current;
+        if (commitDeletionRecord(userId)) return readDeletionRecord(userId);
+        // The answer is definite even if the record cannot be stored: the
+        // cleanup runs on this outcome, while the pending attempt (and the
+        // stored session it needs) stay for the next load to record it.
+        return { userId, phase: 'committed', progressPending: true, sessionPending: true, unrecorded: true };
     }
     if (!isAmbiguousRpcError(error) && isMissingRpcError(error)) {
         // Only the attempts this resolution started from: another tab may
@@ -1138,8 +1142,15 @@ async function resolvePendingDeletion(marker, verifiedSession) {
         removePendingAttempts(userId, marker.attempts || [marker.attempt]);
         return readDeletionRecord(userId);
     }
+    // Another tab, or a verified sign-in, may have committed this same
+    // deletion while the answer was out: what stands now is what counts.
+    const standingNow = readDeletionRecord(userId);
+    if (standingNow && standingNow.phase === 'committed') {
+        console.warn('The unfinished deletion was finished elsewhere meanwhile.');
+        return standingNow;
+    }
     console.warn('The unfinished deletion could not be settled:', error.message);
-    return marker;
+    return standingNow || marker;
 }
 
 // Start-up: finish what a deletion could not. The page may have closed right
@@ -1155,7 +1166,8 @@ async function finishPendingDeletionCleanup(marker) {
         // What stands is read here, under the lock: another tab may have
         // cleared and settled the progress step while this one waited, and
         // storage may since hold new guest progress that must not be wiped.
-        const standing = readDeletionRecord(userId) || marker;
+        const current = readDeletionRecord(userId);
+        const standing = current && current.phase === 'committed' ? current : marker;
         const holder = storedSessionUserId();
         const takenOver = holder !== null && holder !== userId;
         let sessionSettled = holder !== userId;
@@ -1181,7 +1193,11 @@ async function finishPendingDeletionCleanup(marker) {
         }
         return { sessionSettled, cleared };
     };
-    const { ran, result, reason } = await withSessionLock(() => finish(true), deleteAttemptTimeoutMs());
+    // A commit that could not be recorded keeps the stored session: the
+    // pending attempt still blocks its restore, and the next load needs it
+    // to call the RPC again and record the commit.
+    const mayRemoveSession = !marker.unrecorded;
+    const { ran, result, reason } = await withSessionLock(() => finish(mayRemoveSession), deleteAttemptTimeoutMs());
     let outcome = result;
     if (!ran) {
         if (reason !== 'no-locks') {
@@ -1285,6 +1301,10 @@ async function performAccountDeletion(userId, state) {
             console.warn('The account was deleted by another attempt meanwhile; finishing the cleanup.');
             rpcError = null;
             alreadyCommitted = true;
+        } else if (readPendingAttempts(userId).some(attempt => attempt !== record.attempt)) {
+            // Another attempt is still unanswered and may yet commit: this
+            // error cannot vouch for the account being active.
+            sawAmbiguous = true;
         }
     }
     if (rpcError) {
