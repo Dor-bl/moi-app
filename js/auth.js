@@ -199,8 +199,9 @@ function finishMagicLinkSignIn(pending) {
                 }
             };
             if (outcome && outcome.phase === 'committed') {
+                let cleanup = { localCleanupIncomplete: false };
                 try {
-                    await finishPendingDeletionCleanup(outcome);
+                    cleanup = await finishPendingDeletionCleanup(outcome);
                 } catch (err) {
                     // The account is gone either way; the record keeps what
                     // is left for the next load.
@@ -208,7 +209,7 @@ function finishMagicLinkSignIn(pending) {
                     completedItems = {};
                 }
                 await settleMemory();
-                alert(t().deleteSuccess);
+                alert(cleanup.localCleanupIncomplete ? t().deleteSuccessLocalPending : t().deleteSuccess);
             } else if (outcome) {
                 await settleMemory();
                 alert(t().deleteUncertain);
@@ -258,7 +259,8 @@ async function initAuth() {
         // commit, or the session lock was held. Settle what can be settled
         // before any session is restored.
         const deletionRecords = readDeletionRecords();
-        const resolvedNow = [];
+        let committedNow = false;
+        let localCleanupIncomplete = false;
         for (const recordedUserId of Object.keys(deletionRecords)) {
             try {
                 let record = deletionRecords[recordedUserId];
@@ -266,22 +268,25 @@ async function initAuth() {
                     record = await resolvePendingDeletion(record);
                     // The unknown-outcome message promised to say how it
                     // ended: a commit is reported below.
-                    if (record && record.phase === 'committed') resolvedNow.push('committed');
+                    if (record && record.phase === 'committed') committedNow = true;
                 }
                 if (record && record.phase === 'committed' && record.done) {
                     // Finished earlier; only a session put back since then
                     // (a late refresh) is removed again.
                     await withSessionLock(() => removeStoredSessionIfUser(recordedUserId), deleteAttemptTimeoutMs());
                 } else if (record && record.phase === 'committed') {
-                    await finishPendingDeletionCleanup(record);
+                    const cleanup = await finishPendingDeletionCleanup(record);
+                    if (cleanup && cleanup.localCleanupIncomplete) localCleanupIncomplete = true;
                 }
             } catch (err) {
                 // The record stays, so that account's session is still ignored.
                 console.warn('Could not finish the pending deletion cleanup:', err);
             }
         }
-        if (resolvedNow.includes('committed')) {
-            alert(UI_TRANSLATIONS[currentLang].deleteSuccess);
+        if (committedNow) {
+            alert(localCleanupIncomplete
+                ? UI_TRANSLATIONS[currentLang].deleteSuccessLocalPending
+                : UI_TRANSLATIONS[currentLang].deleteSuccess);
         }
 
         // Fetch existing active session
@@ -820,7 +825,10 @@ function readDeletionRecord(userId) {
             const sessionPending = steps.session === null;
             const done = !progressPending && !sessionPending;
             const expiresAt = done ? Math.max(steps.progress, steps.session) + DELETION_TOMBSTONE_MS : undefined;
-            if (done && expiresAt <= Date.now()) {
+            // A tombstone past its expiry goes, unless the deleted account
+            // still owns the stored session (put back by a late refresh, and
+            // not yet removed): the record must keep refusing it until then.
+            if (done && expiresAt <= Date.now() && storedSessionUserId() !== userId) {
                 removeDeletionRecord(userId);
                 return null;
             }
@@ -1263,7 +1271,9 @@ async function finishPendingDeletionCleanup(marker) {
         completedItems = {};
         renderList();
         updateProgress();
-        return;
+        // Without Web Locks no later load can clear the browser copy either;
+        // the caller tells the person. A lock that timed out is retried.
+        return { localCleanupIncomplete: reason === 'no-locks' };
     }
     // Memory was reset under the lock whether or not this invocation was the
     // one to clear storage; the screen follows either way.
@@ -1272,6 +1282,7 @@ async function finishPendingDeletionCleanup(marker) {
     }
     renderList();
     updateProgress();
+    return { localCleanupIncomplete: false };
 }
 
 async function performAccountDeletion(userId, state) {
