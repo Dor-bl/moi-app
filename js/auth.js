@@ -232,11 +232,16 @@ async function initAuth() {
         // commit, or the session lock was held. Settle what can be settled
         // before any session is restored.
         const deletionRecords = readDeletionRecords();
+        const resolvedNow = [];
         for (const recordedUserId of Object.keys(deletionRecords)) {
             try {
                 let record = deletionRecords[recordedUserId];
                 if (record.phase === 'pending') {
                     record = await resolvePendingDeletion(record);
+                    // The unknown-outcome message promised to say how it
+                    // ended: a commit or a void record is reported below.
+                    if (!record) resolvedNow.push('void');
+                    else if (record.phase === 'committed') resolvedNow.push('committed');
                 }
                 if (record && record.phase === 'committed' && record.done) {
                     // Finished earlier; only a session put back since then
@@ -249,6 +254,11 @@ async function initAuth() {
                 // The record stays, so that account's session is still ignored.
                 console.warn('Could not finish the pending deletion cleanup:', err);
             }
+        }
+        if (resolvedNow.includes('committed')) {
+            alert(UI_TRANSLATIONS[currentLang].deleteSuccess);
+        } else if (resolvedNow.includes('void')) {
+            alert(UI_TRANSLATIONS[currentLang].deleteNotConfigured);
         }
 
         // Fetch existing active session
@@ -974,14 +984,23 @@ function removeStoredSessionIfUser(userId) {
 // marker).
 async function clearLocalProgressUnlessTakenOver(userId) {
     const decide = () => {
-        const holder = storedSessionUserId();
         completedItems = {};
+        // Read what stands while holding the lock: if another tab has cleared
+        // and settled the step meanwhile, storage may already hold new guest
+        // progress, and only this tab's memory is dropped.
+        const standing = readDeletionRecord(userId);
+        if (standing && standing.phase === 'committed' && !standing.progressPending) {
+            return;
+        }
+        const holder = storedSessionUserId();
         if (holder !== null && holder !== userId) {
             // Deliberately theirs: this settles the step just as a clear does.
             console.warn('Another account holds this device; leaving its stored progress alone (#52).');
-            return;
+        } else {
+            saveState();
         }
-        saveState();
+        // Settled in the same critical section as the clear.
+        settleDeletionRecord(userId, { progressPending: false });
     };
     const { ran, reason } = await withSessionLock(decide, deleteAttemptTimeoutMs());
     if (ran) return true;
@@ -1133,6 +1152,10 @@ async function resolvePendingDeletion(marker, verifiedSession) {
 async function finishPendingDeletionCleanup(marker) {
     const { userId } = marker;
     const finish = (mayRemoveSession) => {
+        // What stands is read here, under the lock: another tab may have
+        // cleared and settled the progress step while this one waited, and
+        // storage may since hold new guest progress that must not be wiped.
+        const standing = readDeletionRecord(userId) || marker;
         const holder = storedSessionUserId();
         const takenOver = holder !== null && holder !== userId;
         let sessionSettled = holder !== userId;
@@ -1140,17 +1163,20 @@ async function finishPendingDeletionCleanup(marker) {
             localStorage.removeItem(sessionStorageKey());
             sessionSettled = true;
         }
+        if (sessionSettled) settleDeletionRecord(userId, { sessionPending: false });
+        // Memory was loaded from the shared store before this ran and may
+        // hold the deleted account's list: never keep it.
+        completedItems = {};
         let cleared = false;
-        if (marker.progressPending) {
-            // Memory was loaded from the shared store before this ran and
-            // may hold the deleted account's list: never keep it. On a
-            // takeover storage is theirs (#52); their sync refills memory.
-            completedItems = {};
+        if (standing.progressPending) {
+            // On a takeover storage is theirs (#52); their sync refills
+            // memory.
             if (takenOver) {
                 console.warn('Another account holds this device; leaving its stored progress alone (#52).');
             } else {
                 saveState();
             }
+            settleDeletionRecord(userId, { progressPending: false });
             cleared = true;
         }
         return { sessionSettled, cleared };
@@ -1171,10 +1197,6 @@ async function finishPendingDeletionCleanup(marker) {
         // and stays ignored meanwhile.
         outcome = finish(false);
     }
-    settleDeletionRecord(userId, {
-        progressPending: marker.progressPending && !(ran || reason === 'no-locks'),
-        sessionPending: !outcome.sessionSettled
-    });
     if (outcome.cleared) {
         console.warn('Dropped the progress of an account deleted from this browser.');
         renderList();
@@ -1238,7 +1260,8 @@ async function performAccountDeletion(userId, state) {
     }
     let sawAmbiguous = !!record.existed;
     let rpcError = null;
-    if (record.alreadyCommitted) {
+    let alreadyCommitted = !!record.alreadyCommitted;
+    if (alreadyCommitted) {
         // Another tab's attempt has committed meanwhile: the account is gone
         // and nothing is sent; the cleanup below finishes what that tab may
         // not have.
@@ -1250,6 +1273,18 @@ async function performAccountDeletion(userId, state) {
             sawAmbiguous = true;
             console.warn(`delete_user() attempt ${attempt} got no usable answer:`, rpcError.message);
             if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+        }
+    }
+    if (rpcError) {
+        // Another tab's attempt for the same account may have committed while
+        // this one was out (two tabs can each write their attempt before
+        // seeing the other's), in which case this error says nothing: the
+        // account is gone and the cleanup below is what is left to do.
+        const standingNow = readDeletionRecord(userId);
+        if (standingNow && standingNow.phase === 'committed') {
+            console.warn('The account was deleted by another attempt meanwhile; finishing the cleanup.');
+            rpcError = null;
+            alreadyCommitted = true;
         }
     }
     if (rpcError) {
