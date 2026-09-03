@@ -244,9 +244,11 @@ async function settleVerifiedSignIn(verified) {
             cleanup = await finishPendingDeletionCleanup(outcome);
         } catch (err) {
             // The account is gone either way; the record keeps what is left
-            // for the next load.
+            // for the next load, and the persisted step is what is reported.
             console.warn('Could not finish the deletion cleanup:', err);
             completedItems = {};
+            const settled = progressStepSettled(verified.user.id);
+            cleanup = { localCleanupIncomplete: !settled && !hasWebLocks(), localCleanupDeferred: !settled && hasWebLocks() };
         }
         await settleMemory();
         alert(deletionOutcomeMessage(false, cleanup));
@@ -329,6 +331,7 @@ async function initAuth() {
         let localCleanupDeferred = false;
         for (const recordedUserId of Object.keys(deletionRecords)) {
             if (recordedUserId === settledByCallback) continue;
+            let committedThisRecord = false;
             try {
                 let record = deletionRecords[recordedUserId];
                 if (record.phase === 'pending') {
@@ -337,6 +340,7 @@ async function initAuth() {
                     // ended: a commit is reported below, confirmed or not.
                     if (record && record.phase === 'committed') {
                         committedNow = true;
+                        committedThisRecord = true;
                         if (record.unconfirmed) unconfirmedNow = true;
                     }
                 }
@@ -351,7 +355,13 @@ async function initAuth() {
                 }
             } catch (err) {
                 // The record stays, so that account's session is still ignored.
+                // A commit reported below must not read as a clean cleanup:
+                // what the persisted step says is what is reported.
                 console.warn('Could not finish the pending deletion cleanup:', err);
+                if (committedThisRecord && !progressStepSettled(recordedUserId)) {
+                    if (hasWebLocks()) localCleanupDeferred = true;
+                    else localCleanupIncomplete = true;
+                }
             }
         }
         if (committedNow) alert(deletionOutcomeMessage(unconfirmedNow, { localCleanupIncomplete, localCleanupDeferred }));
@@ -363,7 +373,9 @@ async function initAuth() {
         // list this page loaded is treated the same. A session that arrives
         // later reaches the listener below.
         let session = await readSessionWithin(deleteAttemptTimeoutMs());
-        if (session && isSignedOutEntry()) {
+        // (Checked on its own: the adapter hides such an entry from the
+        // library, so the read above already returned no session.)
+        if (isSignedOutEntry()) {
             // Signed out here without the lock (see signOutCurrentUser):
             // removed now if the lock can be had, ignored either way.
             await withSessionLock(() => {
@@ -1825,9 +1837,11 @@ async function performAccountDeletion(userId, state) {
                 rpcError = null;
                 alreadyCommitted = true;
             } else {
-                // A record settled without confirmation is an unanswered
-                // deletion as well: only a success settles it.
-                othersUnanswered = !!(afterwards && ((afterwards.phase === 'pending' && afterwards.attempts.some(attempt => attempt !== record.attempt)) || (afterwards.phase === 'committed' && afterwards.unconfirmed)));
+                // Any attempt still recorded, this one included (its clear
+                // may have failed, and the next load would retry it), and a
+                // record settled without confirmation, are unanswered
+                // deletions: only a success settles them.
+                othersUnanswered = !!(afterwards && ((afterwards.phase === 'pending' && afterwards.attempts.length > 0) || (afterwards.phase === 'committed' && afterwards.unconfirmed)));
             }
         }
     }
