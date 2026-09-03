@@ -90,7 +90,10 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 2. In your Supabase SQL Editor, run this snippet to create the `user_progress` table:
    ```sql
    create table user_progress (
-     user_id uuid references auth.users not null,
+     -- on delete cascade: deleting a user (dashboard or a GDPR erasure
+     -- request) must take their progress with them. Without it Postgres
+     -- refuses with "Database error deleting user".
+     user_id uuid references auth.users on delete cascade not null,
      item_id text not null,
      note text,
      date timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -102,6 +105,13 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 
    create policy "Users can manage their own progress" on user_progress
      for all using (auth.uid() = user_id);
+   ```
+   Already created the table without `on delete cascade`? Swap the constraint in place:
+   ```sql
+   alter table public.user_progress
+     drop constraint user_progress_user_id_fkey,
+     add constraint user_progress_user_id_fkey
+       foreign key (user_id) references auth.users (id) on delete cascade;
    ```
 3. Copy your project **URL** and **anon Key** from `Project Settings -> API`.
 4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`.
