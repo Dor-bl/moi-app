@@ -143,7 +143,7 @@ function finishMagicLinkSignIn(pending) {
         finishBtn.disabled = true;
         finishBtn.textContent = '...';
 
-        const { error } = await supabaseClient.auth.verifyOtp({
+        const { data, error } = await supabaseClient.auth.verifyOtp({
             token_hash: pending.tokenHash,
             type: pending.type
         });
@@ -166,6 +166,21 @@ function finishMagicLinkSignIn(pending) {
         finish.style.display = 'none';
         authActions.style.display = 'block';
         authModal.classList.remove('active');
+
+        // The server just verified this person: the account exists. If a
+        // deletion of it is still recorded as unanswered, it did not happen,
+        // and the sign-in the listener refused for that record is completed
+        // here.
+        const verified = data && (data.user || (data.session && data.session.user));
+        const record = readDeletedUserMarker();
+        if (verified && record && record.userId === verified.id && record.phase === 'pending') {
+            console.warn('The account signed in again; the unfinished deletion did not go through.');
+            clearDeletedUserMarker();
+            if (!currentUser) {
+                currentUser = verified;
+                await onUserLoggedIn();
+            }
+        }
     };
 }
 
@@ -224,16 +239,13 @@ async function initAuth() {
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             console.log('Supabase auth event:', event, session?.user?.email);
             if (isDeletedUserSession(session)) {
-                const marker = readDeletedUserMarker();
-                if (event === 'SIGNED_IN' && marker && marker.phase === 'pending') {
-                    // A fresh sign-in proves the account still exists, so
-                    // the deletion whose answer never arrived did not happen.
-                    console.warn('The account signed in again; the unfinished deletion did not go through.');
-                    clearDeletedUserMarker();
-                } else {
-                    // A refresh or restore of an account deleted from this browser.
-                    return;
-                }
+                // A refresh or restore of an account deleted (or being
+                // deleted) from this browser. SIGNED_IN is no proof of a
+                // fresh sign-in either (the library re-emits it for an
+                // existing session, on tab focus for one); the magic-link
+                // flow settles a pending record itself, from the server's
+                // answer.
+                return;
             }
             if (session && session.user) {
                 if (deletedUserId()) takeOverFromDeletedAccount();
@@ -751,11 +763,13 @@ function takeOverFromDeletedAccount() {
 // Start-up with a deletion whose answer never arrived (the page closed while
 // the RPC was out, or the outcome was reported as unknown). Ask the server
 // whether the account still exists, with the session it left behind: a user
-// comes back, so nothing happened and the record goes; a definite refusal
-// means the account is gone, so the record becomes a committed one and the
-// cleanup runs. No answer, or no session of that account to ask with, leaves
-// the outcome unknown: nothing is restored and nothing is wiped, and the
-// question is asked again on the next load (or settled by a fresh sign-in).
+// comes back, so nothing happened and the record goes; the server saying
+// that user no longer exists means the account is gone, so the record
+// becomes a committed one and the cleanup runs. Anything else (no answer,
+// a credential the server will not accept, no session of that account to
+// ask with) leaves the outcome unknown: nothing is restored and nothing is
+// wiped, and the question is asked again on the next load, or settled by a
+// magic-link sign-in the server verifies.
 async function resolvePendingDeletion(marker) {
     const { userId } = marker;
     if (storedSessionUserId() !== userId) {
@@ -778,8 +792,11 @@ async function resolvePendingDeletion(marker) {
         clearDeletedUserMarker();
         return null;
     }
-    const status = answer.error && answer.error.status;
-    if (status === 400 || status === 401 || status === 403 || status === 404) {
+    // Only the server saying the user behind the token no longer exists
+    // (GoTrue's user_not_found) settles it. Any other refusal (an expired,
+    // revoked or malformed credential answers 400/401/403 too) says nothing
+    // about the account itself.
+    if (answer.error && answer.error.code === 'user_not_found') {
         console.warn('The account no longer exists; finishing the deletion cleanup.');
         const committed = { userId, phase: 'committed', progressPending: true, sessionPending: true };
         writeDeletedUserMarker(committed);
@@ -895,16 +912,24 @@ async function performAccountDeletion(userId, state) {
     // only the answer gone missing. The call is idempotent (a second run
     // finds nothing left to delete and succeeds), so retry a couple of times
     // and only then give up as "unknown", never as "nothing happened".
+    // A record still pending from an earlier attempt (this page, or a
+    // previous one) is an unanswered RPC that may have committed: only a
+    // success can settle it, so this attempt starts out ambiguous.
+    const earlier = readDeletedUserMarker();
+    let sawAmbiguous = !!(earlier && earlier.userId === userId && earlier.phase === 'pending');
     if (!recordPendingDeletion(userId)) {
         throw new Error('Could not record the deletion in this browser; deletion not started');
     }
     let rpcError = null;
-    let sawAmbiguous = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), deleteAttemptTimeoutMs());
         try {
             ({ error: rpcError } = await asInitiator.rpc('delete_user').abortSignal(controller.signal));
+        } catch (err) {
+            // A rejected transport (postgrest-js returns aborts as { error }
+            // today, but a thrown one must take the same path): unanswered.
+            rpcError = { code: '', message: `${(err && err.name) || 'FetchError'}: ${(err && err.message) || ''}`, details: '', hint: '' };
         } finally {
             clearTimeout(timer);
         }
