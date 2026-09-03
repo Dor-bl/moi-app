@@ -574,22 +574,36 @@ function sessionStorageAdapter() {
 // checking that the user still exists): a committed deletion is finished
 // under the lock, and a pending one is first resolved with the server, or
 // left alone when that is not possible.
+// One storage key per account, so records of different accounts never
+// share a value: two tabs deleting two accounts each write their own entry,
+// and neither read-modify-write can drop the other's. (Within one account,
+// attempt ids settle who may clear a pending record, and every cleanup step
+// is idempotent, so a lost settle only repeats a step.) The older single
+// key, which held a bare user id, one record, or a map of records, is
+// migrated into per-account keys on first read.
 const DELETED_USER_KEY = 'moiCheckDeletedUser';
+const DELETION_RECORD_PREFIX = 'moiCheckDeletedUser:';
 
-// Every record, keyed by user id: one browser can hold records of several
-// accounts (an unanswered deletion of one, then another signing in and
-// deleting too), and none may overwrite another's. Older formats (a bare
-// user id, a single record) read as one committed record with both steps
-// pending.
-function readDeletionRecords() {
+function deletionRecordKey(userId) {
+    return DELETION_RECORD_PREFIX + userId;
+}
+
+function normalizeDeletionRecord(userId, record) {
+    if (!record || typeof record !== 'object') {
+        return { userId, phase: 'committed', progressPending: true, sessionPending: true };
+    }
+    return Object.assign({}, record, { userId, phase: record.phase === 'pending' ? 'pending' : 'committed' });
+}
+
+function migrateLegacyDeletionRecords() {
     let raw;
     try {
         raw = localStorage.getItem(DELETED_USER_KEY);
-    } catch (err) {
-        console.warn('Could not read the deletion records:', err);
-        return {};
+    } catch {
+        return;
     }
-    if (!raw) return {};
+    if (!raw) return;
+    let legacy = {};
     let parsed = null;
     try {
         parsed = JSON.parse(raw);
@@ -597,45 +611,74 @@ function readDeletionRecords() {
         // A bare user id from the oldest format.
     }
     if (!parsed || typeof parsed !== 'object') {
-        return { [raw]: { userId: raw, phase: 'committed', progressPending: true, sessionPending: true } };
+        legacy[raw] = null;
+    } else if (parsed.userId) {
+        legacy[parsed.userId] = parsed;
+    } else {
+        legacy = parsed;
     }
-    if (parsed.userId) parsed = { [parsed.userId]: parsed };
-    const records = {};
-    Object.keys(parsed).forEach(id => {
-        const record = parsed[id];
-        if (!record || typeof record !== 'object') return;
-        records[id] = Object.assign({}, record, { userId: id, phase: record.phase === 'pending' ? 'pending' : 'committed' });
-    });
-    return records;
-}
-
-function writeDeletionRecords(records) {
     try {
-        if (Object.keys(records).length === 0) {
-            localStorage.removeItem(DELETED_USER_KEY);
-        } else {
-            localStorage.setItem(DELETED_USER_KEY, JSON.stringify(records));
-        }
+        Object.keys(legacy).forEach(userId => {
+            if (!localStorage.getItem(deletionRecordKey(userId))) {
+                localStorage.setItem(deletionRecordKey(userId), JSON.stringify(normalizeDeletionRecord(userId, legacy[userId])));
+            }
+        });
+        localStorage.removeItem(DELETED_USER_KEY);
     } catch (err) {
-        console.warn('Could not write the deletion records:', err);
+        console.warn('Could not migrate the deletion records:', err);
     }
 }
 
 function readDeletionRecord(userId) {
-    return readDeletionRecords()[userId] || null;
+    migrateLegacyDeletionRecords();
+    let raw;
+    try {
+        raw = localStorage.getItem(deletionRecordKey(userId));
+    } catch (err) {
+        console.warn('Could not read a deletion record:', err);
+        return null;
+    }
+    if (!raw) return null;
+    try {
+        return normalizeDeletionRecord(userId, JSON.parse(raw));
+    } catch {
+        return normalizeDeletionRecord(userId, null);
+    }
+}
+
+// Every record, keyed by user id.
+function readDeletionRecords() {
+    migrateLegacyDeletionRecords();
+    const records = {};
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(DELETION_RECORD_PREFIX)) {
+                const userId = key.slice(DELETION_RECORD_PREFIX.length);
+                const record = readDeletionRecord(userId);
+                if (record) records[userId] = record;
+            }
+        }
+    } catch (err) {
+        console.warn('Could not read the deletion records:', err);
+    }
+    return records;
 }
 
 function writeDeletionRecord(record) {
-    const records = readDeletionRecords();
-    records[record.userId] = record;
-    writeDeletionRecords(records);
+    try {
+        localStorage.setItem(deletionRecordKey(record.userId), JSON.stringify(record));
+    } catch (err) {
+        console.warn('Could not write a deletion record:', err);
+    }
 }
 
 function removeDeletionRecord(userId) {
-    const records = readDeletionRecords();
-    if (!Object.prototype.hasOwnProperty.call(records, userId)) return;
-    delete records[userId];
-    writeDeletionRecords(records);
+    try {
+        localStorage.removeItem(deletionRecordKey(userId));
+    } catch (err) {
+        console.warn('Could not remove a deletion record:', err);
+    }
 }
 
 function hasDeletionRecords() {
@@ -823,22 +866,18 @@ async function endInitiatingSession(asInitiator, session, userId) {
 function takeOverFromDeletedAccounts(newUserId) {
     const records = readDeletionRecords();
     let emptyMemory = false;
-    let changed = false;
     Object.keys(records).forEach(userId => {
         if (userId === newUserId) return;
         const record = records[userId];
         if (record.phase === 'committed') {
-            delete records[userId];
+            removeDeletionRecord(userId);
             emptyMemory = true;
-            changed = true;
         } else if (record.takenOverBy !== newUserId) {
-            records[userId] = Object.assign({}, record, { takenOverBy: newUserId });
+            writeDeletionRecord(Object.assign({}, record, { takenOverBy: newUserId }));
             emptyMemory = true;
-            changed = true;
         }
     });
     if (emptyMemory) completedItems = {};
-    if (changed) writeDeletionRecords(records);
 }
 
 // One delete_user() call, bounded by the attempt timeout. Resolves
