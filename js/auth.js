@@ -647,8 +647,34 @@ if (authChannel) {
         const message = event && event.data;
         if (message && message.type === 'account-deleted' && message.userId) {
             handleAccountDeletedElsewhere(message.userId);
+        } else if (message && message.type === 'signed-out' && message.userId) {
+            handleSignedOutElsewhere(message.userId);
         }
     };
+}
+
+// The explicit sign-out does not go through the library (see
+// signOutCurrentUser), so the library tells no other tab about it: the
+// sign-out announces itself here instead.
+function announceSignedOut(userId) {
+    if (!authChannel) return;
+    try {
+        authChannel.postMessage({ type: 'signed-out', userId });
+    } catch (err) {
+        console.warn('Could not announce the sign-out to other tabs:', err);
+    }
+}
+
+// Another tab signed the account out: a tab signed in as it goes to guest
+// mode, unless storage holds a live session of it again (an explicit
+// sign-in since); a tab signed in as another account, or as nobody, is
+// left alone. Memory keeps the list, as the local sign-out does (#52).
+function handleSignedOutElsewhere(userId) {
+    if (!currentUser || currentUser.id !== userId) return;
+    if (storedSessionUserId() === userId && !isSignedOutEntry() && !signedOutGuardStands(userId)) return;
+    console.warn('This account was signed out from another tab.');
+    currentUser = null;
+    onUserLoggedOut();
 }
 
 function announceAccountDeleted(userId) {
@@ -1202,40 +1228,79 @@ function storageKeysWithPrefix(prefix) {
     return keys;
 }
 
-function migrateLegacyDeletionRecords() {
+// The legacy formats of the record key (a bare user id; one record; a map
+// of records by user id), as they stand. Read as a fallback while the key
+// stands: a migration whose writes did not land (storage full) leaves it,
+// and what it records stays in force until every migrated value has been
+// verified and the key can go (see migrateLegacyDeletionRecords).
+function readLegacyDeletionRecords() {
     let raw;
     try {
         raw = localStorage.getItem(DELETED_USER_KEY);
     } catch {
-        return;
+        return {};
     }
-    if (!raw) return;
-    let legacy = {};
+    if (!raw) return {};
     let parsed = null;
     try {
         parsed = JSON.parse(raw);
     } catch {
         // A bare user id from the oldest format.
     }
-    if (!parsed || typeof parsed !== 'object') {
-        legacy[raw] = null;
-    } else if (parsed.userId) {
-        legacy[parsed.userId] = parsed;
-    } else {
-        legacy = parsed;
-    }
-    try {
-        Object.keys(legacy).forEach(userId => {
-            const record = normalizeDeletionRecord(userId, legacy[userId]);
+    const legacy = {};
+    if (!parsed || typeof parsed !== 'object') legacy[raw] = normalizeDeletionRecord(raw, null);
+    else if (parsed.userId) legacy[parsed.userId] = normalizeDeletionRecord(parsed.userId, parsed);
+    else Object.keys(parsed).forEach(userId => { legacy[userId] = normalizeDeletionRecord(userId, parsed[userId]); });
+    return legacy;
+}
+
+function migrateLegacyDeletionRecords() {
+    const legacy = readLegacyDeletionRecords();
+    const userIds = Object.keys(legacy);
+    if (userIds.length === 0) return;
+    let verified = true;
+    userIds.forEach(userId => {
+        const record = legacy[userId];
+        try {
             if (record.phase === 'pending') {
-                localStorage.setItem(deletionAttemptKey(userId, record.attempt || 'legacy'), JSON.stringify({ userId, attempt: record.attempt || 'legacy' }));
+                const attempt = record.attempt || 'legacy';
+                const value = JSON.stringify({ userId, attempt });
+                localStorage.setItem(deletionAttemptKey(userId, attempt), value);
+                if (localStorage.getItem(deletionAttemptKey(userId, attempt)) !== value) verified = false;
             } else if (!localStorage.getItem(deletionRecordKey(userId))) {
-                localStorage.setItem(deletionRecordKey(userId), JSON.stringify(record));
+                const value = JSON.stringify(record);
+                localStorage.setItem(deletionRecordKey(userId), value);
+                if (localStorage.getItem(deletionRecordKey(userId)) !== value) verified = false;
             }
-        });
+        } catch (err) {
+            console.warn('Could not migrate a deletion record:', err);
+            verified = false;
+        }
+    });
+    // The key goes only once every record stands in the new format; until
+    // then it is read as a fallback (see readDeletionRecord).
+    if (!verified) return;
+    try {
         localStorage.removeItem(DELETED_USER_KEY);
     } catch (err) {
-        console.warn('Could not migrate the deletion records:', err);
+        console.warn('Could not remove the legacy deletion record key:', err);
+    }
+}
+
+// Take one account out of the legacy key (see readLegacyDeletionRecords):
+// its record was removed, or, given `attempts`, one of those attempts was
+// cleared and the legacy record stood for it.
+function dropLegacyDeletionRecord(userId, attempts) {
+    const legacy = readLegacyDeletionRecords();
+    const record = legacy[userId];
+    if (!record) return;
+    if (attempts && !(record.phase === 'pending' && attempts.includes(record.attempt || 'legacy'))) return;
+    delete legacy[userId];
+    try {
+        if (Object.keys(legacy).length === 0) localStorage.removeItem(DELETED_USER_KEY);
+        else localStorage.setItem(DELETED_USER_KEY, JSON.stringify(legacy));
+    } catch (err) {
+        console.warn('Could not update the legacy deletion record key:', err);
     }
 }
 
@@ -1265,13 +1330,20 @@ function readDeletionRecord(userId) {
         }
         if (record.phase === 'pending') {
             // A per-account pending record from the previous format: it
-            // becomes an attempt of its own.
+            // becomes an attempt of its own. While the attempt key cannot
+            // be written (storage full) the record stands for that attempt
+            // itself, and goes with it (see removePendingAttempts).
+            const attempt = record.attempt || 'legacy';
             try {
-                localStorage.setItem(deletionAttemptKey(userId, record.attempt || 'legacy'), JSON.stringify({ userId, attempt: record.attempt || 'legacy' }));
+                localStorage.setItem(deletionAttemptKey(userId, attempt), JSON.stringify({ userId, attempt }));
                 localStorage.removeItem(deletionRecordKey(userId));
             } catch (err) {
                 console.warn('Could not migrate a pending record:', err);
             }
+            const attempts = readPendingAttempts(userId);
+            if (!attempts.includes(attempt)) attempts.push(attempt);
+            attempts.sort();
+            return { userId, phase: 'pending', attempt: attempts[0], attempts };
         } else {
             // Settled steps live in their own keys; flags a previous format
             // kept inside the record are carried over once.
@@ -1304,14 +1376,34 @@ function readDeletionRecord(userId) {
         }
     }
     const attempts = readPendingAttempts(userId);
-    if (attempts.length === 0) return null;
-    return { userId, phase: 'pending', attempt: attempts[0], attempts };
+    if (attempts.length > 0) return { userId, phase: 'pending', attempt: attempts[0], attempts };
+    // The legacy key, while its migration has not landed (see
+    // migrateLegacyDeletionRecords): its record is in force as it stands,
+    // with the settled steps recorded since, and never expires from here.
+    const legacy = readLegacyDeletionRecords()[userId];
+    if (!legacy) return null;
+    if (legacy.phase === 'pending') {
+        const attempt = legacy.attempt || 'legacy';
+        return { userId, phase: 'pending', attempt, attempts: [attempt] };
+    }
+    const steps = readSettledSteps(userId);
+    const progressPending = steps.progress === null && legacy.progressPending !== false;
+    const sessionPending = steps.session === null && legacy.sessionPending !== false;
+    return Object.assign({}, legacy, {
+        phase: 'committed',
+        progressPending,
+        sessionPending,
+        done: !progressPending && !sessionPending,
+        expiresAt: undefined,
+        unconfirmed: legacy.unconfirmed === true && steps.confirmed === null
+    });
 }
 
 // Every record, keyed by user id.
 function readDeletionRecords() {
     migrateLegacyDeletionRecords();
     const userIds = new Set();
+    Object.keys(readLegacyDeletionRecords()).forEach(userId => userIds.add(userId));
     storageKeysWithPrefix(DELETION_RECORD_PREFIX).forEach(key => userIds.add(key.slice(DELETION_RECORD_PREFIX.length)));
     storageKeysWithPrefix(DELETION_ATTEMPT_PREFIX).forEach(key => {
         const rest = key.slice(DELETION_ATTEMPT_PREFIX.length);
@@ -1344,6 +1436,7 @@ function removeDeletionRecord(userId) {
         console.warn('Could not remove a deletion record:', err);
     }
     removePendingAttempts(userId, readPendingAttempts(userId));
+    dropLegacyDeletionRecord(userId);
 }
 
 function removePendingAttempts(userId, attempts) {
@@ -1352,6 +1445,24 @@ function removePendingAttempts(userId, attempts) {
     } catch (err) {
         console.warn('Could not remove a deletion attempt:', err);
     }
+    // A per-account pending record standing for one of these attempts (its
+    // attempt key could not be written; see readDeletionRecord) goes with
+    // it, as does the legacy key's record for it.
+    try {
+        const raw = localStorage.getItem(deletionRecordKey(userId));
+        if (raw) {
+            let record;
+            try {
+                record = normalizeDeletionRecord(userId, JSON.parse(raw));
+            } catch {
+                record = normalizeDeletionRecord(userId, null);
+            }
+            if (record.phase === 'pending' && attempts.includes(record.attempt || 'legacy')) localStorage.removeItem(deletionRecordKey(userId));
+        }
+    } catch (err) {
+        console.warn('Could not remove a pending record:', err);
+    }
+    dropLegacyDeletionRecord(userId, attempts);
 }
 
 function hasDeletionRecords() {
@@ -1593,6 +1704,8 @@ async function signOutCurrentUser() {
     } else {
         console.warn('No session of this account to revoke; signed out locally.');
     }
+    // Other tabs signed in as the account learn of it only from here.
+    announceSignedOut(userId);
     signedOutHere();
     return true;
 }
