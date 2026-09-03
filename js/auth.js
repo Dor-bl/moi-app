@@ -231,7 +231,11 @@ async function initAuth() {
                 if (record.phase === 'pending') {
                     record = await resolvePendingDeletion(record);
                 }
-                if (record && record.phase === 'committed') {
+                if (record && record.phase === 'committed' && record.done) {
+                    // Finished earlier; only a session put back since then
+                    // (a late refresh) is removed again.
+                    await withSessionLock(() => removeStoredSessionIfUser(recordedUserId), deleteAttemptTimeoutMs());
+                } else if (record && record.phase === 'committed') {
                     await finishPendingDeletionCleanup(record);
                 }
             } catch (err) {
@@ -398,7 +402,10 @@ function announceAccountDeleted(userId) {
 }
 
 async function handleAccountDeletedElsewhere(userId) {
-    if (!currentUser || currentUser.id !== userId) return;
+    // Only a tab busy with a different account stays out of it: a signed-out
+    // tab still holds the list in memory (sign-out does not clear it, #52)
+    // and would write it back to storage on its next edit.
+    if (currentUser && currentUser.id !== userId) return;
     console.warn('This account was deleted from another tab; clearing the local copy here.');
     authGeneration++;
     // Same decision as the deleting tab: another account may already hold
@@ -557,9 +564,30 @@ function sessionStorageAdapter() {
     };
     return {
         getItem: (key) => localStorage.getItem(key),
-        setItem: (key, value) => locked(key, () => localStorage.setItem(key, value)),
+        setItem: (key, value) => locked(key, () => {
+            // A refresh still in flight (this tab or another) must not put a
+            // deleted account's session back after the cleanup removed it:
+            // the record, kept for a while after the cleanup, refuses it.
+            if (key === sessionStorageKey() && sessionWriteRefused(value)) {
+                console.warn('Refusing to store the session of an account deleted from this browser.');
+                return;
+            }
+            localStorage.setItem(key, value);
+        }),
         removeItem: (key) => locked(key, () => localStorage.removeItem(key))
     };
+}
+
+function sessionWriteRefused(value) {
+    try {
+        const parsed = JSON.parse(value);
+        const userId = parsed && parsed.user && parsed.user.id;
+        if (!userId) return false;
+        const record = readDeletionRecord(userId);
+        return !!(record && record.phase === 'committed');
+    } catch {
+        return false;
+    }
 }
 
 // Durable, write-ahead record of a deletion. Written and read back before
@@ -583,6 +611,15 @@ function sessionStorageAdapter() {
 // migrated into per-account keys on first read.
 const DELETED_USER_KEY = 'moiCheckDeletedUser';
 const DELETION_RECORD_PREFIX = 'moiCheckDeletedUser:';
+// Which account took over this device while a record was pending, kept
+// beside the record rather than in it, so marking a takeover never rewrites
+// (and never downgrades) a record another tab may have advanced meanwhile.
+const TAKEOVER_PREFIX = 'moiCheckTakenOver:';
+// A settled record stays as a tombstone for this long: a token refresh still
+// in flight somewhere could otherwise put the deleted account's session back
+// after the cleanup (see sessionStorageAdapter). Longer than an access token
+// lives.
+const DELETION_TOMBSTONE_MS = 60 * 60 * 1000;
 
 function deletionRecordKey(userId) {
     return DELETION_RECORD_PREFIX + userId;
@@ -639,11 +676,17 @@ function readDeletionRecord(userId) {
         return null;
     }
     if (!raw) return null;
+    let record;
     try {
-        return normalizeDeletionRecord(userId, JSON.parse(raw));
+        record = normalizeDeletionRecord(userId, JSON.parse(raw));
     } catch {
-        return normalizeDeletionRecord(userId, null);
+        record = normalizeDeletionRecord(userId, null);
     }
+    if (record.done && typeof record.expiresAt === 'number' && record.expiresAt <= Date.now()) {
+        removeDeletionRecord(userId);
+        return null;
+    }
+    return record;
 }
 
 // Every record, keyed by user id.
@@ -676,6 +719,7 @@ function writeDeletionRecord(record) {
 function removeDeletionRecord(userId) {
     try {
         localStorage.removeItem(deletionRecordKey(userId));
+        localStorage.removeItem(TAKEOVER_PREFIX + userId);
     } catch (err) {
         console.warn('Could not remove a deletion record:', err);
     }
@@ -694,10 +738,14 @@ function isDeletedUserSession(session) {
 // so the deletion does not start. The record is shared by every tab, so it
 // carries an attempt id: another tab's attempt for the same account may
 // still be unanswered, and only the attempt that wrote a pending record may
-// clear it. Resolves { attempt, existed } (existed: a pending record of this
-// account was already there, so an earlier attempt may yet commit), or null.
+// clear it. A record that already says committed (another tab got there
+// first) is never replaced: the caller finishes and reports that outcome.
+// Resolves { attempt, existed } (existed: a pending record of this account
+// was already there, so an earlier attempt may yet commit),
+// { alreadyCommitted: true }, or null.
 function recordPendingDeletion(userId) {
     const earlier = readDeletionRecord(userId);
+    if (earlier && earlier.phase === 'committed') return { alreadyCommitted: true };
     const existed = !!(earlier && earlier.phase === 'pending');
     const attempt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     writeDeletionRecord({ userId, phase: 'pending', attempt });
@@ -726,17 +774,19 @@ function commitDeletionRecord(userId) {
     return ok;
 }
 
-// Record which cleanup steps still stand; drop the record once none does.
-// Only a committed record has steps to settle; a pending one is left alone.
+// Record which cleanup steps still stand. Once none does, the record stays
+// as a tombstone (done, with an expiry) that keeps refusing that account's
+// session for a while. Only a committed record has steps to settle; a
+// pending one is left alone.
 function settleDeletionRecord(userId, patch) {
     const current = readDeletionRecord(userId);
-    if (!current || current.phase !== 'committed') return;
+    if (!current || current.phase !== 'committed' || current.done) return;
     const next = Object.assign({}, current, patch);
     if (!next.progressPending && !next.sessionPending) {
-        removeDeletionRecord(userId);
-    } else {
-        writeDeletionRecord(next);
+        next.done = true;
+        next.expiresAt = Date.now() + DELETION_TOMBSTONE_MS;
     }
+    writeDeletionRecord(next);
 }
 
 // Take the session Web Lock for at most `timeoutMs`. Another tab can hold it
@@ -870,12 +920,21 @@ function takeOverFromDeletedAccounts(newUserId) {
         if (userId === newUserId) return;
         const record = records[userId];
         if (record.phase === 'committed') {
-            removeDeletionRecord(userId);
+            // A finished tombstone has nothing left on this device; it stays
+            // to refuse that account's session until it expires.
+            if (record.done) return;
+            settleDeletionRecord(userId, { progressPending: false, sessionPending: false });
             emptyMemory = true;
-        } else if (record.takenOverBy !== newUserId) {
-            writeDeletionRecord(Object.assign({}, record, { takenOverBy: newUserId }));
-            emptyMemory = true;
+            return;
         }
+        let takenOverBy = null;
+        try {
+            takenOverBy = localStorage.getItem(TAKEOVER_PREFIX + userId);
+            if (takenOverBy !== newUserId) localStorage.setItem(TAKEOVER_PREFIX + userId, newUserId);
+        } catch (err) {
+            console.warn('Could not record the takeover:', err);
+        }
+        if (takenOverBy !== newUserId) emptyMemory = true;
     });
     if (emptyMemory) completedItems = {};
 }
@@ -927,13 +986,20 @@ async function resolvePendingDeletion(marker, verifiedSession) {
     if (!error) {
         console.warn('Finished the unfinished deletion; the account is gone.');
         announceAccountDeleted(userId);
-        commitDeletionRecord(userId);
+        const current = readDeletionRecord(userId);
+        if (!(current && current.phase === 'committed')) commitDeletionRecord(userId);
         return readDeletionRecord(userId);
     }
     if (!isAmbiguousRpcError(error) && isMissingRpcError(error)) {
-        console.warn('delete_user() is not configured, so the unfinished deletion cannot have happened.');
-        removeDeletionRecord(userId);
-        return null;
+        // Only the record this resolution started from: another tab may have
+        // written a newer attempt, or committed, while the answer was out.
+        const current = readDeletionRecord(userId);
+        if (current && current.phase === 'pending' && current.attempt === marker.attempt) {
+            console.warn('delete_user() is not configured, so the unfinished deletion cannot have happened.');
+            removeDeletionRecord(userId);
+            return null;
+        }
+        return current;
     }
     console.warn('The unfinished deletion could not be settled:', error.message);
     return marker;
@@ -1052,14 +1118,21 @@ async function performAccountDeletion(userId, state) {
     if (!record) {
         throw new Error('Could not record the deletion in this browser; deletion not started');
     }
-    let sawAmbiguous = record.existed;
+    let sawAmbiguous = !!record.existed;
     let rpcError = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-        ({ error: rpcError } = await attemptDeleteRpc(asInitiator));
-        if (!rpcError || !isAmbiguousRpcError(rpcError)) break;
-        sawAmbiguous = true;
-        console.warn(`delete_user() attempt ${attempt} got no usable answer:`, rpcError.message);
-        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+    if (record.alreadyCommitted) {
+        // Another tab's attempt has committed meanwhile: the account is gone
+        // and nothing is sent; the cleanup below finishes what that tab may
+        // not have.
+        console.warn('The account was already deleted by another attempt; finishing the cleanup.');
+    } else {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            ({ error: rpcError } = await attemptDeleteRpc(asInitiator));
+            if (!rpcError || !isAmbiguousRpcError(rpcError)) break;
+            sawAmbiguous = true;
+            console.warn(`delete_user() attempt ${attempt} got no usable answer:`, rpcError.message);
+            if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+        }
     }
     if (rpcError) {
         // A definite error on a retry only describes that retry: an earlier
@@ -1090,8 +1163,9 @@ async function performAccountDeletion(userId, state) {
     // anything that can wait: if the page closes now, the next load finishes
     // the job and never restores this account from storage. If the rewrite
     // fails the pending record stays, and the next load settles it by
-    // calling the idempotent RPC again.
-    commitDeletionRecord(userId);
+    // calling the idempotent RPC again. A record another tab already
+    // committed is left as it is (its settled steps stay settled).
+    if (!record.alreadyCommitted) commitDeletionRecord(userId);
     announceAccountDeleted(userId);
     let progressSettled = false;
     try {
