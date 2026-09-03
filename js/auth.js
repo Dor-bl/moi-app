@@ -1,4 +1,4 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, deleteUserAccountAndData
 // Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
@@ -17,12 +17,18 @@ if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PRO
     });
 }
 let currentUser = null;
+let authGeneration = 0;
 
 function updateAuthBtnState(isLoggedIn) {
     const t = UI_TRANSLATIONS[currentLang];
     const authBtn = document.getElementById('authBtn');
     const userAccountBadge = document.getElementById('userAccountBadge');
     const userAccountEmail = document.getElementById('userAccountEmail');
+    const accountDangerZone = document.getElementById('accountDangerZone');
+
+    if (accountDangerZone) {
+        accountDangerZone.style.display = (isLoggedIn && currentUser) ? 'block' : 'none';
+    }
 
     if (!authBtn) return;
 
@@ -191,6 +197,7 @@ async function initAuth() {
 }
 
 async function onUserLoggedIn() {
+    authGeneration++;
     updateAuthBtnState(true);
     await syncCloudProgress();
     renderList();
@@ -198,6 +205,7 @@ async function onUserLoggedIn() {
 }
 
 function onUserLoggedOut() {
+    authGeneration++;
     updateAuthBtnState(false);
     renderList();
     updateProgress();
@@ -206,11 +214,16 @@ function onUserLoggedOut() {
 async function syncCloudProgress() {
     if (!supabaseClient || !currentUser) return;
 
+    const generation = authGeneration;
+    const stale = () => generation !== authGeneration;
+
     try {
         const { data, error } = await supabaseClient
             .from('user_progress')
             .select('*')
             .eq('user_id', currentUser.id);
+
+        if (stale()) return;
 
         if (error) {
             console.log('Cloud sync note:', error.message);
@@ -228,6 +241,7 @@ async function syncCloudProgress() {
 
             const localEntries = Object.entries(completedItems);
             for (let [itemId, localData] of localEntries) {
+                if (stale()) return;
                 const cloudMatch = data.find(d => d.item_id === itemId);
                 if (!cloudMatch) {
                     await supabaseClient.from('user_progress').upsert({
@@ -242,6 +256,90 @@ async function syncCloudProgress() {
     } catch (err) {
         console.log('Sync note:', err);
     }
+}
+
+// PostgREST returns PGRST202 for undefined functions; PostgreSQL returns 42883.
+// Only treat 42883 as missing RPC when the error message specifically refers to delete_user.
+function isMissingRpcError(error) {
+    if (!error) return false;
+    if (error.code === 'PGRST202') return true;
+    if (error.code === '42883' && typeof error.message === 'string' && error.message.includes('delete_user')) {
+        return true;
+    }
+    return false;
+}
+
+// GDPR Art. 17: Delete account and cloud data for the signed-in user.
+// Calls delete_user() RPC which atomically deletes progress rows and the auth.users record.
+// If the RPC has not been installed on the Supabase project yet, throws DELETE_NOT_CONFIGURED
+// so the user is informed and their local data stays intact.
+async function deleteUserAccountAndData(targetUserId) {
+    if (!supabaseClient || !currentUser) {
+        throw new Error('Not signed in');
+    }
+
+    if (targetUserId && currentUser.id !== targetUserId) {
+        throw new Error('User changed');
+    }
+
+    // Bump authGeneration so any in-flight cloud sync responses are discarded immediately
+    authGeneration++;
+
+    // Timeout safeguard (15s): actively abort the in-flight request if the connection hangs
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    let rpcResult;
+    try {
+        const query = supabaseClient.rpc('delete_user');
+        rpcResult = await (typeof query.abortSignal === 'function'
+            ? query.abortSignal(controller.signal)
+            : query);
+    } catch (err) {
+        if (controller.signal.aborted || (err && err.name === 'AbortError')) {
+            const timeoutErr = new Error('Deletion request timed out');
+            timeoutErr.code = 'DELETE_ERROR';
+            throw timeoutErr;
+        }
+        throw err;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+
+    const { error: rpcError } = rpcResult;
+    if (rpcError) {
+        if (controller.signal.aborted) {
+            const timeoutErr = new Error('Deletion request timed out');
+            timeoutErr.code = 'DELETE_ERROR';
+            throw timeoutErr;
+        }
+        if (isMissingRpcError(rpcError)) {
+            const err = new Error('delete_user() RPC is not configured');
+            err.code = 'DELETE_NOT_CONFIGURED';
+            throw err;
+        }
+        const err = new Error(rpcError.message || 'Deletion failed');
+        err.code = 'DELETE_ERROR';
+        throw err;
+    }
+
+    // Clear local progress in this browser
+    completedItems = {};
+    saveState();
+
+    // Sign out of Supabase cleanly.
+    // Note: supabase-js may receive 403 on the server logout call because auth.users is already deleted,
+    // but it clears the local session and triggers SIGNED_OUT.
+    try {
+        await supabaseClient.auth.signOut({ scope: 'local' });
+    } catch (signOutErr) {
+        console.warn('Sign-out note after deletion:', signOutErr);
+    }
+
+    currentUser = null;
+    onUserLoggedOut();
+
+    return { authDeleted: true };
 }
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {
@@ -268,3 +366,4 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
         console.log('Cloud update note:', err);
     }
 }
+

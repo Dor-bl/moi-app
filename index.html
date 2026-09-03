@@ -141,7 +141,7 @@
     </div>
 
     <!-- Profile/Progress Modal -->
-    <div class="modal-overlay" id="profileModal">
+    <div class="modal-overlay" id="profileModal" inert>
         <div class="modal-content">
             <button class="close-btn" id="closeProfileModal">&times;</button>
             <h2>Your Journey</h2>
@@ -163,6 +163,13 @@
             <h3 id="txtCompletedMemories" style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Completed Memories</h3>
             <div class="completed-list" id="completedList">
                 <!-- Completed items will be injected here -->
+            </div>
+
+            <!-- Only shown while signed in (toggled by updateAuthBtnState). -->
+            <div class="account-danger-zone" id="accountDangerZone" style="display: none;">
+                <h3 id="txtAccountHeader">Account</h3>
+                <p id="txtDeleteAccountNotice" class="danger-zone-note">Deleting your account removes your cloud progress and notes for good.</p>
+                <button class="btn danger-outline-btn" id="deleteAccountBtn">Delete my account &amp; data</button>
             </div>
         </div>
     </div>
@@ -290,6 +297,21 @@
                 <p id="magicFinishError" class="auth-error" role="alert"></p>
                 <button class="btn primary-btn" id="magicFinishBtn">Finish Signing In</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Account deletion confirmation. Kept after the profile modal in the DOM
+         so it stacks on top of it. `inert` keeps the closed dialog out of the
+         accessibility tree and the tab order; app.js lifts it only while open. -->
+    <div class="modal-overlay" id="deleteAccountModal" inert>
+        <div class="modal-content delete-modal-content" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalWarning">
+            <button class="close-btn" id="closeDeleteAccountModal" aria-label="Close">&times;</button>
+            <h2 id="deleteModalTitle">Delete your account?</h2>
+            <p id="deleteModalWarning" class="delete-warning">This permanently deletes your account and every completed item and note stored in the cloud. It cannot be undone.</p>
+            <p id="deleteModalLocalNote" class="privacy-note" style="margin-bottom: 1.25rem;">Progress saved in this browser is cleared as well. Copies on other devices stay there until you clear that browser's site data.</p>
+            <p id="deleteAccountError" class="auth-error" role="alert"></p>
+            <button class="btn danger-btn" id="confirmDeleteAccountBtn">Yes, delete everything</button>
+            <button class="btn secondary-btn" id="cancelDeleteAccountBtn">Cancel</button>
         </div>
     </div>
 

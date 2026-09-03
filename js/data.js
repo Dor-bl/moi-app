@@ -386,7 +386,20 @@ const UI_TRANSLATIONS = {
         themeLight: 'Light',
         themeDark: 'Dark',
         themeSystem: 'System',
-        footerPrivacy: 'Privacy Policy'
+        footerPrivacy: 'Privacy Policy',
+        accountHeader: 'Account',
+        deleteAccountNotice: 'Deleting your account removes your cloud progress and notes for good.',
+        deleteAccountBtn: 'Delete my account & data',
+        deleteModalTitle: 'Delete your account?',
+        deleteModalWarning: 'This permanently deletes your account and every completed item and note stored in the cloud. It cannot be undone.',
+        deleteModalLocalNote: 'Progress saved in this browser is cleared as well. Copies on other devices stay there until you clear that browser\'s site data.',
+        cancel: 'Cancel',
+        closeDialog: 'Close',
+        confirmDelete: 'Yes, delete everything',
+        deleting: 'Deleting…',
+        deleteSuccess: "Your account, your cloud progress and notes, and the progress saved in this browser have been deleted. You're welcome back anytime. Moi, and thanks for using MoiCheck.",
+        deleteNotConfigured: 'Account deletion is not configured on this installation; no data was removed. Please email us from the privacy policy page and we will delete your account manually.',
+        deleteError: 'Could not complete the deletion. Your account is still active. Please try again or email us from the privacy policy page.'
     },
     nl: {
         filterAll: 'Alles',
@@ -457,6 +470,19 @@ const UI_TRANSLATIONS = {
         themeLight: 'Licht',
         themeDark: 'Donker',
         themeSystem: 'Systeem',
-        footerPrivacy: 'Privacybeleid'
+        footerPrivacy: 'Privacybeleid',
+        accountHeader: 'Account',
+        deleteAccountNotice: 'Als je je account verwijdert, worden je voortgang en notities in de cloud definitief gewist.',
+        deleteAccountBtn: 'Verwijder mijn account & gegevens',
+        deleteModalTitle: 'Je account verwijderen?',
+        deleteModalWarning: 'Dit verwijdert je account en alle afgevinkte items en notities in de cloud permanent. Dit kan niet ongedaan worden gemaakt.',
+        deleteModalLocalNote: 'Voortgang die in deze browser is opgeslagen wordt ook gewist. Kopieën op andere apparaten blijven staan totdat je daar de sitegegevens van de browser wist.',
+        cancel: 'Annuleren',
+        closeDialog: 'Sluiten',
+        confirmDelete: 'Ja, verwijder alles',
+        deleting: 'Verwijderen…',
+        deleteSuccess: 'Je account, je voortgang en notities in de cloud, en de voortgang in deze browser zijn verwijderd. Je bent altijd welkom terug. Moi, en bedankt voor het gebruiken van MoiCheck.',
+        deleteNotConfigured: 'Accountverwijdering is op deze installatie nog niet beschikbaar, er is dus niets verwijderd. Mail ons via de privacybeleid-pagina en wij verwijderen je account handmatig.',
+        deleteError: 'De verwijdering kon niet worden afgerond. Je account is nog actief. Probeer het opnieuw of mail ons via de privacybeleid-pagina.'
     }
 };
