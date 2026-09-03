@@ -398,6 +398,7 @@ const UI_TRANSLATIONS = {
         deleting: 'Deleting…',
         closeDialog: 'Close',
         deleteSuccess: 'Your account and data have been deleted. Moi, and thanks for using MoiCheck!',
+        deleteSuccessLocalPending: 'Your account and data have been deleted. This browser could not clear the progress saved on it, though: clear this site\'s data in your browser settings to remove it. Moi, and thanks for using MoiCheck!',
         deleteNotConfigured: 'Account deletion is not available on this deployment yet, so nothing was removed. Email us via the Privacy Policy page and we will delete your account by hand.',
         deleteUncertain: 'We lost the connection while deleting your account, so we cannot tell whether it went through. This browser will finish the deletion the next time it can reach your account (reload the page, or sign in again) and let you know. To be certain either way, email us via the Privacy Policy page and we will check.',
         deleteError: 'We could not complete the deletion. Your account is still active. Please try again, or email us via the Privacy Policy page.'
@@ -483,6 +484,7 @@ const UI_TRANSLATIONS = {
         deleting: 'Verwijderen…',
         closeDialog: 'Sluiten',
         deleteSuccess: 'Je account en gegevens zijn verwijderd. Moi, en bedankt voor het gebruiken van MoiCheck!',
+        deleteSuccessLocalPending: 'Je account en gegevens zijn verwijderd. Deze browser kon de hier opgeslagen voortgang echter niet wissen: verwijder de sitegegevens van deze site in je browserinstellingen om die weg te halen. Moi, en bedankt voor het gebruiken van MoiCheck!',
         deleteNotConfigured: 'Accountverwijdering is op deze installatie nog niet beschikbaar, er is dus niets verwijderd. Mail ons via de privacybeleid-pagina en wij verwijderen je account handmatig.',
         deleteUncertain: 'De verbinding viel weg tijdens het verwijderen, dus we weten niet of het gelukt is. Deze browser maakt het verwijderen af zodra hij je account weer kan bereiken (herlaad de pagina, of log opnieuw in) en laat het je weten. Wil je zekerheid, mail ons dan via de privacybeleid-pagina en wij controleren het.',
         deleteError: 'De verwijdering kon niet worden afgerond. Je account is nog actief. Probeer het opnieuw of mail ons via de privacybeleid-pagina.'

@@ -180,6 +180,20 @@ function finishMagicLinkSignIn(pending) {
             // Whatever account this page held in memory before, storage now
             // holds the verified session (or nothing, once the cleanup ran),
             // so memory is set from the outcome, never from what was there.
+            // Memory follows whatever session storage holds once this is
+            // over: another account that kept the entry (the verified one's
+            // write was refused while its record stood) stays signed in,
+            // anything else is guest mode.
+            const settleMemory = async () => {
+                const remaining = storedSessionUser();
+                if (remaining && remaining.id !== verified.user.id && !readDeletionRecord(remaining.id)) {
+                    currentUser = remaining;
+                    await onUserLoggedIn();
+                } else {
+                    currentUser = null;
+                    onUserLoggedOut();
+                }
+            };
             if (outcome && outcome.phase === 'committed') {
                 try {
                     await finishPendingDeletionCleanup(outcome);
@@ -189,14 +203,22 @@ function finishMagicLinkSignIn(pending) {
                     console.warn('Could not finish the deletion cleanup:', err);
                     completedItems = {};
                 }
-                currentUser = null;
-                onUserLoggedOut();
+                await settleMemory();
                 alert(t().deleteSuccess);
             } else if (outcome) {
-                currentUser = null;
-                onUserLoggedOut();
+                await settleMemory();
                 alert(t().deleteUncertain);
             } else {
+                // While the record stood, the adapter may have refused to
+                // store this session (another account held the entry); now
+                // that the record is void it is stored like any sign-in.
+                if (storedSessionUserId() !== verified.user.id) {
+                    try {
+                        await sessionStorageAdapter().setItem(sessionStorageKey(), JSON.stringify(verified));
+                    } catch (err) {
+                        console.warn('Could not store the verified session:', err);
+                    }
+                }
                 if (hasDeletionRecords()) takeOverFromDeletedAccounts(verified.user.id);
                 currentUser = verified.user;
                 await onUserLoggedIn();
@@ -600,13 +622,22 @@ function sessionStorageAdapter() {
     };
 }
 
+// A committed (or finished) account's session is never stored again. A
+// pending account's session is stored only while nobody else holds the
+// entry: its refresh still in flight could otherwise land after another
+// tab signed in a replacement, and overwrite theirs. (The pending account's
+// own credentials must stay storable while the entry is still its own, or
+// nothing could settle its record later.)
 function sessionWriteRefused(value) {
     try {
         const parsed = JSON.parse(value);
         const userId = parsed && parsed.user && parsed.user.id;
         if (!userId) return false;
         const record = readDeletionRecord(userId);
-        return !!(record && record.phase === 'committed');
+        if (!record) return false;
+        if (record.phase === 'committed') return true;
+        const holder = storedSessionUserId();
+        return holder !== null && holder !== userId;
     } catch {
         return false;
     }
@@ -942,6 +973,17 @@ async function withSessionLock(fn, timeoutMs) {
         throw err;
     } finally {
         clearTimeout(timer);
+    }
+}
+
+// The user of the stored session, read straight from storage, or null.
+function storedSessionUser() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(sessionStorageKey()));
+        return stored && stored.user && stored.user.id ? stored.user : null;
+    } catch (err) {
+        console.warn('Could not read the stored session:', err);
+        return null;
     }
 }
 
@@ -1409,7 +1451,10 @@ async function performAccountDeletion(userId, state) {
         console.warn('Another account signed in during deletion; leaving its session in place.');
     }
 
-    return { sessionChanged };
+    // Without Web Locks the stored progress could not be cleared safely and
+    // no later load will do it either: the person is told, rather than told
+    // the browser copy is gone.
+    return { sessionChanged, localCleanupIncomplete: !progressSettled && !hasWebLocks() };
 }
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {

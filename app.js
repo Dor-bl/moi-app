@@ -911,7 +911,7 @@ function setupEventListeners() {
         deleteAccountError.textContent = '';
 
         try {
-            await deleteUserAccountAndData(targetUserId);
+            const outcome = await deleteUserAccountAndData(targetUserId);
             setDeletionBusy(false);
             // The trigger is hidden now that we are signed out; land on the
             // profile button instead.
@@ -919,7 +919,7 @@ function setupEventListeners() {
             closeDeleteAccountModal();
             closeProfileModal();
             // The UI is already back in guest mode.
-            alert(t.deleteSuccess);
+            alert(outcome && outcome.localCleanupIncomplete ? t.deleteSuccessLocalPending : t.deleteSuccess);
         } catch (err) {
             console.error('Account deletion failed:', err);
             setDeletionBusy(false);
