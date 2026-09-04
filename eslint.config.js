@@ -62,6 +62,21 @@ export default [
     },
   },
   {
-    ignores: ["node_modules/"],
+    // Tests run on Node and are ESM; the browser block above does not cover them.
+    files: ["tests/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    },
+  },
+  {
+    // .claude/ holds git worktrees - nested checkouts of this same repo.
+    ignores: ["node_modules/", ".claude/"],
   },
 ];
