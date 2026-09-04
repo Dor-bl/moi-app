@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Review a MoiCheck change (working diff, branch, or PR) against this repo's conventions — vanilla-JS globals and script load order, Supabase auth ownership rules, XSS-safe DOM rendering, EN/NL i18n completeness, and the PR #50 anti-over-engineering rules. Use when asked to review a diff or PR, to check a change before opening or merging a PR, or when responding to Copilot/bot review comments on this repo.
+description: "Review a MoiCheck change (working diff, branch, or PR) against this repo's conventions — vanilla-JS globals and script load order, Supabase auth ownership rules, XSS-safe DOM rendering, EN/NL i18n completeness, and the PR #50 anti-over-engineering rules. Use when asked to review a diff or PR, to check a change before opening or merging a PR, or when responding to Copilot/bot review comments on this repo."
 ---
 
 # MoiCheck Code Review
