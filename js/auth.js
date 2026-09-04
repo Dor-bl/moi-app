@@ -181,9 +181,10 @@ async function initAuth() {
         } else if (localStorage.getItem(SYNCED_USER_KEY)) {
             // Signed in on an earlier visit but there is no session now: it
             // expired, or sign-out happened while this tab was closed. Clear
-            // that account's progress out of the browser. Ticks made offline
-            // since the session died are lost here, but every tick is written
-            // to the cloud as it happens, so they come back on the next sign-in.
+            // that account's progress out of the browser. A tick made since
+            // the session died is lost here unless its cloud write went
+            // through at the time (syncItemToCloud is fire-and-forget: a
+            // write that failed, offline say, is not retried).
             onUserLoggedOut();
         }
 

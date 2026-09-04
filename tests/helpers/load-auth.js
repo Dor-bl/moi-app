@@ -52,10 +52,14 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
                     const builder = {
                         eq: (column, value) => {
                             filters[column] = value;
-                            deletes.push({ table, filters });
                             return builder;
                         },
-                        then: (resolve) => resolve({ error: null })
+                        // Recorded once, when the chain is awaited, with a
+                        // copy of the filters as they stand by then.
+                        then: (resolve, reject) => {
+                            deletes.push({ table, filters: { ...filters } });
+                            return Promise.resolve({ error: null }).then(resolve, reject);
+                        }
                     };
                     return builder;
                 }
