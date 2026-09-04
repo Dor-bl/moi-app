@@ -269,7 +269,9 @@ const MILESTONES = [
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
     { threshold: 12, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
     { threshold: 19, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 32, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    // Derived so the top tier always means "every item done" — adding a BUCKET_LIST
+    // item must never silently leave this badge unreachable.
+    { threshold: BUCKET_LIST.length, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const CATEGORY_BADGES = [
