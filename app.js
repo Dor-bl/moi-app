@@ -302,6 +302,31 @@ function initOrUpdateMap() {
     renderMapMarkers();
 }
 
+// ⚡ Bolt Performance Optimization:
+// Cache L.divIcon instances to prevent O(N) memory allocations per render cycle.
+// Impact: Reduces garbage collection pressure and speeds up map rendering significantly
+// when toggling completed status or switching filters.
+const cachedMapIcons = {
+    todo: null,
+    done: null
+};
+
+function getMapIcon(isCompleted) {
+    const cacheKey = isCompleted ? 'done' : 'todo';
+    if (!cachedMapIcons[cacheKey]) {
+        const pinColor = isCompleted ? '#047857' : '#B45309';
+        cachedMapIcons[cacheKey] = L.divIcon({
+            className: 'custom-map-pin',
+            html: `<div style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    ${isCompleted ? '✓' : '•'}
+                   </div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+    }
+    return cachedMapIcons[cacheKey];
+}
+
 function renderMapMarkers() {
     if (!leafletMap || !markersGroup) return;
     markersGroup.clearLayers();
@@ -312,15 +337,7 @@ function renderMapMarkers() {
     filteredList.forEach(item => {
         const isCompleted = !!completedItems[item.id];
         
-        const pinColor = isCompleted ? '#047857' : '#B45309';
-        const customIcon = L.divIcon({
-            className: 'custom-map-pin',
-            html: `<div style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                    ${isCompleted ? '✓' : '•'}
-                   </div>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 14]
-        });
+        const customIcon = getMapIcon(isCompleted);
 
         const marker = L.marker(item.coords, { icon: customIcon });
 
