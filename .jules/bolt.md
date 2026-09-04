@@ -5,3 +5,7 @@
 ## 2026-08-31 - Redundant Array Filtering in Render Functions
 **Learning:** The application frequently filters `BUCKET_LIST` by category inside render functions (`renderList`, `renderFilterPills`, etc.) and event handlers (`checkBadgeUnlocks`). While converting O(N) filters to an O(1) object map lookup removes a linear scan, for small static arrays this is a readability win, not a major performance bottleneck (as subsequent operations like DOM manipulation or secondary filtering often remain O(N) and dominate processing time).
 **Action:** Group data into an O(1) map at initialization for improved readability and to eliminate redundant inline filtering. However, prioritize these optimizations (indexing by key) primarily when the collection is large or the lookup sits inside another tight loop, as linear scans over small arrays are fast.
+
+## 2026-09-04 - Leaflet Icon Memory Allocation
+**Learning:** Instantiating new `L.divIcon` objects (along with complex inline HTML strings) for every item inside a frequent render loop (like `renderMapMarkers`) causes severe O(N) memory allocation and garbage collection pressure on map updates.
+**Action:** Cache and reuse Leaflet icon instances (`L.divIcon`) when the visual states are finite (e.g., 'todo' and 'done'). Leaflet correctly handles sharing the same icon instance across multiple markers.
