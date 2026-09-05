@@ -128,19 +128,32 @@ function renderFilterPills() {
         const items = getFilteredItems(cat);
         const remaining = items.filter(i => !completedItems[i.id]).length;
 
-        pill.innerHTML = '';
+        let labelEl = pill.querySelector('.filter-pill-label');
+        let countEl = pill.querySelector('.filter-pill-count');
 
-        const labelEl = document.createElement('span');
-        labelEl.textContent = label;
-        pill.appendChild(labelEl);
+        if (!labelEl || !countEl) {
+            pill.innerHTML = '';
 
-        const countEl = document.createElement('span');
-        countEl.className = 'filter-pill-count';
-        countEl.textContent = remaining > 0 ? remaining : '✓';
-        // The badge on its own reads as a bare number; the pill's aria-label below
-        // says what it counts, so hide this from the accessibility tree.
-        countEl.setAttribute('aria-hidden', 'true');
-        pill.appendChild(countEl);
+            labelEl = document.createElement('span');
+            labelEl.className = 'filter-pill-label';
+            pill.appendChild(labelEl);
+
+            countEl = document.createElement('span');
+            countEl.className = 'filter-pill-count';
+            // The badge on its own reads as a bare number; the pill's aria-label below
+            // says what it counts, so hide this from the accessibility tree.
+            countEl.setAttribute('aria-hidden', 'true');
+            pill.appendChild(countEl);
+        }
+
+        if (labelEl.textContent !== label) {
+            labelEl.textContent = label;
+        }
+
+        const countText = remaining > 0 ? remaining : '✓';
+        if (countEl.textContent !== String(countText)) {
+            countEl.textContent = countText;
+        }
 
         const status = remaining > 0
             ? t.remainingCount.replace('{count}', remaining)
@@ -364,25 +377,42 @@ function isCompletedCollapsed(count) {
     return completedCollapsedPref === 'true';
 }
 
+// ⚡ Bolt Performance Optimization:
+// Cache DOM nodes for bucket cards based on id and language.
+// Impact: Prevents rebuilding identical DOM nodes on every render/filter/toggle,
+// drastically reducing memory allocation, garbage collection, and render time.
+const cardCache = new Map();
+
 function buildCard(item) {
+    const cacheKey = `${item.id}_${currentLang}`;
     const isCompleted = !!completedItems[item.id];
 
-    const card = document.createElement('div');
-    card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
-    card.dataset.id = item.id;
+    let card = cardCache.get(cacheKey);
 
-    card.innerHTML = `
-        <div class="checkbox-container">
-            <div class="checkbox" data-id="${item.id}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    if (!card) {
+        card = document.createElement('div');
+        card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
+        card.dataset.id = item.id;
+
+        card.innerHTML = `
+            <div class="checkbox-container">
+                <div class="checkbox" data-id="${item.id}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
             </div>
-        </div>
-        <div class="card-content">
-            <span class="card-category">${item.category[currentLang]}</span>
-            <h3 class="card-title">${item.title[currentLang]}</h3>
-            <p class="card-tip">${item.tip[currentLang]}</p>
-        </div>
-    `;
+            <div class="card-content">
+                <span class="card-category">${item.category[currentLang]}</span>
+                <h3 class="card-title">${item.title[currentLang]}</h3>
+                <p class="card-tip">${item.tip[currentLang]}</p>
+            </div>
+        `;
+        cardCache.set(cacheKey, card);
+    } else {
+        const wasCompleted = card.classList.contains('completed');
+        if (wasCompleted !== isCompleted) {
+            card.classList.toggle('completed', isCompleted);
+        }
+    }
 
     return card;
 }

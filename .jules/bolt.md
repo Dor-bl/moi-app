@@ -9,3 +9,6 @@
 ## 2026-09-04 - Leaflet Icon Memory Allocation
 **Learning:** Instantiating new `L.divIcon` objects (along with complex inline HTML strings) for every item inside a frequent render loop (like `renderMapMarkers`) causes severe O(N) memory allocation and garbage collection pressure on map updates.
 **Action:** Cache and reuse Leaflet icon instances (`L.divIcon`) when the visual states are finite (e.g., 'todo' and 'done'). Leaflet correctly handles sharing the same icon instance across multiple markers.
+## 2026-09-05 - [DOM Node Caching for Re-renders]
+**Learning:** Re-rendering long lists by destroying and recreating DOM nodes using `innerHTML` causes significant garbage collection overhead and rendering jitter.
+**Action:** Use a `Map` to cache detached DOM elements and selectively update only dynamic state (e.g. CSS classes) when retrieving them, drastically improving render speeds.
