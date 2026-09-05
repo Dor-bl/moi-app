@@ -76,7 +76,6 @@ export default [
     },
   },
   {
-    // .claude/ holds git worktrees - nested checkouts of this same repo.
     ignores: ["node_modules/", ".claude/"],
   },
 ];

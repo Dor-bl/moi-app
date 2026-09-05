@@ -252,6 +252,15 @@ const BUCKET_LIST = [
         tip: { en: 'Hides like Ezumakeeg and Jaap Deensgat draw spoonbills, geese, and birds of prey — best in autumn and winter when migratory flocks pass through.', nl: 'Vogelkijkhutten zoals Ezumakeeg en Jaap Deensgat trekken lepelaars, ganzen en roofvogels — het mooist in herfst en winter tijdens de vogeltrek.' },
         url: 'https://www.np-lauwersmeer.nl/doen-zien/vogels-kijken/',
         urlLabel: { en: 'Lauwersmeer Birdwatching Guide 🦅', nl: 'Lauwersmeer Vogels Kijken Gids 🦅' }
+    },
+    {
+        id: '32',
+        coords: [53.2209, 6.5689],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'Wander through the historic Prinsentuin', nl: 'Wandel door de historische Prinsentuin' },
+        tip: { en: 'A peaceful 17th-century Renaissance garden with a rose garden, herb garden, sundial gate, and seasonal tearoom.', nl: 'Een rustige 17e-eeuwse renaissancetuin met een rozentuin, kruidentuin, zonnewijzerpoort en een theeschenkerij.' },
+        url: 'https://www.visitgroningen.nl/nl/locaties/2959780166/prinsentuin',
+        urlLabel: { en: 'Prinsentuin Visitor Guide 🌿', nl: 'Prinsentuin Bezoekersgids 🌿' }
     }
 ];
 
@@ -260,7 +269,9 @@ const MILESTONES = [
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
     { threshold: 12, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
     { threshold: 19, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
-    { threshold: 31, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
+    // Derived so the top tier always means "every item done" — adding a BUCKET_LIST
+    // item must never silently leave this badge unreachable.
+    { threshold: BUCKET_LIST.length, title: { en: 'Real Groninger', nl: 'Echte Groninger' } }
 ];
 
 const CATEGORY_BADGES = [
