@@ -785,10 +785,12 @@ function setupEventListeners() {
         const { error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                // The page URL without its fragment: after a callback the
-                // browser keeps an empty "#" (the library clears the hash
-                // by assignment), and passing that back would make Supabase
-                // produce "##access_token=...", which it cannot parse.
+                // The page URL without its query or fragment. After a
+                // callback the browser keeps an empty "#" (the library
+                // clears the hash by assignment), and passing that back
+                // would make Supabase produce "##access_token=...", which it
+                // cannot parse; a stale magic-link query (?token_hash=...)
+                // should not ride along either.
                 redirectTo: window.location.origin + window.location.pathname
             }
         });
