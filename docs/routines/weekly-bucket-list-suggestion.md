@@ -78,9 +78,28 @@ The five categories, exactly as they appear in `js/data.js`:
 
 ## Run discipline
 
-- **One open suggestion at a time.** Before doing anything, check for an open PR whose
-  head branch starts with `suggest/bucket-list-item-`. If one exists, the routine stops
-  and reports it, rather than stacking a second suggestion.
+- **One open suggestion at a time.** Before doing anything, check for an open suggestion
+  PR. If one exists, the routine stops and reports it, rather than stacking a second.
 - Also skim recently closed suggestion PRs — an item that was already proposed and
   rejected should not come back.
-- Branch: `suggest/bucket-list-item-<YYYY-MM-DD>` off the latest `origin/main`.
+- Branch: `claude/weekly-bucket-list-suggestion`, reset from the latest `origin/main`
+  each run. The name is fixed rather than dated on purpose — see below.
+
+## Push authorization (the thing that breaks this routine)
+
+A routine run happens in a throwaway container that is destroyed when the run ends, so a
+commit that only exists locally is lost. Two settings decide whether it can push:
+
+- the routine must have the repo attached as a **source**, and
+- it must have an **outcome branch** authorizing the push.
+
+Neither can be set through the `create_trigger` MCP tool — they come from the routine's
+configuration in the claude.ai Routines UI. Without them the run does all the work and
+then fails at `git push` with HTTP 403, which is exactly what happened on the first test
+run (2026-09-05): a verified item, lint passing, committed locally, and nothing to show
+for it.
+
+Because an outcome authorizes specific branch names, the routine uses one fixed branch
+instead of a per-date one. As a backstop, a run that still cannot push must paste the
+complete item and the README count change into its final reply — the reply survives the
+container, so the suggestion can be applied by hand.
