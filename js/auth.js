@@ -19,6 +19,12 @@ if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PRO
 let currentUser = null;
 let authGeneration = 0;
 
+// Which account the progress in this browser was last synced with. It lets us
+// tell genuine guest progress (no marker) apart from another account's
+// leftovers (marker belongs to somebody else), so signing in never re-uploads
+// the previous user's ticks and notes under the new user's id. See issue #52.
+const SYNCED_USER_KEY = 'moiCheckSyncedUser';
+
 function updateAuthBtnState(isLoggedIn) {
     const t = UI_TRANSLATIONS[currentLang];
     const authBtn = document.getElementById('authBtn');
@@ -172,6 +178,14 @@ async function initAuth() {
         if (session && session.user) {
             currentUser = session.user;
             await onUserLoggedIn();
+        } else if (localStorage.getItem(SYNCED_USER_KEY)) {
+            // Signed in on an earlier visit but there is no session now: it
+            // expired, or sign-out happened while this tab was closed. Clear
+            // that account's progress out of the browser. A tick made since
+            // the session died is lost here unless its cloud write went
+            // through at the time (syncItemToCloud is fire-and-forget: a
+            // write that failed, offline say, is not retried).
+            onUserLoggedOut();
         }
 
         // Listen for auth state changes
@@ -185,7 +199,10 @@ async function initAuth() {
                     window.history.replaceState(null, '', window.location.pathname + window.location.search);
                 }
             } else if (event === 'SIGNED_OUT') {
-                if (currentUser) {
+                // Also reached when this tab never set currentUser (another tab
+                // signed out, or the session was restored then dropped); the
+                // marker is what says there is still progress left to clear.
+                if (currentUser || localStorage.getItem(SYNCED_USER_KEY)) {
                     currentUser = null;
                     onUserLoggedOut();
                 }
@@ -204,8 +221,18 @@ async function onUserLoggedIn() {
     updateProgress();
 }
 
+// Sign-out leaves no progress from the signed-out account in this browser, so
+// the next person to sign in on a shared device cannot inherit it. Preferences
+// (moiCheckLang, moiCheckTheme, moiCheckCompletedCollapsed) are device settings
+// rather than personal data and are deliberately kept.
 function onUserLoggedOut() {
+    // Clearing after the generation bump: any sync response still in flight is
+    // already stale by the time it lands and will not write back into
+    // completedItems.
     authGeneration++;
+    completedItems = {};
+    saveState();
+    localStorage.removeItem(SYNCED_USER_KEY);
     updateAuthBtnState(false);
     renderList();
     updateProgress();
@@ -213,6 +240,19 @@ function onUserLoggedOut() {
 
 async function syncCloudProgress() {
     if (!supabaseClient || !currentUser) return;
+
+    // Runs before the first await so nothing can interleave: if the progress
+    // sitting in this browser was last synced with a different account, drop it
+    // instead of uploading it under this user's id. A missing marker means
+    // genuine guest progress, which still merges into the account as intended.
+    // Sign-out already clears both, so this only catches the paths where it
+    // never ran - a crashed tab, a session that expired, storage half-cleared.
+    const lastSyncedUser = localStorage.getItem(SYNCED_USER_KEY);
+    if (lastSyncedUser && lastSyncedUser !== currentUser.id) {
+        completedItems = {};
+        saveState();
+    }
+    localStorage.setItem(SYNCED_USER_KEY, currentUser.id);
 
     const generation = authGeneration;
     const stale = () => generation !== authGeneration;
