@@ -261,6 +261,15 @@ const BUCKET_LIST = [
         tip: { en: 'A peaceful 17th-century Renaissance garden with a rose garden, herb garden, sundial gate, and seasonal tearoom.', nl: 'Een rustige 17e-eeuwse renaissancetuin met een rozentuin, kruidentuin, zonnewijzerpoort en een theeschenkerij.' },
         url: 'https://www.visitgroningen.nl/nl/locaties/2959780166/prinsentuin',
         urlLabel: { en: 'Prinsentuin Visitor Guide 🌿', nl: 'Prinsentuin Bezoekersgids 🌿' }
+    },
+    {
+        id: '33',
+        coords: [53.4038, 6.2188],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Take a seal-spotting boat trip from Lauwersoog', nl: 'Maak een zeehondentocht vanuit Lauwersoog' },
+        tip: { en: 'Small rescue boats leave straight from the fishing harbour and chug out to a sandbank in the Waddenzee where dozens of grey and common seals haul out to sunbathe — the ride is barely 45 minutes, but the wind off the Wad means a warm coat even on a summer day.', nl: 'Kleine rescueboten vertrekken direct vanaf de vissershaven en varen naar een zandbank in de Waddenzee waar tientallen grijze en gewone zeehonden liggen te zonnen — de tocht duurt nog geen drie kwartier, maar door de wind op het Wad trek je ook in de zomer een warme jas aan.' },
+        url: 'https://lauwersoog.nl/activiteiten/rescueboot-expedities/zeehonden-experience/',
+        urlLabel: { en: 'Lauwersoog Seal Boat Trips 🦭', nl: 'Zeehondentochten Lauwersoog 🦭' }
     }
 ];
 
