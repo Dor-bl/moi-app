@@ -180,8 +180,11 @@ async function initAuth() {
             if (session && session.user) {
                 currentUser = session.user;
                 await onUserLoggedIn();
-                // Clean hash from URL bar if access token was passed in hash
-                if (window.location.hash && window.location.hash.includes('access_token')) {
+                // Take the callback's fragment out of the address bar. The
+                // library has usually cleared it already, but by assignment,
+                // which leaves a bare "#" behind; drop that too, so nothing
+                // is left to be fed back to the next sign-in.
+                if (window.location.hash || window.location.href.endsWith('#')) {
                     window.history.replaceState(null, '', window.location.pathname + window.location.search);
                 }
             } else if (event === 'SIGNED_OUT') {

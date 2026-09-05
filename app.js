@@ -785,7 +785,11 @@ function setupEventListeners() {
         const { error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.href
+                // The page URL without its fragment: after a callback the
+                // browser keeps an empty "#" (the library clears the hash
+                // by assignment), and passing that back would make Supabase
+                // produce "##access_token=...", which it cannot parse.
+                redirectTo: window.location.origin + window.location.pathname
             }
         });
         if (error) alert(error.message);
