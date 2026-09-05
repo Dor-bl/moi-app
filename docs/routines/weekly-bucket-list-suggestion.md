@@ -1,8 +1,12 @@
 # Weekly Bucket List Suggestion Routine
 
-A Claude Routine fires every **Saturday at 10:00 Europe/Amsterdam** (`0 8 * * 6` UTC),
-scans the current `BUCKET_LIST` in [`js/data.js`](../../js/data.js), and opens a pull
-request adding **one** new item.
+A Claude Routine fires every **Saturday morning**, scans the current `BUCKET_LIST` in
+[`js/data.js`](../../js/data.js), and opens a pull request adding **one** new item.
+
+The schedule is `0 8 * * 6`, and cron is evaluated in UTC while Amsterdam switches between
+CEST (UTC+2) and CET (UTC+1). So the run lands at **10:00 local during summer time and
+09:00 local during winter time**. Nothing depends on the exact hour, so the schedule is
+left alone across the DST changes rather than being re-pinned twice a year.
 
 This file is the authoritative spec for what a good suggestion looks like. Edit it here
 rather than editing the Routine prompt — each run reads this file first and follows it.
