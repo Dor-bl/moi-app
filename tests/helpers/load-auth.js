@@ -1,5 +1,6 @@
-// Loads the real js/utils.js and js/auth.js the way index.html does: as classic
-// scripts sharing one global scope. Both are plain scripts with no exports and
+// Loads the real js/auth.js and js/utils.js the way index.html does: as classic
+// scripts sharing one global scope, in the page's order (auth.js first, then
+// utils.js), so a load-order regression shows up here too. Both are plain scripts with no exports and
 // package.json is "type": "module", so they cannot be imported - node:vm gives
 // them a scope with stubs for the browser globals they expect. The point is
 // that the tests run the shipped source; a re-implementation would prove
@@ -114,7 +115,7 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
     `, context, { filename: 'test-preamble.js' });
     sandbox.__renders = renders;
 
-    for (const file of ['js/utils.js', 'js/auth.js']) {
+    for (const file of ['js/auth.js', 'js/utils.js']) {
         vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), context, { filename: file });
     }
 
