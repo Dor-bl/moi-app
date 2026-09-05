@@ -81,8 +81,11 @@ The five categories, exactly as they appear in `js/data.js`:
 - **One open suggestion at a time.** Before doing anything, check for an open suggestion
   PR. If one exists, the routine stops and reports it, rather than stacking a second.
 - Recognise a previous suggestion by a head branch **starting with**
-  `claude/keen-edison`, or by a title of the form `feat: add "..." to the bucket list`.
-  Match on the prefix, never the exact branch name — see below for why.
+  `claude/keen-edison` — match on the prefix, never the exact branch name; see below for
+  why. As a secondary signal, the PR title starts with `feat: add` and ends with
+  `to the bucket list` (#67 is `feat: add seal-spotting boat trip from Lauwersoog to the
+  bucket list`). Match those two ends, not a fixed middle: the item name sits between
+  them, unquoted.
 - Also skim recently closed suggestion PRs — an item that was already proposed and
   rejected should not come back.
 
@@ -110,8 +113,9 @@ makes the push work.
 On push the platform appends a per-session suffix, so a run actually lands on something
 like `claude/keen-edison-rywxf6`. Two consequences:
 
-- The routine must **branch from the authorized prefix** and treat the suffix as
-  expected, not as an error.
+- The run still branches off `origin/main` as usual; it is the **branch name** that
+  must start with the authorized prefix. Do not base the work on `claude/keen-edison`
+  itself. The suffix that appears on push is expected, not an error.
 - Anything looking for previous suggestion PRs must **match the prefix**. An exact-string
   comparison against `claude/keen-edison` silently matches nothing, which would defeat
   the one-open-suggestion rule and stack a second PR every week.
