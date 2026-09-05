@@ -70,8 +70,10 @@ The five categories, exactly as they appear in `js/data.js`:
 
 ## What else the change has to touch
 
-- **`README.md`** hardcodes the item count in two places ("all 32 locations" and
-  "**32 Curated Groningen Bucket List Items**"). Both must be bumped to the new total.
+- **`README.md`** hardcodes the item count in two places — the map feature bullet
+  ("all NN locations") and the list bullet ("**NN Curated Groningen Bucket List
+  Items**"). Read whatever numbers are currently there and bump both; never assume the
+  count, since it moves every time a suggestion is merged.
 - **`MILESTONES`** needs no change — its top tier is derived from `BUCKET_LIST.length`.
 - **`CATEGORY_BADGES`** needs no change — badges unlock per category dynamically.
 - Run `npm ci && npm run lint` (ESLint is the CI gate) before pushing.
