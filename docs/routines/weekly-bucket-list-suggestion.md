@@ -70,17 +70,68 @@ The five categories, exactly as they appear in `js/data.js`:
 
 ## What else the change has to touch
 
-- **`README.md`** hardcodes the item count in two places ("all 32 locations" and
-  "**32 Curated Groningen Bucket List Items**"). Both must be bumped to the new total.
+- **`README.md`** hardcodes the item count in two places — the map feature bullet
+  ("all NN locations") and the list bullet ("**NN Curated Groningen Bucket List
+  Items**"). Read whatever numbers are currently there and bump both; never assume the
+  count, since it moves every time a suggestion is merged.
 - **`MILESTONES`** needs no change — its top tier is derived from `BUCKET_LIST.length`.
 - **`CATEGORY_BADGES`** needs no change — badges unlock per category dynamically.
 - Run `npm ci && npm run lint` (ESLint is the CI gate) before pushing.
 
 ## Run discipline
 
-- **One open suggestion at a time.** Before doing anything, check for an open PR whose
-  head branch starts with `suggest/bucket-list-item-`. If one exists, the routine stops
-  and reports it, rather than stacking a second suggestion.
+- **One open suggestion at a time.** Before doing anything, check for an open suggestion
+  PR. If one exists, the routine stops and reports it, rather than stacking a second.
+- Recognise a previous suggestion by a head branch **starting with**
+  `claude/keen-edison` — match on the prefix, never the exact branch name; see below for
+  why. As a secondary signal, the PR title starts with `feat: add` and ends with
+  `to the bucket list` (#67 is `feat: add seal-spotting boat trip from Lauwersoog to the
+  bucket list`). Match those two ends, not a fixed middle: the item name sits between
+  them, unquoted.
 - Also skim recently closed suggestion PRs — an item that was already proposed and
   rejected should not come back.
-- Branch: `suggest/bucket-list-item-<YYYY-MM-DD>` off the latest `origin/main`.
+
+## Push authorization (the thing that breaks this routine)
+
+A routine run happens in a throwaway container that is destroyed when the run ends, so a
+commit that only exists locally is lost. Two settings decide whether it can push:
+
+- the routine must have the repo attached as a **source**, and
+- it must have an **outcome branch** authorizing the push.
+
+Neither can be set through the `create_trigger` MCP tool — they come from the routine's
+configuration in the claude.ai Routines UI. Without them the run does all the work and
+then fails at `git push` with HTTP 403. That is exactly what happened on the first test
+run (2026-09-05): a verified item, lint passing, committed locally, and nothing to show
+for it once the container was reclaimed.
+
+Setting the source in the UI creates the outcome branch automatically. Here it came out
+as `claude/keen-edison` — an arbitrary generated name, unrelated to what this routine
+does, and **not** something to rename to a tidier one, since the authorization is what
+makes the push work.
+
+### The branch name is a prefix, not a literal
+
+On push the platform appends a per-session suffix, so a run actually lands on something
+like `claude/keen-edison-rywxf6`. Two consequences:
+
+- The run still branches off `origin/main` as usual; it is the **branch name** that
+  must start with the authorized prefix. Do not base the work on `claude/keen-edison`
+  itself. The suffix that appears on push is expected, not an error.
+- Anything looking for previous suggestion PRs must **match the prefix**. An exact-string
+  comparison against `claude/keen-edison` silently matches nothing, which would defeat
+  the one-open-suggestion rule and stack a second PR every week.
+
+### Backstop
+
+A run that still cannot push must paste the complete item and the README count change
+into its final reply. The reply outlives the container, so the suggestion can be applied
+by hand instead of being lost.
+
+## Proposed so far
+
+Kept here so a future run does not re-propose something already rejected.
+
+| Item | Category | PR |
+| --- | --- | --- |
+| Seal-spotting boat trip from Lauwersoog | Nature & Wildlife | [#67](https://github.com/Dor-bl/moi-app/pull/67) |
