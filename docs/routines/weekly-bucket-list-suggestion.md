@@ -80,10 +80,11 @@ The five categories, exactly as they appear in `js/data.js`:
 
 - **One open suggestion at a time.** Before doing anything, check for an open suggestion
   PR. If one exists, the routine stops and reports it, rather than stacking a second.
+- Recognise a previous suggestion by a head branch **starting with**
+  `claude/keen-edison`, or by a title of the form `feat: add "..." to the bucket list`.
+  Match on the prefix, never the exact branch name — see below for why.
 - Also skim recently closed suggestion PRs — an item that was already proposed and
   rejected should not come back.
-- Branch: `claude/weekly-bucket-list-suggestion`, reset from the latest `origin/main`
-  each run. The name is fixed rather than dated on purpose — see below.
 
 ## Push authorization (the thing that breaks this routine)
 
@@ -95,11 +96,36 @@ commit that only exists locally is lost. Two settings decide whether it can push
 
 Neither can be set through the `create_trigger` MCP tool — they come from the routine's
 configuration in the claude.ai Routines UI. Without them the run does all the work and
-then fails at `git push` with HTTP 403, which is exactly what happened on the first test
+then fails at `git push` with HTTP 403. That is exactly what happened on the first test
 run (2026-09-05): a verified item, lint passing, committed locally, and nothing to show
-for it.
+for it once the container was reclaimed.
 
-Because an outcome authorizes specific branch names, the routine uses one fixed branch
-instead of a per-date one. As a backstop, a run that still cannot push must paste the
-complete item and the README count change into its final reply — the reply survives the
-container, so the suggestion can be applied by hand.
+Setting the source in the UI creates the outcome branch automatically. Here it came out
+as `claude/keen-edison` — an arbitrary generated name, unrelated to what this routine
+does, and **not** something to rename to a tidier one, since the authorization is what
+makes the push work.
+
+### The branch name is a prefix, not a literal
+
+On push the platform appends a per-session suffix, so a run actually lands on something
+like `claude/keen-edison-rywxf6`. Two consequences:
+
+- The routine must **branch from the authorized prefix** and treat the suffix as
+  expected, not as an error.
+- Anything looking for previous suggestion PRs must **match the prefix**. An exact-string
+  comparison against `claude/keen-edison` silently matches nothing, which would defeat
+  the one-open-suggestion rule and stack a second PR every week.
+
+### Backstop
+
+A run that still cannot push must paste the complete item and the README count change
+into its final reply. The reply outlives the container, so the suggestion can be applied
+by hand instead of being lost.
+
+## Proposed so far
+
+Kept here so a future run does not re-propose something already rejected.
+
+| Item | Category | PR |
+| --- | --- | --- |
+| Seal-spotting boat trip from Lauwersoog | Nature & Wildlife | [#67](https://github.com/Dor-bl/moi-app/pull/67) |
