@@ -230,6 +230,9 @@ function updateLanguageUI() {
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
 
+    const footerSponsorLink = document.getElementById('footerSponsorLink');
+    if (footerSponsorLink) footerSponsorLink.textContent = t.footerSponsor;
+
     // Auth modal & header translations
     document.getElementById('authModalTitle').textContent = t.authTitle;
     document.getElementById('authModalSubtitle').textContent = t.authSubtitle;

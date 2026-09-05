@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<!--
+    ============================================================
+    NOT LIVE YET — to switch sponsorship on, do all of these:
+
+    1. Create a Stripe Payment Link (enable iDEAL *and* card) and
+       replace REPLACE_WITH_STRIPE_PAYMENT_LINK below with its URL.
+    2. Bump the "Last updated" date in privacy.html.
+    3. Sanity-check the running-cost figures in the "Where the
+       money goes" section below — they should be true on the day
+       this ships, not the day it was written.
+
+    Until step 1 is done this page must not be linked from a
+    production deploy: the donate button points nowhere.
+    ============================================================
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support MoiCheck</title>
+    <meta name="description" content="MoiCheck is a free, independent side project. If it helped you settle into Groningen, you can chip in towards the running costs.">
+    <meta name="theme-color" content="#009639">
+    <meta name="robots" content="noindex">
+
+    <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/brand/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="assets/brand/favicon-16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+    <link rel="canonical" href="https://moicheck.nl/sponsor.html">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .legal-page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+        .legal-page .back-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .legal-page .back-link:hover { text-decoration: underline; }
+        .legal-page h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.25rem;
+        }
+        .legal-page .lede {
+            color: var(--text-light);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+        .legal-page section { margin-bottom: 2rem; }
+        .legal-page h2 {
+            font-size: 1.15rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary-color);
+        }
+        .legal-page p, .legal-page li {
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+        }
+        .legal-page ul { padding-left: 1.25rem; }
+        .legal-page a { color: var(--primary-color); }
+        .brand-title { font-size: 1.75rem; font-weight: 800; margin: 0; }
+
+        .sponsor-cta-block {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+        .legal-page .sponsor-cta {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: #FFFFFF;
+            padding: 0.9rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        /* --primary-color is a light emerald in dark mode, so white label text
+           would sit at ~2.2:1 on it. Flip the label to the dark surface colour. */
+        [data-theme="dark"] .legal-page .sponsor-cta { color: #0F172A; }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) .legal-page .sponsor-cta { color: #0F172A; }
+        }
+        .legal-page .sponsor-cta:hover { opacity: 0.9; text-decoration: none; }
+        .legal-page .sponsor-cta:active { transform: scale(0.98); }
+        .sponsor-cta-note {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin: 1rem 0 0;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <svg class="groningen-flag" width="32" height="22" viewBox="0 0 60 40" aria-label="Groningen Flag">
+                    <defs>
+                        <clipPath id="flagClip">
+                            <rect width="60" height="40" rx="4"/>
+                        </clipPath>
+                    </defs>
+                    <g clip-path="url(#flagClip)">
+                        <rect x="0" y="0" width="30" height="20" fill="#DC2626"/>
+                        <rect x="30" y="0" width="30" height="20" fill="#1D4ED8"/>
+                        <rect x="0" y="20" width="30" height="20" fill="#1D4ED8"/>
+                        <rect x="30" y="20" width="30" height="20" fill="#DC2626"/>
+                        <rect x="22" y="0" width="16" height="40" fill="#FFFFFF"/>
+                        <rect x="0" y="14" width="60" height="12" fill="#FFFFFF"/>
+                        <rect x="25" y="0" width="10" height="40" fill="#10B981"/>
+                        <rect x="0" y="16" width="60" height="8" fill="#10B981"/>
+                    </g>
+                </svg>
+                <p class="brand-title">MoiCheck</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="legal-page">
+        <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
+        <h1>Support MoiCheck</h1>
+        <p class="lede">MoiCheck is free, has no ads, and no part of it is behind a paywall. That is not going to change. If it helped you settle into Groningen and you feel like chipping in towards the running costs, this page is how.</p>
+
+        <section>
+            <h2>Who's behind this</h2>
+            <p>Hi — I'm Dor. I moved to Groningen as an expat myself, and MoiCheck started as the list I wished someone had handed me on day one: the 33 things that actually make you feel like a Stadjer, from a <em>eierbal</em> to a boat trip out of Lauwersoog.</p>
+            <p>It's a side project. There's no company behind it, no investor, no team — just me, evenings and weekends. The bucket-list items are picked because they're good, not because anyone paid for them to be there.</p>
+        </section>
+
+        <section>
+            <h2>Where the money goes</h2>
+            <p>MoiCheck runs cheaply on purpose, but it isn't free to keep online:</p>
+            <ul>
+                <li><strong>The moicheck.nl domain</strong> — roughly €10 a year.</li>
+                <li><strong>Hosting</strong> (Vercel) — currently on a free plan.</li>
+                <li><strong>Accounts &amp; progress sync</strong> (Supabase) — currently on a free plan. If enough people sign in, this becomes about €25 a month.</li>
+            </ul>
+            <p>So today the bill is small, and I cover it. Contributions go towards keeping it that way as more people use the app — and, if the free plans get outgrown, towards the monthly ones. If more comes in than the app costs, it goes towards making the app better: more items, better maps, more of the province beyond the city.</p>
+        </section>
+
+        <section>
+            <h2>Chip in</h2>
+            <div class="sponsor-cta-block">
+                <!-- FLIP-ON STEP 1: replace the href with your Stripe Payment Link. -->
+                <a class="sponsor-cta" href="REPLACE_WITH_STRIPE_PAYMENT_LINK" rel="noopener noreferrer nofollow" target="_blank">Make a one-time contribution</a>
+                <p class="sponsor-cta-note">Any amount, once. No subscription, nothing recurring. Pay with iDEAL or card.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>What it does and doesn't get you</h2>
+            <p>Nothing, on purpose — and that's the point. A contribution is a thank-you, not a purchase:</p>
+            <ul>
+                <li><strong>Every feature stays free for everyone.</strong> Nothing is unlocked by paying, and nothing ever will be.</li>
+                <li><strong>You can't buy a spot on the list.</strong> Items are chosen on merit. If a business ever pays for placement, it will be labelled as such — but the plan is that it never happens.</li>
+                <li><strong>No perks, badges, or supporter tiers.</strong> That would make this a purchase rather than a gift, which changes what it is (and drags in VAT and admin I'd rather not spend the evenings on).</li>
+                <li><strong>Suggestions are always welcome and always free.</strong> Use the <a href="index.html">contact form</a> — a contribution doesn't move your suggestion up the queue.</li>
+            </ul>
+            <p>And to be very clear: please don't feel any obligation. Using the app, telling a friend who just landed here, or sending me a good item for the list is worth just as much.</p>
+        </section>
+
+        <section>
+            <h2>Payment &amp; privacy</h2>
+            <p>Payments are handled entirely by <strong>Stripe</strong> on Stripe's own checkout page. Your card or bank details never touch MoiCheck — I never see them and never store them. What I do see, in Stripe's dashboard, is the amount, the date, and the name and email you give at checkout, which I keep for my own bookkeeping.</p>
+            <p>Contributing doesn't create a MoiCheck account and isn't linked to your bucket-list progress. Full details are in the <a href="privacy.html">Privacy Policy</a>.</p>
+        </section>
+
+        <section>
+            <h2>Questions</h2>
+            <p>Anything you want to ask before or after contributing — including asking for a refund, which I'll give without argument — email <a href="mailto:dblayzer@gmail.com">dblayzer@gmail.com</a>.</p>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>MoiCheck &bull; <a href="index.html" class="footer-link-btn">Back to app</a> &bull; <a href="privacy.html" class="footer-link-btn">Privacy Policy</a></p>
+    </footer>
+
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('moiCheckTheme');
+                if (saved === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else if (saved === 'light') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) { /* localStorage unavailable */ }
+        })();
+    </script>
+</body>
+</html>
