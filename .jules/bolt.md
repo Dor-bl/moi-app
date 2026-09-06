@@ -14,5 +14,5 @@
 **Action:** Use a `Map` to cache detached DOM elements and selectively update only dynamic state (e.g. CSS classes) when retrieving them, drastically improving render speeds.
 
 ## 2026-09-06 - Batching Supabase API Requests
-**Learning:** Looping through multiple items and making individual `await supabaseClient.from(...).upsert(...)` calls blocks the event loop and leads to severe performance degradation due to sequential network requests.
+**Learning:** Looping through multiple items and making individual `await supabaseClient.from(...).upsert(...)` calls causes network request waterfalls and leads to severe performance degradation due to sequential network requests.
 **Action:** Prepare an array of payloads inside the loop, and then perform a single `upsert(missingInCloud)` call after the loop to dramatically speed up data synchronization.

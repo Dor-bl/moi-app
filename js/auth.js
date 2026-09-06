@@ -305,7 +305,12 @@ async function syncCloudProgress() {
 
             if (missingInCloud.length > 0) {
                 if (stale()) return;
-                await supabaseClient.from('user_progress').upsert(missingInCloud);
+                const { error: upsertError } = await supabaseClient.from('user_progress').upsert(missingInCloud);
+                if (stale()) return;
+
+                if (upsertError) {
+                    console.log('Cloud sync upsert note:', upsertError.message);
+                }
             }
         }
     } catch (err) {
