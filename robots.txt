@@ -1,0 +1,7 @@
+# MoiCheck — https://moicheck.nl
+# The whole site is public and meant to be indexed; there is nothing
+# behind a login and no admin area to keep crawlers out of.
+User-agent: *
+Allow: /
+
+Sitemap: https://moicheck.nl/sitemap.xml

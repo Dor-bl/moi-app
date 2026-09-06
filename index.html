@@ -83,7 +83,10 @@
         </div>
         <div class="progress-container">
             <div class="progress-text">
-                <span id="progressCount">0 of 32 completed</span>
+                <!-- Filled by updateProgress() on init. Left empty on purpose:
+                     a hardcoded total goes stale every time an item is added
+                     to BUCKET_LIST, and this one had already drifted. -->
+                <span id="progressCount"></span>
                 <span id="currentMilestone" class="milestone-badge">Newcomer</span>
             </div>
             <div class="progress-bar">
@@ -147,7 +150,7 @@
             <h2>Your Journey</h2>
             <div class="milestone-card" id="milestoneCard">
                 <h3 id="profileMilestone">Newcomer</h3>
-                <p id="profileProgressText">0 of 32 completed</p>
+                <p id="profileProgressText"></p>
             </div>
             <div class="user-account-badge" id="userAccountBadge" style="display: none;">
                 <span class="user-status-dot"></span>
