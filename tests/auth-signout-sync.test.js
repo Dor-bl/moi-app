@@ -95,14 +95,20 @@ test('signing back in as the same account keeps local progress and uploads what 
     const cloudRows = [{ user_id: USER_A.id, item_id: 'item-1', date: '2025-08-01T10:00:00.000Z', note: 'private note from A' }];
     const supabase = createFakeSupabase({ rows: cloudRows });
     const { module } = loadAuthModule({ storage, supabaseClient: supabase });
-    module.completedItems = { ...A_PROGRESS };
+
+    // Add multiple missing items to verify batching
+    const missingItems = { ...A_PROGRESS, 'item-3': { date: '2025-08-03T10:00:00.000Z', note: '' }, 'item-4': { date: '2025-08-04T10:00:00.000Z', note: '' } };
+    module.completedItems = { ...missingItems };
     module.currentUser = USER_A;
 
     await module.syncCloudProgress();
 
-    assert.deepEqual(Object.keys(plain(module.completedItems)).sort(), ['item-1', 'item-2']);
-    assert.equal(supabase.upserts.length, 1, 'only the item the cloud does not have yet');
+    assert.deepEqual(Object.keys(plain(module.completedItems)).sort(), ['item-1', 'item-2', 'item-3', 'item-4']);
+    assert.equal(supabase.upserts.length, 3, 'only the items the cloud does not have yet');
+    assert.equal(supabase.upsertCalls, 1, 'multiple missing items are batched into a single upsert call');
     assert.equal(supabase.upserts[0].row.item_id, 'item-2');
+    assert.equal(supabase.upserts[1].row.item_id, 'item-3');
+    assert.equal(supabase.upserts[2].row.item_id, 'item-4');
 });
 
 test('a session that ended while the tab was closed leaves no progress behind on the next load', async () => {

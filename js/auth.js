@@ -282,17 +282,34 @@ async function syncCloudProgress() {
             });
             saveState();
 
+            // ⚡ Bolt Performance Optimization:
+            // Batching API Calls & O(1) Set Lookup
+            // Impact: Converts O(N) sequential HTTP requests and O(N) array scans into a single
+            // O(1) HTTP request and O(1) Set lookups. Drastically improves login speed for
+            // users syncing many local guest items to their new cloud account.
+            const cloudItemIds = new Set(data.map(d => d.item_id));
             const localEntries = Object.entries(completedItems);
+            const missingInCloud = [];
+
             for (let [itemId, localData] of localEntries) {
                 if (stale()) return;
-                const cloudMatch = data.find(d => d.item_id === itemId);
-                if (!cloudMatch) {
-                    await supabaseClient.from('user_progress').upsert({
+                if (!cloudItemIds.has(itemId)) {
+                    missingInCloud.push({
                         user_id: currentUser.id,
                         item_id: itemId,
                         note: localData.note || '',
                         date: localData.date || new Date().toISOString()
                     });
+                }
+            }
+
+            if (missingInCloud.length > 0) {
+                if (stale()) return;
+                const { error: upsertError } = await supabaseClient.from('user_progress').upsert(missingInCloud);
+                if (stale()) return;
+
+                if (upsertError) {
+                    console.log('Cloud sync upsert note:', upsertError.message);
                 }
             }
         }

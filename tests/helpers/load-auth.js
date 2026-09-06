@@ -32,11 +32,13 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
     const upserts = [];
     const deletes = [];
     const listeners = [];
+    let upsertCalls = 0;
 
     return {
         upserts,
         deletes,
         listeners,
+        get upsertCalls() { return upsertCalls; },
         emit(event, payload = null) {
             return Promise.all(listeners.map(cb => cb(event, payload)));
         },
@@ -47,7 +49,15 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
                         ? { data: null, error: selectError }
                         : { data: rows.filter(row => row[column] === value), error: null })
                 }),
-                upsert: async row => { upserts.push({ table, row }); return { error: null }; },
+                upsert: async rowOrRows => {
+                    upsertCalls++;
+                    if (Array.isArray(rowOrRows)) {
+                        rowOrRows.forEach(row => upserts.push({ table, row }));
+                    } else {
+                        upserts.push({ table, row: rowOrRows });
+                    }
+                    return { error: null };
+                },
                 delete: () => {
                     const filters = {};
                     const builder = {
