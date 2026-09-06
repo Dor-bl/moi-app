@@ -47,7 +47,7 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
                         ? { data: null, error: selectError }
                         : { data: rows.filter(row => row[column] === value), error: null })
                 }),
-                upsert: async row => { upserts.push({ table, row }); return { error: null }; },
+                upsert: async rowOrRows => { if (Array.isArray(rowOrRows)) { rowOrRows.forEach(row => upserts.push({ table, row })); } else { upserts.push({ table, row: rowOrRows }); } return { error: null }; },
                 delete: () => {
                     const filters = {};
                     const builder = {
