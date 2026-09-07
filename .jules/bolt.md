@@ -16,3 +16,7 @@
 ## 2026-09-06 - Batching Supabase API Requests
 **Learning:** Looping through multiple items and making individual `await supabaseClient.from(...).upsert(...)` calls causes network request waterfalls and leads to severe performance degradation due to sequential network requests.
 **Action:** Prepare an array of payloads inside the loop, and then perform a single `upsert(missingInCloud)` call after the loop to dramatically speed up data synchronization.
+
+## 2026-09-07 - Leaflet Marker/Popup Memory Allocation
+**Learning:** Instantiating new `L.marker` and creating new popup DOM elements (`document.createElement('div')`) inside a frequent render loop (like `renderMapMarkers`) causes severe O(N) memory allocation and garbage collection pressure on map updates (e.g., when toggling item completion).
+**Action:** Use a Map to cache Leaflet marker instances keyed by unique identifiers (e.g., `item.id + currentLang`). Only update the marker state (`marker.setIcon()`) when the state actually changes, dramatically reducing garbage collection overhead and render times.

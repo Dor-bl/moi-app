@@ -340,6 +340,8 @@ function getMapIcon(isCompleted) {
     return cachedMapIcons[cacheKey];
 }
 
+const markerCache = new Map();
+
 function renderMapMarkers() {
     if (!leafletMap || !markersGroup) return;
     markersGroup.clearLayers();
@@ -348,26 +350,39 @@ function renderMapMarkers() {
     const filteredList = getFilteredItems(currentFilter);
 
     filteredList.forEach(item => {
+        const cacheKey = `${item.id}_${currentLang}`;
         const isCompleted = !!completedItems[item.id];
         
-        const customIcon = getMapIcon(isCompleted);
+        let marker = markerCache.get(cacheKey);
 
-        const marker = L.marker(item.coords, { icon: customIcon });
+        if (!marker) {
+            const customIcon = getMapIcon(isCompleted);
+            marker = L.marker(item.coords, { icon: customIcon });
+            marker._isCompleted = isCompleted;
 
-        const popupContent = document.createElement('div');
-        popupContent.className = 'map-popup-card';
-        popupContent.innerHTML = `
-            <span class="card-category">${item.category[currentLang]}</span>
-            <h4>${item.title[currentLang]}</h4>
-            <p>${item.tip[currentLang]}</p>
-            <button class="map-popup-btn">${t.viewDetails}</button>
-        `;
+            const popupContent = document.createElement('div');
+            popupContent.className = 'map-popup-card';
+            popupContent.innerHTML = `
+                <span class="card-category">${item.category[currentLang]}</span>
+                <h4>${item.title[currentLang]}</h4>
+                <p>${item.tip[currentLang]}</p>
+                <button class="map-popup-btn">${t.viewDetails}</button>
+            `;
 
-        popupContent.querySelector('.map-popup-btn').addEventListener('click', () => {
-            openDetailModal(item);
-        });
+            popupContent.querySelector('.map-popup-btn').addEventListener('click', () => {
+                openDetailModal(item);
+            });
 
-        marker.bindPopup(popupContent);
+            marker.bindPopup(popupContent);
+            markerCache.set(cacheKey, marker);
+        } else {
+            if (marker._isCompleted !== isCompleted) {
+                const customIcon = getMapIcon(isCompleted);
+                marker.setIcon(customIcon);
+                marker._isCompleted = isCompleted;
+            }
+        }
+
         markersGroup.addLayer(marker);
     });
 }
