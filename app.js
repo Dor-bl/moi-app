@@ -263,9 +263,10 @@ function setLanguage(lang) {
     updateLanguageUI();
     renderList();
     updateProgress();
-    if (currentView === 'map' && leafletMap) {
-        renderMapMarkers();
-    }
+    // The pins carry no text, and popups are built on open, so the map needs
+    // nothing here beyond closing a popup that is already showing the old
+    // language. renderList re-syncs the markers themselves when the map is up.
+    if (leafletMap) leafletMap.closePopup();
     
     if (detailModal.classList.contains('active') && selectedItemId) {
         persistOpenNote();
@@ -340,36 +341,85 @@ function getMapIcon(isCompleted) {
     return cachedMapIcons[cacheKey];
 }
 
+// Markers are built once per item and kept for the life of the map. Leaflet
+// destroys a marker's pin element whenever the marker leaves the map, so
+// clearing the group on every render rebuilt all 33 pins just to recolour the
+// single one that was toggled.
+const mapMarkers = new Map();
+
+// Popup content is built when the popup opens rather than up front, so the DOM
+// is only paid for on the pins that are actually opened and a card cannot hold
+// text in a language the user has since switched away from. Leaflet calls this
+// each time it fills the popup.
+function buildMapPopup(item) {
+    const t = UI_TRANSLATIONS[currentLang];
+
+    const popupContent = document.createElement('div');
+    popupContent.className = 'map-popup-card';
+    popupContent.innerHTML = `
+        <span class="card-category">${item.category[currentLang]}</span>
+        <h4>${item.title[currentLang]}</h4>
+        <p>${item.tip[currentLang]}</p>
+        <button class="map-popup-btn">${t.viewDetails}</button>
+    `;
+
+    popupContent.querySelector('.map-popup-btn').addEventListener('click', () => {
+        openDetailModal(item);
+    });
+
+    return popupContent;
+}
+
+function getMapMarker(item) {
+    let marker = mapMarkers.get(item.id);
+    if (!marker) {
+        marker = L.marker(item.coords, { icon: getMapIcon(!!completedItems[item.id]) });
+        marker.bindPopup(() => buildMapPopup(item));
+        mapMarkers.set(item.id, marker);
+    }
+    return marker;
+}
+
+// getMapIcon hands back one of two shared instances, so comparing against the
+// marker's current icon is enough to tell whether the pin needs repainting.
+function setMarkerIcon(marker, isCompleted) {
+    const icon = getMapIcon(isCompleted);
+    if (marker.options.icon !== icon) {
+        marker.setIcon(icon);
+    }
+}
+
+// Brings the map in line with the current filter and completion state: adds and
+// removes only the markers whose visibility changed, and repaints only the pins
+// whose colour is wrong.
 function renderMapMarkers() {
     if (!leafletMap || !markersGroup) return;
-    markersGroup.clearLayers();
 
-    const t = UI_TRANSLATIONS[currentLang];
-    const filteredList = getFilteredItems(currentFilter);
+    const visibleIds = new Set();
 
-    filteredList.forEach(item => {
-        const isCompleted = !!completedItems[item.id];
-        
-        const customIcon = getMapIcon(isCompleted);
-
-        const marker = L.marker(item.coords, { icon: customIcon });
-
-        const popupContent = document.createElement('div');
-        popupContent.className = 'map-popup-card';
-        popupContent.innerHTML = `
-            <span class="card-category">${item.category[currentLang]}</span>
-            <h4>${item.title[currentLang]}</h4>
-            <p>${item.tip[currentLang]}</p>
-            <button class="map-popup-btn">${t.viewDetails}</button>
-        `;
-
-        popupContent.querySelector('.map-popup-btn').addEventListener('click', () => {
-            openDetailModal(item);
-        });
-
-        marker.bindPopup(popupContent);
-        markersGroup.addLayer(marker);
+    getFilteredItems(currentFilter).forEach(item => {
+        visibleIds.add(item.id);
+        const marker = getMapMarker(item);
+        setMarkerIcon(marker, !!completedItems[item.id]);
+        if (!markersGroup.hasLayer(marker)) {
+            markersGroup.addLayer(marker);
+        }
     });
+
+    mapMarkers.forEach((marker, id) => {
+        if (!visibleIds.has(id) && markersGroup.hasLayer(marker)) {
+            markersGroup.removeLayer(marker);
+        }
+    });
+}
+
+// Toggling an item repaints exactly one pin, so the rest of the map is left
+// untouched. A no-op until the map has been opened and the marker exists.
+function updateMapMarker(id) {
+    const marker = mapMarkers.get(id);
+    if (marker) {
+        setMarkerIcon(marker, !!completedItems[id]);
+    }
 }
 
 function isCompletedCollapsed(count) {
@@ -533,9 +583,7 @@ function toggleComplete(id, event = null) {
         card.classList.toggle('completed', !isCompleted);
     }
     scheduleListResort();
-    if (currentView === 'map' && leafletMap) {
-        renderMapMarkers();
-    }
+    updateMapMarker(id);
 
     updateProgress();
     
