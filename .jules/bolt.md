@@ -17,6 +17,6 @@
 **Learning:** Looping through multiple items and making individual `await supabaseClient.from(...).upsert(...)` calls causes network request waterfalls and leads to severe performance degradation due to sequential network requests.
 **Action:** Prepare an array of payloads inside the loop, and then perform a single `upsert(missingInCloud)` call after the loop to dramatically speed up data synchronization.
 
-## 2026-09-07 - Leaflet Marker/Popup Memory Allocation
-**Learning:** Instantiating new `L.marker` and creating new popup DOM elements (`document.createElement('div')`) inside a frequent render loop (like `renderMapMarkers`) causes severe O(N) memory allocation and garbage collection pressure on map updates (e.g., when toggling item completion).
-**Action:** Use a Map to cache Leaflet marker instances keyed by unique identifiers (e.g., `item.id + currentLang`). Only update the marker state (`marker.setIcon()`) when the state actually changes, dramatically reducing garbage collection overhead and render times.
+## 2026-09-07 - Rejected: Leaflet Marker Caching Micro-optimization
+**Learning:** Caching Leaflet markers to prevent O(N) DOM allocations on a small list (~38 items) is a micro-optimization with unmeasurable impact. It adds state complexity and maintenance liability (e.g. stale popups if data becomes dynamic) for sub-millisecond gains. Furthermore, combining caching with `markersGroup.clearLayers()` and `addLayer()` on every render still incurs O(N) Leaflet rebuilding costs, defeating the purpose of the cache.
+**Action:** Do not optimize cold paths or small static lists. Focus on true bottlenecks that have measurable user impact. If a map render with a large list ever becomes a bottleneck, the correct architectural fix is to maintain a persistent layer group, only updating (`setIcon`) the specific marker that changed, rather than rebuilding or re-adding the entire set.
