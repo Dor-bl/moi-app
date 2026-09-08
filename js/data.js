@@ -270,6 +270,15 @@ const BUCKET_LIST = [
         tip: { en: 'Small rescue boats leave straight from the fishing harbour and chug out to a sandbank in the Waddenzee where dozens of grey and common seals haul out to sunbathe — the ride is barely 45 minutes, but the wind off the Wad means a warm coat even on a summer day.', nl: 'Kleine rescueboten vertrekken direct vanaf de vissershaven en varen naar een zandbank in de Waddenzee waar tientallen grijze en gewone zeehonden liggen te zonnen — de tocht duurt nog geen drie kwartier, maar door de wind op het Wad trek je ook in de zomer een warme jas aan.' },
         url: 'https://lauwersoog.nl/activiteiten/rescueboot-expedities/zeehonden-experience/',
         urlLabel: { en: 'Lauwersoog Seal Boat Trips 🦭', nl: 'Zeehondentochten Lauwersoog 🦭' }
+    },
+    {
+        id: '34',
+        coords: [53.4084, 6.1986],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Visit the Wereld Erfgoed Centrum in Lauwersoog', nl: 'Bezoek het Wereld Erfgoed Centrum in Lauwersoog' },
+        tip: { en: 'The new home of Zeehondencentrum Pieterburen, right on the Waddenzee harbour — watch seals recover in the seal hospital, then head to the rooftop for a wide view over the Lauwersmeer and Wad.', nl: 'Het nieuwe onderkomen van Zeehondencentrum Pieterburen, direct aan de haven bij de Waddenzee — kijk mee in het zeehondenziekenhuis en klim daarna naar het dakterras voor een weids uitzicht over het Lauwersmeer en de Wad.' },
+        url: 'https://ontdekwec.nl',
+        urlLabel: { en: 'WEC Visitor Info 🦭', nl: 'WEC Bezoekersinfo 🦭' }
     }
 ];
 
