@@ -275,7 +275,7 @@ const BUCKET_LIST = [
         id: '34',
         coords: [53.4084, 6.1986],
         category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
-        title: { en: 'Visit the Wereld Erfgoed Centrum in Lauwersoog', nl: 'Bezoek het Wereld Erfgoed Centrum in Lauwersoog' },
+        title: { en: 'Visit the WEC (Werelderfgoedcentrum Waddenzee) in Lauwersoog', nl: 'Bezoek het WEC (Werelderfgoedcentrum Waddenzee) in Lauwersoog' },
         tip: { en: 'The new home of Zeehondencentrum Pieterburen, right on the Waddenzee harbour — watch seals recover in the seal hospital, then head to the rooftop for a wide view over the Lauwersmeer and Wad.', nl: 'Het nieuwe onderkomen van Zeehondencentrum Pieterburen, direct aan de haven bij de Waddenzee — kijk mee in het zeehondenziekenhuis en klim daarna naar het dakterras voor een weids uitzicht over het Lauwersmeer en het Wad.' },
         url: 'https://ontdekwec.nl',
         urlLabel: { en: 'WEC Visitor Info 🦭', nl: 'WEC Bezoekersinfo 🦭' }
