@@ -309,11 +309,21 @@ function initOrUpdateMap() {
         markersGroup = L.layerGroup().addTo(leafletMap);
     }
 
-    setTimeout(() => {
-        leafletMap.invalidateSize();
-    }, 100);
+    // The container is only sized once mapWrapper is visible, so re-measure
+    // before any bounds maths runs off a stale (or zero) size.
+    leafletMap.invalidateSize();
 
-    renderMapMarkers();
+    // Opening the map always reframes it: the filter may well have changed while
+    // the list was up, and the previous view could be pointing anywhere.
+    renderMapMarkers({ refit: true });
+
+    // Some browsers report the final container size only after layout settles,
+    // which would leave that first fit framed off the old size.
+    setTimeout(() => {
+        if (!leafletMap) return;
+        leafletMap.invalidateSize();
+        fitMapToVisibleMarkers();
+    }, 100);
 }
 
 // ⚡ Bolt Performance Optimization:
@@ -389,10 +399,39 @@ function setMarkerIcon(marker, isCompleted) {
     }
 }
 
+// Keeps every visible pin on screen. Padding leaves room for the pin graphic and
+// the popup nub at the edges of the container, and the zoom cap keeps a filter
+// that matches a single item from slamming the map into street level.
+const MAP_FIT_PADDING = [48, 48];
+const MAP_FIT_MAX_ZOOM = 15;
+
+function fitMapToVisibleMarkers() {
+    if (!leafletMap || !markersGroup) return;
+
+    const bounds = L.latLngBounds([]);
+    markersGroup.eachLayer(marker => bounds.extend(marker.getLatLng()));
+
+    // A filter with nothing left to show has no bounds to fit; leave the view
+    // where it is rather than throwing the user somewhere arbitrary.
+    if (!bounds.isValid()) return;
+
+    leafletMap.fitBounds(bounds, {
+        padding: MAP_FIT_PADDING,
+        maxZoom: MAP_FIT_MAX_ZOOM
+    });
+}
+
+// The set of pins the map was last framed around. Refitting is tied to this
+// changing rather than to every render, so ticking an item off or switching
+// language repaints pins without yanking the map away from wherever the user
+// has panned it.
+let fittedMarkerKey = null;
+
 // Brings the map in line with the current filter and completion state: adds and
 // removes only the markers whose visibility changed, and repaints only the pins
-// whose colour is wrong.
-function renderMapMarkers() {
+// whose colour is wrong. Whenever that changes which pins are on the map, the
+// view is refitted so the whole filtered set stays in frame.
+function renderMapMarkers({ refit = false } = {}) {
     if (!leafletMap || !markersGroup) return;
 
     const visibleIds = new Set();
@@ -411,6 +450,12 @@ function renderMapMarkers() {
             markersGroup.removeLayer(marker);
         }
     });
+
+    const markerKey = [...visibleIds].join('|');
+    if (refit || markerKey !== fittedMarkerKey) {
+        fittedMarkerKey = markerKey;
+        fitMapToVisibleMarkers();
+    }
 }
 
 // Toggling an item repaints exactly one pin, so the rest of the map is left
