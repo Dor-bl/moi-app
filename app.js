@@ -1108,7 +1108,7 @@ function setupEventListeners() {
         const subjectVal = document.getElementById('contactSubject').value;
         const messageVal = document.getElementById('contactMessage').value;
 
-        const targetEmail = atob('ZGJsYXl6ZXJAZ21haWwuY29t');
+        const targetEmail = 'hallo@moicheck.nl';
         
         try {
             const response = await fetch(`https://formsubmit.co/ajax/${targetEmail}`, {
