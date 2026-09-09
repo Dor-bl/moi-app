@@ -747,15 +747,17 @@ function memoryTimestamp(value) {
 // Cache Intl.DateTimeFormat instances. toLocaleDateString recreates these internally
 // on every call, which is very slow in loops (like rendering the memory list).
 const dateFormatters = {
-    'en': new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-    'nl': new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
+    en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
 };
 
 function formatMemoryDate(value) {
     if (!value) return '';
     const parsed = new Date(value);
     if (isNaN(parsed.getTime())) return '';
-    const formatter = dateFormatters[currentLang] || dateFormatters['en'];
+    // currentLang comes from localStorage, so a keyed lookup could walk the prototype
+    // chain ('constructor' etc.) and return a non-formatter. Branch explicitly instead.
+    const formatter = currentLang === 'nl' ? dateFormatters.nl : dateFormatters.en;
     return formatter.format(parsed);
 }
 
