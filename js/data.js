@@ -1,4 +1,4 @@
-// Data Module - Shared Global Exports: BUCKET_LIST, MILESTONES, CATEGORY_BADGES, UI_TRANSLATIONS
+// Data Module - Shared Global Exports: BUCKET_LIST, MILESTONES, CATEGORY_BADGES, UI_TRANSLATIONS, ALLOWED_LANGS
 
 const BUCKET_LIST = [
     {
@@ -415,6 +415,7 @@ const UI_TRANSLATIONS = {
         themeLight: 'Light',
         themeDark: 'Dark',
         themeSystem: 'System',
+        languageHeader: 'Language',
         footerPrivacy: 'Privacy Policy',
         accountHeader: 'Account',
         deleteAccountNotice: 'Deleting your account removes your cloud progress and notes for good.',
@@ -499,6 +500,7 @@ const UI_TRANSLATIONS = {
         themeLight: 'Licht',
         themeDark: 'Donker',
         themeSystem: 'Systeem',
+        languageHeader: 'Taal',
         footerPrivacy: 'Privacybeleid',
         accountHeader: 'Account',
         deleteAccountNotice: 'Als je je account verwijdert, worden je voortgang en notities in de cloud definitief gewist.',
@@ -515,3 +517,8 @@ const UI_TRANSLATIONS = {
         deleteError: 'De verwijdering kon niet worden afgerond. Je account is nog actief. Probeer het opnieuw of mail ons via de privacybeleid-pagina.'
     }
 };
+
+// The languages the UI actually ships, derived from the translations above so a
+// new locale needs no second edit here. Object.keys yields own enumerable keys
+// only, so a stored value like 'constructor' can never pass as a language.
+const ALLOWED_LANGS = Object.keys(UI_TRANSLATIONS);

@@ -15,8 +15,12 @@ import { chromium } from 'playwright';
     await page.click('.bucket-card .checkbox');
     await page.waitForTimeout(1000); // Wait for resort
 
-    // Change language to NL
-    await page.click('.lang-btn[data-lang="nl"]');
+    // Change language to NL (now in the settings modal)
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(300);
+    await page.click('.lang-option-btn[data-lang="nl"]');
+    await page.waitForTimeout(300);
+    await page.click('#closeSettingsModal');
     await page.waitForTimeout(500);
 
     // Toggle filter

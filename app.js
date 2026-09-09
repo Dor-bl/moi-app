@@ -2,7 +2,12 @@
 
 // State
 let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
-let currentLang = localStorage.getItem('moiCheckLang') || 'en';
+// Validated on read, not just on write: a stored value that is not a language we
+// ship ('undefined' from an older build, a hand-edited key, 'constructor' and
+// friends off the prototype) otherwise reaches UI_TRANSLATIONS[currentLang] and
+// throws during init, which renders an empty page rather than a wrong language.
+const storedLang = localStorage.getItem('moiCheckLang');
+let currentLang = ALLOWED_LANGS.includes(storedLang) ? storedLang : 'en';
 let currentFilter = 'All';
 let currentView = 'list';
 let selectedItemId = null;
@@ -43,7 +48,7 @@ const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
 const currentMilestone = document.getElementById('currentMilestone');
-const langBtns = document.querySelectorAll('.lang-btn');
+const langBtns = document.querySelectorAll('.lang-option-btn');
 const listViewBtn = document.getElementById('listViewBtn');
 const mapViewBtn = document.getElementById('mapViewBtn');
 
@@ -67,6 +72,7 @@ const profileProgressText = document.getElementById('profileProgressText');
 const completedList = document.getElementById('completedList');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
 const deleteAccountModal = document.getElementById('deleteAccountModal');
@@ -166,7 +172,9 @@ function updateLanguageUI() {
     const t = UI_TRANSLATIONS[currentLang];
 
     langBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === currentLang);
+        const isCurrent = btn.dataset.lang === currentLang;
+        btn.classList.toggle('active', isCurrent);
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
     });
 
     document.getElementById('txtListView').textContent = t.viewList;
@@ -226,6 +234,8 @@ function updateLanguageUI() {
     document.getElementById('txtThemeLight').textContent = t.themeLight;
     document.getElementById('txtThemeDark').textContent = t.themeDark;
     document.getElementById('txtThemeSystem').textContent = t.themeSystem;
+    const txtLanguageHeader = document.getElementById('txtLanguageHeader');
+    if (txtLanguageHeader) txtLanguageHeader.textContent = t.languageHeader;
 
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
@@ -257,7 +267,7 @@ function updateLanguageUI() {
 }
 
 function setLanguage(lang) {
-    if (lang === currentLang) return;
+    if (!ALLOWED_LANGS.includes(lang) || lang === currentLang) return;
     currentLang = lang;
     localStorage.setItem('moiCheckLang', currentLang);
     updateLanguageUI();
@@ -930,16 +940,20 @@ function setupEventListeners() {
     });
 
     // Auth Modal events
-    authBtn.addEventListener('click', async () => {
-        if (currentUser && supabaseClient) {
-            await supabaseClient.auth.signOut();
-        } else {
-            authActions.style.display = 'block';
-            magicLinkSuccess.style.display = 'none';
-            document.getElementById('magicFinish').style.display = 'none';
-            authModal.classList.add('active');
-        }
+    authBtn.addEventListener('click', () => {
+        authActions.style.display = 'block';
+        magicLinkSuccess.style.display = 'none';
+        document.getElementById('magicFinish').style.display = 'none';
+        authModal.classList.add('active');
     });
+
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', async () => {
+            if (!supabaseClient) return;
+            closeProfileModal();
+            await supabaseClient.auth.signOut();
+        });
+    }
 
     closeAuthModalBtn.addEventListener('click', () => {
         authModal.classList.remove('active');
@@ -1017,7 +1031,7 @@ function setupEventListeners() {
     // Language buttons
     langBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            setLanguage(e.target.dataset.lang);
+            setLanguage(e.currentTarget.dataset.lang);
         });
     });
 

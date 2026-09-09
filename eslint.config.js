@@ -18,6 +18,7 @@ export default [
         MILESTONES: "readonly",
         CATEGORY_BADGES: "readonly",
         UI_TRANSLATIONS: "readonly",
+        ALLOWED_LANGS: "readonly",
         ALLOWED_THEMES: "readonly",
         applyTheme: "readonly",
         updateThemeButtonsUI: "readonly",
