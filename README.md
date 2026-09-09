@@ -31,7 +31,6 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 [![Resend](https://img.shields.io/badge/Resend-000000?style=for-the-badge&logo=resend&logoColor=white)](https://resend.com/)
-[![FormSubmit](https://img.shields.io/badge/FormSubmit-FF6B6B?style=for-the-badge&logo=mail.ru&logoColor=white)](https://formsubmit.co/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=Leaflet&logoColor=white)](https://leafletjs.com/)
 
 - **HTML5**: Semantic structure and accessible DOM layout.
@@ -39,7 +38,7 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 - **Vanilla JavaScript (ES6+)**: Client-side application state management, dynamic DOM rendering, and local persistence.
 - **Supabase**: Backend-as-a-Service providing passwordless magic-link authentication, Google OAuth, and real-time database synchronization.
 - **Vercel**: Edge network deployment and fast static site hosting.
-- **Resend & FormSubmit**: Email infrastructure supporting contact modal submissions and user communication.
+- **Resend**: Email infrastructure — Supabase's custom SMTP for magic links, and the sender behind contact-form submissions.
 - **Leaflet & OpenStreetMap**: Interactive geospatial map view and customized location markers across Groningen.
 
 ---
@@ -162,6 +161,44 @@ match upstream byte for byte, so it must never be edited to satisfy a lint rule.
 Leaflet is still loaded from unpkg, but with an exact version and an SRI hash
 (`index.html:39-40`), which gives the same guarantee. If you ever bump it, regenerate the
 `integrity` value — dropping it would quietly remove the protection.
+
+### Contact form (Supabase Edge Function)
+
+The contact modal posts to an Edge Function rather than a third-party form service —
+see [`docs/decisions/formsubmit-gdpr-basis.md`](docs/decisions/formsubmit-gdpr-basis.md)
+for why. The function validates the submission and hands it to Resend, which delivers it
+to `hallo@moicheck.nl`.
+
+**The function must be deployed before the client change reaches production**, or the
+form will POST to an endpoint that does not exist yet:
+
+```bash
+supabase link --project-ref <your-project-ref>   # once
+supabase secrets set RESEND_API_KEY=re_xxxxxxxx  # from resend.com/api-keys
+supabase functions deploy contact
+```
+
+The `from` address (`noreply@moicheck.nl` in `supabase/functions/contact/index.ts`) has
+to be on a domain verified with Resend — the same requirement as the magic-link sender
+described under *Troubleshooting* below. Delivery failures never reach the visitor; read
+them in *Edge Functions -> contact -> Logs* in the Supabase dashboard.
+
+Verify end to end after deploying:
+
+```bash
+curl -X POST "https://<project-ref>.supabase.co/functions/v1/contact" \
+  -H "Authorization: Bearer <anon-key>" \
+  -H "Content-Type: application/json" \
+  -H "Origin: https://moicheck.nl" \
+  -d '{"name":"Test","email":"you@example.com","subject":"Say Moi","message":"Test"}'
+```
+
+A `{"ok":true}` and a message in the inbox means it works. Submitting the real form is
+the other half of the check — it exercises CORS, which curl above only approximates.
+
+Spam handling is deliberately small: a honeypot field the form fills only for bots, and a
+per-instance rate limit. If that ever stops being enough, add Cloudflare Turnstile rather
+than building a shared-state limiter.
 
 ### Account deletion (GDPR right to erasure)
 

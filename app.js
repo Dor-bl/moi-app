@@ -1115,25 +1115,33 @@ function setupEventListeners() {
         const subjectVal = document.getElementById('contactSubject').value;
         const messageVal = document.getElementById('contactMessage').value;
 
-        const targetEmail = 'hallo@moicheck.nl';
-        
+        // Bots fill this; people never see it. Sent along so the function can
+        // drop the submission silently.
+        const websiteVal = document.getElementById('contactWebsite').value;
+
         try {
-            const response = await fetch(`https://formsubmit.co/ajax/${targetEmail}`, {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                throw new Error('Supabase is not configured, so the contact function is unreachable');
+            }
+
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/contact`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY
                 },
                 body: JSON.stringify({
                     name: nameVal,
                     email: emailVal,
-                    _subject: `[MoiCheck Feedback] ${subjectVal}`,
+                    subject: subjectVal,
                     message: messageVal,
-                    _captcha: 'false'
+                    website: websiteVal
                 })
             });
             if (!response.ok) {
-                throw new Error(`FormSubmit request failed with status ${response.status}`);
+                throw new Error(`Contact function failed with status ${response.status}`);
             }
 
             contactForm.style.display = 'none';

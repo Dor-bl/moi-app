@@ -80,6 +80,6 @@ export default [
     // "Updating the vendored Supabase client"). Linting them would report on
     // somebody else's minified output, and editing them to satisfy the rules
     // is exactly what must not happen — the bytes have to match upstream.
-    ignores: ["node_modules/", ".claude/", "assets/vendor/"],
+    ignores: ["node_modules/", ".claude/", "assets/vendor/", "supabase/functions/"],
   },
 ];
