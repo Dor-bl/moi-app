@@ -17,10 +17,10 @@ transfer.
 
 | Question | Answer |
 | --- | --- |
-| Is there a DPA or GDPR addendum? | **No.** None published, none discoverable. |
-| Who is the controller's counterparty? | **Not disclosed.** No legal entity or address is named; the domain is registered behind Cloudflare with WHOIS privacy. The only contact point is `support@formsubmit.co`. |
-| Where is data stored and processed? | **Not disclosed.** No region, hosting provider or data-centre location is stated. |
-| Are sub-processors named? | **No list published.** |
+| Is there a DPA or GDPR addendum? | **None found.** Nothing published that we could locate, and nothing discoverable by search. |
+| Who is the controller's counterparty? | **Not disclosed as far as we can tell.** No legal entity or address is named; the domain is registered behind Cloudflare with WHOIS privacy. The only contact point is `support@formsubmit.co`. |
+| Where is data stored and processed? | **Not disclosed as far as we can tell.** No region, hosting provider or data-centre location is stated. |
+| Are sub-processors named? | **No list found.** |
 | Is a retention period stated? | FormSubmit's documentation states submissions are **retained 30 days** and are retrievable from a submissions API (rate-limited to 5 requests/day). Their privacy policy does not mention this. |
 | What legal terms exist at all? | A short, general privacy statement (`formsubmit.co/privacy.pdf`), dated **17 January 2019**. It asserts FormSubmit "doesn't collect personally identifiable information", says the form owner is "responsible and the rightful owner" of what the form collects, and contains no Article 28 processor terms. |
 
@@ -74,10 +74,10 @@ definitively: email `support@formsubmit.co` and ask.
 ## Decision
 
 **Interim: keep FormSubmit, and disclose the gap honestly.** `privacy.html` now states
-that FormSubmit publishes no processing agreement, does not disclose its operator,
-processing location or sub-processors, and retains submissions for 30 days — and offers
-visitors a direct `mailto:` as a way to reach the same inbox without passing through
-FormSubmit at all. Being unable to evidence a processing agreement is not fixed by
+that we could not find a processing agreement from FormSubmit and that, as far as we can
+tell, it does not disclose its operator, processing location or sub-processors; it also
+notes the 30-day retention FormSubmit documents, and offers visitors a direct `mailto:`
+as a way to reach the same inbox without passing through FormSubmit at all. Being unable to evidence a processing agreement is not fixed by
 describing it, but an accurate policy is strictly better than a policy that implies a
 relationship we do not have, and the `mailto:` gives a privacy-conscious visitor a real
 alternative today.
