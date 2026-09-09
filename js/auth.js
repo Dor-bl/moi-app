@@ -45,11 +45,11 @@ function updateAuthBtnState(isLoggedIn) {
     // header grew by the width of an email address the moment someone logged
     // in, which is what crowded the row out on a phone.
     if (isLoggedIn && currentUser) {
-        const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : 'User';
+        const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : t.accountNameFallback;
         authBtn.hidden = true;
         if (userAccountBadge && userAccountEmail) {
             userAccountBadge.style.display = 'flex';
-            userAccountEmail.textContent = `☁️ Synced as ${currentUser.email || shortEmail}`;
+            userAccountEmail.textContent = t.syncedAs.replace('{account}', currentUser.email || shortEmail);
         }
     } else {
         authBtn.hidden = false;

@@ -217,6 +217,7 @@ function updateLanguageUI() {
     document.getElementById('contactPrivacyNote').innerHTML = t.contactPrivacyNote;
     document.getElementById('contactSuccessTitle').textContent = t.successTitle;
     document.getElementById('contactSuccessText').textContent = t.successText;
+    contactSuccessClose.textContent = t.closeDialog;
 
     const select = document.getElementById('contactSubject');
     select.options[0].text = t.optSuggest;
