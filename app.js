@@ -43,7 +43,7 @@ const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
 const currentMilestone = document.getElementById('currentMilestone');
-const langBtns = document.querySelectorAll('.lang-btn');
+const langBtns = document.querySelectorAll('.lang-option-btn');
 const listViewBtn = document.getElementById('listViewBtn');
 const mapViewBtn = document.getElementById('mapViewBtn');
 
@@ -67,6 +67,7 @@ const profileProgressText = document.getElementById('profileProgressText');
 const completedList = document.getElementById('completedList');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
 const deleteAccountModal = document.getElementById('deleteAccountModal');
@@ -166,7 +167,9 @@ function updateLanguageUI() {
     const t = UI_TRANSLATIONS[currentLang];
 
     langBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === currentLang);
+        const isCurrent = btn.dataset.lang === currentLang;
+        btn.classList.toggle('active', isCurrent);
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
     });
 
     document.getElementById('txtListView').textContent = t.viewList;
@@ -226,6 +229,8 @@ function updateLanguageUI() {
     document.getElementById('txtThemeLight').textContent = t.themeLight;
     document.getElementById('txtThemeDark').textContent = t.themeDark;
     document.getElementById('txtThemeSystem').textContent = t.themeSystem;
+    const txtLanguageHeader = document.getElementById('txtLanguageHeader');
+    if (txtLanguageHeader) txtLanguageHeader.textContent = t.languageHeader;
 
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
@@ -257,7 +262,7 @@ function updateLanguageUI() {
 }
 
 function setLanguage(lang) {
-    if (lang === currentLang) return;
+    if (!UI_TRANSLATIONS[lang] || lang === currentLang) return;
     currentLang = lang;
     localStorage.setItem('moiCheckLang', currentLang);
     updateLanguageUI();
@@ -858,16 +863,20 @@ function setupEventListeners() {
     });
 
     // Auth Modal events
-    authBtn.addEventListener('click', async () => {
-        if (currentUser && supabaseClient) {
-            await supabaseClient.auth.signOut();
-        } else {
-            authActions.style.display = 'block';
-            magicLinkSuccess.style.display = 'none';
-            document.getElementById('magicFinish').style.display = 'none';
-            authModal.classList.add('active');
-        }
+    authBtn.addEventListener('click', () => {
+        authActions.style.display = 'block';
+        magicLinkSuccess.style.display = 'none';
+        document.getElementById('magicFinish').style.display = 'none';
+        authModal.classList.add('active');
     });
+
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', async () => {
+            if (!supabaseClient) return;
+            closeProfileModal();
+            await supabaseClient.auth.signOut();
+        });
+    }
 
     closeAuthModalBtn.addEventListener('click', () => {
         authModal.classList.remove('active');
@@ -945,7 +954,7 @@ function setupEventListeners() {
     // Language buttons
     langBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            setLanguage(e.target.dataset.lang);
+            setLanguage(e.currentTarget.dataset.lang);
         });
     });
 
