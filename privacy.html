@@ -148,7 +148,7 @@
         <section>
             <h2>2. Who processes your data</h2>
             <ul>
-                <li><strong>Supabase</strong> — hosts our database and handles authentication (magic-link emails and Google sign-in). Your email, name, and bucket-list progress/notes are stored in Supabase's infrastructure. The code that talks to Supabase is delivered by <strong>jsDelivr</strong>, a content delivery network, which sees your IP address and general request metadata on every page load; sign-in cannot work without it.</li>
+                <li><strong>Supabase</strong> — hosts our database and handles authentication (magic-link emails and Google sign-in). Your email, name, and bucket-list progress/notes are stored in Supabase's infrastructure. The code that talks to Supabase is served by MoiCheck itself rather than by an outside network, so loading it reaches no third party.</li>
                 <li><strong>Google</strong> — if you choose "Continue with Google", Google handles the sign-in and shares your email and name with us via Supabase.</li>
                 <li><strong>FormSubmit.co</strong> — delivers contact-form submissions (name, email, subject, message) to our inbox by email.</li>
                 <li><strong>OpenStreetMap, Leaflet and unpkg</strong> — the map is drawn with Leaflet, whose script and stylesheet come from the <strong>unpkg</strong> content delivery network, and the map tiles come directly from OpenStreetMap's tile servers. Both, like any web request, will see your IP address and general request metadata. Neither is contacted until you switch to Map view, so if you only ever use the list, no request reaches them at all.</li>
