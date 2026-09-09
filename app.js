@@ -291,12 +291,84 @@ function switchView(view) {
         listViewBtn.classList.remove('active');
         listContainer.style.display = 'none';
         mapWrapper.style.display = 'block';
-        initOrUpdateMap();
+        // initOrUpdateMap awaits the Leaflet load, so anything that throws past
+        // it — Leaflet itself failing to build the map, say — would come back as
+        // an unhandled rejection rather than the plain console error it was
+        // while this ran synchronously.
+        initOrUpdateMap().catch(err => console.error('Map view failed to open:', err));
     }
 }
 
-function initOrUpdateMap() {
-    if (!window.L) return;
+// Leaflet is only needed once someone opens the map, so its stylesheet and
+// script are fetched on first use rather than on every page load. A visitor who
+// never leaves the list view makes no request to unpkg at all.
+const LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+const LEAFLET_JS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+const LEAFLET_CSS_SRI = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+const LEAFLET_JS_SRI = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+
+let leafletLoad = null;
+
+function loadLeaflet() {
+    if (window.L) return Promise.resolve();
+    if (leafletLoad) return leafletLoad;
+
+    const styles = document.createElement('link');
+    styles.rel = 'stylesheet';
+    styles.href = LEAFLET_CSS_URL;
+    styles.integrity = LEAFLET_CSS_SRI;
+    styles.crossOrigin = '';
+    // Leaflet lays the map out from its stylesheet, so the map is built only
+    // once that has settled — the head tags this replaced gave the same
+    // ordering for free. A stylesheet that never arrives shouldn't cost the
+    // visitor the map itself, though, so failure here settles rather than
+    // throws and the map comes up unstyled instead of not at all.
+    const stylesSettled = new Promise(settle => {
+        styles.onload = settle;
+        styles.onerror = settle;
+    });
+    document.head.appendChild(styles);
+
+    const script = document.createElement('script');
+    script.src = LEAFLET_JS_URL;
+    script.integrity = LEAFLET_JS_SRI;
+    script.crossOrigin = '';
+    const scriptLoaded = new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => {
+            // Take the dead tags back out. Re-opening the map appends a fresh
+            // pair, and against a blocked CDN that would otherwise stack up a
+            // link and a script in the head on every attempt.
+            styles.remove();
+            script.remove();
+            reject(new Error('Leaflet failed to load'));
+        };
+    });
+    document.head.appendChild(script);
+
+    leafletLoad = Promise.all([stylesSettled, scriptLoaded]).then(() => undefined);
+    leafletLoad.catch(() => {
+        // Forget the failed attempt so re-opening the map tries again, the way
+        // a reload used to after a blocked or dropped CDN request.
+        leafletLoad = null;
+    });
+
+    return leafletLoad;
+}
+
+async function initOrUpdateMap() {
+    try {
+        await loadLeaflet();
+    } catch {
+        // Same outcome as the old `if (!window.L) return`: no map, but the rest
+        // of the app carries on working.
+        return;
+    }
+
+    // The script can land after the visitor has gone back to the list; building
+    // the map into a hidden container measures nothing useful, so leave it for
+    // the next time they open the map.
+    if (currentView !== 'map') return;
 
     if (!leafletMap) {
         leafletMap = L.map('mapContainer').setView([53.2194, 6.5665], 13);
