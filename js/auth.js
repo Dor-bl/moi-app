@@ -39,12 +39,12 @@ function updateAuthBtnState(isLoggedIn) {
     if (!authBtn) return;
 
     if (isLoggedIn && currentUser) {
-        const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : 'User';
+        const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : t.accountNameFallback;
         authBtn.textContent = `${shortEmail} (${t.signOut})`;
         authBtn.classList.add('user-logged-in');
         if (userAccountBadge && userAccountEmail) {
             userAccountBadge.style.display = 'flex';
-            userAccountEmail.textContent = `☁️ Synced as ${currentUser.email || shortEmail}`;
+            userAccountEmail.textContent = t.syncedAs.replace('{account}', currentUser.email || shortEmail);
         }
     } else {
         authBtn.textContent = t.signIn;
