@@ -22,7 +22,7 @@ transfer.
 | Where is data stored and processed? | **Not disclosed as far as we can tell.** No region, hosting provider or data-centre location is stated. |
 | Are sub-processors named? | **No list found.** |
 | Is a retention period stated? | FormSubmit's documentation states submissions are **retained 30 days** and are retrievable from a submissions API (rate-limited to 5 requests/day). Their privacy policy does not mention this. |
-| What legal terms exist at all? | A short, general privacy statement (`formsubmit.co/privacy.pdf`), dated **17 January 2019**. It asserts FormSubmit "doesn't collect personally identifiable information", says the form owner is "responsible and the rightful owner" of what the form collects, and contains no Article 28 processor terms. |
+| What legal terms exist at all? | A short, general privacy statement (<https://formsubmit.co/privacy.pdf>), dated **17 January 2019**. It asserts FormSubmit "doesn't collect personally identifiable information", says the form owner is "responsible and the rightful owner" of what the form collects, and contains no Article 28 processor terms. |
 
 ### Assessment
 
@@ -53,7 +53,7 @@ search-engine extracts rather than fetched directly. The findings above are cons
 across independent queries and the retention figure traces to FormSubmit's own
 documentation page, but **none of it was verified against the live pages first-hand.**
 Before acting on the "accept the risk" option below, someone should open
-`formsubmit.co/privacy.pdf` and `formsubmit.co/documentation` in a browser and confirm.
+<https://formsubmit.co/privacy.pdf> and <https://formsubmit.co/documentation> in a browser and confirm.
 The absence of a DPA is the claim most worth re-checking, and the easiest to settle
 definitively: email `support@formsubmit.co` and ask.
 
