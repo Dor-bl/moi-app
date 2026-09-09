@@ -31,24 +31,29 @@ function updateAuthBtnState(isLoggedIn) {
     const userAccountBadge = document.getElementById('userAccountBadge');
     const userAccountEmail = document.getElementById('userAccountEmail');
     const accountDangerZone = document.getElementById('accountDangerZone');
+    const signOutBtn = document.getElementById('signOutBtn');
 
     if (accountDangerZone) {
         accountDangerZone.style.display = (isLoggedIn && currentUser) ? 'block' : 'none';
     }
+    if (signOutBtn) signOutBtn.textContent = t.signOut;
 
     if (!authBtn) return;
 
+    // Signed in, the header button goes away and signing out happens in the
+    // profile modal (reached through the avatar). Keeping it here meant the
+    // header grew by the width of an email address the moment someone logged
+    // in, which is what crowded the row out on a phone.
     if (isLoggedIn && currentUser) {
         const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : t.accountNameFallback;
-        authBtn.textContent = `${shortEmail} (${t.signOut})`;
-        authBtn.classList.add('user-logged-in');
+        authBtn.hidden = true;
         if (userAccountBadge && userAccountEmail) {
             userAccountBadge.style.display = 'flex';
             userAccountEmail.textContent = t.syncedAs.replace('{account}', currentUser.email || shortEmail);
         }
     } else {
+        authBtn.hidden = false;
         authBtn.textContent = t.signIn;
-        authBtn.classList.remove('user-logged-in');
         if (userAccountBadge) {
             userAccountBadge.style.display = 'none';
         }
