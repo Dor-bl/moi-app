@@ -100,7 +100,7 @@
     <main class="legal-page">
         <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
         <h1>Privacy Policy</h1>
-        <p class="updated">Last updated: 8 September 2026</p>
+        <p class="updated">Last updated: 9 September 2026</p>
 
         <section>
             <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen. This policy explains what personal data we collect, why, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
@@ -152,8 +152,9 @@
             <h2>2. Who processes your data</h2>
             <ul>
                 <li><strong>Supabase</strong> — hosts our database and handles authentication (magic-link emails and Google sign-in). Your email, name, and bucket-list progress/notes are stored in Supabase's infrastructure.</li>
-                <li><strong>Google</strong> — if you choose "Continue with Google", Google handles the sign-in and shares your email and name with us via Supabase.</li>
-                <li><strong>FormSubmit.co</strong> — delivers contact-form submissions (name, email, subject, message) to our inbox by email.</li>
+                <li><strong>Google</strong> — if you choose "Continue with Google", Google handles the sign-in and shares your email and name with us via Supabase. Google also hosts the Gmail mailbox behind hallo@moicheck.nl, so a copy of anything sent there — including contact-form messages — sits on Google's infrastructure too. Unlike FormSubmit, Google publishes a data processing agreement.</li>
+                <li><strong>Cloudflare</strong> — runs Email Routing for our domain, which forwards mail addressed to hallo@moicheck.nl (including contact-form submissions relayed by FormSubmit) on to that Gmail mailbox. It routes the message rather than storing it, and, like Google, publishes a data processing agreement.</li>
+                <li><strong>FormSubmit.co</strong> — delivers contact-form submissions (name, email, subject, message) to our inbox by email. We could not find a data processing agreement from FormSubmit, and as far as we can tell it does not name the company behind it, say where submissions are processed, or list its sub-processors; the only policy we found is a short, general privacy statement. Either way, we cannot point you to a processing agreement or a transfer safeguard for this one step, so you should assume your message may be handled outside the EU/EEA. Their documentation states that submissions stay retrievable from their servers for 30 days. If you would rather not use it, email us directly at <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a> — that reaches the same inbox without passing through FormSubmit.</li>
                 <li><strong>OpenStreetMap / Leaflet</strong> — the map view loads map tiles directly from OpenStreetMap's tile servers, which, like any web request, will see your IP address and general request metadata.</li>
                 <li><strong>Vercel</strong> — hosts the MoiCheck website itself, and provides Vercel Web Analytics, which produces the aggregated statistics described above. Like any web request, these will see your IP address and general request metadata; Vercel uses them only to build the aggregates, and reports back to us only aggregated figures such as visit counts, popular pages, and referring sites. It sets no cookies and does not track visitors across other websites.</li>
             </ul>
@@ -164,7 +165,7 @@
             <h2>3. How long we keep it</h2>
             <ul>
                 <li><strong>Account data &amp; progress/notes:</strong> kept for as long as your account exists, until you ask us to delete it.</li>
-                <li><strong>Contact-form submissions:</strong> kept in our email inbox, and a local copy is kept only in your own browser's storage until you clear it — we don't keep a separate server-side copy.</li>
+                <li><strong>Contact-form submissions:</strong> kept in our email inbox for as long as we need them to deal with what you wrote, which means a copy also sits with whoever hosts that mailbox. We don't copy submissions into the MoiCheck app or its database, and nothing from the contact form is saved in your browser. FormSubmit, which relays the message, states that it keeps a copy retrievable from its own servers for 30 days.</li>
                 <li><strong>Local preferences</strong> (theme, language, guest progress): stay on your device until you clear your browser storage.</li>
             </ul>
         </section>
