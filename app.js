@@ -309,26 +309,37 @@ function loadLeaflet() {
     if (window.L) return Promise.resolve();
     if (leafletLoad) return leafletLoad;
 
-    leafletLoad = new Promise((resolve, reject) => {
-        const styles = document.createElement('link');
-        styles.rel = 'stylesheet';
-        styles.href = LEAFLET_CSS_URL;
-        styles.integrity = LEAFLET_CSS_SRI;
-        styles.crossOrigin = '';
-        document.head.appendChild(styles);
+    const styles = document.createElement('link');
+    styles.rel = 'stylesheet';
+    styles.href = LEAFLET_CSS_URL;
+    styles.integrity = LEAFLET_CSS_SRI;
+    styles.crossOrigin = '';
+    // Leaflet lays the map out from its stylesheet, so the map is built only
+    // once that has settled — the head tags this replaced gave the same
+    // ordering for free. A stylesheet that never arrives shouldn't cost the
+    // visitor the map itself, though, so failure here settles rather than
+    // throws and the map comes up unstyled instead of not at all.
+    const stylesSettled = new Promise(settle => {
+        styles.onload = settle;
+        styles.onerror = settle;
+    });
+    document.head.appendChild(styles);
 
-        const script = document.createElement('script');
-        script.src = LEAFLET_JS_URL;
-        script.integrity = LEAFLET_JS_SRI;
-        script.crossOrigin = '';
+    const script = document.createElement('script');
+    script.src = LEAFLET_JS_URL;
+    script.integrity = LEAFLET_JS_SRI;
+    script.crossOrigin = '';
+    const scriptLoaded = new Promise((resolve, reject) => {
         script.onload = resolve;
-        script.onerror = () => {
-            // Forget the failed attempt so re-opening the map tries again, the
-            // way a reload used to after a blocked or dropped CDN request.
-            leafletLoad = null;
-            reject(new Error('Leaflet failed to load'));
-        };
-        document.head.appendChild(script);
+        script.onerror = () => reject(new Error('Leaflet failed to load'));
+    });
+    document.head.appendChild(script);
+
+    leafletLoad = Promise.all([stylesSettled, scriptLoaded]).then(() => undefined);
+    leafletLoad.catch(() => {
+        // Forget the failed attempt so re-opening the map tries again, the way
+        // a reload used to after a blocked or dropped CDN request.
+        leafletLoad = null;
     });
 
     return leafletLoad;
