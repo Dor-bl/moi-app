@@ -440,7 +440,7 @@ function buildMapPopup(item) {
     popupContent.className = 'map-popup-card';
     popupContent.innerHTML = `
         <span class="card-category">${item.category[currentLang]}</span>
-        <h4>${item.title[currentLang]}</h4>
+        <h3>${item.title[currentLang]}</h3>
         <p>${item.tip[currentLang]}</p>
         <button class="map-popup-btn">${t.viewDetails}</button>
     `;
@@ -569,7 +569,7 @@ function buildCard(item) {
             </div>
             <div class="card-content">
                 <span class="card-category">${item.category[currentLang]}</span>
-                <h3 class="card-title">${item.title[currentLang]}</h3>
+                <h2 class="card-title">${item.title[currentLang]}</h2>
                 <p class="card-tip">${item.tip[currentLang]}</p>
             </div>
         `;
