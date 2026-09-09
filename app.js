@@ -815,15 +815,22 @@ function memoryTimestamp(value) {
     return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
 }
 
+// ⚡ Bolt Performance Optimization:
+// Cache Intl.DateTimeFormat instances. toLocaleDateString recreates these internally
+// on every call, which is very slow in loops (like rendering the memory list).
+const dateFormatters = {
+    en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
+};
+
 function formatMemoryDate(value) {
     if (!value) return '';
     const parsed = new Date(value);
     if (isNaN(parsed.getTime())) return '';
-    return parsed.toLocaleDateString(currentLang === 'nl' ? 'nl-NL' : 'en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-    });
+    // currentLang comes from localStorage, so a keyed lookup could walk the prototype
+    // chain ('constructor' etc.) and return a non-formatter. Branch explicitly instead.
+    const formatter = currentLang === 'nl' ? dateFormatters.nl : dateFormatters.en;
+    return formatter.format(parsed);
 }
 
 function openProfileModal() {
