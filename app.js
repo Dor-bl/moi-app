@@ -291,7 +291,11 @@ function switchView(view) {
         listViewBtn.classList.remove('active');
         listContainer.style.display = 'none';
         mapWrapper.style.display = 'block';
-        initOrUpdateMap();
+        // initOrUpdateMap awaits the Leaflet load, so anything that throws past
+        // it — Leaflet itself failing to build the map, say — would come back as
+        // an unhandled rejection rather than the plain console error it was
+        // while this ran synchronously.
+        initOrUpdateMap().catch(err => console.error('Map view failed to open:', err));
     }
 }
 
@@ -331,7 +335,14 @@ function loadLeaflet() {
     script.crossOrigin = '';
     const scriptLoaded = new Promise((resolve, reject) => {
         script.onload = resolve;
-        script.onerror = () => reject(new Error('Leaflet failed to load'));
+        script.onerror = () => {
+            // Take the dead tags back out. Re-opening the map appends a fresh
+            // pair, and against a blocked CDN that would otherwise stack up a
+            // link and a script in the head on every attempt.
+            styles.remove();
+            script.remove();
+            reject(new Error('Leaflet failed to load'));
+        };
     });
     document.head.appendChild(script);
 
