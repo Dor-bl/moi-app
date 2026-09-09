@@ -14,9 +14,6 @@
     <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
     <link rel="canonical" href="https://moicheck.nl/privacy.html">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
         .legal-page {
@@ -100,7 +97,7 @@
     <main class="legal-page">
         <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
         <h1>Privacy Policy</h1>
-        <p class="updated">Last updated: 8 September 2026</p>
+        <p class="updated">Last updated: 9 September 2026</p>
 
         <section>
             <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen. This policy explains what personal data we collect, why, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
@@ -151,10 +148,10 @@
         <section>
             <h2>2. Who processes your data</h2>
             <ul>
-                <li><strong>Supabase</strong> — hosts our database and handles authentication (magic-link emails and Google sign-in). Your email, name, and bucket-list progress/notes are stored in Supabase's infrastructure.</li>
+                <li><strong>Supabase</strong> — hosts our database and handles authentication (magic-link emails and Google sign-in). Your email, name, and bucket-list progress/notes are stored in Supabase's infrastructure. The code that talks to Supabase is delivered by <strong>jsDelivr</strong>, a content delivery network, which sees your IP address and general request metadata on every page load; sign-in cannot work without it.</li>
                 <li><strong>Google</strong> — if you choose "Continue with Google", Google handles the sign-in and shares your email and name with us via Supabase.</li>
                 <li><strong>FormSubmit.co</strong> — delivers contact-form submissions (name, email, subject, message) to our inbox by email.</li>
-                <li><strong>OpenStreetMap / Leaflet</strong> — the map view loads map tiles directly from OpenStreetMap's tile servers, which, like any web request, will see your IP address and general request metadata.</li>
+                <li><strong>OpenStreetMap, Leaflet and unpkg</strong> — the map is drawn with Leaflet, whose script and stylesheet come from the <strong>unpkg</strong> content delivery network, and the map tiles come directly from OpenStreetMap's tile servers. Both, like any web request, will see your IP address and general request metadata. Neither is contacted until you switch to Map view, so if you only ever use the list, no request reaches them at all.</li>
                 <li><strong>Vercel</strong> — hosts the MoiCheck website itself, and provides Vercel Web Analytics, which produces the aggregated statistics described above. Like any web request, these will see your IP address and general request metadata; Vercel uses them only to build the aggregates, and reports back to us only aggregated figures such as visit counts, popular pages, and referring sites. It sets no cookies and does not track visitors across other websites.</li>
             </ul>
             <p>We do not sell your data or share it with advertisers.</p>
