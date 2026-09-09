@@ -2,7 +2,12 @@
 
 // State
 let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
-let currentLang = localStorage.getItem('moiCheckLang') || 'en';
+// Validated on read, not just on write: a stored value that is not a language we
+// ship ('undefined' from an older build, a hand-edited key, 'constructor' and
+// friends off the prototype) otherwise reaches UI_TRANSLATIONS[currentLang] and
+// throws during init, which renders an empty page rather than a wrong language.
+const storedLang = localStorage.getItem('moiCheckLang');
+let currentLang = ALLOWED_LANGS.includes(storedLang) ? storedLang : 'en';
 let currentFilter = 'All';
 let currentView = 'list';
 let selectedItemId = null;
@@ -262,7 +267,7 @@ function updateLanguageUI() {
 }
 
 function setLanguage(lang) {
-    if (!UI_TRANSLATIONS[lang] || lang === currentLang) return;
+    if (!ALLOWED_LANGS.includes(lang) || lang === currentLang) return;
     currentLang = lang;
     localStorage.setItem('moiCheckLang', currentLang);
     updateLanguageUI();

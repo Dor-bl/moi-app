@@ -1,4 +1,4 @@
-// Data Module - Shared Global Exports: BUCKET_LIST, MILESTONES, CATEGORY_BADGES, UI_TRANSLATIONS
+// Data Module - Shared Global Exports: BUCKET_LIST, MILESTONES, CATEGORY_BADGES, UI_TRANSLATIONS, ALLOWED_LANGS
 
 const BUCKET_LIST = [
     {
@@ -517,3 +517,8 @@ const UI_TRANSLATIONS = {
         deleteError: 'De verwijdering kon niet worden afgerond. Je account is nog actief. Probeer het opnieuw of mail ons via de privacybeleid-pagina.'
     }
 };
+
+// The languages the UI actually ships, derived from the translations above so a
+// new locale needs no second edit here. Object.keys yields own enumerable keys
+// only, so a stored value like 'constructor' can never pass as a language.
+const ALLOWED_LANGS = Object.keys(UI_TRANSLATIONS);
