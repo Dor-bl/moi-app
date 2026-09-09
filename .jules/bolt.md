@@ -16,6 +16,7 @@
 ## 2026-09-06 - Batching Supabase API Requests
 **Learning:** Looping through multiple items and making individual `await supabaseClient.from(...).upsert(...)` calls causes network request waterfalls and leads to severe performance degradation due to sequential network requests.
 **Action:** Prepare an array of payloads inside the loop, and then perform a single `upsert(missingInCloud)` call after the loop to dramatically speed up data synchronization.
+
 ## 2026-09-09 - Intl.DateTimeFormat caching
-**Learning:** `Date.prototype.toLocaleDateString` re-initializes the complex Intl formatters on every single call, which causes massive performance overhead when formatting dates in a loop (like when rendering a long list of completed items in the profile modal).
-**Action:** Cache the `Intl.DateTimeFormat` instance globally and reuse it by calling `formatter.format(date)` to achieve a ~100x speedup in date formatting.
+**Learning:** `Date.prototype.toLocaleDateString` rebuilds an `Intl.DateTimeFormat` on every call, so a cached formatter is roughly 50x faster per call. That ratio is per call and says nothing about whether it matters: the completed-items loop in `openProfileModal` is bounded by `BUCKET_LIST` (39 items) and runs once per modal open, so the measured saving is ~3ms behind a click — below a single frame. Worth doing for intent, not for speed.
+**Action:** Cache `Intl.DateTimeFormat` per locale and call `formatter.format(date)`. Before quoting a multiplier, check how many times the loop actually runs — a large per-call ratio over a small bounded collection is still a rounding error. Select the cached formatter with an explicit branch, not `cache[key]`, when the key comes from user-controlled storage: a keyed lookup walks the prototype chain and returns a truthy non-formatter for keys like `constructor`, defeating any `|| fallback` and throwing at `.format`.
