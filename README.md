@@ -123,6 +123,46 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
    ```
    (`&amp;` rather than `&` because the template is HTML; browsers decode it when the link is clicked.) `{{ .RedirectTo }}` is the origin the app passed when it requested the link, so a link requested from a Vercel preview or `localhost` opens there rather than on production. If that origin is not in **Redirect URLs** (step 5), Supabase substitutes the **Site URL**, which is why every link used to land on production. Mail scanners (Outlook, Office 365, most corporate filters) prefetch every link in a message. With the default link that first fetch hits Supabase's verify endpoint and uses up the one-time token, so the person taps a dead link seconds later. With this link the page loads and shows a *Finish Signing In* button; nothing is verified until they tap it. Then search the whole template for `ConfirmationURL` — it must appear **nowhere**, including as the visible text of a "copy and paste this link" line. Scanners read URLs out of plain text just as readily as out of `href`, so one leftover mention burns the token and the new link arrives dead. Until you change the templates the old flow keeps working — the app handles both.
 
+### Updating the vendored Supabase client
+
+The Supabase browser client is **vendored** at `assets/vendor/supabase-js-2.116.0.js` rather
+than loaded from a CDN. That script runs on every page load with full DOM access and can read
+the session token out of `localStorage`, so its bytes are pinned in this repo: a compromised
+CDN, or one bad publish to a floating version tag, cannot silently replace it.
+
+To move to a newer version:
+
+```bash
+# 1. Fetch the exact version from npm (npm verifies the tarball checksum for you)
+npm pack @supabase/supabase-js@<version>
+tar -xzf supabase-supabase-js-<version>.tgz
+
+# 2. The CDN entry point is the UMD build - the same file the CDN used to serve
+cp package/dist/umd/supabase.js assets/vendor/supabase-js-<version>.js
+
+# 3. Point index.html at the new filename and delete the old one
+```
+
+Keep the version in the filename: it makes the pinned version visible in `index.html`, and it
+cache-busts automatically on upgrade. Record the checksum of what you committed so a reviewer
+can confirm it matches the published package:
+
+```bash
+sha256sum assets/vendor/supabase-js-<version>.js
+```
+
+| Version | sha256 |
+| --- | --- |
+| 2.116.0 | `84ee9bf45695c1dd3ba1595b6bcfb0f09672434631351ffc8ebe9140545d5ff6` |
+
+`assets/vendor/supabase-js-LICENSE.txt` is the upstream MIT licence and must stay alongside
+the bundle. `assets/vendor/` is excluded from ESLint (`eslint.config.js`): the bundle has to
+match upstream byte for byte, so it must never be edited to satisfy a lint rule.
+
+Leaflet is still loaded from unpkg, but with an exact version and an SRI hash
+(`index.html:39-40`), which gives the same guarantee. If you ever bump it, regenerate the
+`integrity` value — dropping it would quietly remove the protection.
+
 ### Account deletion (GDPR right to erasure)
 
 Signed-in users can delete their account and data from the profile modal (*Delete my account & data*).
