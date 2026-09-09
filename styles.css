@@ -439,7 +439,7 @@ h1 {
     color: var(--primary-color);
 }
 
-.map-popup-card h4 {
+.map-popup-card h3 {
     font-size: 0.95rem;
     font-weight: 700;
     margin: 0.25rem 0 0.5rem;
@@ -577,7 +577,7 @@ h1 {
     border-color: var(--border-color);
 }
 
-.bucket-card.completed h3 {
+.bucket-card.completed .card-title {
     text-decoration: line-through;
     color: var(--text-light);
 }
