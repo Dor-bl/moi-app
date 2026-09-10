@@ -61,9 +61,12 @@ function popupFixture(themeAttr) {
                         <button class="map-popup-btn">View details</button>
                     </div>
                 </div>
-                <div class="leaflet-popup-tip-container">
-                    <div class="leaflet-popup-tip"></div>
-                </div>
+            </div>
+            <!-- Leaflet renders the tip container as a sibling of
+                 .leaflet-popup-content-wrapper, both under .leaflet-popup —
+                 not nested inside the wrapper. -->
+            <div class="leaflet-popup-tip-container">
+                <div class="leaflet-popup-tip"></div>
             </div>
         </div>
     </div>
@@ -80,21 +83,30 @@ function popupFixture(themeAttr) {
 
 function startStaticServer() {
     const server = http.createServer(async (req, res) => {
-        const url = new URL(req.url, 'http://localhost');
-        if (url.pathname === '/styles.css') {
-            const css = await readFile(path.join(REPO_ROOT, 'styles.css'));
-            res.writeHead(200, { 'Content-Type': 'text/css' });
-            res.end(css);
-            return;
+        try {
+            const url = new URL(req.url, 'http://localhost');
+            if (url.pathname === '/styles.css') {
+                const css = await readFile(path.join(REPO_ROOT, 'styles.css'));
+                res.writeHead(200, { 'Content-Type': 'text/css' });
+                res.end(css);
+                return;
+            }
+            if (url.pathname.startsWith('/__fixture__/')) {
+                const themeAttr = url.pathname.replace('/__fixture__/', '') || null;
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.end(popupFixture(themeAttr === 'system' ? null : themeAttr));
+                return;
+            }
+            res.writeHead(404);
+            res.end();
+        } catch (err) {
+            // Otherwise a readFile failure (e.g. styles.css missing) becomes
+            // an unhandled rejection and the request just hangs, which shows
+            // up as a confusing Playwright navigation timeout instead of the
+            // actual cause.
+            res.writeHead(500);
+            res.end(String(err));
         }
-        if (url.pathname.startsWith('/__fixture__/')) {
-            const themeAttr = url.pathname.replace('/__fixture__/', '') || null;
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(popupFixture(themeAttr === 'system' ? null : themeAttr));
-            return;
-        }
-        res.writeHead(404);
-        res.end();
     });
     return new Promise(resolve => {
         server.listen(0, '127.0.0.1', () => resolve(server));
