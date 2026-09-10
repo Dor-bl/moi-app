@@ -81,6 +81,12 @@ const confirmDeleteAccountBtn = document.getElementById('confirmDeleteAccountBtn
 const cancelDeleteAccountBtn = document.getElementById('cancelDeleteAccountBtn');
 const deleteAccountError = document.getElementById('deleteAccountError');
 
+// Sign-out Modal Elements
+const signOutModal = document.getElementById('signOutModal');
+const closeSignOutModalBtn = document.getElementById('closeSignOutModal');
+const confirmSignOutBtn = document.getElementById('confirmSignOutBtn');
+const cancelSignOutBtn = document.getElementById('cancelSignOutBtn');
+
 // Contact Modal Elements
 const contactModal = document.getElementById('contactModal');
 const contactBtn = document.getElementById('contactBtn');
@@ -204,6 +210,14 @@ function updateLanguageUI() {
     if (confirmDeleteAccountBtn) confirmDeleteAccountBtn.textContent = t.confirmDelete;
     if (cancelDeleteAccountBtn) cancelDeleteAccountBtn.textContent = t.cancel;
     if (closeDeleteAccountModalBtn) closeDeleteAccountModalBtn.setAttribute('aria-label', t.closeDialog);
+
+    const signOutModalTitle = document.getElementById('signOutModalTitle');
+    if (signOutModalTitle) signOutModalTitle.textContent = t.signOutModalTitle;
+    const signOutModalWarning = document.getElementById('signOutModalWarning');
+    if (signOutModalWarning) signOutModalWarning.textContent = t.signOutModalWarning;
+    if (confirmSignOutBtn) confirmSignOutBtn.textContent = t.confirmSignOut;
+    if (cancelSignOutBtn) cancelSignOutBtn.textContent = t.cancel;
+    if (closeSignOutModalBtn) closeSignOutModalBtn.setAttribute('aria-label', t.closeDialog);
 
     // Contact modal translations
     document.getElementById('contactModalTitle').textContent = t.contactTitle;
@@ -948,9 +962,72 @@ function setupEventListeners() {
         authModal.classList.add('active');
     });
 
+    // Sign-out confirmation modal controls
+    let signOutModalReturnFocus = null;
+
+    const closeSignOutModal = () => {
+        if (signOutModal) {
+            signOutModal.classList.remove('active');
+            signOutModal.setAttribute('inert', '');
+        }
+        if (profileModal && profileModal.classList.contains('active')) {
+            profileModal.removeAttribute('inert');
+        }
+        const canTakeFocus = el => !!el && typeof el.focus === 'function' && el.isConnected
+            && !el.disabled && el.getClientRects().length > 0;
+        let target = signOutModalReturnFocus;
+        if (!canTakeFocus(target)) {
+            target = profileModal.classList.contains('active') ? closeProfileModalBtn : profileBtn;
+        }
+        if (target) target.focus();
+        signOutModalReturnFocus = null;
+    };
+
     if (signOutBtn) {
-        signOutBtn.addEventListener('click', async () => {
+        signOutBtn.addEventListener('click', () => {
             if (!supabaseClient) return;
+            signOutModalReturnFocus = document.activeElement;
+            if (profileModal) {
+                profileModal.setAttribute('inert', '');
+            }
+            if (signOutModal) {
+                signOutModal.removeAttribute('inert');
+                signOutModal.classList.add('active');
+            }
+            if (cancelSignOutBtn) cancelSignOutBtn.focus();
+        });
+    }
+
+    if (signOutModal) {
+        signOutModal.addEventListener('keydown', (e) => {
+            if (!signOutModal.classList.contains('active')) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeSignOutModal();
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            const focusables = Array.from(signOutModal.querySelectorAll('button:not([disabled])'));
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        });
+    }
+
+    if (cancelSignOutBtn) cancelSignOutBtn.addEventListener('click', closeSignOutModal);
+    if (closeSignOutModalBtn) closeSignOutModalBtn.addEventListener('click', closeSignOutModal);
+
+    if (confirmSignOutBtn) {
+        confirmSignOutBtn.addEventListener('click', async () => {
+            if (!supabaseClient) return;
+            closeSignOutModal();
             closeProfileModal();
             await supabaseClient.auth.signOut();
         });
@@ -1234,7 +1311,7 @@ function setupEventListeners() {
         }
     });
     
-    [detailModal, profileModal, contactModal, authModal, settingsModal, deleteAccountModal].forEach(modal => {
+    [detailModal, profileModal, contactModal, authModal, settingsModal, deleteAccountModal, signOutModal].forEach(modal => {
         if (!modal) return;
         modal.addEventListener('click', (e) => {
             if (e.target !== modal) return;
@@ -1242,6 +1319,8 @@ function setupEventListeners() {
                 closeDetailModal();
             } else if (modal === deleteAccountModal) {
                 closeDeleteAccountModal();
+            } else if (modal === signOutModal) {
+                closeSignOutModal();
             } else if (modal === profileModal) {
                 closeProfileModal();
             } else {
