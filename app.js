@@ -1029,16 +1029,26 @@ function setupEventListeners() {
 
     if (confirmSignOutBtn) {
         confirmSignOutBtn.addEventListener('click', async () => {
-            if (!supabaseClient) return;
+            if (!supabaseClient || confirmSignOutBtn.disabled) return;
             if (!currentUser || currentUser.id !== signOutModalUserId) {
                 signOutModalReturnFocus = profileBtn;
                 closeSignOutModal();
                 closeProfileModal();
                 return;
             }
-            closeSignOutModal();
-            closeProfileModal();
-            await supabaseClient.auth.signOut({ scope: 'local' });
+
+            confirmSignOutBtn.disabled = true;
+            try {
+                const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+                if (error) throw error;
+                closeSignOutModal();
+                closeProfileModal();
+            } catch (err) {
+                console.error('Sign-out failed:', err);
+                alert(UI_TRANSLATIONS[currentLang].signOutError);
+            } finally {
+                confirmSignOutBtn.disabled = false;
+            }
         });
     }
 
