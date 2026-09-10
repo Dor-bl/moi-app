@@ -150,8 +150,11 @@
                 <p id="profileProgressText"></p>
             </div>
             <div class="user-account-badge" id="userAccountBadge" style="display: none;">
-                <span class="user-status-dot"></span>
-                <span id="userAccountEmail"></span>
+                <span class="user-account-info">
+                    <span class="user-status-dot"></span>
+                    <span id="userAccountEmail"></span>
+                </span>
+                <button class="badge-signout-btn" id="signOutBtn">Sign Out</button>
             </div>
             <button class="btn share-btn" id="shareBtn">Share Milestone</button>
             
@@ -168,7 +171,6 @@
             <!-- Only shown while signed in (toggled by updateAuthBtnState). -->
             <div class="account-danger-zone" id="accountDangerZone" style="display: none;">
                 <h3 id="txtAccountHeader">Account</h3>
-                <button class="btn secondary-btn" id="signOutBtn">Sign Out</button>
                 <p id="txtDeleteAccountNotice" class="danger-zone-note">Deleting your account removes your cloud progress and notes for good.</p>
                 <button class="btn danger-outline-btn" id="deleteAccountBtn">Delete my account &amp; data</button>
             </div>
