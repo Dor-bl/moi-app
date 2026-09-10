@@ -2,7 +2,12 @@
 
 // State
 let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
-let currentLang = localStorage.getItem('moiCheckLang') || 'en';
+// Validated on read, not just on write: a stored value that is not a language we
+// ship ('undefined' from an older build, a hand-edited key, 'constructor' and
+// friends off the prototype) otherwise reaches UI_TRANSLATIONS[currentLang] and
+// throws during init, which renders an empty page rather than a wrong language.
+const storedLang = localStorage.getItem('moiCheckLang');
+let currentLang = ALLOWED_LANGS.includes(storedLang) ? storedLang : 'en';
 let currentFilter = 'All';
 let currentView = 'list';
 let selectedItemId = null;
@@ -43,7 +48,7 @@ const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
 const currentMilestone = document.getElementById('currentMilestone');
-const langBtns = document.querySelectorAll('.lang-btn');
+const langBtns = document.querySelectorAll('.lang-option-btn');
 const listViewBtn = document.getElementById('listViewBtn');
 const mapViewBtn = document.getElementById('mapViewBtn');
 
@@ -67,6 +72,7 @@ const profileProgressText = document.getElementById('profileProgressText');
 const completedList = document.getElementById('completedList');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
 const deleteAccountModal = document.getElementById('deleteAccountModal');
@@ -166,7 +172,9 @@ function updateLanguageUI() {
     const t = UI_TRANSLATIONS[currentLang];
 
     langBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === currentLang);
+        const isCurrent = btn.dataset.lang === currentLang;
+        btn.classList.toggle('active', isCurrent);
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
     });
 
     document.getElementById('txtListView').textContent = t.viewList;
@@ -209,6 +217,7 @@ function updateLanguageUI() {
     document.getElementById('contactPrivacyNote').innerHTML = t.contactPrivacyNote;
     document.getElementById('contactSuccessTitle').textContent = t.successTitle;
     document.getElementById('contactSuccessText').textContent = t.successText;
+    contactSuccessClose.textContent = t.closeDialog;
 
     const select = document.getElementById('contactSubject');
     select.options[0].text = t.optSuggest;
@@ -226,6 +235,8 @@ function updateLanguageUI() {
     document.getElementById('txtThemeLight').textContent = t.themeLight;
     document.getElementById('txtThemeDark').textContent = t.themeDark;
     document.getElementById('txtThemeSystem').textContent = t.themeSystem;
+    const txtLanguageHeader = document.getElementById('txtLanguageHeader');
+    if (txtLanguageHeader) txtLanguageHeader.textContent = t.languageHeader;
 
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
@@ -257,7 +268,7 @@ function updateLanguageUI() {
 }
 
 function setLanguage(lang) {
-    if (lang === currentLang) return;
+    if (!ALLOWED_LANGS.includes(lang) || lang === currentLang) return;
     currentLang = lang;
     localStorage.setItem('moiCheckLang', currentLang);
     updateLanguageUI();
@@ -291,12 +302,84 @@ function switchView(view) {
         listViewBtn.classList.remove('active');
         listContainer.style.display = 'none';
         mapWrapper.style.display = 'block';
-        initOrUpdateMap();
+        // initOrUpdateMap awaits the Leaflet load, so anything that throws past
+        // it — Leaflet itself failing to build the map, say — would come back as
+        // an unhandled rejection rather than the plain console error it was
+        // while this ran synchronously.
+        initOrUpdateMap().catch(err => console.error('Map view failed to open:', err));
     }
 }
 
-function initOrUpdateMap() {
-    if (!window.L) return;
+// Leaflet is only needed once someone opens the map, so its stylesheet and
+// script are fetched on first use rather than on every page load. A visitor who
+// never leaves the list view makes no request to unpkg at all.
+const LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+const LEAFLET_JS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+const LEAFLET_CSS_SRI = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+const LEAFLET_JS_SRI = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+
+let leafletLoad = null;
+
+function loadLeaflet() {
+    if (window.L) return Promise.resolve();
+    if (leafletLoad) return leafletLoad;
+
+    const styles = document.createElement('link');
+    styles.rel = 'stylesheet';
+    styles.href = LEAFLET_CSS_URL;
+    styles.integrity = LEAFLET_CSS_SRI;
+    styles.crossOrigin = '';
+    // Leaflet lays the map out from its stylesheet, so the map is built only
+    // once that has settled — the head tags this replaced gave the same
+    // ordering for free. A stylesheet that never arrives shouldn't cost the
+    // visitor the map itself, though, so failure here settles rather than
+    // throws and the map comes up unstyled instead of not at all.
+    const stylesSettled = new Promise(settle => {
+        styles.onload = settle;
+        styles.onerror = settle;
+    });
+    document.head.appendChild(styles);
+
+    const script = document.createElement('script');
+    script.src = LEAFLET_JS_URL;
+    script.integrity = LEAFLET_JS_SRI;
+    script.crossOrigin = '';
+    const scriptLoaded = new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => {
+            // Take the dead tags back out. Re-opening the map appends a fresh
+            // pair, and against a blocked CDN that would otherwise stack up a
+            // link and a script in the head on every attempt.
+            styles.remove();
+            script.remove();
+            reject(new Error('Leaflet failed to load'));
+        };
+    });
+    document.head.appendChild(script);
+
+    leafletLoad = Promise.all([stylesSettled, scriptLoaded]).then(() => undefined);
+    leafletLoad.catch(() => {
+        // Forget the failed attempt so re-opening the map tries again, the way
+        // a reload used to after a blocked or dropped CDN request.
+        leafletLoad = null;
+    });
+
+    return leafletLoad;
+}
+
+async function initOrUpdateMap() {
+    try {
+        await loadLeaflet();
+    } catch {
+        // Same outcome as the old `if (!window.L) return`: no map, but the rest
+        // of the app carries on working.
+        return;
+    }
+
+    // The script can land after the visitor has gone back to the list; building
+    // the map into a hidden container measures nothing useful, so leave it for
+    // the next time they open the map.
+    if (currentView !== 'map') return;
 
     if (!leafletMap) {
         leafletMap = L.map('mapContainer').setView([53.2194, 6.5665], 13);
@@ -368,7 +451,7 @@ function buildMapPopup(item) {
     popupContent.className = 'map-popup-card';
     popupContent.innerHTML = `
         <span class="card-category">${item.category[currentLang]}</span>
-        <h4>${item.title[currentLang]}</h4>
+        <h3>${item.title[currentLang]}</h3>
         <p>${item.tip[currentLang]}</p>
         <button class="map-popup-btn">${t.viewDetails}</button>
     `;
@@ -497,7 +580,7 @@ function buildCard(item) {
             </div>
             <div class="card-content">
                 <span class="card-category">${item.category[currentLang]}</span>
-                <h3 class="card-title">${item.title[currentLang]}</h3>
+                <h2 class="card-title">${item.title[currentLang]}</h2>
                 <p class="card-tip">${item.tip[currentLang]}</p>
             </div>
         `;
@@ -858,16 +941,20 @@ function setupEventListeners() {
     });
 
     // Auth Modal events
-    authBtn.addEventListener('click', async () => {
-        if (currentUser && supabaseClient) {
-            await supabaseClient.auth.signOut();
-        } else {
-            authActions.style.display = 'block';
-            magicLinkSuccess.style.display = 'none';
-            document.getElementById('magicFinish').style.display = 'none';
-            authModal.classList.add('active');
-        }
+    authBtn.addEventListener('click', () => {
+        authActions.style.display = 'block';
+        magicLinkSuccess.style.display = 'none';
+        document.getElementById('magicFinish').style.display = 'none';
+        authModal.classList.add('active');
     });
+
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', async () => {
+            if (!supabaseClient) return;
+            closeProfileModal();
+            await supabaseClient.auth.signOut();
+        });
+    }
 
     closeAuthModalBtn.addEventListener('click', () => {
         authModal.classList.remove('active');
@@ -945,7 +1032,7 @@ function setupEventListeners() {
     // Language buttons
     langBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            setLanguage(e.target.dataset.lang);
+            setLanguage(e.currentTarget.dataset.lang);
         });
     });
 

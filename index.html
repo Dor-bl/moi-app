@@ -36,8 +36,6 @@
     <meta name="twitter:description" content="The things to eat, see and do in Groningen. Tick them off as you go.">
     <meta name="twitter:image" content="https://moicheck.nl/assets/brand/og-image.png">
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Supabase client, vendored rather than loaded from a CDN: the bytes are pinned
          in this repo, so a compromised CDN or a bad publish cannot swap the script that
          reads our users' session tokens. See README "Updating the vendored Supabase client". -->
@@ -74,10 +72,6 @@
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                     </svg>
                 </button>
-                <div class="lang-toggle" id="langToggle">
-                    <button class="lang-btn active" data-lang="en">EN</button>
-                    <button class="lang-btn" data-lang="nl">NL</button>
-                </div>
                 <button id="authBtn" class="auth-btn">Sign In</button>
                 <button id="profileBtn" class="profile-btn" aria-label="Profile">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -174,6 +168,7 @@
             <!-- Only shown while signed in (toggled by updateAuthBtnState). -->
             <div class="account-danger-zone" id="accountDangerZone" style="display: none;">
                 <h3 id="txtAccountHeader">Account</h3>
+                <button class="btn secondary-btn" id="signOutBtn">Sign Out</button>
                 <p id="txtDeleteAccountNotice" class="danger-zone-note">Deleting your account removes your cloud progress and notes for good.</p>
                 <button class="btn danger-outline-btn" id="deleteAccountBtn">Delete my account &amp; data</button>
             </div>
@@ -213,6 +208,22 @@
                     <button class="theme-option-btn" data-theme-option="system">
                         <span class="theme-icon" aria-hidden="true">💻</span>
                         <span id="txtThemeSystem">System</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3 id="txtLanguageHeader" style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Language</h3>
+                <!-- The names stay in their own language on purpose: someone looking
+                     for Dutch should find "Nederlands" whatever the app is set to. -->
+                <div class="lang-options">
+                    <button class="lang-option-btn" data-lang="en">
+                        <span class="lang-icon" aria-hidden="true">🇬🇧</span>
+                        <span>English</span>
+                    </button>
+                    <button class="lang-option-btn" data-lang="nl">
+                        <span class="lang-icon" aria-hidden="true">🇳🇱</span>
+                        <span>Nederlands</span>
                     </button>
                 </div>
             </div>
