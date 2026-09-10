@@ -25,6 +25,18 @@ const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 3;
 const recent = new Map<string, number[]>();
 
+// Prefer the headers the platform sets over x-forwarded-for, whose first entry
+// is whatever the client sent and is therefore trivially rotated by anyone who
+// wants to. Returns null when no address can be established at all.
+function clientIp(req: Request): string | null {
+    const cf = req.headers.get('cf-connecting-ip');
+    if (cf) return cf;
+    const real = req.headers.get('x-real-ip');
+    if (real) return real;
+    const forwarded = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim();
+    return forwarded || null;
+}
+
 function rateLimited(ip: string): boolean {
     const now = Date.now();
     const seen = (recent.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
@@ -71,8 +83,11 @@ Deno.serve(async (req: Request) => {
         return json({ error: 'Method not allowed' }, 405, origin);
     }
 
-    const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
-    if (rateLimited(ip)) {
+    // No address means no bucket. Sharing one across every header-less caller
+    // would let a handful of them lock each other out, which is worse than the
+    // spam this is meant to slow down — the honeypot and validation still apply.
+    const ip = clientIp(req);
+    if (ip && rateLimited(ip)) {
         return json({ error: 'Too many messages, please try again shortly.' }, 429, origin);
     }
 
@@ -115,21 +130,30 @@ Deno.serve(async (req: Request) => {
         return json({ error: 'Contact is temporarily unavailable.' }, 500, origin);
     }
 
-    const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            from: FROM,
-            to: [TO],
-            // So hitting reply in the inbox answers the visitor, not ourselves.
-            reply_to: email,
-            subject: `[MoiCheck Feedback] ${subject || 'General Feedback'}`,
-            text: `From: ${name} <${email}>\nSubject: ${subject || 'General Feedback'}\n\n${message}\n`,
-        }),
-    });
+    let res: Response;
+    try {
+        res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                from: FROM,
+                to: [TO],
+                // So hitting reply in the inbox answers the visitor, not ourselves.
+                reply_to: email,
+                subject: `[MoiCheck Feedback] ${subject || 'General Feedback'}`,
+                text: `From: ${name} <${email}>\nSubject: ${subject || 'General Feedback'}\n\n${message}\n`,
+            }),
+        });
+    } catch (err) {
+        // A throw here is the transport failing (DNS, TLS, socket), not Resend
+        // refusing the message. Without this the request dies uncaught, and the
+        // browser sees a CORS error rather than the message below.
+        console.error('Could not reach Resend:', err);
+        return json({ error: 'Could not send the message right now.' }, 502, origin);
+    }
 
     if (!res.ok) {
         // The body carries Resend's reason (unverified domain, bad key). It goes

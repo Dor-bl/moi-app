@@ -188,6 +188,7 @@ Verify end to end after deploying:
 ```bash
 curl -X POST "https://<project-ref>.supabase.co/functions/v1/contact" \
   -H "Authorization: Bearer <anon-key>" \
+  -H "apikey: <anon-key>" \
   -H "Content-Type: application/json" \
   -H "Origin: https://moicheck.nl" \
   -d '{"name":"Test","email":"you@example.com","subject":"Say Moi","message":"Test"}'
