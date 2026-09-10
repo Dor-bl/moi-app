@@ -279,6 +279,15 @@ const BUCKET_LIST = [
         tip: { en: 'The new home of Zeehondencentrum Pieterburen, right on the Waddenzee harbour — watch seals recover in the seal hospital, then head to the rooftop for a wide view over the Lauwersmeer and Wad.', nl: 'Het nieuwe onderkomen van Zeehondencentrum Pieterburen, direct aan de haven bij de Waddenzee — kijk mee in het zeehondenziekenhuis en klim daarna naar het dakterras voor een weids uitzicht over het Lauwersmeer en het Wad.' },
         url: 'https://ontdekwec.nl',
         urlLabel: { en: 'WEC Visitor Info 🦭', nl: 'WEC Bezoekersinfo 🦭' }
+    },
+    {
+        id: '35',
+        coords: [53.2075, 6.5495],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'Catch a gig at Summerstage in the Stadspark', nl: 'Ga naar een concert bij Summerstage in het Stadspark' },
+        tip: { en: 'Every July the old drafbaan turns into Groningen\'s biggest open-air stage, with the lit-up Gasunie building looming behind the crowd — big international names, yet it still feels like a neighbourhood festival. Dat is leuk!', nl: 'Elke juli verandert de oude drafbaan in het grootste openluchtpodium van Groningen, met de verlichte Gasunietoren op de achtergrond — grote internationale namen, maar het voelt nog steeds als een buurtfeest. Dat is leuk!' },
+        url: 'https://www.spotgroningen.nl/events/summerstage/',
+        urlLabel: { en: 'Summerstage Info & Tickets 🎤', nl: 'Summerstage Info & Tickets 🎤' }
     }
 ];
 
