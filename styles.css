@@ -392,7 +392,13 @@ h1 {
 }
 
 /* Custom Map Popup Styling */
-.leaflet-popup-content-wrapper {
+/* Leaflet's own stylesheet loads lazily (after this one) the first time the
+   map opens, so its same-specificity `.leaflet-popup-content-wrapper,
+   .leaflet-popup-tip { background: white; color: #333; }` rule would win on
+   source order alone and silently override the theme colors below. Scoping
+   under `.leaflet-container` (which Leaflet always puts on the map root)
+   raises specificity so these win no matter which stylesheet loaded last. */
+.leaflet-container .leaflet-popup-content-wrapper {
     background-color: var(--card-bg);
     color: var(--text-color);
     border-radius: 14px;
@@ -401,7 +407,7 @@ h1 {
     box-shadow: var(--shadow-md);
 }
 
-.leaflet-popup-tip {
+.leaflet-container .leaflet-popup-tip {
     background-color: var(--card-bg);
 }
 
