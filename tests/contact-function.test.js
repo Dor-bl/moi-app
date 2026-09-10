@@ -30,6 +30,13 @@ globalThis.fetch = async (url, init) => {
 
 await import('../supabase/functions/contact/index.ts');
 
+// Both globals are process-wide, so leaving them in place would make every
+// later test file depend on this one having run first.
+test.after(() => {
+    globalThis.fetch = realFetch;
+    delete globalThis.Deno;
+});
+
 const ORIGIN = 'https://moicheck.nl';
 
 function post(body, { origin = ORIGIN, ip = '203.0.113.9' } = {}) {
@@ -125,8 +132,9 @@ test('one address is rate limited after a burst', async () => {
     const ip = '198.51.100.7';
     const codes = [];
     for (let i = 0; i < 5; i++) codes.push((await post(valid, { ip })).status);
-    assert.deepEqual(codes.slice(0, 3), [200, 200, 200]);
-    assert.equal(codes[4], 429, 'a burst from one address should be slowed');
+    // Pins the boundary exactly: three get through, everything after is refused
+    // and — the point of not recording past the limit — stays refused.
+    assert.deepEqual(codes, [200, 200, 200, 429, 429]);
 });
 
 test('requests with no usable address are not funnelled into one bucket', async () => {

@@ -40,10 +40,20 @@ function clientIp(req: Request): string | null {
 function rateLimited(ip: string): boolean {
     const now = Date.now();
     const seen = (recent.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
+    if (recent.size > 1000) recent.clear();
+
+    // Stop recording once an address is over the limit. Appending regardless
+    // would let one determined sender grow its own array without bound inside
+    // the window, and the entries past the limit tell us nothing new — the
+    // decision is already made.
+    if (seen.length >= MAX_PER_WINDOW) {
+        recent.set(ip, seen);
+        return true;
+    }
+
     seen.push(now);
     recent.set(ip, seen);
-    if (recent.size > 1000) recent.clear();
-    return seen.length > MAX_PER_WINDOW;
+    return false;
 }
 
 function isAllowedOrigin(origin: string): boolean {
