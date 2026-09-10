@@ -68,13 +68,26 @@ test('preflight is answered with CORS headers', async () => {
     assert.match(res.headers.get('access-control-allow-headers'), /authorization/);
 });
 
-test('a Vercel preview origin is allowed, an unknown one falls back', async () => {
+test('a Vercel preview in our own scope is allowed', async () => {
     const preview = 'https://moi-app-git-something-blayzer.vercel.app';
-    const ok = await handler(new Request('https://x/', { method: 'OPTIONS', headers: { origin: preview } }));
-    assert.equal(ok.headers.get('access-control-allow-origin'), preview);
+    const res = await handler(new Request('https://x/', { method: 'OPTIONS', headers: { origin: preview } }));
+    assert.equal(res.headers.get('access-control-allow-origin'), preview);
+});
 
-    const bad = await handler(new Request('https://x/', { method: 'OPTIONS', headers: { origin: 'https://evil.example' } }));
-    assert.equal(bad.headers.get('access-control-allow-origin'), ORIGIN);
+test('origins outside our scope fall back to production', async () => {
+    for (const origin of [
+        'https://evil.example',
+        // A vercel.app subdomain anyone could claim by naming a project that
+        // way. Without the scope suffix this matched, and a page there could
+        // have posted through its visitors' browsers.
+        'https://moi-app-evil.vercel.app',
+        'https://moi-app-git-x-someoneelse.vercel.app',
+        // Not a suffix match: the real host is the attacker's.
+        'https://moi-app-git-x-blayzer.vercel.app.evil.example',
+    ]) {
+        const res = await handler(new Request('https://x/', { method: 'OPTIONS', headers: { origin } }));
+        assert.equal(res.headers.get('access-control-allow-origin'), ORIGIN, 'must not echo ' + origin);
+    }
 });
 
 test('GET is rejected', async () => {
