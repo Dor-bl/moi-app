@@ -101,6 +101,12 @@ function startStaticServer() {
     });
 }
 
+function closeServer(server) {
+    return new Promise((resolve, reject) => {
+        server.close(err => (err ? reject(err) : resolve()));
+    });
+}
+
 function parseRgb(colorString) {
     const match = colorString.match(/rgba?\(([^)]+)\)/);
     assert.ok(match, `expected an rgb()/rgba() color, got "${colorString}"`);
@@ -125,57 +131,65 @@ function contrastRatio(rgbA, rgbB) {
 
 async function readPopupColors(browser, port, themeAttr, colorScheme) {
     const context = await browser.newContext({ colorScheme });
-    const page = await context.newPage();
-    await page.goto(`http://127.0.0.1:${port}/__fixture__/${themeAttr}`);
+    try {
+        const page = await context.newPage();
+        await page.goto(`http://127.0.0.1:${port}/__fixture__/${themeAttr}`);
 
-    // Runs in the browser context, not Node — DOM globals are expected here.
-    /* eslint-disable no-undef */
-    const colors = await page.evaluate(() => {
-        const wrapper = document.querySelector('.leaflet-popup-content-wrapper');
-        const title = document.querySelector('.map-popup-card h3');
-        return {
-            background: getComputedStyle(wrapper).backgroundColor,
-            titleColor: getComputedStyle(title).color
-        };
-    });
-    /* eslint-enable no-undef */
-    await context.close();
-    return colors;
+        // Runs in the browser context, not Node — DOM globals are expected here.
+        /* eslint-disable no-undef */
+        return await page.evaluate(() => {
+            const wrapper = document.querySelector('.leaflet-popup-content-wrapper');
+            const title = document.querySelector('.map-popup-card h3');
+            return {
+                background: getComputedStyle(wrapper).backgroundColor,
+                titleColor: getComputedStyle(title).color
+            };
+        });
+        /* eslint-enable no-undef */
+    } finally {
+        await context.close();
+    }
 }
 
 test('dark-mode map popup title stays legible against Leaflet\'s equal-specificity default styling', async () => {
     const server = await startStaticServer();
-    const port = server.address().port;
-    const browser = await chromium.launch();
-
     try {
-        const cases = [
-            { label: 'explicit dark theme', themeAttr: 'dark', colorScheme: 'dark' },
-            { label: 'system theme, OS set to dark', themeAttr: 'system', colorScheme: 'dark' },
-            { label: 'explicit light theme', themeAttr: 'light', colorScheme: 'light' }
-        ];
+        const port = server.address().port;
+        // Declared before launch, and guarded below, so a failed launch still
+        // leaves the static server closed instead of hanging the test run.
+        let browser;
+        try {
+            browser = await chromium.launch();
 
-        for (const { label, themeAttr, colorScheme } of cases) {
-            const colors = await readPopupColors(browser, port, themeAttr, colorScheme);
-            const background = parseRgb(colors.background);
-            const titleColor = parseRgb(colors.titleColor);
-            const ratio = contrastRatio(background, titleColor);
+            const cases = [
+                { label: 'explicit dark theme', themeAttr: 'dark', colorScheme: 'dark' },
+                { label: 'system theme, OS set to dark', themeAttr: 'system', colorScheme: 'dark' },
+                { label: 'explicit light theme', themeAttr: 'light', colorScheme: 'light' }
+            ];
 
-            assert.ok(
-                ratio >= 4.5,
-                `${label}: popup title contrast ratio ${ratio.toFixed(2)}:1 is below WCAG AA (4.5:1) — ` +
-                `background ${colors.background}, text ${colors.titleColor}`
-            );
+            for (const { label, themeAttr, colorScheme } of cases) {
+                const colors = await readPopupColors(browser, port, themeAttr, colorScheme);
+                const background = parseRgb(colors.background);
+                const titleColor = parseRgb(colors.titleColor);
+                const ratio = contrastRatio(background, titleColor);
 
-            if (themeAttr === 'dark' || (themeAttr === 'system' && colorScheme === 'dark')) {
-                assert.notDeepEqual(
-                    background, [255, 255, 255],
-                    `${label}: popup background fell back to Leaflet's default white instead of the dark card color`
+                assert.ok(
+                    ratio >= 4.5,
+                    `${label}: popup title contrast ratio ${ratio.toFixed(2)}:1 is below WCAG AA (4.5:1) — ` +
+                    `background ${colors.background}, text ${colors.titleColor}`
                 );
+
+                if (themeAttr === 'dark' || (themeAttr === 'system' && colorScheme === 'dark')) {
+                    assert.notDeepEqual(
+                        background, [255, 255, 255],
+                        `${label}: popup background fell back to Leaflet's default white instead of the dark card color`
+                    );
+                }
             }
+        } finally {
+            if (browser) await browser.close();
         }
     } finally {
-        await browser.close();
-        server.close();
+        await closeServer(server);
     }
 });
