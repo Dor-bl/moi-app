@@ -138,18 +138,19 @@ function renderFilterPills() {
         let countEl = pill.querySelector('.filter-pill-count');
 
         if (!labelEl || !countEl) {
-            pill.innerHTML = '';
+            const fragment = document.createDocumentFragment();
 
             labelEl = document.createElement('span');
             labelEl.className = 'filter-pill-label';
-            pill.appendChild(labelEl);
+            fragment.appendChild(labelEl);
 
             countEl = document.createElement('span');
             countEl.className = 'filter-pill-count';
             // The badge on its own reads as a bare number; the pill's aria-label below
             // says what it counts, so hide this from the accessibility tree.
             countEl.setAttribute('aria-hidden', 'true');
-            pill.appendChild(countEl);
+            fragment.appendChild(countEl);
+            pill.replaceChildren(fragment);
         }
 
         if (labelEl.textContent !== label) {
@@ -621,8 +622,6 @@ function buildCompletedDivider(count, collapsed) {
 }
 
 function renderList() {
-    listContainer.innerHTML = '';
-    
     const filteredList = getFilteredItems(currentFilter);
 
     // Completed items sink below a divider, keeping what is left to do at the top.
@@ -646,7 +645,10 @@ function renderList() {
         }
     }
 
-    listContainer.appendChild(fragment);
+    // ⚡ Bolt Performance Optimization:
+    // Use replaceChildren() instead of innerHTML = '' followed by appendChild().
+    // Impact: Avoids invoking the HTML parser and replaces all DOM nodes in a single, highly-optimized step.
+    listContainer.replaceChildren(fragment);
 
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
@@ -741,7 +743,7 @@ function checkBadgeUnlocks(itemId, wasCompleted) {
 function renderBadges() {
     const badgesGrid = document.getElementById('badgesGrid');
     if (!badgesGrid) return;
-    badgesGrid.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     const t = UI_TRANSLATIONS[currentLang];
 
     CATEGORY_BADGES.forEach(badge => {
@@ -760,8 +762,9 @@ function renderBadges() {
                 <span class="badge-progress-tag">${isUnlocked ? t.unlockedTag : `${completedCount} / ${total}`}</span>
             </div>
         `;
-        badgesGrid.appendChild(card);
+        fragment.appendChild(card);
     });
+    badgesGrid.replaceChildren(fragment);
 }
 
 function openDetailModal(item) {
@@ -855,8 +858,13 @@ function openProfileModal() {
         return item ? { ...item, ...data } : null;
     }).filter(Boolean).sort((a, b) => memoryTimestamp(b.date) - memoryTimestamp(a.date));
     
+    const fragment = document.createDocumentFragment();
+
     if (completedArr.length === 0) {
-        completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
+        const p = document.createElement('p');
+        p.style.cssText = 'color: var(--text-light); text-align: center; padding: 2rem;';
+        p.textContent = t.noMemories;
+        fragment.appendChild(p);
     } else {
         completedArr.forEach(item => {
             const div = document.createElement('div');
@@ -880,9 +888,10 @@ function openProfileModal() {
                 div.appendChild(noteEl);
             }
 
-            completedList.appendChild(div);
+            fragment.appendChild(div);
         });
     }
+    completedList.replaceChildren(fragment);
     
     if (accountDangerZone) {
         accountDangerZone.style.display = (currentUser && supabaseClient) ? 'block' : 'none';
