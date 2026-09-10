@@ -964,8 +964,10 @@ function setupEventListeners() {
 
     // Sign-out confirmation modal controls
     let signOutModalReturnFocus = null;
+    let signOutModalUserId = null;
 
     const closeSignOutModal = () => {
+        signOutModalUserId = null;
         if (signOutModal) {
             signOutModal.classList.remove('active');
             signOutModal.setAttribute('inert', '');
@@ -985,7 +987,8 @@ function setupEventListeners() {
 
     if (signOutBtn) {
         signOutBtn.addEventListener('click', () => {
-            if (!supabaseClient) return;
+            if (!supabaseClient || !currentUser) return;
+            signOutModalUserId = currentUser.id;
             signOutModalReturnFocus = document.activeElement;
             if (profileModal) {
                 profileModal.setAttribute('inert', '');
@@ -1027,6 +1030,12 @@ function setupEventListeners() {
     if (confirmSignOutBtn) {
         confirmSignOutBtn.addEventListener('click', async () => {
             if (!supabaseClient) return;
+            if (!currentUser || currentUser.id !== signOutModalUserId) {
+                signOutModalReturnFocus = profileBtn;
+                closeSignOutModal();
+                closeProfileModal();
+                return;
+            }
             closeSignOutModal();
             closeProfileModal();
             await supabaseClient.auth.signOut({ scope: 'local' });
