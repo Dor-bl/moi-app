@@ -965,8 +965,17 @@ function setupEventListeners() {
     // Sign-out confirmation modal controls
     let signOutModalReturnFocus = null;
     let signOutModalUserId = null;
+    let signOutBusy = false;
+
+    const setSignOutBusy = (busy) => {
+        signOutBusy = busy;
+        if (confirmSignOutBtn) confirmSignOutBtn.disabled = busy;
+        if (cancelSignOutBtn) cancelSignOutBtn.disabled = busy;
+        if (closeSignOutModalBtn) closeSignOutModalBtn.disabled = busy;
+    };
 
     const closeSignOutModal = () => {
+        if (signOutBusy) return;
         signOutModalUserId = null;
         if (signOutModal) {
             signOutModal.classList.remove('active');
@@ -1029,7 +1038,7 @@ function setupEventListeners() {
 
     if (confirmSignOutBtn) {
         confirmSignOutBtn.addEventListener('click', async () => {
-            if (!supabaseClient || confirmSignOutBtn.disabled) return;
+            if (!supabaseClient || signOutBusy) return;
             if (!currentUser || currentUser.id !== signOutModalUserId) {
                 signOutModalReturnFocus = profileBtn;
                 closeSignOutModal();
@@ -1037,17 +1046,17 @@ function setupEventListeners() {
                 return;
             }
 
-            confirmSignOutBtn.disabled = true;
+            setSignOutBusy(true);
             try {
                 const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
                 if (error) throw error;
+                setSignOutBusy(false);
                 closeSignOutModal();
                 closeProfileModal();
             } catch (err) {
                 console.error('Sign-out failed:', err);
+                setSignOutBusy(false);
                 alert(UI_TRANSLATIONS[currentLang].signOutError);
-            } finally {
-                confirmSignOutBtn.disabled = false;
             }
         });
     }

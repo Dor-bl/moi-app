@@ -831,9 +831,11 @@ textarea:focus {
     transform: none;
 }
 
-/* Cancel and Close are disabled while a deletion runs; show it. */
+/* Cancel and Close are disabled while a deletion or sign-out runs; show it. */
 .delete-modal-content .secondary-btn:disabled,
-.delete-modal-content .close-btn:disabled {
+.delete-modal-content .close-btn:disabled,
+#signOutModal .secondary-btn:disabled,
+#signOutModal .close-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
