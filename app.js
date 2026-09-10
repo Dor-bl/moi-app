@@ -1029,7 +1029,7 @@ function setupEventListeners() {
             if (!supabaseClient) return;
             closeSignOutModal();
             closeProfileModal();
-            await supabaseClient.auth.signOut();
+            await supabaseClient.auth.signOut({ scope: 'local' });
         });
     }
 
