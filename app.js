@@ -880,12 +880,12 @@ function openProfileModal() {
     const completedArr = Object.entries(completedItems).map(([id, data]) => {
         const item = itemsById[id];
         if (!item) return null;
-        return {
-            ...item,
-            ...data,
-            _parsedTimestamp: memoryTimestamp(data.date)
-        };
-    }).filter(Boolean).sort((a, b) => b._parsedTimestamp - a._parsedTimestamp);
+        const merged = { ...item, ...data };
+        return { merged, _parsedTimestamp: memoryTimestamp(merged.date) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b._parsedTimestamp - a._parsedTimestamp)
+    .map(wrapper => wrapper.merged);
     
     if (completedArr.length === 0) {
         completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
