@@ -150,8 +150,11 @@
                 <p id="profileProgressText"></p>
             </div>
             <div class="user-account-badge" id="userAccountBadge" style="display: none;">
-                <span class="user-status-dot"></span>
-                <span id="userAccountEmail"></span>
+                <span class="user-account-info">
+                    <span class="user-status-dot"></span>
+                    <span id="userAccountEmail"></span>
+                </span>
+                <button class="badge-signout-btn" id="signOutBtn">Sign Out</button>
             </div>
             <button class="btn share-btn" id="shareBtn">Share Milestone</button>
             
@@ -168,7 +171,6 @@
             <!-- Only shown while signed in (toggled by updateAuthBtnState). -->
             <div class="account-danger-zone" id="accountDangerZone" style="display: none;">
                 <h3 id="txtAccountHeader">Account</h3>
-                <button class="btn secondary-btn" id="signOutBtn">Sign Out</button>
                 <p id="txtDeleteAccountNotice" class="danger-zone-note">Deleting your account removes your cloud progress and notes for good.</p>
                 <button class="btn danger-outline-btn" id="deleteAccountBtn">Delete my account &amp; data</button>
             </div>
@@ -333,6 +335,19 @@
             <p id="deleteAccountError" class="auth-error" role="alert"></p>
             <button class="btn danger-btn" id="confirmDeleteAccountBtn">Yes, delete everything</button>
             <button class="btn secondary-btn" id="cancelDeleteAccountBtn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Sign-out confirmation. Kept after the delete modal in the DOM so it
+         stacks on top of the profile modal. `inert` keeps the closed dialog out
+         of the accessibility tree and the tab order; app.js lifts it only while open. -->
+    <div class="modal-overlay" id="signOutModal" inert>
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="signOutModalTitle" aria-describedby="signOutModalWarning">
+            <button class="close-btn" id="closeSignOutModal" aria-label="Close">&times;</button>
+            <h2 id="signOutModalTitle">Sign out?</h2>
+            <p id="signOutModalWarning" class="delete-warning">You'll need to sign in again to sync your progress on this device.</p>
+            <button class="btn primary-btn" id="confirmSignOutBtn">Yes, sign out</button>
+            <button class="btn secondary-btn" id="cancelSignOutBtn">Cancel</button>
         </div>
     </div>
 

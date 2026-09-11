@@ -813,10 +813,6 @@ textarea:focus {
     margin-bottom: 0.5rem;
 }
 
-.account-danger-zone .secondary-btn {
-    margin-bottom: 1.5rem;
-}
-
 .danger-zone-note {
     font-size: 0.85rem;
     color: var(--text-light);
@@ -838,15 +834,18 @@ textarea:focus {
     color: white;
 }
 
-.danger-btn[aria-disabled="true"] {
+.danger-btn[aria-disabled="true"],
+#signOutModal .primary-btn[aria-disabled="true"] {
     opacity: 0.6;
     cursor: wait;
     transform: none;
 }
 
-/* Cancel and Close are disabled while a deletion runs; show it. */
+/* Cancel and Close are disabled while a deletion or sign-out runs; show it. */
 .delete-modal-content .secondary-btn:disabled,
-.delete-modal-content .close-btn:disabled {
+.delete-modal-content .close-btn:disabled,
+#signOutModal .secondary-btn:disabled,
+#signOutModal .close-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -878,8 +877,9 @@ textarea:focus {
 .user-account-badge {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
     margin: 0.5rem 0 1rem 0;
     padding: 0.5rem 0.75rem;
     background: rgba(var(--primary-rgb), 0.08);
@@ -890,12 +890,49 @@ textarea:focus {
     font-weight: 600;
 }
 
+.user-account-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+#userAccountEmail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .user-status-dot {
+    flex-shrink: 0;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background-color: var(--primary-color);
     box-shadow: 0 0 6px rgba(var(--primary-rgb), 0.6);
+}
+
+.badge-signout-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid rgba(var(--primary-rgb), 0.35);
+    color: var(--primary-color);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s, transform 0.1s;
+}
+
+.badge-signout-btn:hover {
+    background-color: rgba(var(--primary-rgb), 0.15);
+}
+
+.badge-signout-btn:active {
+    transform: scale(0.96);
 }
 
 .completed-list {
