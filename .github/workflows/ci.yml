@@ -5,6 +5,12 @@ on:
     branches: [ main ]
   push:
     branches: [ main ]
+  # A PR whose base branch is retargeted (e.g. a stacked PR whose base just
+  # merged) only fires GitHub's "edited" pull_request event, which isn't in
+  # the default type set above — so CI silently never runs. workflow_dispatch
+  # gives a manual way to run it for real in that situation instead of an
+  # empty commit or a close/reopen.
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -25,3 +31,25 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+  test:
+    name: Unit & Visual Regression Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run tests
+        run: npm test
