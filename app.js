@@ -969,7 +969,10 @@ function setupEventListeners() {
 
     const setSignOutBusy = (busy) => {
         signOutBusy = busy;
-        if (confirmSignOutBtn) confirmSignOutBtn.disabled = busy;
+        if (confirmSignOutBtn) {
+            confirmSignOutBtn.setAttribute('aria-disabled', busy ? 'true' : 'false');
+            confirmSignOutBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+        }
         if (cancelSignOutBtn) cancelSignOutBtn.disabled = busy;
         if (closeSignOutModalBtn) closeSignOutModalBtn.disabled = busy;
     };
