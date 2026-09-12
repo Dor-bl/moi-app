@@ -320,6 +320,16 @@ function switchView(view) {
         btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
     });
 
+    // Which views people actually open is the missing input for deciding whether
+    // the Events tab earns its place. Note this counts *switches*, not views: the
+    // initial list view never reaches here, so view_list means "came back to the
+    // list" rather than "saw the list". view_map and view_events are comparable
+    // to each other, since both take a deliberate tap.
+    //
+    // Optional call because an ad blocker can block js/analytics.js outright, and
+    // losing analytics must not take view switching down with it.
+    window.va?.('event', { name: `view_${view}` });
+
     if (view === 'list' && listNeedsResort) {
         listNeedsResort = false;
         renderList();
