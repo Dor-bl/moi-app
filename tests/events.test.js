@@ -195,6 +195,15 @@ test('every shipped event is well formed', () => {
 
         for (const lang of ALLOWED_LANGS) {
             assert.ok(event.title[lang], `${event.id} has a ${lang} title`);
+
+            // buildEventCard reads location and tip by language too, so a
+            // half-translated entry renders the string "undefined" onto the card
+            // rather than failing anywhere a person would notice.
+            for (const field of ['location', 'tip']) {
+                if (event[field]) {
+                    assert.ok(event[field][lang], `${event.id} has a ${lang} ${field}`);
+                }
+            }
         }
     }
 });

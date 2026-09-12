@@ -1,10 +1,15 @@
 # Monthly Events Refresh Routine
 
-A Claude Routine fires on the **first of each month**, checks the `EVENTS` list in
-[`js/data.js`](../../js/data.js) for gaps, and — only if it finds any — opens a pull
+> **Not scheduled yet.** This spec describes how the routine is meant to run; no
+> Routine has been configured, so nothing fires on its own today. Standing it up needs
+> the claude.ai Routines UI — see *Push authorization* below. Until then this is the
+> plan, not a description of something already happening.
+
+A Claude Routine is to fire on the **first of each month**, check the `EVENTS` list in
+[`js/data.js`](../../js/data.js) for gaps, and — only if it finds any — open a pull
 request filling them in.
 
-The schedule is `0 8 1 * *`, and cron is evaluated in UTC while Amsterdam switches
+The intended schedule is `0 8 1 * *`, and cron is evaluated in UTC while Amsterdam switches
 between CEST (UTC+2) and CET (UTC+1). So the run lands at **10:00 local during summer
 time and 09:00 local during winter time**. Nothing depends on the exact hour, so the
 schedule is left alone across the DST changes rather than being re-pinned twice a year.
@@ -102,8 +107,19 @@ not be confirmed from its official page does not go in the PR.
 
 ## Event shape
 
-Append to `EVENTS` in `js/data.js`, keeping the existing style and the comment block
-above the array:
+Add to `EVENTS` in `js/data.js`, keeping the existing style and the comment block above
+the array.
+
+**Replacing a lapsed edition, rather than appending beside it, matters.** When you add a
+confirmed successor to a floating festival — `noorderzon-2027` for `noorderzon-2026` —
+**delete the edition it replaces in the same change**. `events:check` counts any
+non-recurring entry with past dates as a gap, so an old edition left sitting next to its
+successor keeps the check failing forever, and a gate that never goes quiet is a gate
+nobody reads.
+
+When a floating edition has lapsed and **no** successor has been announced yet, leave it
+where it is. It costs the page nothing — the date filter drops it, so visitors never see
+it — and it is what keeps the check reporting the gap until someone can fill it.
 
 ```js
 {
