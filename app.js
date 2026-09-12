@@ -43,7 +43,6 @@ function getFilteredItems(filter) {
 
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
-const mapWrapper = document.getElementById('mapWrapper');
 const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
@@ -312,7 +311,13 @@ function switchView(view) {
     // in here. The buttons still carry .active themselves.
     document.body.dataset.activeView = view;
     [listViewBtn, mapViewBtn, eventsViewBtn].forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.view === view);
+        const isCurrent = btn.dataset.view === view;
+        btn.classList.toggle('active', isCurrent);
+        // .active is a colour change and nothing more, so which view is showing
+        // has to be announced too — same aria-pressed treatment the language
+        // buttons get. The initial state is in the markup, since switchView does
+        // not run until someone picks a view.
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
     });
 
     if (view === 'list' && listNeedsResort) {

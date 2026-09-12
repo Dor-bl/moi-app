@@ -76,6 +76,36 @@ test('sorting survives a year boundary', () => {
     assert.deepEqual(order, ['dec', 'annual']);
 });
 
+// Koningsdag moves to Saturday the 26th when 27 April is a Sunday — the law, not a
+// local variation. 2031 and 2036 are the next two; 2014 was the last.
+test('a fixed date with an observed-date rule shifts off Sunday', () => {
+    const koningsdag = { id: 'k', date: '2026-04-27', annual: true, notOnSunday: true, title: { en: 'K', nl: 'K' } };
+
+    assert.equal(resolveOccurrence(koningsdag, '2026-01-01').date, '2026-04-27', 'a Monday, unshifted');
+    assert.equal(resolveOccurrence(koningsdag, '2031-01-01').date, '2031-04-26', 'Sunday year, observed Saturday');
+    assert.equal(resolveOccurrence(koningsdag, '2036-01-01').date, '2036-04-26', 'and the year after that');
+
+    // The shifted date is what the filter sees, so the entry is spent on the 27th
+    // of a Sunday year rather than lingering a day.
+    assert.equal(getUpcomingEvents([koningsdag], '2031-04-26').length, 1);
+    assert.equal(getUpcomingEvents([koningsdag], '2031-04-27')[0].date, '2032-04-27', 'rolled on, not lingering');
+});
+
+test('no shifted event carries a span to keep in step', () => {
+    for (const event of EVENTS.filter(e => e.notOnSunday)) {
+        assert.equal(event.endDate, undefined, `${event.id} must be single-day to shift safely`);
+    }
+});
+
+test('today is built as ISO regardless of locale output order', () => {
+    // The whole module compares and slices these as YYYY-MM-DD, so the shape is
+    // load-bearing rather than cosmetic.
+    assert.match(todayInGroningen(), /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(todayInGroningen(new Date('2026-09-12T10:00:00Z')), '2026-09-12');
+    // Zero-padding, not single digits, or string comparison silently breaks.
+    assert.equal(todayInGroningen(new Date('2026-01-05T10:00:00Z')), '2026-01-05');
+});
+
 test('today is Groningen\'s calendar day, not the device\'s', () => {
     // 22:30 UTC on 18 September is already the 19th in Amsterdam (CEST, UTC+2).
     assert.equal(todayInGroningen(new Date('2026-09-18T22:30:00Z')), '2026-09-19');

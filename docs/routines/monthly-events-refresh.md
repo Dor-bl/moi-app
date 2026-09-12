@@ -43,13 +43,27 @@ a routine that files something every month is a notification people learn to ign
 `annual: true` means **this event falls on the same calendar date every year**, and
 `js/events.js` rewrites the year to find its next occurrence. That is correct for:
 
-- **Koningsdag** — always 27 April
+- **Koningsdag** — 27 April, but see the observed-date note below
 - **Bevrijdingsdag** — always 5 May
 - **Bommen Berend (Gronings Ontzet)** — always 28 August
 - **Sint Maarten** — always 11 November
 - **Carbidschieten** — always 31 December
 
-It is **wrong** for any festival whose dates move year to year:
+### Observed-date exceptions
+
+A fixed date can still carry a **deterministic** shift, and that is not the same thing
+as floating. Koningsdag is held on Saturday the 26th whenever 27 April falls on a Sunday
+— next in 2031 and 2036, last in 2014 — so its entry carries `notOnSunday: true` and
+`js/events.js` applies the shift when it rolls. The date is computed, never researched.
+
+If another entry turns out to have a rule like this, model the rule; do not convert the
+entry to floating and start chasing it by hand. Conversely, do not invent a rule to avoid
+chasing a genuinely floating festival — only a documented, legally or traditionally fixed
+shift qualifies. `notOnSunday` applies to single-day events only; a test enforces that.
+
+### Floating dates
+
+`annual: true` is **wrong** for any festival whose dates move year to year:
 
 - **Noorderzon** — eleven days hanging off a late-August weekend
 - **Eurosonic Noorderslag (ESNS)** — Wednesday to Saturday in mid-January

@@ -307,6 +307,10 @@ const BUCKET_LIST = [
 //   rewriting the year is always correct (Koningsdag is the 27th, every year).
 //   js/events.js rolls these forward on its own, so they never go stale.
 //
+//   `notOnSunday: true` alongside it covers a fixed date with a deterministic
+//   observed-date exception: Koningsdag moves to Saturday the 26th when 27 April
+//   is a Sunday. Still a fixed date, since the shift is a rule and not a choice.
+//
 //   Festivals whose dates float - Noorderzon hangs off a late-August weekend,
 //   Eurosonic runs Wednesday to Saturday in mid-January, the Bloemetjesmarkt
 //   moves with Easter - must NOT be marked annual: rewriting the year would drift
@@ -318,6 +322,9 @@ const EVENTS = [
         id: 'koningsdag',
         date: '2026-04-27',
         annual: true,
+        // Moved to Saturday the 26th in years when the 27th is a Sunday, which is
+        // the law rather than a local variation: 2031 and 2036 next, 2014 last.
+        notOnSunday: true,
         title: { en: "King's Day", nl: 'Koningsdag' },
         location: { en: 'Across the city', nl: 'Door de hele stad' },
         tip: { en: 'The whole city turns orange and the vrijmarkt takes over the pavements, with half of Groningen selling the other half their old stuff. Wear something orange or you will feel underdressed.', nl: 'De hele stad kleurt oranje en de vrijmarkt neemt de stoepen over, waarbij half Groningen zijn oude spullen aan de andere helft verkoopt. Trek iets oranjes aan, anders voel je je ondergekleed.' }
