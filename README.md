@@ -175,8 +175,19 @@ form will POST to an endpoint that does not exist yet:
 ```bash
 supabase link --project-ref <your-project-ref>   # once
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx  # from resend.com/api-keys
-supabase functions deploy contact
+supabase functions deploy contact --no-verify-jwt
 ```
+
+**`--no-verify-jwt` is required, not optional.** Without it the platform rejects the
+browser's CORS preflight before the function runs: preflights carry no `Authorization`
+header, so JWT verification has nothing to check and answers 401, and the real POST never
+leaves the browser. This was confirmed on the first deploy of this function.
+
+Losing that check costs nothing real. The anon key it would have demanded is published in
+`config.js` and served to every visitor, so it never distinguished our form from anyone
+else. What actually guards this endpoint is the `application/json` requirement (which
+forces the preflight, and with it the origin allow-list, into the path), the honeypot,
+the field validation, and the per-address rate limit.
 
 The `from` address (`noreply@moicheck.nl` in `supabase/functions/contact/index.ts`) has
 to be on a domain verified with Resend — the same requirement as the magic-link sender
@@ -210,13 +221,9 @@ curl -i -X OPTIONS "https://<project-ref>.supabase.co/functions/v1/contact" \
   -H "Access-Control-Request-Headers: authorization, apikey, content-type"
 ```
 
-Expect a 200 carrying `access-control-allow-origin: https://moicheck.nl`. A **401 means
-the platform rejected the preflight before the function saw it** — preflights carry no
-`Authorization` header, so JWT verification has nowhere to look. Redeploy with
-`supabase functions deploy contact --no-verify-jwt` and repeat. That is not a loss of
-protection worth mourning: the anon key the check would have demanded is published in
-the page source anyway, and what actually guards this endpoint is the honeypot, the
-validation, the rate limit and the `application/json` requirement below.
+Expect a 200 carrying `access-control-allow-origin: https://moicheck.nl`. A **401 here
+means the function was deployed without `--no-verify-jwt`** — the platform rejected the
+preflight before the function saw it. Redeploy with the flag and repeat.
 
 Then submit the real form once from the deployed site, which is the only check that
 exercises the whole path at once.
