@@ -9,6 +9,7 @@
   },
   "scripts": {
     "lint": "eslint .",
+    "events:check": "node scripts/events-check.js",
     "test": "node --experimental-strip-types --test tests/*.test.js"
   },
   "devDependencies": {

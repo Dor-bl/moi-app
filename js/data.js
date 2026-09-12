@@ -1,4 +1,4 @@
-// Data Module - Shared Global Exports: BUCKET_LIST, MILESTONES, CATEGORY_BADGES, UI_TRANSLATIONS, ALLOWED_LANGS
+// Data Module - Shared Global Exports: BUCKET_LIST, EVENTS, MILESTONES, CATEGORY_BADGES, UI_TRANSLATIONS, ALLOWED_LANGS
 
 const BUCKET_LIST = [
     {
@@ -300,6 +300,63 @@ const BUCKET_LIST = [
     }
 ];
 
+// Upcoming events. Two kinds live here, and mixing them up is the one way this
+// list goes wrong:
+//
+//   `annual: true` is ONLY for events on a genuinely fixed calendar date, where
+//   rewriting the year is always correct (Koningsdag is the 27th, every year).
+//   js/events.js rolls these forward on its own, so they never go stale.
+//
+//   Festivals whose dates float - Noorderzon hangs off a late-August weekend,
+//   Eurosonic runs Wednesday to Saturday in mid-January, the Bloemetjesmarkt
+//   moves with Easter - must NOT be marked annual: rewriting the year would drift
+//   them onto the wrong weekdays and advertise dates that were never real. They
+//   carry explicit dates, verified against the official page, and get refreshed
+//   once a year. A lapsed one drops off the page by itself rather than lying.
+const EVENTS = [
+    {
+        id: 'koningsdag',
+        date: '2026-04-27',
+        annual: true,
+        title: { en: "King's Day", nl: 'Koningsdag' },
+        location: { en: 'Across the city', nl: 'Door de hele stad' },
+        tip: { en: 'The whole city turns orange and the vrijmarkt takes over the pavements, with half of Groningen selling the other half their old stuff. Wear something orange or you will feel underdressed.', nl: 'De hele stad kleurt oranje en de vrijmarkt neemt de stoepen over, waarbij half Groningen zijn oude spullen aan de andere helft verkoopt. Trek iets oranjes aan, anders voel je je ondergekleed.' }
+    },
+    {
+        id: 'bevrijdingsdag',
+        date: '2026-05-05',
+        annual: true,
+        title: { en: 'Liberation Day Festival', nl: 'Bevrijdingsfestival' },
+        location: { en: 'Stadspark', nl: 'Stadspark' },
+        tip: { en: 'A free open-air festival in the Stadspark marking the end of the occupation. Go for the afternoon: the line-up is genuinely good and nobody pays in.', nl: 'Een gratis openluchtfestival in het Stadspark dat het einde van de bezetting markeert. Ga in de middag: de line-up is echt goed en niemand betaalt entree.' },
+        url: 'https://bevrijdingsfestivalgroningen.nl'
+    },
+    {
+        id: 'bommen-berend',
+        date: '2026-08-28',
+        annual: true,
+        title: { en: 'Bommen Berend (Gronings Ontzet)', nl: 'Bommen Berend (Gronings Ontzet)' },
+        location: { en: 'City centre', nl: 'Binnenstad' },
+        tip: { en: 'Groningen celebrates driving off the bishop of Munster in 1672, and has done every year since. This is the most Groninger day of the year: a city holiday nobody outside the province has heard of.', nl: 'Groningen viert dat het in 1672 de bisschop van Munster verjoeg, en doet dat sindsdien elk jaar. Dit is de meest Groningse dag van het jaar: een stadsfeest waar niemand buiten de provincie van heeft gehoord.' }
+    },
+    {
+        id: 'sint-maarten',
+        date: '2026-11-11',
+        annual: true,
+        title: { en: 'Sint Maarten', nl: 'Sint Maarten' },
+        location: { en: 'Doorstep to doorstep', nl: 'Van deur tot deur' },
+        tip: { en: 'Children go door to door after dark with paper lanterns, singing for sweets. In the north this is a proper institution rather than a curiosity, so buy candy in advance and answer the doorbell.', nl: 'Kinderen gaan na het donker met lampionnen langs de deuren en zingen voor snoep. In het noorden is dit een echt instituut en geen curiositeit, dus koop op tijd snoep en doe open.' }
+    },
+    {
+        id: 'carbidschieten',
+        date: '2026-12-31',
+        annual: true,
+        title: { en: 'Carbidschieten', nl: 'Carbidschieten' },
+        location: { en: 'Villages around the province', nl: 'Dorpen in de provincie' },
+        tip: { en: 'Milk churns, calcium carbide, and a very loud bang across the fields on New Year\'s Eve. A northern tradition you have to drive out of the city to see properly.', nl: 'Melkbussen, carbid en een enorme knal over het land op oudejaarsdag. Een noordelijke traditie waarvoor je de stad uit moet om het goed mee te maken.' }
+    }
+];
+
 const MILESTONES = [
     { threshold: 0, title: { en: 'Newcomer', nl: 'Nieuwkomer' } },
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
@@ -406,7 +463,11 @@ const UI_TRANSLATIONS = {
         optMoi: 'Just saying Moi! 👋',
         viewList: 'List',
         viewMap: 'Map',
+        viewEvents: 'Events',
         viewDetails: 'View Details',
+        eventsHappeningNow: 'Happening now',
+        eventsMoreInfo: 'More info',
+        eventsEmpty: 'Nothing on the calendar right now. Check back soon — the Groningen year fills up fast.',
         courseLink: 'Free Dutch Course (UG) 🎓',
         signIn: 'Sign In',
         signOut: 'Sign Out',
@@ -497,7 +558,11 @@ const UI_TRANSLATIONS = {
         optMoi: 'Zeg gewoon Moi! 👋',
         viewList: 'Lijst',
         viewMap: 'Kaart',
+        viewEvents: 'Agenda',
         viewDetails: 'Bekijk Details',
+        eventsHappeningNow: 'Nu bezig',
+        eventsMoreInfo: 'Meer info',
+        eventsEmpty: 'Nog niets op de agenda. Kom snel weer terug — het Groningse jaar loopt snel vol.',
         courseLink: 'Gratis Cursus Nederlands (RUG) 🎓',
         signIn: 'Inloggen',
         signOut: 'Uitloggen',
