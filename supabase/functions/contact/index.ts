@@ -105,12 +105,31 @@ Deno.serve(async (req: Request) => {
         return json({ error: 'Too many messages, please try again shortly.' }, 429, origin);
     }
 
-    let payload: Record<string, unknown>;
+    // The origin allow-list does not gate this on its own. A page anywhere can
+    // send a no-cors POST with a safelisted content type — text/plain carrying
+    // a JSON body — which skips the preflight entirely and still reaches us;
+    // the attacker cannot read the reply, but the mail is already sent. Only
+    // application/json is outside that safelist, so requiring it is what puts
+    // the preflight, and therefore the allow-list, back in the path.
+    const mediaType = (req.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+    if (mediaType !== 'application/json') {
+        return json({ error: 'Expected application/json.' }, 415, origin);
+    }
+
+    let body: unknown;
     try {
-        payload = await req.json();
+        body = await req.json();
     } catch {
         return json({ error: 'Invalid JSON' }, 400, origin);
     }
+
+    // `null` and `[]` are valid JSON, and reading fields off them throws —
+    // which would escape the handler and lose the CORS headers with it, so the
+    // visitor would see a CORS error rather than this 400.
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+        return json({ error: 'Expected a JSON object.' }, 400, origin);
+    }
+    const payload = body as Record<string, unknown>;
 
     const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
     const name = str(payload.name);

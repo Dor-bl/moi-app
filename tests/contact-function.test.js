@@ -39,13 +39,14 @@ test.after(() => {
 
 const ORIGIN = 'https://moicheck.nl';
 
-function post(body, { origin = ORIGIN, ip = '203.0.113.9' } = {}) {
-    const headers = { 'Content-Type': 'application/json', origin };
+function post(body, { origin = ORIGIN, ip = '203.0.113.9', contentType = 'application/json', raw } = {}) {
+    const headers = { origin };
+    if (contentType) headers['Content-Type'] = contentType;
     if (ip) headers['cf-connecting-ip'] = ip;
     return handler(new Request('https://x.supabase.co/functions/v1/contact', {
         method: 'POST',
         headers,
-        body: JSON.stringify(body),
+        body: raw ?? JSON.stringify(body),
     }));
 }
 
@@ -128,6 +129,37 @@ test('missing and malformed fields are refused', async () => {
     for (const [i, body] of cases.entries()) {
         const res = await post(body, { ip: `192.0.2.${i + 1}` });
         assert.equal(res.status, 400, 'expected 400 for ' + JSON.stringify(body).slice(0, 60));
+    }
+    assert.equal(resendCalls.length, 0);
+});
+
+test('a no-cors content type is refused before anything is sent', async () => {
+    // The allow-list alone does not stop this: text/plain is on the fetch
+    // safelist, so a page on any origin can post a JSON body with it and skip
+    // the preflight entirely. Requiring application/json is what forces the
+    // preflight, and with it the origin check, back into the path.
+    // A distinct address per case: the rate limit is checked first, so reusing
+    // one would answer 429 partway through and prove nothing about the type.
+    for (const [i, contentType] of ['text/plain', 'application/x-www-form-urlencoded', 'multipart/form-data', null].entries()) {
+        const res = await post(valid, { origin: 'https://evil.example', ip: `198.51.100.6${i}`, contentType });
+        assert.equal(res.status, 415, 'expected 415 for ' + contentType);
+    }
+    assert.equal(resendCalls.length, 0, 'nothing may be relayed without application/json');
+});
+
+test('a charset parameter on the content type is still application/json', async () => {
+    const res = await post(valid, { contentType: 'application/json; charset=utf-8', ip: '198.51.100.80' });
+    assert.equal(res.status, 200);
+    assert.equal(resendCalls.length, 1);
+});
+
+test('JSON that is not an object is refused, not thrown', async () => {
+    // All of these parse cleanly, and reading fields off them throws — which
+    // would escape the handler and take the CORS headers with it.
+    for (const [i, raw] of ['null', '[]', '"a string"', '42', 'true'].entries()) {
+        const res = await post(null, { raw, ip: `198.51.100.7${i}` });
+        assert.equal(res.status, 400, 'expected 400 for ' + raw);
+        assert.equal(res.headers.get('access-control-allow-origin'), ORIGIN);
     }
     assert.equal(resendCalls.length, 0);
 });

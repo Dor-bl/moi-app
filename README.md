@@ -194,12 +194,43 @@ curl -X POST "https://<project-ref>.supabase.co/functions/v1/contact" \
   -d '{"name":"Test","email":"you@example.com","subject":"Say Moi","message":"Test"}'
 ```
 
-A `{"ok":true}` and a message in the inbox means it works. Submitting the real form is
-the other half of the check — it exercises CORS, which curl above only approximates.
+A `{"ok":true}` and a message in the inbox means the function itself works.
+
+That is only half the check, and the weaker half. The browser sends a CORS preflight
+before the real POST, because the client sets `Authorization`, `apikey` and a JSON
+content type — none of which are on the fetch safelist. The curl above sends no
+preflight, so it passes even when the preflight would fail, and the form would then be
+broken for every visitor while this check still looked green. Ask for the preflight
+explicitly:
+
+```bash
+curl -i -X OPTIONS "https://<project-ref>.supabase.co/functions/v1/contact" \
+  -H "Origin: https://moicheck.nl" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization, apikey, content-type"
+```
+
+Expect a 200 carrying `access-control-allow-origin: https://moicheck.nl`. A **401 means
+the platform rejected the preflight before the function saw it** — preflights carry no
+`Authorization` header, so JWT verification has nowhere to look. Redeploy with
+`supabase functions deploy contact --no-verify-jwt` and repeat. That is not a loss of
+protection worth mourning: the anon key the check would have demanded is published in
+the page source anyway, and what actually guards this endpoint is the honeypot, the
+validation, the rate limit and the `application/json` requirement below.
+
+Then submit the real form once from the deployed site, which is the only check that
+exercises the whole path at once.
 
 Spam handling is deliberately small: a honeypot field the form fills only for bots, and a
 per-instance rate limit. If that ever stops being enough, add Cloudflare Turnstile rather
 than building a shared-state limiter.
+
+The function also refuses anything that is not `application/json`. That looks like a
+formality and is not: `text/plain` is on the fetch safelist, so without the check a page
+on any origin could post a JSON body under that type, skip the preflight entirely, and
+have its visitors send mail through us — the origin allow-list never gets consulted.
+Requiring a content type outside the safelist is what forces the preflight, and with it
+the allow-list, back into the path.
 
 ### Account deletion (GDPR right to erasure)
 
