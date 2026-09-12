@@ -178,6 +178,19 @@ supabase secrets set RESEND_API_KEY=re_xxxxxxxx  # from resend.com/api-keys
 supabase functions deploy contact --no-verify-jwt
 ```
 
+Pushing a change to `supabase/functions/` on `main` now redeploys it
+automatically — see `.github/workflows/deploy-functions.yml` — so the commands
+above are for the first deploy, for recovering when CI cannot, or for deploying
+from a branch before merging. The workflow needs two repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `SUPABASE_ACCESS_TOKEN` | A personal access token from *Account -> Access Tokens* in the Supabase dashboard |
+| `SUPABASE_PROJECT_REF` | The project ref, the subdomain of your `*.supabase.co` URL |
+
+Without them the job fails loudly with a message naming what is missing, rather
+than appearing to succeed.
+
 **`--no-verify-jwt` is required, not optional.** Without it the platform rejects the
 browser's CORS preflight before the function runs: preflights carry no `Authorization`
 header, so JWT verification has nothing to check and answers 401, and the real POST never

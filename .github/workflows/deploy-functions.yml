@@ -1,0 +1,84 @@
+name: Deploy Edge Functions
+
+# supabase/functions/ is the one part of this repo nothing ships automatically.
+# The site deploys from main via Vercel, so before this workflow existed a
+# change here could merge, go green, and never reach production — with no
+# symptom beyond the contact form behaving like the older code. That happened
+# once during #103.
+#
+# Runs only when the function sources change, so ordinary front-end work does
+# not redeploy the backend for no reason.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-functions.yml'
+  # For redeploying without a code change — after rotating RESEND_API_KEY, say,
+  # or to recover when a deploy failed and the fix is not in the diff.
+  workflow_dispatch:
+
+# A second push while one deploy is in flight would race to overwrite the same
+# function. Queue instead, and never cancel: a half-finished deploy is worse
+# than a slow one.
+concurrency:
+  group: deploy-edge-functions
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy contact function
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy contact function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$PROJECT_REF" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF must be set as repository secrets. See README, 'Contact form (Supabase Edge Function)'."
+            exit 1
+          fi
+          # --no-verify-jwt is required, not a preference: the platform rejects
+          # the browser's unauthenticated OPTIONS preflight otherwise, and the
+          # form breaks for every visitor while curl checks still pass.
+          supabase functions deploy contact \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
+      - name: Verify the deployed function answers a preflight
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          # Deploying successfully is not the same as working. This asks the
+          # live function for the exact preflight a browser sends and fails the
+          # job unless it comes back allowing the production origin — the check
+          # that would have caught the missing --no-verify-jwt.
+          url="https://${PROJECT_REF}.supabase.co/functions/v1/contact"
+          headers=$(curl -sS -i -X OPTIONS "$url" \
+            -H 'Origin: https://moicheck.nl' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: authorization, apikey, content-type')
+
+          echo "$headers" | head -20
+
+          status=$(printf '%s' "$headers" | head -1 | awk '{print $2}')
+          if [ "$status" != "200" ]; then
+            echo "::error::Preflight returned $status, expected 200. A 401 means the function was deployed without --no-verify-jwt."
+            exit 1
+          fi
+          if ! printf '%s' "$headers" | grep -qi '^access-control-allow-origin: https://moicheck.nl'; then
+            echo "::error::Preflight did not allow https://moicheck.nl. The contact form would be blocked in the browser."
+            exit 1
+          fi
+          echo "Preflight OK: 200, production origin allowed."
