@@ -78,12 +78,10 @@ function isAllowedOrigin(origin: string): boolean {
         origin === 'https://www.moicheck.nl' ||
         origin === 'http://localhost:8000' ||
         // Vercel previews for this project. The trailing scope is what makes
-        // this safe to allow: `moi-app-<anything>.vercel.app` is a subdomain a
-        // stranger can claim by creating a project under that name, and a page
-        // there could then post through its visitors' browsers, spreading the
-        // load across their addresses rather than one the rate limit can see.
+        // this safe to allow: `moi-<anything>.vercel.app` or `moi-app-<anything>.vercel.app`
+        // is safe as long as it has the `-blayzer` scope suffix.
         // Producing `-blayzer.vercel.app` needs control of that Vercel scope.
-        /^https:\/\/moi-app-[a-z0-9-]+-blayzer\.vercel\.app$/.test(origin);
+        /^https:\/\/moi(-app)?-[a-z0-9-]+-blayzer\.vercel\.app$/.test(origin);
 }
 
 function corsHeaders(origin: string | null): Record<string, string> {

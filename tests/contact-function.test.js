@@ -70,9 +70,13 @@ test('preflight is answered with CORS headers', async () => {
 });
 
 test('a Vercel preview in our own scope is allowed', async () => {
-    const preview = 'https://moi-app-git-something-blayzer.vercel.app';
-    const res = await handler(new Request('https://x/', { method: 'OPTIONS', headers: { origin: preview } }));
-    assert.equal(res.headers.get('access-control-allow-origin'), preview);
+    for (const preview of [
+        'https://moi-app-git-something-blayzer.vercel.app',
+        'https://moi-k9je6kuot-blayzer.vercel.app',
+    ]) {
+        const res = await handler(new Request('https://x/', { method: 'OPTIONS', headers: { origin: preview } }));
+        assert.equal(res.headers.get('access-control-allow-origin'), preview);
+    }
 });
 
 test('origins outside our scope fall back to production', async () => {
