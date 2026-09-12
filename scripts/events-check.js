@@ -47,4 +47,10 @@ if (upcoming.length < TARGET_UPCOMING) {
     console.log(`\nOnly ${upcoming.length} upcoming, below the target of ${TARGET_UPCOMING} — the page needs restocking.`);
 }
 
-process.exit(lapsed.length > 0 || upcoming.length < TARGET_UPCOMING ? 1 : 0);
+// exitCode rather than exit(): process.exit() can cut the process off before
+// buffered stdout has drained, and Node's writes to a pipe are asynchronous on
+// macOS (they are synchronous on Linux, so CI would never have shown it). This
+// script exists to be read, and a routine will be capturing it, so a truncated
+// report is the one failure worth avoiding. There is nothing to abort here —
+// the script simply ends.
+process.exitCode = lapsed.length > 0 || upcoming.length < TARGET_UPCOMING ? 1 : 0;
