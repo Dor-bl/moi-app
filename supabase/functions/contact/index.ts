@@ -97,14 +97,6 @@ Deno.serve(async (req: Request) => {
         return json({ error: 'Method not allowed' }, 405, origin);
     }
 
-    // No address means no bucket. Sharing one across every header-less caller
-    // would let a handful of them lock each other out, which is worse than the
-    // spam this is meant to slow down — the honeypot and validation still apply.
-    const ip = clientIp(req);
-    if (ip && rateLimited(ip)) {
-        return json({ error: 'Too many messages, please try again shortly.' }, 429, origin);
-    }
-
     // The origin allow-list does not gate this on its own. A page anywhere can
     // send a no-cors POST with a safelisted content type — text/plain carrying
     // a JSON body — which skips the preflight entirely and still reaches us;
@@ -114,6 +106,18 @@ Deno.serve(async (req: Request) => {
     const mediaType = (req.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
     if (mediaType !== 'application/json') {
         return json({ error: 'Expected application/json.' }, 415, origin);
+    }
+
+    // Ordering matters: the media-type rejection above must come first, or those
+    // requests spend the visitor's bucket. An attacker page could then fire
+    // three no-cors posts from someone's browser and have that person's real
+    // submission answered with a 429.
+    // No address means no bucket. Sharing one across every header-less caller
+    // would let a handful of them lock each other out, which is worse than the
+    // spam this is meant to slow down — the honeypot and validation still apply.
+    const ip = clientIp(req);
+    if (ip && rateLimited(ip)) {
+        return json({ error: 'Too many messages, please try again shortly.' }, 429, origin);
     }
 
     let body: unknown;
@@ -190,8 +194,17 @@ Deno.serve(async (req: Request) => {
 
     if (!res.ok) {
         // The body carries Resend's reason (unverified domain, bad key). It goes
-        // to the function log, never to the visitor.
-        console.error('Resend rejected the message:', res.status, await res.text());
+        // to the function log, never to the visitor — and reading it is its own
+        // stream, which can fail after the response headers arrived. That throw
+        // would land outside the try above and cost us the CORS headers, to say
+        // nothing of the log line we wanted.
+        let detail = '<unreadable>';
+        try {
+            detail = await res.text();
+        } catch (err) {
+            console.error('Could not read Resend error body:', err);
+        }
+        console.error('Resend rejected the message:', res.status, detail);
         return json({ error: 'Could not send the message right now.' }, 502, origin);
     }
 

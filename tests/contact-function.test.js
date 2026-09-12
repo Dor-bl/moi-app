@@ -147,6 +147,19 @@ test('a no-cors content type is refused before anything is sent', async () => {
     assert.equal(resendCalls.length, 0, 'nothing may be relayed without application/json');
 });
 
+test('a rejected media type does not spend the visitor\'s rate-limit bucket', async () => {
+    // An attacker page firing no-cors posts from someone's browser must not be
+    // able to get that person's real submission answered with a 429.
+    const ip = '198.51.100.90';
+    for (let i = 0; i < 4; i++) {
+        const res = await post(valid, { origin: 'https://evil.example', ip, contentType: 'text/plain' });
+        assert.equal(res.status, 415);
+    }
+    const real = await post(valid, { ip });
+    assert.equal(real.status, 200, 'the visitor must still be able to write to us');
+    assert.equal(resendCalls.length, 1);
+});
+
 test('a charset parameter on the content type is still application/json', async () => {
     const res = await post(valid, { contentType: 'application/json; charset=utf-8', ip: '198.51.100.80' });
     assert.equal(res.status, 200);
@@ -196,6 +209,17 @@ test('a transport failure to Resend is a controlled 502 with CORS headers', asyn
     assert.equal(res.status, 502);
     assert.equal(res.headers.get('access-control-allow-origin'), ORIGIN);
     assert.match((await res.json()).error, /Could not send/);
+});
+
+test('a 502 still comes back when Resend\'s error body cannot be read', async () => {
+    resendBehaviour = () => ({
+        ok: false,
+        status: 500,
+        text: () => Promise.reject(new TypeError('terminated')),
+    });
+    const res = await post(valid, { ip: '198.51.100.91' });
+    assert.equal(res.status, 502);
+    assert.equal(res.headers.get('access-control-allow-origin'), ORIGIN);
 });
 
 test('a rejection from Resend is a 502 that leaks nothing to the visitor', async () => {
