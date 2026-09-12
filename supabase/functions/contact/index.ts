@@ -24,6 +24,19 @@ const MAX = { name: 100, email: 254, message: 5000 };
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 3;
 const recent = new Map<string, number[]>();
+let lastSweep = 0;
+
+// Filtering on read only ever touches the address being looked at, so an
+// address that stops sending keeps its timestamps until the map is cleared
+// wholesale — which privacy.html promises does not happen. Sweep the whole map
+// once per window instead; at this traffic that is a handful of keys.
+function sweepExpired(now: number): void {
+    if (now - lastSweep < WINDOW_MS) return;
+    lastSweep = now;
+    for (const [key, times] of recent) {
+        if (times.every((t) => now - t >= WINDOW_MS)) recent.delete(key);
+    }
+}
 
 // Prefer the headers the platform sets over x-forwarded-for, whose first entry
 // is whatever the client sent and is therefore trivially rotated by anyone who
@@ -39,7 +52,11 @@ function clientIp(req: Request): string | null {
 
 function rateLimited(ip: string): boolean {
     const now = Date.now();
+    sweepExpired(now);
     const seen = (recent.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
+    // Backstop for a flood arriving inside a single window, which the sweep
+    // above cannot help with. Wholesale, so it resets everyone's allowance —
+    // acceptable only because it is the last resort, not the mechanism.
     if (recent.size > 1000) recent.clear();
 
     // Stop recording once an address is over the limit. Appending regardless
