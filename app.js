@@ -639,10 +639,19 @@ function renderList() {
     
     const filteredList = getFilteredItems(currentFilter);
 
-    // Completed items sink below a divider, keeping what is left to do at the top.
-    // Both partitions keep the original BUCKET_LIST order.
-    const todo = filteredList.filter(item => !completedItems[item.id]);
-    const done = filteredList.filter(item => !!completedItems[item.id]);
+    // ⚡ Bolt Performance Optimization:
+    // Replace two sequential O(N) filter passes with a single O(N) partitioning loop.
+    // Impact: Halves the iterations over the filtered list array on every UI re-render,
+    // reducing processing time when changing categories or marking items done.
+    const todo = [];
+    const done = [];
+    for (let i = 0; i < filteredList.length; i++) {
+        if (completedItems[filteredList[i].id]) {
+            done.push(filteredList[i]);
+        } else {
+            todo.push(filteredList[i]);
+        }
+    }
 
     // ⚡ Bolt Performance Optimization:
     // Use a DocumentFragment to batch all DOM insertions.
@@ -864,10 +873,19 @@ function openProfileModal() {
     
     renderBadges();
     
+    // ⚡ Bolt Performance Optimization:
+    // Pre-compute parsed date timestamps during .map() (Schwartzian transform)
+    // instead of calling memoryTimestamp() repeatedly within the .sort() comparator.
+    // Impact: Reduces new Date() allocations and O(N log N) date parsings, speeding up sort.
     const completedArr = Object.entries(completedItems).map(([id, data]) => {
         const item = itemsById[id];
-        return item ? { ...item, ...data } : null;
-    }).filter(Boolean).sort((a, b) => memoryTimestamp(b.date) - memoryTimestamp(a.date));
+        if (!item) return null;
+        const merged = { ...item, ...data };
+        return { merged, _parsedTimestamp: memoryTimestamp(merged.date) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b._parsedTimestamp - a._parsedTimestamp)
+    .map(wrapper => wrapper.merged);
     
     if (completedArr.length === 0) {
         completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
