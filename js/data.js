@@ -288,6 +288,15 @@ const BUCKET_LIST = [
         tip: { en: 'Every July the old drafbaan turns into Groningen\'s biggest open-air stage, with the lit-up Gasunie building looming behind the crowd — big international names, yet it still feels like a neighbourhood festival.', nl: 'Elke juli verandert de oude drafbaan in het grootste openluchtpodium van Groningen, met de verlichte Gasunietoren op de achtergrond — grote internationale namen, maar het voelt nog steeds als een buurtfeest. Dat is leuk!' },
         url: 'https://www.spotgroningen.nl/events/summerstage/',
         urlLabel: { en: 'Summerstage Info & Tickets 🎤', nl: 'Summerstage Info & Tickets 🎤' }
+    },
+    {
+        id: '36',
+        coords: [53.4322, 6.5831],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Walk the salt marsh path at Noordpolderzijl', nl: 'Wandel het kwelderpad bij Noordpolderzijl' },
+        tip: { en: "This is the smallest harbour in the Netherlands, and a free path leads straight from the parking lot onto the kwelder, the salt marsh laced with tidal creeks. No boat ticket needed here: at low tide keep an eye on the sandbanks offshore, where seals regularly haul out, while oystercatchers and geese work the marsh around you.", nl: 'Dit is de kleinste haven van Nederland, en een gratis pad leidt zo vanaf de parkeerplaats de kwelder op, doorsneden door kreekjes. Geen bootje nodig: kijk bij laag water naar de zandplaten voor de kust, waar geregeld zeehonden liggen, terwijl scholeksters en ganzen om je heen de kwelder afstruinen.' },
+        url: 'https://www.groningerlandschap.nl/activiteiten/wandelroutes/wandelroute-noordpolderzijl-kwelders/',
+        urlLabel: { en: 'Noordpolderzijl Kwelderpad Route 🦭', nl: 'Kwelderpad Noordpolderzijl Route 🦭' }
     }
 ];
 
