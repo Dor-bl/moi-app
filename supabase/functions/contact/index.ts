@@ -77,10 +77,21 @@ function isAllowedOrigin(origin: string): boolean {
     return origin === 'https://moicheck.nl' ||
         origin === 'https://www.moicheck.nl' ||
         origin === 'http://localhost:8000' ||
-        // Vercel previews for this project. The trailing scope is what makes
-        // this safe to allow: `moi-<anything>.vercel.app` or `moi-app-<anything>.vercel.app`
-        // is safe as long as it has the `-blayzer` scope suffix.
-        // Producing `-blayzer.vercel.app` needs control of that Vercel scope.
+        // Vercel previews for this project, in both the branch-alias and
+        // per-deployment shapes Vercel hands out.
+        //
+        // The `-blayzer` suffix narrows this but does not seal it, and the
+        // earlier comment here claimed otherwise. Vercel derives a project's
+        // hostname from its *name*, so someone who registers a project called
+        // `moi-evil-blayzer` gets `moi-evil-blayzer.vercel.app` and matches —
+        // no access to this scope required. A page there could post through its
+        // own visitors' browsers, which spreads submissions across their
+        // addresses rather than one the rate limit can see.
+        //
+        // Kept as a pattern because the alternative — an exact host list in a
+        // secret — has to be updated for every preview URL, and the exposure it
+        // buys back is inbox spam on a form that already has a honeypot, field
+        // validation and a per-address limit. Revisit if that stops being true.
         /^https:\/\/moi(-app)?-[a-z0-9-]+-blayzer\.vercel\.app$/.test(origin);
 }
 
