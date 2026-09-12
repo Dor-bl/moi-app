@@ -13,15 +13,24 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'supabase/functions/**'
+      # Scoped to the one function this job deploys. A wider filter would run a
+      # green deployment of `contact` when some other function changed, leaving
+      # that one stale — the exact false signal this workflow exists to remove.
+      # Adding a second function means extending the deploy and verify steps
+      # below, and widening this.
+      - 'supabase/functions/contact/**'
       - '.github/workflows/deploy-functions.yml'
   # For redeploying without a code change — after rotating RESEND_API_KEY, say,
   # or to recover when a deploy failed and the fix is not in the diff.
   workflow_dispatch:
 
-# A second push while one deploy is in flight would race to overwrite the same
-# function. Queue instead, and never cancel: a half-finished deploy is worse
-# than a slow one.
+# Two deploys racing would overwrite the same function, so serialise them.
+# `cancel-in-progress: false` protects the *running* deploy only — a
+# half-finished deploy is worse than a slow one. GitHub still keeps just one
+# pending run, so a third push supersedes a waiting second one. That is fine
+# here and worth being precise about rather than claiming every run survives:
+# main is cumulative, so the superseded run would have deployed code that the
+# surviving run deploys anyway.
 concurrency:
   group: deploy-edge-functions
   cancel-in-progress: false
@@ -32,6 +41,17 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      # workflow_dispatch runs against whatever ref was selected, and checkout
+      # follows it. Without this a maintainer could pick a feature branch from
+      # the Actions UI and put unmerged function code straight into production.
+      # Refusing is better than quietly checking out main instead: the deploy
+      # you asked for and the deploy you got should be the same one.
+      - name: Refuse to deploy anything but main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::This workflow deploys to production and runs from main only. Got ${{ github.ref }}. Merge first, or use the manual command in the README to deploy a branch deliberately."
+          exit 1
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -62,8 +82,10 @@ jobs:
         run: |
           # Deploying successfully is not the same as working. This asks the
           # live function for the exact preflight a browser sends and fails the
-          # job unless it comes back allowing the production origin — the check
-          # that would have caught the missing --no-verify-jwt.
+          # job unless the answer would actually let the POST through. Every
+          # assertion here is one the browser makes silently: if any is wrong
+          # the form breaks for every visitor while a plain curl POST — which
+          # sends no preflight — still looks fine.
           url="https://${PROJECT_REF}.supabase.co/functions/v1/contact"
           headers=$(curl -sS -i -X OPTIONS "$url" \
             -H 'Origin: https://moicheck.nl' \
@@ -72,13 +94,38 @@ jobs:
 
           echo "$headers" | head -20
 
+          header_value() {
+            printf '%s' "$headers" | grep -i "^$1:" | head -1 | cut -d: -f2- | tr -d '\r' | sed 's/^ *//; s/ *$//'
+          }
+
           status=$(printf '%s' "$headers" | head -1 | awk '{print $2}')
           if [ "$status" != "200" ]; then
             echo "::error::Preflight returned $status, expected 200. A 401 means the function was deployed without --no-verify-jwt."
             exit 1
           fi
-          if ! printf '%s' "$headers" | grep -qi '^access-control-allow-origin: https://moicheck.nl'; then
-            echo "::error::Preflight did not allow https://moicheck.nl. The contact form would be blocked in the browser."
+
+          # Exact match, not a prefix: `https://moicheck.nl.evil.example` starts
+          # with the right string and is a different site entirely.
+          allow_origin=$(header_value 'access-control-allow-origin')
+          if [ "$allow_origin" != "https://moicheck.nl" ]; then
+            echo "::error::Preflight allowed origin '$allow_origin', expected exactly 'https://moicheck.nl'. The contact form would be blocked in the browser."
             exit 1
           fi
-          echo "Preflight OK: 200, production origin allowed."
+
+          # Allowing the origin is not enough: the browser also checks that the
+          # method and every requested header come back permitted.
+          allow_methods=$(header_value 'access-control-allow-methods' | tr 'A-Z' 'a-z' | tr -d ' ')
+          case ",$allow_methods," in
+            *,post,*) ;;
+            *) echo "::error::Preflight did not allow POST (got '$allow_methods')."; exit 1 ;;
+          esac
+
+          allow_headers=$(header_value 'access-control-allow-headers' | tr 'A-Z' 'a-z' | tr -d ' ')
+          for required in authorization apikey content-type; do
+            case ",$allow_headers," in
+              *,"$required",*) ;;
+              *) echo "::error::Preflight did not allow the '$required' header (got '$allow_headers'). The client sends it on every submission."; exit 1 ;;
+            esac
+          done
+
+          echo "Preflight OK: 200, origin exactly https://moicheck.nl, POST and all required headers allowed."
