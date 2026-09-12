@@ -178,8 +178,9 @@ supabase secrets set RESEND_API_KEY=re_xxxxxxxx  # from resend.com/api-keys
 supabase functions deploy contact --no-verify-jwt
 ```
 
-Pushing a change to `supabase/functions/` on `main` now redeploys it
-automatically — see `.github/workflows/deploy-functions.yml` — so the commands
+Pushing a change to `supabase/functions/contact/` on `main` now redeploys that
+function automatically — only that path, so adding a second function means
+extending the workflow rather than relying on it — see `.github/workflows/deploy-functions.yml` — so the commands
 above are for the first deploy, for recovering when CI cannot, or for deploying
 from a branch before merging. The workflow needs two repository secrets:
 

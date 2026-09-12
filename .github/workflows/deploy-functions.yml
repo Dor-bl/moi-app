@@ -35,6 +35,11 @@ concurrency:
   group: deploy-edge-functions
   cancel-in-progress: false
 
+# Third-party actions run in this job with production deploy secrets in scope.
+# It only ever reads the checkout, so give it nothing else.
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy contact function
@@ -48,8 +53,15 @@ jobs:
       # you asked for and the deploy you got should be the same one.
       - name: Refuse to deploy anything but main
         if: github.ref != 'refs/heads/main'
+        env:
+          # Never interpolate the ref into the script body. Actions substitutes
+          # it as text before bash parses the line, so a branch named
+          # `foo"; exit 0; #` would close the echo, exit the step successfully
+          # and skip the `exit 1` below — turning this guard into a no-op and
+          # deploying that branch. Through the environment it is only ever data.
+          SELECTED_REF: ${{ github.ref }}
         run: |
-          echo "::error::This workflow deploys to production and runs from main only. Got ${{ github.ref }}. Merge first, or use the manual command in the README to deploy a branch deliberately."
+          echo "::error::This workflow deploys to production and runs from main only. Got '$SELECTED_REF'. Merge first, or use the manual command in the README to deploy a branch deliberately."
           exit 1
 
       - name: Checkout code
@@ -87,7 +99,11 @@ jobs:
           # the form breaks for every visitor while a plain curl POST — which
           # sends no preflight — still looks fine.
           url="https://${PROJECT_REF}.supabase.co/functions/v1/contact"
+          # Bounded: without a timeout a stalled endpoint holds this
+          # serialised slot until GitHub's job limit, leaving later pushes
+          # queued behind it and production stale.
           headers=$(curl -sS -i -X OPTIONS "$url" \
+            --connect-timeout 10 --max-time 30 \
             -H 'Origin: https://moicheck.nl' \
             -H 'Access-Control-Request-Method: POST' \
             -H 'Access-Control-Request-Headers: authorization, apikey, content-type')
@@ -98,11 +114,18 @@ jobs:
             printf '%s' "$headers" | grep -i "^$1:" | head -1 | cut -d: -f2- | tr -d '\r' | sed 's/^ *//; s/ *$//'
           }
 
+          # Any 2xx satisfies a browser, and 204 is the conventional no-body
+          # preflight answer. Pinning 200 would fail a healthy deployment the
+          # day someone changes the handler's OPTIONS status, and block every
+          # deploy after it.
           status=$(printf '%s' "$headers" | head -1 | awk '{print $2}')
-          if [ "$status" != "200" ]; then
-            echo "::error::Preflight returned $status, expected 200. A 401 means the function was deployed without --no-verify-jwt."
-            exit 1
-          fi
+          case "$status" in
+            2??) ;;
+            *)
+              echo "::error::Preflight returned $status, expected 2xx. A 401 means the function was deployed without --no-verify-jwt."
+              exit 1
+              ;;
+          esac
 
           # Exact match, not a prefix: `https://moicheck.nl.evil.example` starts
           # with the right string and is a different site entirely.
