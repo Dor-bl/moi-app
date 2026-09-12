@@ -32,10 +32,16 @@ npm ci && npm run events:check
 ```
 
 It prints what is still ahead and which non-recurring entries have lapsed, and exits
-non-zero when the list needs attention.
+non-zero when the list needs attention. Two things count as needing attention:
+
+- **Something lapsed** — a non-recurring entry whose dates are in the past.
+- **The list is thin** — fewer than eight upcoming events, the low end of the launch
+  target below. Thinness has to count on its own: every entry shipped so far is annual,
+  so nothing ever lapses, and a lapsed-only check would exit 0 forever and leave this
+  routine unable to do the job it was created for.
 
 **If it exits 0, the run stops there.** Do not open a pull request, do not comment, do
-not "tidy" anything. A month where nothing has lapsed is a success, not a broken run —
+not "tidy" anything. A month where the list is healthy is a success, not a broken run —
 a routine that files something every month is a notification people learn to ignore.
 
 ## The rule that matters most: fixed dates vs floating ones

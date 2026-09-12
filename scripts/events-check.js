@@ -33,10 +33,18 @@ if (lapsed.length > 0) {
     }
 }
 
-// One upcoming event is a page not worth opening, so treat a nearly empty list as
-// needing attention in its own right rather than only flagging lapsed entries.
-if (upcoming.length < 2) {
-    console.log(`\nOnly ${upcoming.length} event(s) ahead — the page needs restocking.`);
+// A lapsed-entries check on its own is a dead gate: every shipped entry is
+// annual, so nothing ever lapses, this would exit 0 forever, and the refresh
+// routine — told to stop on 0 — could never do the job it exists for, which is
+// adding the floating festivals the list is still missing.
+//
+// So thinness is a gap in its own right. Eight is the low end of the launch
+// target in docs/routines/monthly-events-refresh.md; below it the page reads as
+// sparse and a refresh run has something worth doing.
+const TARGET_UPCOMING = 8;
+
+if (upcoming.length < TARGET_UPCOMING) {
+    console.log(`\nOnly ${upcoming.length} upcoming, below the target of ${TARGET_UPCOMING} — the page needs restocking.`);
 }
 
-process.exit(lapsed.length > 0 || upcoming.length < 2 ? 1 : 0);
+process.exit(lapsed.length > 0 || upcoming.length < TARGET_UPCOMING ? 1 : 0);

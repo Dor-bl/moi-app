@@ -137,14 +137,37 @@ test('a date range renders as one span', () => {
     assert.match(range, /August/);
 });
 
+// Date.parse is no use for this: it rejects a bad month ('2026-13-01') but
+// silently normalises a bad day, so '2026-02-30' comes back as 2 March and
+// '2027-02-29' as 1 March. Round-tripping is what actually catches a day that
+// does not exist — and the day is the half that matters here, since filtering
+// compares the original string while formatting would show the shifted one.
+function isRealDate(iso) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+    const parsed = new Date(`${iso}T00:00:00Z`);
+    // A bad month gives an invalid Date, whose toISOString throws rather than
+    // returning something to compare — so that case has to be caught before the
+    // round-trip, not by it.
+    if (Number.isNaN(parsed.getTime())) return false;
+    return parsed.toISOString().slice(0, 10) === iso;
+}
+
+test('the date guard rejects days that do not exist', () => {
+    assert.ok(isRealDate('2026-09-12'));
+    assert.ok(isRealDate('2028-02-29'), 'a real leap day');
+    assert.ok(!isRealDate('2026-02-30'));
+    assert.ok(!isRealDate('2027-02-29'), 'not a leap year');
+    assert.ok(!isRealDate('2026-04-31'));
+    assert.ok(!isRealDate('2026-13-01'));
+});
+
 test('every shipped event is well formed', () => {
     for (const event of EVENTS) {
-        assert.match(event.date, /^\d{4}-\d{2}-\d{2}$/, `${event.id} has an ISO date`);
-        assert.ok(!Number.isNaN(Date.parse(`${event.date}T00:00:00Z`)), `${event.id} date is a real day`);
+        assert.ok(isRealDate(event.date), `${event.id} date is a real day`);
 
         if (event.endDate) {
             assert.ok(event.endDate >= event.date, `${event.id} ends on or after it starts`);
-            assert.ok(!Number.isNaN(Date.parse(`${event.endDate}T00:00:00Z`)), `${event.id} endDate is a real day`);
+            assert.ok(isRealDate(event.endDate), `${event.id} endDate is a real day`);
         }
 
         for (const lang of ALLOWED_LANGS) {
@@ -163,12 +186,14 @@ test('annual events sit on dates that exist every year', () => {
             `${event.id} is annual but falls on 29 February`
         );
         // Roll it a few years out; a date that only exists sometimes shows up here.
+        // Both ends, since an annual span is allowed to carry an endDate and a
+        // 28 Feb - 29 Feb run would roll its end onto a day that isn't there.
         for (const year of [2027, 2028, 2029, 2030]) {
             const rolled = resolveOccurrence(event, `${year}-01-01`);
-            assert.ok(
-                !Number.isNaN(Date.parse(`${rolled.date}T00:00:00Z`)),
-                `${event.id} resolves to a real day in ${year}`
-            );
+            assert.ok(isRealDate(rolled.date), `${event.id} starts on a real day in ${year}`);
+            if (rolled.endDate) {
+                assert.ok(isRealDate(rolled.endDate), `${event.id} ends on a real day in ${year}`);
+            }
         }
     }
 });
