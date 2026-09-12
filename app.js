@@ -120,6 +120,10 @@ function init() {
     initAuth();
 }
 
+// ⚡ Bolt Performance Optimization:
+// Replace .filter().length with a simple counter loop in frequent render functions.
+// Impact: Eliminates unnecessary O(N) array allocations and garbage collection overhead
+// when calculating category progress during checkbox toggles and UI updates.
 function renderFilterPills() {
     const t = UI_TRANSLATIONS[currentLang];
 
@@ -138,7 +142,10 @@ function renderFilterPills() {
         if (!label) return;
 
         const items = getFilteredItems(cat);
-        const remaining = items.filter(i => !completedItems[i.id]).length;
+        let remaining = 0;
+        for (let i = 0; i < items.length; i++) {
+            if (!completedItems[items[i].id]) remaining++;
+        }
 
         let labelEl = pill.querySelector('.filter-pill-label');
         let countEl = pill.querySelector('.filter-pill-count');
@@ -635,8 +642,6 @@ function buildCompletedDivider(count, collapsed) {
 }
 
 function renderList() {
-    listContainer.innerHTML = '';
-    
     const filteredList = getFilteredItems(currentFilter);
 
     // ⚡ Bolt Performance Optimization:
@@ -669,7 +674,11 @@ function renderList() {
         }
     }
 
-    listContainer.appendChild(fragment);
+    // ⚡ Bolt Performance Optimization:
+    // Use replaceChildren() instead of innerHTML = '' followed by appendChild().
+    // Impact: Avoids invoking the HTML parser and performs DOM replacement in a
+    // single optimized step, reducing render-blocking time.
+    listContainer.replaceChildren(fragment);
 
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
@@ -754,7 +763,11 @@ function checkBadgeUnlocks(itemId, wasCompleted) {
 
     const categoryItems = itemsByCategory[categoryName] || [];
     const total = categoryItems.length;
-    const completedCount = categoryItems.filter(i => !!completedItems[i.id]).length;
+
+    let completedCount = 0;
+    for (let i = 0; i < total; i++) {
+        if (completedItems[categoryItems[i].id]) completedCount++;
+    }
 
     if (total > 0 && completedCount === total) {
         showBadgeToast(badge);
@@ -770,7 +783,12 @@ function renderBadges() {
     CATEGORY_BADGES.forEach(badge => {
         const categoryItems = itemsByCategory[badge.category] || [];
         const total = categoryItems.length;
-        const completedCount = categoryItems.filter(item => !!completedItems[item.id]).length;
+
+        let completedCount = 0;
+        for (let i = 0; i < total; i++) {
+            if (completedItems[categoryItems[i].id]) completedCount++;
+        }
+
         const isUnlocked = total > 0 && completedCount === total;
 
         const card = document.createElement('div');
