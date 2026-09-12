@@ -137,6 +137,29 @@ test('a date range renders as one span', () => {
     assert.match(range, /August/);
 });
 
+// A span crossing New Year must name both years, or "31 December - 1 January"
+// leaves the reader guessing which January. formatEventDate sets options.year
+// only when the START year differs from today, so this case is carried by
+// formatRange itself, which is required to include the largest differing field
+// between the two dates. That is platform behaviour rather than ours, which is
+// exactly why it is pinned here: if it ever stopped holding, the fix is to set
+// the year explicitly for cross-year spans, and this test is what would say so.
+test('a span crossing New Year names both years', () => {
+    const newYear = { id: 'ny', date: '2026-12-31', endDate: '2027-01-01', title: { en: 'NY', nl: 'NY' } };
+
+    for (const lang of ALLOWED_LANGS) {
+        // Viewed from within the start year, which is the case that could have
+        // omitted the year entirely.
+        const rendered = formatEventDate(newYear, lang, '2026-12-30');
+        assert.match(rendered, /2026/, `${lang} span names its start year`);
+        assert.match(rendered, /2027/, `${lang} span names its end year`);
+    }
+
+    // The ordinary same-year span still stays clean, so this has not turned into
+    // a year on every date.
+    assert.ok(!/\d{4}/.test(formatEventDate(festival, 'en', '2026-01-01')), 'same-year span stays bare');
+});
+
 // Date.parse is no use for this: it rejects a bad month ('2026-13-01') but
 // silently normalises a bad day, so '2026-02-30' comes back as 2 March and
 // '2027-02-29' as 1 March. Round-tripping is what actually catches a day that
