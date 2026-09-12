@@ -1,6 +1,6 @@
 # FormSubmit.co: GDPR basis and data processing agreement
 
-**Status:** interim decision recorded — keep FormSubmit with accurate disclosure; replacement recommended, awaiting owner sign-off
+**Status:** resolved — FormSubmit replaced by a Supabase Edge Function (option 2), owner-approved 9 September 2026
 **Date:** 9 September 2026
 **Issue:** [#79](https://github.com/Dor-bl/moi-app/issues/79) (split out of #28; related: #32 international transfers, #27 third-party requests)
 
@@ -82,19 +82,25 @@ describing it, but an accurate policy is strictly better than a policy that impl
 relationship we do not have, and the `mailto:` gives a privacy-conscious visitor a real
 alternative today.
 
-**Recommended: move to option 2 (Supabase Edge Function).** It closes the Article 28 gap
-by removing the processor rather than papering over it, keeps the contact form's data
-under agreements the project already relies on, and is a contained change — the
-alternative to the current `fetch` is a different endpoint, not a new architecture. This
-recommendation is recorded, not executed: swapping the contact backend is the owner's
-call, and it should be a separate, reviewable PR.
+**Resolved: option 2 was chosen and executed.** The contact form now posts to a Supabase
+Edge Function (`supabase/functions/contact/`), which relays the message through Resend to
+`hallo@moicheck.nl`. FormSubmit is gone from the codebase and from `privacy.html`.
 
-If option 1 is chosen deliberately instead, that is defensible for an app of this size —
-but record it here as a considered acceptance, with the disclosure kept accurate, rather
-than leaving it undecided.
+Resend is not a new processor: the README already documents it as the custom SMTP
+provider behind Supabase's magic-link emails, so the option 3 objection above — that an
+email provider "adds a processor and an account to maintain" — did not apply once the
+stack was checked. Both Supabase and Resend publish data processing agreements, which is
+the gap FormSubmit could not fill. The transfer question is unchanged and still tracked
+in [#32](https://github.com/Dor-bl/moi-app/issues/32).
+
+What was deliberately *not* built, per the rules in `CLAUDE.md`: no `contact_messages`
+table and no migration (the inbox is the record, as it was before), and no shared-state
+rate limiter. The function carries a honeypot field and a per-instance rate limit, which
+is proportionate to a contact form on an app this size. If spam ever gets past that, the
+next step is Cloudflare Turnstile, not a distributed counter.
 
 ## Follow-up
 
-- [ ] Owner to confirm: replace FormSubmit (option 2), or record acceptance of the risk (option 1).
-- [ ] Verify the findings against the live FormSubmit pages, and email `support@formsubmit.co` to ask directly whether a DPA exists.
-- [ ] If replacing: open a separate PR for the Edge Function, then simplify the FormSubmit bullet in `privacy.html` back down.
+- [x] Owner to confirm: replace FormSubmit (option 2), or record acceptance of the risk (option 1). — replaced.
+- [ ] Verify the findings against the live FormSubmit pages, and email `support@formsubmit.co` to ask directly whether a DPA exists. — now historical; kept because the record should be checkable.
+- [x] If replacing: open a separate PR for the Edge Function, then simplify the FormSubmit bullet in `privacy.html` back down.

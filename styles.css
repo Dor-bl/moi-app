@@ -1010,6 +1010,17 @@ textarea:focus {
     font-weight: 700;
 }
 
+/* Honeypot: positioned off-screen rather than display:none, which some bots
+   check for before deciding whether to fill a field. Never shown to people,
+   never focusable; a value in it means the submission was automated. */
+.honeypot-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
 .form-group {
     margin-bottom: 1.25rem;
 }
