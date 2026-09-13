@@ -1,7 +1,8 @@
-// The "N left" pill in .completed-divider-count paired --text-light on top of
-// --border-color. In dark mode that combination (#94A3B8 on #334155) only
-// reaches ~4.04:1, below the WCAG AA 4.5:1 threshold for normal-size text —
-// caught by an automated accessibility scan of the deployed app, not by eye.
+// The completed-items count pill in .completed-divider-count paired
+// --text-light on top of --border-color. In dark mode that combination
+// (#94A3B8 on #334155) only reaches ~4.04:1, below the WCAG AA 4.5:1
+// threshold for normal-size text — caught by an automated accessibility
+// scan of the deployed app, not by eye.
 // The fix swaps the pill's background to --card-bg, which clears AA in both
 // themes; this test pins that contrast so it can't regress back to
 // --border-color (or drift some other way) unnoticed.
@@ -66,7 +67,7 @@ async function readPillColors(browser, css, themeAttr, colorScheme) {
     }
 }
 
-test('the "left" count pill on the completed-items divider stays legible in every theme', async () => {
+test('the completed-items count pill on the completed divider stays legible in every theme', async () => {
     const css = await readFile(path.join(REPO_ROOT, 'styles.css'), 'utf8');
     let browser;
     try {
