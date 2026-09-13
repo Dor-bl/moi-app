@@ -1,10 +1,15 @@
 # Monthly Events Refresh Routine
 
-A Claude Routine fires on the **first of each month**, checks the `EVENTS` list in
-[`js/data.js`](../../js/data.js) for gaps, and — only if it finds any — opens a pull
+> **Not scheduled yet.** This spec describes how the routine is meant to run; no
+> Routine has been configured, so nothing fires on its own today. Standing it up needs
+> the claude.ai Routines UI — see *Push authorization* below. Until then this is the
+> plan, not a description of something already happening.
+
+A Claude Routine is to fire on the **first of each month**, check the `EVENTS` list in
+[`js/data.js`](../../js/data.js) for gaps, and — only if it finds any — open a pull
 request filling them in.
 
-The schedule is `0 8 1 * *`, and cron is evaluated in UTC while Amsterdam switches
+The intended schedule is `0 8 1 * *`, and cron is evaluated in UTC while Amsterdam switches
 between CEST (UTC+2) and CET (UTC+1). So the run lands at **10:00 local during summer
 time and 09:00 local during winter time**. Nothing depends on the exact hour, so the
 schedule is left alone across the DST changes rather than being re-pinned twice a year.
@@ -32,10 +37,16 @@ npm ci && npm run events:check
 ```
 
 It prints what is still ahead and which non-recurring entries have lapsed, and exits
-non-zero when the list needs attention.
+non-zero when the list needs attention. Two things count as needing attention:
+
+- **Something lapsed** — a non-recurring entry whose dates are in the past.
+- **The list is thin** — fewer than eight upcoming events, the low end of the launch
+  target below. Thinness has to count on its own: every entry shipped so far is annual,
+  so nothing ever lapses, and a lapsed-only check would exit 0 forever and leave this
+  routine unable to do the job it was created for.
 
 **If it exits 0, the run stops there.** Do not open a pull request, do not comment, do
-not "tidy" anything. A month where nothing has lapsed is a success, not a broken run —
+not "tidy" anything. A month where the list is healthy is a success, not a broken run —
 a routine that files something every month is a notification people learn to ignore.
 
 ## The rule that matters most: fixed dates vs floating ones
@@ -96,8 +107,19 @@ not be confirmed from its official page does not go in the PR.
 
 ## Event shape
 
-Append to `EVENTS` in `js/data.js`, keeping the existing style and the comment block
-above the array:
+Add to `EVENTS` in `js/data.js`, keeping the existing style and the comment block above
+the array.
+
+**Replacing a lapsed edition, rather than appending beside it, matters.** When you add a
+confirmed successor to a floating festival — `noorderzon-2027` for `noorderzon-2026` —
+**delete the edition it replaces in the same change**. `events:check` counts any
+non-recurring entry with past dates as a gap, so an old edition left sitting next to its
+successor keeps the check failing forever, and a gate that never goes quiet is a gate
+nobody reads.
+
+When a floating edition has lapsed and **no** successor has been announced yet, leave it
+where it is. It costs the page nothing — the date filter drops it, so visitors never see
+it — and it is what keeps the check reporting the gap until someone can fill it.
 
 ```js
 {

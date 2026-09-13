@@ -137,18 +137,73 @@ test('a date range renders as one span', () => {
     assert.match(range, /August/);
 });
 
+// A span crossing New Year must name both years, or "31 December - 1 January"
+// leaves the reader guessing which January. formatEventDate sets options.year
+// only when the START year differs from today, so this case is carried by
+// formatRange itself, which is required to include the largest differing field
+// between the two dates. That is platform behaviour rather than ours, which is
+// exactly why it is pinned here: if it ever stopped holding, the fix is to set
+// the year explicitly for cross-year spans, and this test is what would say so.
+test('a span crossing New Year names both years', () => {
+    const newYear = { id: 'ny', date: '2026-12-31', endDate: '2027-01-01', title: { en: 'NY', nl: 'NY' } };
+
+    for (const lang of ALLOWED_LANGS) {
+        // Viewed from within the start year, which is the case that could have
+        // omitted the year entirely.
+        const rendered = formatEventDate(newYear, lang, '2026-12-30');
+        assert.match(rendered, /2026/, `${lang} span names its start year`);
+        assert.match(rendered, /2027/, `${lang} span names its end year`);
+    }
+
+    // The ordinary same-year span still stays clean, so this has not turned into
+    // a year on every date.
+    assert.ok(!/\d{4}/.test(formatEventDate(festival, 'en', '2026-01-01')), 'same-year span stays bare');
+});
+
+// Date.parse is no use for this: it rejects a bad month ('2026-13-01') but
+// silently normalises a bad day, so '2026-02-30' comes back as 2 March and
+// '2027-02-29' as 1 March. Round-tripping is what actually catches a day that
+// does not exist — and the day is the half that matters here, since filtering
+// compares the original string while formatting would show the shifted one.
+function isRealDate(iso) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+    const parsed = new Date(`${iso}T00:00:00Z`);
+    // A bad month gives an invalid Date, whose toISOString throws rather than
+    // returning something to compare — so that case has to be caught before the
+    // round-trip, not by it.
+    if (Number.isNaN(parsed.getTime())) return false;
+    return parsed.toISOString().slice(0, 10) === iso;
+}
+
+test('the date guard rejects days that do not exist', () => {
+    assert.ok(isRealDate('2026-09-12'));
+    assert.ok(isRealDate('2028-02-29'), 'a real leap day');
+    assert.ok(!isRealDate('2026-02-30'));
+    assert.ok(!isRealDate('2027-02-29'), 'not a leap year');
+    assert.ok(!isRealDate('2026-04-31'));
+    assert.ok(!isRealDate('2026-13-01'));
+});
+
 test('every shipped event is well formed', () => {
     for (const event of EVENTS) {
-        assert.match(event.date, /^\d{4}-\d{2}-\d{2}$/, `${event.id} has an ISO date`);
-        assert.ok(!Number.isNaN(Date.parse(`${event.date}T00:00:00Z`)), `${event.id} date is a real day`);
+        assert.ok(isRealDate(event.date), `${event.id} date is a real day`);
 
         if (event.endDate) {
             assert.ok(event.endDate >= event.date, `${event.id} ends on or after it starts`);
-            assert.ok(!Number.isNaN(Date.parse(`${event.endDate}T00:00:00Z`)), `${event.id} endDate is a real day`);
+            assert.ok(isRealDate(event.endDate), `${event.id} endDate is a real day`);
         }
 
         for (const lang of ALLOWED_LANGS) {
             assert.ok(event.title[lang], `${event.id} has a ${lang} title`);
+
+            // buildEventCard reads location and tip by language too, so a
+            // half-translated entry renders the string "undefined" onto the card
+            // rather than failing anywhere a person would notice.
+            for (const field of ['location', 'tip']) {
+                if (event[field]) {
+                    assert.ok(event[field][lang], `${event.id} has a ${lang} ${field}`);
+                }
+            }
         }
     }
 });
@@ -163,12 +218,14 @@ test('annual events sit on dates that exist every year', () => {
             `${event.id} is annual but falls on 29 February`
         );
         // Roll it a few years out; a date that only exists sometimes shows up here.
+        // Both ends, since an annual span is allowed to carry an endDate and a
+        // 28 Feb - 29 Feb run would roll its end onto a day that isn't there.
         for (const year of [2027, 2028, 2029, 2030]) {
             const rolled = resolveOccurrence(event, `${year}-01-01`);
-            assert.ok(
-                !Number.isNaN(Date.parse(`${rolled.date}T00:00:00Z`)),
-                `${event.id} resolves to a real day in ${year}`
-            );
+            assert.ok(isRealDate(rolled.date), `${event.id} starts on a real day in ${year}`);
+            if (rolled.endDate) {
+                assert.ok(isRealDate(rolled.endDate), `${event.id} ends on a real day in ${year}`);
+            }
         }
     }
 });
