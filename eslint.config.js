@@ -15,6 +15,7 @@ export default [
         supabase: "readonly",
         // Readonly shared exports across script modules
         BUCKET_LIST: "readonly",
+        EVENTS: "readonly",
         MILESTONES: "readonly",
         CATEGORY_BADGES: "readonly",
         UI_TRANSLATIONS: "readonly",
@@ -39,6 +40,12 @@ export default [
         renderList: "readonly",
         updateProgress: "readonly",
         setupEventListeners: "readonly",
+        todayInGroningen: "readonly",
+        resolveOccurrence: "readonly",
+        getUpcomingEvents: "readonly",
+        isHappeningNow: "readonly",
+        formatEventDate: "readonly",
+        renderEvents: "readonly",
         // Shared state variables
         SUPABASE_URL: "writable",
         SUPABASE_ANON_KEY: "writable",
@@ -63,8 +70,9 @@ export default [
     },
   },
   {
-    // Tests run on Node and are ESM; the browser block above does not cover them.
-    files: ["tests/**/*.js"],
+    // Tests and maintenance scripts run on Node and are ESM; the browser block
+    // above does not cover them.
+    files: ["tests/**/*.js", "scripts/**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",

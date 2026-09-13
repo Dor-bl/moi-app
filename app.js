@@ -43,7 +43,6 @@ function getFilteredItems(filter) {
 
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
-const mapWrapper = document.getElementById('mapWrapper');
 const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
@@ -51,6 +50,8 @@ const currentMilestone = document.getElementById('currentMilestone');
 const langBtns = document.querySelectorAll('.lang-option-btn');
 const listViewBtn = document.getElementById('listViewBtn');
 const mapViewBtn = document.getElementById('mapViewBtn');
+const eventsViewBtn = document.getElementById('eventsViewBtn');
+const eventsContainer = document.getElementById('eventsContainer');
 
 // Detail Modal Elements
 const detailModal = document.getElementById('detailModal');
@@ -185,6 +186,7 @@ function updateLanguageUI() {
 
     document.getElementById('txtListView').textContent = t.viewList;
     document.getElementById('txtMapView').textContent = t.viewMap;
+    document.getElementById('txtEventsView').textContent = t.viewEvents;
 
     document.querySelector('.memory-section h3').textContent = t.addMemory;
     memoryNote.placeholder = t.memoryPlaceholder;
@@ -288,6 +290,7 @@ function setLanguage(lang) {
     updateLanguageUI();
     renderList();
     updateProgress();
+    if (currentView === 'events') renderEvents();
     // The pins carry no text, and popups are built on open, so the map needs
     // nothing here beyond closing a popup that is already showing the old
     // language. renderList re-syncs the markers themselves when the map is up.
@@ -302,25 +305,36 @@ function setLanguage(lang) {
 
 function switchView(view) {
     currentView = view;
-    if (view === 'list') {
-        listViewBtn.classList.add('active');
-        mapViewBtn.classList.remove('active');
-        listContainer.style.display = 'grid';
-        mapWrapper.style.display = 'none';
-        if (listNeedsResort) {
-            listNeedsResort = false;
-            renderList();
-        }
-    } else {
-        mapViewBtn.classList.add('active');
-        listViewBtn.classList.remove('active');
-        listContainer.style.display = 'none';
-        mapWrapper.style.display = 'block';
+
+    // Which containers show is a CSS concern keyed off this one attribute, so
+    // adding a view means adding a selector rather than another display toggle
+    // in here. The buttons still carry .active themselves.
+    document.body.dataset.activeView = view;
+    [listViewBtn, mapViewBtn, eventsViewBtn].forEach(btn => {
+        const isCurrent = btn.dataset.view === view;
+        btn.classList.toggle('active', isCurrent);
+        // .active is a colour change and nothing more, so which view is showing
+        // has to be announced too — same aria-pressed treatment the language
+        // buttons get. The initial state is in the markup, since switchView does
+        // not run until someone picks a view.
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
+    });
+
+    if (view === 'list' && listNeedsResort) {
+        listNeedsResort = false;
+        renderList();
+    }
+
+    if (view === 'map') {
         // initOrUpdateMap awaits the Leaflet load, so anything that throws past
         // it — Leaflet itself failing to build the map, say — would come back as
         // an unhandled rejection rather than the plain console error it was
         // while this ran synchronously.
         initOrUpdateMap().catch(err => console.error('Map view failed to open:', err));
+    }
+
+    if (view === 'events') {
+        renderEvents();
     }
 }
 
@@ -674,6 +688,84 @@ function renderList() {
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
     }
+}
+
+// The Groningen date this view was last built against. An event drops off the
+// page when the day rolls over, and a phone can sit on this tab overnight, so a
+// re-render is needed on wake — but only when the date actually moved.
+let eventsRenderedOn = null;
+
+function buildEventCard(event, today) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const now = isHappeningNow(event, today);
+
+    const card = document.createElement('article');
+    card.className = `event-card ${now ? 'happening-now' : ''}`;
+
+    const date = document.createElement('div');
+    date.className = 'event-date';
+    const dateText = document.createElement('span');
+    dateText.textContent = formatEventDate(event, currentLang, today);
+    date.appendChild(dateText);
+
+    if (now) {
+        const badge = document.createElement('span');
+        badge.className = 'event-now-badge';
+        badge.textContent = t.eventsHappeningNow;
+        date.appendChild(badge);
+    }
+    card.appendChild(date);
+
+    const title = document.createElement('h2');
+    title.className = 'event-title';
+    title.textContent = event.title[currentLang];
+    card.appendChild(title);
+
+    if (event.location) {
+        const location = document.createElement('div');
+        location.className = 'event-location';
+        location.textContent = event.location[currentLang];
+        card.appendChild(location);
+    }
+
+    if (event.tip) {
+        const tip = document.createElement('p');
+        tip.className = 'event-tip';
+        tip.textContent = event.tip[currentLang];
+        card.appendChild(tip);
+    }
+
+    if (event.url) {
+        const link = document.createElement('a');
+        link.className = 'event-link';
+        link.href = event.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = `${t.eventsMoreInfo} →`;
+        card.appendChild(link);
+    }
+
+    return card;
+}
+
+function renderEvents() {
+    const today = todayInGroningen();
+    eventsRenderedOn = today;
+    eventsContainer.innerHTML = '';
+
+    const upcoming = getUpcomingEvents(EVENTS, today);
+
+    if (upcoming.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'events-empty';
+        empty.textContent = UI_TRANSLATIONS[currentLang].eventsEmpty;
+        eventsContainer.appendChild(empty);
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    upcoming.forEach(event => fragment.appendChild(buildEventCard(event, today)));
+    eventsContainer.appendChild(fragment);
 }
 
 function updateProgress() {
@@ -1154,6 +1246,15 @@ function setupEventListeners() {
     // View Switcher buttons
     listViewBtn.addEventListener('click', () => switchView('list'));
     mapViewBtn.addEventListener('click', () => switchView('map'));
+    eventsViewBtn.addEventListener('click', () => switchView('events'));
+
+    // A tab left open overnight would otherwise still be showing yesterday's
+    // list when it comes back. Only re-renders when the Groningen date has
+    // actually moved on since this view was built.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden || currentView !== 'events') return;
+        if (todayInGroningen() !== eventsRenderedOn) renderEvents();
+    });
 
     // Language buttons
     langBtns.forEach(btn => {
