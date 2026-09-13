@@ -144,10 +144,8 @@ function renderFilterPills() {
         let countEl = pill.querySelector('.filter-pill-count');
 
         if (!labelEl || !countEl) {
-
             labelEl = document.createElement('span');
             labelEl.className = 'filter-pill-label';
-            pill.appendChild(labelEl);
 
             countEl = document.createElement('span');
             countEl.className = 'filter-pill-count';
@@ -634,8 +632,9 @@ function buildCompletedDivider(count, collapsed) {
 }
 
 function renderList() {
-
-    
+    // ⚡ Bolt Performance Optimization:
+    // Use listContainer.replaceChildren(fragment) instead of listContainer.innerHTML = ''
+    // Impact: Avoids HTML parser overhead and intermediate empty DOM states.
     const filteredList = getFilteredItems(currentFilter);
 
     // ⚡ Bolt Performance Optimization:
