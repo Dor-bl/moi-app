@@ -137,8 +137,8 @@
                     </tr>
                     <tr>
                         <td>Aggregate usage statistics</td>
-                        <td>When you open the main MoiCheck page</td>
-                        <td>To count visits and see which sites link here, so we can tell whether MoiCheck is useful. No cookies are set. Like any web request, the request itself carries your IP address, your browser details, and which page you are on and which site you came from; Vercel uses these only to build the aggregates, and we only ever see those aggregates — nothing that identifies you or follows you to other websites.</td>
+                        <td>When you open the main MoiCheck page, and when you switch between the list, map and events views</td>
+                        <td>To count visits, see which sites link here, and count how often each view (list, map, events) is opened, so we can tell whether MoiCheck is useful and which parts of it people actually use. These are counts only — no record of who opened what. No cookies are set. Like any web request, the request itself carries your IP address, your browser details, and which page you are on and which site you came from; Vercel uses these only to build the aggregates, and we only ever see those aggregates — nothing that identifies you or follows you to other websites.</td>
                     </tr>
                 </tbody>
             </table>
@@ -153,7 +153,7 @@
                 <li><strong>Cloudflare</strong> — runs Email Routing for our domain, which forwards mail addressed to hallo@moicheck.nl (including contact-form submissions relayed by Resend) on to that Gmail mailbox. It routes the message rather than storing it, and, like Google, publishes a data processing agreement.</li>
                 <li><strong>Resend</strong> — delivers contact-form submissions (name, email, subject, message) to our inbox by email. The form posts to a small function running on Supabase, which passes the message to Resend; both publish data processing agreements. If you would rather not use the form at all, email us directly at <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a> — it reaches the same inbox.</li>
                 <li><strong>OpenStreetMap, Leaflet and unpkg</strong> — the map is drawn with Leaflet, whose script and stylesheet come from the <strong>unpkg</strong> content delivery network, and the map tiles come directly from OpenStreetMap's tile servers. Both, like any web request, will see your IP address and general request metadata. Neither is contacted until you switch to Map view, so if you only ever use the list, no request reaches them at all.</li>
-                <li><strong>Vercel</strong> — hosts the MoiCheck website itself, and provides Vercel Web Analytics, which produces the aggregated statistics described above. Like any web request, these will see your IP address and general request metadata; Vercel uses them only to build the aggregates, and reports back to us only aggregated figures such as visit counts, popular pages, and referring sites. It sets no cookies and does not track visitors across other websites.</li>
+                <li><strong>Vercel</strong> — hosts the MoiCheck website itself, and provides Vercel Web Analytics, which produces the aggregated statistics described above. Like any web request, these will see your IP address and general request metadata; Vercel uses them only to build the aggregates, and reports back to us only aggregated figures such as visit counts, popular pages, referring sites, and how many times each view of the app was opened. It sets no cookies and does not track visitors across other websites.</li>
             </ul>
             <p>We do not sell your data or share it with advertisers.</p>
         </section>

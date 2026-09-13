@@ -304,6 +304,7 @@ function setLanguage(lang) {
 }
 
 function switchView(view) {
+    const previousView = currentView;
     currentView = view;
 
     // Which containers show is a CSS concern keyed off this one attribute, so
@@ -319,6 +320,23 @@ function switchView(view) {
         // not run until someone picks a view.
         btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
     });
+
+    // Which views people actually open is the missing input for deciding whether
+    // the Events tab earns its place. Note this counts *switches*, not views: the
+    // initial list view never reaches here, so view_list means "came back to the
+    // list" rather than "saw the list". view_map and view_events are comparable
+    // to each other, since both take a deliberate tap.
+    //
+    // Only on an actual change: the buttons stay clickable while active, so
+    // tapping the current one re-enters this function, and counting that would
+    // inflate whichever view people happen to tap twice. Everything above and
+    // below still runs, so a same-view tap keeps refreshing the view as before.
+    //
+    // Optional call because an ad blocker can block js/analytics.js outright, and
+    // losing analytics must not take view switching down with it.
+    if (previousView !== view) {
+        window.va?.('event', { name: `view_${view}` });
+    }
 
     if (view === 'list' && listNeedsResort) {
         listNeedsResort = false;
