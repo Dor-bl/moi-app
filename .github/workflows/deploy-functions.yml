@@ -151,4 +151,4 @@ jobs:
             esac
           done
 
-          echo "Preflight OK: 200, origin exactly https://moicheck.nl, POST and all required headers allowed."
+          echo "Preflight OK: $status, origin exactly https://moicheck.nl, POST and all required headers allowed."
