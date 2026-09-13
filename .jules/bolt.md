@@ -27,3 +27,7 @@
 ## 2026-09-11 - Consecutive Array Filters
 **Learning:** Partitioning an array into two subsets using two consecutive `.filter()` calls iterates through the array twice (2 * O(N)).
 **Action:** Combine partitions into a single O(N) loop to halve array iterations during frequent re-renders. Avoid micro-optimizing subsequent `.forEach` DOM node loops, as readability takes precedence over imperceptible JS execution gains when DOM operations dominate.
+
+## 2026-09-13 - DOM Clearing and Insertion Overhead
+**Learning:** Re-rendering DOM lists by first clearing the container with `innerHTML = ''` and then inserting new nodes with `appendChild()` causes multiple reflows/repaints, forces HTML parser overhead, and creates an intermediate empty DOM state that can cause visual jitter.
+**Action:** Use `replaceChildren(node1, node2, ...)` or `replaceChildren(documentFragment)` instead. It atomically clears the container and inserts the new children in a single operation, improving performance by reducing browser reflows and bypassing the HTML parser entirely.

@@ -144,7 +144,6 @@ function renderFilterPills() {
         let countEl = pill.querySelector('.filter-pill-count');
 
         if (!labelEl || !countEl) {
-            pill.innerHTML = '';
 
             labelEl = document.createElement('span');
             labelEl.className = 'filter-pill-label';
@@ -155,7 +154,7 @@ function renderFilterPills() {
             // The badge on its own reads as a bare number; the pill's aria-label below
             // says what it counts, so hide this from the accessibility tree.
             countEl.setAttribute('aria-hidden', 'true');
-            pill.appendChild(countEl);
+            pill.replaceChildren(labelEl, countEl);
         }
 
         if (labelEl.textContent !== label) {
@@ -635,7 +634,7 @@ function buildCompletedDivider(count, collapsed) {
 }
 
 function renderList() {
-    listContainer.innerHTML = '';
+
     
     const filteredList = getFilteredItems(currentFilter);
 
@@ -669,7 +668,7 @@ function renderList() {
         }
     }
 
-    listContainer.appendChild(fragment);
+    listContainer.replaceChildren(fragment);
 
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
@@ -764,9 +763,12 @@ function checkBadgeUnlocks(itemId, wasCompleted) {
 function renderBadges() {
     const badgesGrid = document.getElementById('badgesGrid');
     if (!badgesGrid) return;
-    badgesGrid.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     const t = UI_TRANSLATIONS[currentLang];
 
+    // ⚡ Bolt Performance Optimization:
+    // Use replaceChildren(fragment) instead of innerHTML = '' + appendChild in a loop
+    // Impact: Avoids multiple reflows/repaints, HTML parser overhead, and intermediate empty DOM states.
     CATEGORY_BADGES.forEach(badge => {
         const categoryItems = itemsByCategory[badge.category] || [];
         const total = categoryItems.length;
@@ -783,8 +785,9 @@ function renderBadges() {
                 <span class="badge-progress-tag">${isUnlocked ? t.unlockedTag : `${completedCount} / ${total}`}</span>
             </div>
         `;
-        badgesGrid.appendChild(card);
+        fragment.appendChild(card);
     });
+    badgesGrid.replaceChildren(fragment);
 }
 
 function openDetailModal(item) {
@@ -800,9 +803,15 @@ function openDetailModal(item) {
     const modalLinkContainer = document.getElementById('modalLinkContainer');
     if (item.url) {
         const linkText = item.urlLabel ? item.urlLabel[currentLang] : (t.courseLink || 'Official Link ↗');
-        modalLinkContainer.innerHTML = `<a href="${item.url}" target="_blank" rel="noopener noreferrer" class="item-link-btn">${linkText} ↗</a>`;
+        const linkEl = document.createElement('a');
+        linkEl.href = item.url;
+        linkEl.target = '_blank';
+        linkEl.rel = 'noopener noreferrer';
+        linkEl.className = 'item-link-btn';
+        linkEl.textContent = `${linkText} ↗`;
+        modalLinkContainer.replaceChildren(linkEl);
     } else {
-        modalLinkContainer.innerHTML = '';
+        modalLinkContainer.replaceChildren();
     }
     
     if (isCompleted) {
@@ -868,7 +877,9 @@ function formatMemoryDate(value) {
 }
 
 function openProfileModal() {
-    completedList.innerHTML = '';
+    // ⚡ Bolt Performance Optimization:
+    // Use replaceChildren() instead of completedList.innerHTML = ''
+    // Impact: More efficient DOM clearing and appending, bypassing HTML parser.
     const t = UI_TRANSLATIONS[currentLang];
     
     renderBadges();
@@ -888,8 +899,14 @@ function openProfileModal() {
     .map(wrapper => wrapper.merged);
     
     if (completedArr.length === 0) {
-        completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
+        const p = document.createElement('p');
+        p.style.color = 'var(--text-light)';
+        p.style.textAlign = 'center';
+        p.style.padding = '2rem';
+        p.textContent = t.noMemories;
+        completedList.replaceChildren(p);
     } else {
+        const fragment = document.createDocumentFragment();
         completedArr.forEach(item => {
             const div = document.createElement('div');
             div.className = 'completed-item';
@@ -912,8 +929,9 @@ function openProfileModal() {
                 div.appendChild(noteEl);
             }
 
-            completedList.appendChild(div);
+            fragment.appendChild(div);
         });
+        completedList.replaceChildren(fragment);
     }
     
     if (accountDangerZone) {
