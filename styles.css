@@ -503,6 +503,102 @@ h1 {
     margin: 0 auto;
 }
 
+/* One attribute on <body> decides which view is showing, so switchView() sets a
+   single value instead of toggling display on each container in turn. The
+   progress bar and category pills belong to the bucket list, so the events view
+   hides them too. */
+body[data-active-view="list"] .map-wrapper,
+body[data-active-view="list"] .events-container,
+body[data-active-view="map"] .list-container,
+body[data-active-view="map"] .events-container,
+body[data-active-view="events"] .list-container,
+body[data-active-view="events"] .map-wrapper,
+body[data-active-view="events"] .progress-container,
+body[data-active-view="events"] .filters-container {
+    display: none;
+}
+
+.events-container {
+    padding: 1.5rem;
+    display: grid;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.event-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid transparent;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.event-date {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--accent-dark-color);
+}
+
+.event-now-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    color: white;
+    background-color: var(--primary-btn-bg);
+}
+
+/* An event that has started reads as the important one on the page, so it gets
+   the only coloured edge here; everything else stays quiet. */
+.event-card.happening-now {
+    border-color: var(--primary-color);
+}
+
+.event-title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.event-location {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.event-tip {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    line-height: 1.5;
+    margin: 0.15rem 0 0;
+}
+
+.event-link {
+    justify-self: start;
+    margin-top: 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.events-empty {
+    text-align: center;
+    color: var(--text-light);
+    padding: 2.5rem 1rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
 .completed-divider {
     display: flex;
     align-items: center;
