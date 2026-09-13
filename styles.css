@@ -630,7 +630,10 @@ body[data-active-view="events"] .filters-container {
 }
 
 .completed-divider-count {
-    background-color: var(--border-color);
+    /* --card-bg, not --border-color: against --text-light this pairing clears
+       WCAG AA (5.7:1 dark / 7.6:1 light) — --border-color only reached 4.04:1
+       in dark mode, just under the 4.5:1 normal-text threshold. */
+    background-color: var(--card-bg);
     color: var(--text-light);
     border-radius: 999px;
     padding: 0.1rem 0.5rem;
