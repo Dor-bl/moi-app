@@ -97,8 +97,8 @@ const BUCKET_LIST = [
         id: '13',
         coords: [53.2200, 6.5600],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
-        title: { en: 'Bike in the rain wearing full waterproof gear (regenpak)', nl: 'Fiets door de regen in een echt regenpak' },
-        tip: { en: 'The ultimate rite of passage for Dutch daily commuting.', nl: 'De ultieme inwijding voor het dagelijkse Nederlandse fietsen.' }
+        title: { en: 'Bike through the rain without a regenpak', nl: 'Fiets door de regen zonder regenpak' },
+        tip: { en: 'Real Stadjers just get wet and dry off later — reaching for a full rain suit is the surest sign you\'re still an import.', nl: 'Echte Stadjers worden gewoon nat en drogen later wel op — een compleet regenpak pakken is het zekerste teken dat je nog een import bent.' }
     },
     {
         id: '14',
@@ -297,13 +297,75 @@ const BUCKET_LIST = [
         tip: { en: "This is the smallest harbour in the Netherlands, and a free path leads straight from the parking lot onto the kwelder, the salt marsh laced with tidal creeks. No boat ticket needed here: at low tide keep an eye on the sandbanks offshore, where seals regularly haul out, while oystercatchers and geese work the marsh around you.", nl: 'Dit is de kleinste haven van Nederland, en een gratis pad leidt zo vanaf de parkeerplaats de kwelder op, doorsneden door kreekjes. Geen bootje nodig: kijk bij laag water naar de zandplaten voor de kust, waar geregeld zeehonden liggen, terwijl scholeksters en ganzen om je heen de kwelder afstruinen.' },
         url: 'https://www.groningerlandschap.nl/activiteiten/wandelroutes/wandelroute-noordpolderzijl-kwelders/',
         urlLabel: { en: 'Noordpolderzijl Kwelderpad Route 🦭', nl: 'Kwelderpad Noordpolderzijl Route 🦭' }
+    },
+    {
+        id: '37',
+        coords: [53.2235, 6.5535],
+        category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
+        title: { en: 'Attend the Noorderzon Festival', nl: 'Bezoek het Noorderzon Festival' },
+        tip: { en: 'Ten days of theatre, music, and dance under open skies every August — Groningen\'s biggest summer happening, right in its favorite park.', nl: 'Tien dagen theater, muziek en dans onder de open hemel, elke augustus — het grootste zomerevenement van Groningen, midden in het favoriete park van de stad.' },
+        url: 'https://noorderzon.nl',
+        urlLabel: { en: 'Noorderzon Festival Info 🎭', nl: 'Noorderzon Festival Info 🎭' }
+    },
+    {
+        id: '38',
+        coords: [53.2168, 6.5651],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'Catch a gig at Vera, Simplon, or Oosterpoort', nl: 'Ga naar een concert bij Vera, Simplon of Oosterpoort' },
+        tip: { en: 'From Vera\'s legendary tiny stage to Simplon\'s clubby basement and De Oosterpoort\'s big concert hall — Groningen\'s live music scene punches well above the city\'s size.', nl: 'Van het legendarische kleine podium van Vera tot de kelder van Simplon en de grote concertzaal van De Oosterpoort — het livemuziekcircuit van Groningen is groter dan je van zo\'n stad zou verwachten.' },
+        url: 'https://www.vera-groningen.nl',
+        urlLabel: { en: 'Vera Groningen Concerts 🎸', nl: 'Vera Groningen Concerten 🎸' }
+    },
+    {
+        id: '39',
+        coords: [53.2107, 6.5745],
+        category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
+        title: { en: 'Experience Eurosonic Noorderslag', nl: 'Beleef Eurosonic Noorderslag' },
+        tip: { en: 'Every January, Europe\'s biggest showcase festival for new music takes over venues across the city — spot tomorrow\'s headliners in a pub-sized room tonight.', nl: 'Elke januari neemt het grootste showcasefestival van Europa voor nieuwe muziek de podia in de hele stad over — zie de headliners van morgen vanavond nog in een kroegzaaltje.' },
+        url: 'https://esns.nl',
+        urlLabel: { en: 'Eurosonic Noorderslag Info 🎶', nl: 'Eurosonic Noorderslag Info 🎶' }
+    },
+    {
+        id: '40',
+        coords: [53.2231, 6.5658],
+        category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
+        title: { en: 'Grab a coffee at Luhu', nl: 'Drink een koffie bij Luhu' },
+        tip: { en: 'A daytime café run by people who are deaf or hard of hearing — order with a smile, a point, or a bit of sign language, and enjoy the calm, welcoming vibe.', nl: 'Een dagcafé gerund door dove en slechthorende mensen — bestel met een glimlach, wijzen of een beetje gebarentaal, en geniet van de rustige, gastvrije sfeer.' }
+    },
+    {
+        id: '41',
+        coords: [53.2938, 6.4746],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Bike to the village of Garnwerd', nl: 'Fiets naar het dorpje Garnwerd' },
+        tip: { en: 'A flat, breezy ride through open Groningen farmland to a tiny terp village on the Reitdiep — reward yourself with a drink on the terrace by the lock.', nl: 'Een vlakke, winderige tocht door het open Groningse land naar een piepklein terpdorpje aan het Reitdiep — beloon jezelf met een drankje op het terras bij de sluis.' }
+    },
+    {
+        id: '42',
+        coords: [53.2180, 6.5660],
+        category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
+        title: { en: 'Eat a slice of Groninger Poffert', nl: 'Eet een plakje Groninger Poffert' },
+        tip: { en: 'A dense, spiced steamed cake that looks and tastes like Christmas cake — despite the name, it\'s a meal, not a snack, traditionally sliced and served with butter.', nl: 'Een stevige, gekruide gestoomde koek die eruitziet en smaakt als kerststol — ondanks de naam is het een maaltijd, geen tussendoortje, traditioneel in plakken gesneden en gegeten met boter.' }
+    },
+    {
+        id: '43',
+        coords: [53.2235, 6.5548],
+        category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
+        title: { en: 'Go ice skating on a frozen diep or pond', nl: 'Schaats op een bevroren diep of vijver' },
+        tip: { en: 'When it freezes hard enough, whole neighbourhoods lace up on the nearest canal or pond — a rare but treasured Groningen winter tradition.', nl: 'Als het hard genoeg vriest, bindt de hele buurt de schaatsen onder voor het dichtstbijzijnde diepje of vijvertje — een zeldzame maar geliefde Groningse wintertraditie.' }
+    },
+    {
+        id: '44',
+        coords: [53.2192, 6.5668],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'Hand out treats for Sint Maarten', nl: 'Doe mee aan Sint Maarten' },
+        tip: { en: 'On the evening of November 11th, children go door-to-door with homemade lanterns singing songs for candy — like trick-or-treat, minus anything scary.', nl: 'Op de avond van 11 november gaan kinderen met zelfgemaakte lampionnen langs de deuren om liedjes te zingen voor snoep — net als Halloween, maar dan zonder het enge.' }
     }
 ];
 
 const MILESTONES = [
     { threshold: 0, title: { en: 'Newcomer', nl: 'Nieuwkomer' } },
     { threshold: 5, title: { en: 'Stadjer in Training', nl: 'Stadjer in Opleiding' } },
-    { threshold: 12, title: { en: 'Halfway Groninger', nl: 'Halverwege Groninger' } },
+    { threshold: 12, title: { en: 'Halfway Stadjer', nl: 'Halverwege Stadjer' } },
     { threshold: 19, title: { en: 'Local Expert', nl: 'Lokale Expert' } },
     // Derived so the top tier always means "every item done" — adding a BUCKET_LIST
     // item must never silently leave this badge unreachable.
