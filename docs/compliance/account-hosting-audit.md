@@ -171,6 +171,14 @@ did the key stop being reachable", as opposed to "is it configured now".
 | Vercel Functions | `fra1` (Frankfurt) | `vercel.json`, merged in [#121](https://github.com/Dor-bl/moi-app/pull/121) |
 | Static assets | All PoPs | Vercel CDN; not region-pinnable, by design |
 
+**If you follow the #121 link, read this first.** That pull request's description states that
+the contact Edge Function's region "is governed by the Supabase project region, tracked
+separately in #32". The first half of that is **wrong and superseded by this record**: the
+project region governs the database, not where Edge Functions execute. The second half
+still holds — the contact function's processing region is a #32 question. #121 itself did
+exactly what it says on the tin (it set `regions` for Vercel Functions); only that one
+sentence of its description misdescribes Supabase.
+
 ### The project region does not constrain where contact data is processed
 
 This is the part most likely to be misread, so it is stated plainly: Supabase Edge
