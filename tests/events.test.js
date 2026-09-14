@@ -1,0 +1,243 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { loadEventsModule } from './helpers/load-events.js';
+
+const {
+    EVENTS,
+    ALLOWED_LANGS,
+    UI_TRANSLATIONS,
+    todayInGroningen,
+    resolveOccurrence,
+    getUpcomingEvents,
+    isHappeningNow,
+    formatEventDate
+} = loadEventsModule();
+
+const singleDay = { id: 'single', date: '2026-09-18', title: { en: 'Single', nl: 'Single' } };
+const festival = { id: 'festival', date: '2026-08-20', endDate: '2026-08-30', title: { en: 'Fest', nl: 'Fest' } };
+const annual = { id: 'annual', date: '2026-08-28', annual: true, title: { en: 'Annual', nl: 'Annual' } };
+
+test('a one-day event is upcoming on its own day and gone the next', () => {
+    assert.equal(getUpcomingEvents([singleDay], '2026-09-17').length, 1);
+    assert.equal(getUpcomingEvents([singleDay], '2026-09-18').length, 1, 'still on today');
+    assert.equal(getUpcomingEvents([singleDay], '2026-09-19').length, 0, 'gone the day after');
+});
+
+test('a multi-day festival stays listed part-way through its run', () => {
+    assert.equal(getUpcomingEvents([festival], '2026-08-25').length, 1);
+    assert.equal(getUpcomingEvents([festival], '2026-08-30').length, 1, 'still on its final day');
+    assert.equal(getUpcomingEvents([festival], '2026-08-31').length, 0);
+});
+
+test('a non-recurring event that has lapsed never comes back', () => {
+    assert.deepEqual(getUpcomingEvents([singleDay, festival], '2027-01-01'), []);
+});
+
+test('an annual event rolls to next year once this year is spent', () => {
+    assert.equal(resolveOccurrence(annual, '2026-08-01').date, '2026-08-28');
+    assert.equal(resolveOccurrence(annual, '2026-08-28').date, '2026-08-28', 'not on the day itself');
+    assert.equal(resolveOccurrence(annual, '2026-08-29').date, '2027-08-28');
+    assert.equal(resolveOccurrence(annual, '2030-01-01').date, '2030-08-28', 'years later, still correct');
+});
+
+// The regression this whole design is most likely to grow back: judging rollover
+// by the start date sends a running festival into next year on its own day two.
+test('an annual festival does not roll while it is still running', () => {
+    const annualFestival = { ...festival, annual: true };
+
+    const midRun = resolveOccurrence(annualFestival, '2026-08-25');
+    assert.equal(midRun.date, '2026-08-20', 'start stays put');
+    assert.equal(midRun.endDate, '2026-08-30');
+    assert.ok(isHappeningNow(midRun, '2026-08-25'));
+
+    const afterRun = resolveOccurrence(annualFestival, '2026-08-31');
+    assert.equal(afterRun.date, '2027-08-20');
+    assert.equal(afterRun.endDate, '2027-08-30', 'both ends move together');
+});
+
+test('an annual span crossing New Year keeps its length and stays running', () => {
+    const newYear = { id: 'ny', date: '2026-12-31', endDate: '2027-01-01', annual: true, title: { en: 'NY', nl: 'NY' } };
+
+    const during = resolveOccurrence(newYear, '2027-01-01');
+    assert.equal(during.date, '2026-12-31', 'still the occurrence that is running');
+    assert.equal(during.endDate, '2027-01-01');
+
+    const after = resolveOccurrence(newYear, '2027-01-02');
+    assert.equal(after.date, '2027-12-31');
+    assert.equal(after.endDate, '2028-01-01', 'span still one day long');
+});
+
+test('sorting survives a year boundary', () => {
+    const december = { id: 'dec', date: '2026-12-05', title: { en: 'Dec', nl: 'Dec' } };
+    // Already past on this date, so it resolves into next August — which must sort
+    // after December, the way full-ISO comparison gives for free and a month-day
+    // comparison would silently reverse.
+    const order = getUpcomingEvents([annual, december], '2026-09-12').map(event => event.id);
+    assert.deepEqual(order, ['dec', 'annual']);
+});
+
+// Koningsdag moves to Saturday the 26th when 27 April is a Sunday — the law, not a
+// local variation. 2031 and 2036 are the next two; 2014 was the last.
+test('a fixed date with an observed-date rule shifts off Sunday', () => {
+    const koningsdag = { id: 'k', date: '2026-04-27', annual: true, notOnSunday: true, title: { en: 'K', nl: 'K' } };
+
+    assert.equal(resolveOccurrence(koningsdag, '2026-01-01').date, '2026-04-27', 'a Monday, unshifted');
+    assert.equal(resolveOccurrence(koningsdag, '2031-01-01').date, '2031-04-26', 'Sunday year, observed Saturday');
+    assert.equal(resolveOccurrence(koningsdag, '2036-01-01').date, '2036-04-26', 'and the year after that');
+
+    // The shifted date is what the filter sees, so the entry is spent on the 27th
+    // of a Sunday year rather than lingering a day.
+    assert.equal(getUpcomingEvents([koningsdag], '2031-04-26').length, 1);
+    assert.equal(getUpcomingEvents([koningsdag], '2031-04-27')[0].date, '2032-04-27', 'rolled on, not lingering');
+});
+
+test('no shifted event carries a span to keep in step', () => {
+    for (const event of EVENTS.filter(e => e.notOnSunday)) {
+        assert.equal(event.endDate, undefined, `${event.id} must be single-day to shift safely`);
+    }
+});
+
+test('today is built as ISO regardless of locale output order', () => {
+    // The whole module compares and slices these as YYYY-MM-DD, so the shape is
+    // load-bearing rather than cosmetic.
+    assert.match(todayInGroningen(), /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(todayInGroningen(new Date('2026-09-12T10:00:00Z')), '2026-09-12');
+    // Zero-padding, not single digits, or string comparison silently breaks.
+    assert.equal(todayInGroningen(new Date('2026-01-05T10:00:00Z')), '2026-01-05');
+});
+
+test('today is Groningen\'s calendar day, not the device\'s', () => {
+    // 22:30 UTC on 18 September is already the 19th in Amsterdam (CEST, UTC+2).
+    assert.equal(todayInGroningen(new Date('2026-09-18T22:30:00Z')), '2026-09-19');
+    // And the reverse: just before midnight UTC in January is still the 19th there.
+    assert.equal(todayInGroningen(new Date('2026-01-18T23:30:00Z')), '2026-01-19');
+});
+
+test('happening-now covers the whole run and nothing outside it', () => {
+    assert.equal(isHappeningNow(festival, '2026-08-19'), false);
+    assert.equal(isHappeningNow(festival, '2026-08-20'), true, 'its first day');
+    assert.equal(isHappeningNow(festival, '2026-08-30'), true, 'its last day');
+    assert.equal(isHappeningNow(festival, '2026-08-31'), false);
+    assert.equal(isHappeningNow(singleDay, '2026-09-18'), true);
+});
+
+test('dates render as calendar days in both languages', () => {
+    assert.equal(formatEventDate(singleDay, 'en', '2026-01-01'), '18 September');
+    assert.equal(formatEventDate(singleDay, 'nl', '2026-01-01'), '18 september');
+    // A day either side of a UTC midnight must not shift: these are days, not moments.
+    assert.equal(formatEventDate({ date: '2026-03-01' }, 'en', '2026-01-01'), '1 March');
+    // A different year has to say so, or a January event reads as this month's.
+    assert.match(formatEventDate(annual, 'en', '2025-12-31'), /2026/);
+});
+
+test('a date range renders as one span', () => {
+    const range = formatEventDate(festival, 'en', '2026-01-01');
+    assert.match(range, /20/);
+    assert.match(range, /30/);
+    assert.match(range, /August/);
+});
+
+// A span crossing New Year must name both years, or "31 December - 1 January"
+// leaves the reader guessing which January. formatEventDate sets options.year
+// only when the START year differs from today, so this case is carried by
+// formatRange itself, which is required to include the largest differing field
+// between the two dates. That is platform behaviour rather than ours, which is
+// exactly why it is pinned here: if it ever stopped holding, the fix is to set
+// the year explicitly for cross-year spans, and this test is what would say so.
+test('a span crossing New Year names both years', () => {
+    const newYear = { id: 'ny', date: '2026-12-31', endDate: '2027-01-01', title: { en: 'NY', nl: 'NY' } };
+
+    for (const lang of ALLOWED_LANGS) {
+        // Viewed from within the start year, which is the case that could have
+        // omitted the year entirely.
+        const rendered = formatEventDate(newYear, lang, '2026-12-30');
+        assert.match(rendered, /2026/, `${lang} span names its start year`);
+        assert.match(rendered, /2027/, `${lang} span names its end year`);
+    }
+
+    // The ordinary same-year span still stays clean, so this has not turned into
+    // a year on every date.
+    assert.ok(!/\d{4}/.test(formatEventDate(festival, 'en', '2026-01-01')), 'same-year span stays bare');
+});
+
+// Date.parse is no use for this: it rejects a bad month ('2026-13-01') but
+// silently normalises a bad day, so '2026-02-30' comes back as 2 March and
+// '2027-02-29' as 1 March. Round-tripping is what actually catches a day that
+// does not exist — and the day is the half that matters here, since filtering
+// compares the original string while formatting would show the shifted one.
+function isRealDate(iso) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+    const parsed = new Date(`${iso}T00:00:00Z`);
+    // A bad month gives an invalid Date, whose toISOString throws rather than
+    // returning something to compare — so that case has to be caught before the
+    // round-trip, not by it.
+    if (Number.isNaN(parsed.getTime())) return false;
+    return parsed.toISOString().slice(0, 10) === iso;
+}
+
+test('the date guard rejects days that do not exist', () => {
+    assert.ok(isRealDate('2026-09-12'));
+    assert.ok(isRealDate('2028-02-29'), 'a real leap day');
+    assert.ok(!isRealDate('2026-02-30'));
+    assert.ok(!isRealDate('2027-02-29'), 'not a leap year');
+    assert.ok(!isRealDate('2026-04-31'));
+    assert.ok(!isRealDate('2026-13-01'));
+});
+
+test('every shipped event is well formed', () => {
+    for (const event of EVENTS) {
+        assert.ok(isRealDate(event.date), `${event.id} date is a real day`);
+
+        if (event.endDate) {
+            assert.ok(event.endDate >= event.date, `${event.id} ends on or after it starts`);
+            assert.ok(isRealDate(event.endDate), `${event.id} endDate is a real day`);
+        }
+
+        for (const lang of ALLOWED_LANGS) {
+            assert.ok(event.title[lang], `${event.id} has a ${lang} title`);
+
+            // buildEventCard reads location and tip by language too, so a
+            // half-translated entry renders the string "undefined" onto the card
+            // rather than failing anywhere a person would notice.
+            for (const field of ['location', 'tip']) {
+                if (event[field]) {
+                    assert.ok(event[field][lang], `${event.id} has a ${lang} ${field}`);
+                }
+            }
+        }
+    }
+});
+
+// A leap day cannot recur yearly, so an `annual` entry landing on one is a data
+// mistake. Catching it here is why events.js needs no runtime leap-year handling.
+test('annual events sit on dates that exist every year', () => {
+    for (const event of EVENTS.filter(e => e.annual)) {
+        const [, month, day] = event.date.split('-');
+        assert.ok(
+            !(month === '02' && day === '29'),
+            `${event.id} is annual but falls on 29 February`
+        );
+        // Roll it a few years out; a date that only exists sometimes shows up here.
+        // Both ends, since an annual span is allowed to carry an endDate and a
+        // 28 Feb - 29 Feb run would roll its end onto a day that isn't there.
+        for (const year of [2027, 2028, 2029, 2030]) {
+            const rolled = resolveOccurrence(event, `${year}-01-01`);
+            assert.ok(isRealDate(rolled.date), `${event.id} starts on a real day in ${year}`);
+            if (rolled.endDate) {
+                assert.ok(isRealDate(rolled.endDate), `${event.id} ends on a real day in ${year}`);
+            }
+        }
+    }
+});
+
+test('both languages carry every events string', () => {
+    for (const lang of ALLOWED_LANGS) {
+        for (const key of ['viewEvents', 'eventsHappeningNow', 'eventsMoreInfo', 'eventsEmpty']) {
+            assert.ok(UI_TRANSLATIONS[lang][key], `${lang} is missing ${key}`);
+        }
+    }
+});
+
+test('an empty list is a supported state, not a crash', () => {
+    assert.deepEqual(getUpcomingEvents([], '2026-09-12'), []);
+});
