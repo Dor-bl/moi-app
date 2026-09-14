@@ -133,7 +133,6 @@ const eventDateFormatters = {
 function formatEventDate(event, lang, today = todayInGroningen()) {
     const includeYear = event.date.slice(0, 4) !== today.slice(0, 4);
 
-    // Explicitly select formatter to avoid prototype pollution if lang is hijacked
     const langKey = lang === 'nl' ? 'nl' : 'en';
     const formatter = includeYear ? eventDateFormatters[langKey].withYear : eventDateFormatters[langKey].noYear;
 
