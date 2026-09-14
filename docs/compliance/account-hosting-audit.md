@@ -11,6 +11,12 @@ MFA across the account chain, confirmation that no `service_role` key is deploye
 recorded decision on the function processing region. Its fourth item asks that each result
 be written down "so the next review doesn't have to re-ask." This is that record.
 
+**One of those three is not closed.** The MFA chain is complete and the region decision is
+recorded, but a credential capable of bypassing row-level security — the project's JWT
+signing secret — is still configured in Vercel. Section 2 has the detail and the follow-ups
+carry the action. Read this file as "here is where things stand", not "everything is
+settled".
+
 It is **not** an Article 30 record of processing activities. It does not enumerate
 processing purposes, legal bases, categories of data subject, or retention periods across
 the app. That document is tracked separately in
@@ -62,8 +68,11 @@ unprotected.
 
 ## 2. Vercel environment variables
 
-#92 asked for confirmation that no `service_role` key is deployed anywhere. One was — in
-Production, alongside a full set of direct database credentials.
+#92 asked for confirmation that no `service_role` key is deployed anywhere. **Two**
+RLS-bypassing keys were, in Production, alongside a full set of direct database
+credentials. A third credential with the same capability by a different route is **still
+there** — see "Still present and RLS-capable" below, which is why this item of #92 is not
+closed.
 
 ### Found and removed
 
@@ -79,7 +88,30 @@ Production, alongside a full set of direct database credentials.
 | `POSTGRES_PASSWORD` | Database credential |
 | `POSTGRES_DATABASE` | Database credential |
 
-Removal was verified in the dashboard.
+All nine were found in **Production**, and removal was verified in the dashboard. Whether
+Preview or Development also carried any of them was not separately recorded during the
+audit, so that half of #92's "all environments, including preview" is unverified rather
+than clear. It is in the follow-ups.
+
+### Still present and RLS-capable — open
+
+| Variable | Environment | Why it matters |
+| --- | --- | --- |
+| `SUPABASE_JWT_SECRET` | Production | The project's HS256 signing secret. Whoever holds it can mint a JWT asserting any `sub` and any role — `service_role` included — and PostgREST will honour it. That is an RLS bypass by a different route than the two keys above. |
+
+This was first written down here as harmless, which was wrong: a signing secret is not a
+public identifier. #92's acceptance criterion — "no key capable of bypassing RLS is
+deployed anywhere" — is therefore **not met yet**, and the remedy is the same as for the
+two removed keys: delete it from every Vercel environment that has it. The three checks
+under "Why removing them was safe" below apply to it unchanged; nothing in this repository
+reads it.
+
+One caveat the dashboard can settle and this file cannot: if the project has moved to
+asymmetric JWT signing keys and legacy HS256 verification is switched off, a forged token
+would no longer verify. The presence of both `SUPABASE_JWT_SECRET` and
+`SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_SECRET_KEY` suggests both key models exist here.
+Treat the secret as live until someone confirms otherwise in the dashboard — that is the
+cheaper assumption to be wrong about.
 
 ### Retained, none able to bypass RLS
 
@@ -87,7 +119,6 @@ Removal was verified in the dashboard.
 | --- | --- |
 | `SUPABASE_ANON_KEY` | Production, Preview |
 | `SUPABASE_URL` | Production, Preview |
-| `SUPABASE_JWT_SECRET` | Production |
 | `SUPABASE_PUBLISHABLE_KEY` | Production |
 | `NEXT_PUBLIC_SUPABASE_URL` | Production |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production |
@@ -105,7 +136,8 @@ knowing, because re-linking the integration would presumably put them back.
 
 ### Why removing them was safe — verified, not assumed
 
-Three things had to be true, and each was checked rather than reasoned about:
+Three things had to be true, and each was checked rather than reasoned about. They hold for
+`SUPABASE_JWT_SECRET` too, which is why removing it costs nothing:
 
 1. **Nothing on Vercel can read them.** The project has no Vercel Function and no build
    step. Vercel environment variables are readable only by build processes and functions,
@@ -139,7 +171,10 @@ This is the part most likely to be misread, so it is stated plainly: Supabase Ed
 Functions execute in the region nearest the requesting user, not in the project's region
 (Supabase documentation on regional invocation). The `moi-app` project living in
 `eu-west-1` therefore says where the *database* is; it says nothing about where a contact
-submission is processed. A message sent from outside Europe is processed outside Europe.
+submission is processed. Where any given submission is processed follows the runtime region
+selected for that request, so a request arriving from outside the EU/EEA will generally be
+processed outside the EU/EEA. That is the Chapter V transfer question itself, not a
+geographic aside — and the EU/EEA, not "Europe", is the boundary that decides it.
 
 Pinning is possible — via the `x-region` header or the `forceFunctionRegion` query
 parameter — with the caveat that a pinned region is **not** automatically re-routed during a
@@ -182,13 +217,23 @@ visitor
   -> hallo@moicheck.nl        (Gmail, via Cloudflare Email Routing)
 ```
 
-What the function retains: **no copy of the message.** It holds the caller's IP address in
-memory for up to 60 seconds, for rate limiting (`WINDOW_MS = 60_000`), and nothing else.
-The inbox is the record, as it was before.
+What the function retains: **no copy of the message.** It keeps the caller's IP address in
+memory for rate limiting only, and nothing else. Stated precisely, because the 60-second
+figure is easy to over-read: timestamps older than `WINDOW_MS = 60_000` stop counting
+toward the limit, and stale entries are swept from the map on the next request that reaches
+the same instance (`sweepExpired`, `supabase/functions/contact/index.ts:33-39`). Since the
+sweep is request-driven, an instance that goes idle still holds its entries until it is torn
+down. Sixty seconds is when the address stops being *used*, not a guaranteed erasure
+deadline — and `privacy.html` §1 currently describes it as "held in memory for that minute",
+which is tighter than what the code guarantees. That wording belongs to #86; it is noted
+here rather than changed.
 
-Any stale checkout or cached view showing `app.js` posting to `formsubmit.co` is wrong.
-`app.js:1459` posts to `${SUPABASE_URL}/functions/v1/contact`; FormSubmit survives in the
-repository only in the decision record above and in README history.
+Any stale checkout or cached view showing `app.js` posting to `formsubmit.co` is wrong:
+`app.js:1459` posts to `${SUPABASE_URL}/functions/v1/contact`. The FormSubmit name still
+appears in three places in the repository, none of them live code — this record, the
+decision record above, and `README.md`'s contact-form section (around line 169), which
+explains the replacement and links that decision record by path. A repository search will
+find those, and they do not contradict the audit.
 
 ## A note on sourcing
 
@@ -197,6 +242,7 @@ repository only in the decision record above and in README history.
 | MFA status of all six accounts | Seen in each provider's dashboard during this audit |
 | Supabase org-wide enforcement needs Pro | Supabase dashboard and plan documentation |
 | Environment variables present, and their removal | Seen in the Vercel dashboard, before and after |
+| `SUPABASE_JWT_SECRET` can bypass RLS | Reasoned from how Supabase signs and verifies project JWTs, not from a dashboard reading. Its continued presence is from the dashboard; whether legacy HS256 verification is still enabled is **not** settled here |
 | Vercel env changes apply only to new deployments | Vercel documentation |
 | Supabase project region `eu-west-1` | Supabase dashboard |
 | Edge Functions run nearest the user; `x-region` pinning | Supabase documentation (regional invocation) |
@@ -210,6 +256,17 @@ rather than trusting this file — account state drifts, and this file does not.
 
 ## Follow-up
 
+- [ ] **Remove `SUPABASE_JWT_SECRET` from Vercel** — owner action, in every environment
+      that carries it. Until then #92's "no key capable of bypassing RLS is deployed
+      anywhere" is not satisfied, whatever the rest of this record says. While checking,
+      confirm in the dashboard whether legacy HS256 JWT verification is still enabled for
+      the project, and note the answer here.
+- [ ] **Confirm Preview and Development** for the nine credentials removed from
+      Production. The audit established Production only; #92 asks for every environment.
+- [ ] **`privacy.html` §1 on the rate-limit IP** — it says the address is held in memory
+      "for that minute", while the sweep that would make that true runs only on a later
+      request to the same instance. A wording question for
+      [#86](https://github.com/Dor-bl/moi-app/issues/86), not a code change.
 - [ ] **Edge Function region** — whether to pin the contact function to an EU region, and
       accept the loss of outage re-routing, is open in
       [#32](https://github.com/Dor-bl/moi-app/issues/32). Not decided here.
