@@ -7,11 +7,13 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 [![CI Check](https://github.com/Dor-bl/moi-app/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Dor-bl/moi-app/actions/workflows/ci.yml)
 [![Deploy Edge Functions](https://github.com/Dor-bl/moi-app/actions/workflows/deploy-functions.yml/badge.svg?branch=main)](https://github.com/Dor-bl/moi-app/actions/workflows/deploy-functions.yml)
 
-*CI Check runs on every push and pull request. Deploy Edge Functions runs only
-after a change to `supabase/functions/contact/` lands on `main`, so it is green
-for long stretches between deploys — what it tells you is whether the **last**
-deploy reached production and passed its live check, which is the one failure no
-pull request can show you.*
+*CI Check runs on pushes to `main` and on pull requests targeting `main` — a push
+to a feature branch with no open PR runs nothing. Deploy Edge Functions runs when
+a change to `supabase/functions/contact/` or to the workflow itself lands on
+`main`, and on manual dispatch; it is idle in between, so it stays green for long
+stretches. What it tells you is whether the **last** deploy reached production
+and passed its live check — the one failure no pull request can show you, since
+it runs after merge.*
 
 ---
 
