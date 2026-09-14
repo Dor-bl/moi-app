@@ -193,6 +193,20 @@ from a branch before merging. The workflow needs two repository secrets:
 Without them the job fails loudly with a message naming what is missing, rather
 than appearing to succeed.
 
+After deploying, the job asks the live function for the exact preflight a browser
+sends and fails if the answer would not let the POST through — checking the
+production origin, a Vercel preview origin, and one origin that must be refused.
+The preview probe is not decoration: a preview-origin CORS mismatch is what
+started #103, and production can keep working while previews break. If preview
+hostnames ever change shape, update both the allow-list in
+`supabase/functions/contact/index.ts` and the probe in the workflow.
+
+The workflow pins both `supabase/setup-cli` (to a commit SHA — `@v1` is a branch
+upstream, so it moves on its own) and the Supabase CLI version, because that job
+runs third-party code with a production deploy token in scope. Bump them
+deliberately; a stale pin fails at deploy time, which is the right direction to
+fail in.
+
 **`--no-verify-jwt` is required, not optional.** Without it the platform rejects the
 browser's CORS preflight before the function runs: preflights carry no `Authorization`
 header, so JWT verification has nothing to check and answers 401, and the real POST never
