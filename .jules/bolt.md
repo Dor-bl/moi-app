@@ -27,3 +27,6 @@
 ## 2026-09-11 - Consecutive Array Filters
 **Learning:** Partitioning an array into two subsets using two consecutive `.filter()` calls iterates through the array twice (2 * O(N)).
 **Action:** Combine partitions into a single O(N) loop to halve array iterations during frequent re-renders. Avoid micro-optimizing subsequent `.forEach` DOM node loops, as readability takes precedence over imperceptible JS execution gains when DOM operations dominate.
+## 2024-05-24 - Intl.DateTimeFormat caching in JS
+**Learning:** Instantiating `Intl.DateTimeFormat` inside frequently called functions (like date formatters inside `map` loops) causes massive performance overhead due to its expensive setup cost.
+**Action:** Always extract `new Intl.DateTimeFormat` into file-scoped constants when the locale and options are known ahead of time.

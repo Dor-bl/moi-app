@@ -11,16 +11,30 @@
 // convention rather than a guarantee. Reading the parts out by name cannot drift
 // with the engine's CLDR data, and a wrong shape here would break filtering
 // silently rather than loudly.
-function todayInGroningen(now = new Date()) {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Europe/Amsterdam',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).formatToParts(now);
+// ⚡ Bolt Performance Optimization:
+// Cache Intl.DateTimeFormat instances. toLocaleDateString and formatToParts recreate
+// these internally on every call, which is slow.
+const groningenFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Amsterdam',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+});
 
-    const part = type => parts.find(candidate => candidate.type === type).value;
-    return `${part('year')}-${part('month')}-${part('day')}`;
+function todayInGroningen(now = new Date()) {
+    const parts = groningenFormatter.formatToParts(now);
+
+    // ⚡ Bolt Performance Optimization:
+    // Single loop over parts array instead of three O(N) .find() calls with new closures.
+    // Impact: Avoids multiple object/closure allocations and redundant traversals.
+    let year, month, day;
+    for (let i = 0; i < parts.length; i++) {
+        const { type, value } = parts[i];
+        if (type === 'year') year = value;
+        else if (type === 'month') month = value;
+        else if (type === 'day') day = value;
+    }
+    return `${year}-${month}-${day}`;
 }
 
 function spanEnd(event) {
@@ -99,17 +113,30 @@ function isHappeningNow(event, today) {
     return event.date <= today && !hasEnded(event, today);
 }
 
+// ⚡ Bolt Performance Optimization:
+// Cache Intl.DateTimeFormat instances.
+const eventDateFormatters = {
+    'en': {
+        noYear: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' }),
+        withYear: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    },
+    'nl': {
+        noYear: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', timeZone: 'UTC' }),
+        withYear: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    }
+};
+
 // Intl handles the range shapes per locale ("20-30 August", "28 December - 2
 // January"), so there is no hand-rolled range logic to get wrong. The dates are
 // parsed as UTC and formatted as UTC: they are calendar days, not moments, and
 // letting the device's timezone shift them is the bug this avoids.
 function formatEventDate(event, lang, today = todayInGroningen()) {
-    const options = { day: 'numeric', month: 'long', timeZone: 'UTC' };
-    if (event.date.slice(0, 4) !== today.slice(0, 4)) {
-        options.year = 'numeric';
-    }
+    const includeYear = event.date.slice(0, 4) !== today.slice(0, 4);
 
-    const formatter = new Intl.DateTimeFormat(lang === 'nl' ? 'nl-NL' : 'en-GB', options);
+    // Explicitly select formatter to avoid prototype pollution if lang is hijacked
+    const langKey = lang === 'nl' ? 'nl' : 'en';
+    const formatter = includeYear ? eventDateFormatters[langKey].withYear : eventDateFormatters[langKey].noYear;
+
     const start = new Date(`${event.date}T00:00:00Z`);
 
     return event.endDate
