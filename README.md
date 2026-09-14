@@ -4,6 +4,15 @@
 
 As someone who moved to Groningen, this app is built to help new expats settle in, explore local culture, try traditional Groninger food, and track their journey toward becoming a true "Stadjer"!
 
+[![CI Check](https://github.com/Dor-bl/moi-app/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Dor-bl/moi-app/actions/workflows/ci.yml)
+[![Deploy Edge Functions](https://github.com/Dor-bl/moi-app/actions/workflows/deploy-functions.yml/badge.svg?branch=main)](https://github.com/Dor-bl/moi-app/actions/workflows/deploy-functions.yml)
+
+*CI Check runs on every push and pull request. Deploy Edge Functions runs only
+after a change to `supabase/functions/contact/` lands on `main`, so it is green
+for long stretches between deploys — what it tells you is whether the **last**
+deploy reached production and passed its live check, which is the one failure no
+pull request can show you.*
+
 ---
 
 ## ✨ Features
