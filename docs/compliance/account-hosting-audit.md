@@ -93,6 +93,12 @@ Preview or Development also carried any of them was not separately recorded duri
 audit, so that half of #92's "all environments, including preview" is unverified rather
 than clear. It is in the follow-ups.
 
+#92 also asks about any local `.env`. On the repository side that is clear and checkable:
+`.env` and its variants are ignored (`.gitignore:1-5`), the only tracked file of that shape
+is `.env.example`, and #92's own scan of git history found placeholders rather than
+credentials. An untracked `.env` sitting on a developer machine is outside what this record
+can establish either way — it is in the follow-ups rather than quietly counted as clean.
+
 ### Still present and RLS-capable — open
 
 | Variable | Environment | Why it matters |
@@ -220,20 +226,28 @@ visitor
 What the function retains: **no copy of the message.** It keeps the caller's IP address in
 memory for rate limiting only, and nothing else. Stated precisely, because the 60-second
 figure is easy to over-read: timestamps older than `WINDOW_MS = 60_000` stop counting
-toward the limit, and stale entries are swept from the map on the next request that reaches
-the same instance (`sweepExpired`, `supabase/functions/contact/index.ts:33-39`). Since the
-sweep is request-driven, an instance that goes idle still holds its entries until it is torn
-down. Sixty seconds is when the address stops being *used*, not a guaranteed erasure
-deadline — and `privacy.html` §1 currently describes it as "held in memory for that minute",
-which is tighter than what the code guarantees. That wording belongs to #86; it is noted
-here rather than changed.
+toward the limit, and stale entries leave the map via a **periodic** sweep
+(`sweepExpired`, `supabase/functions/contact/index.ts:33-39`). That sweep is both
+request-driven and throttled — it returns early unless a full window has passed since the
+last one — so an expired entry can sit in `recent` past its 60 seconds, and an instance
+that goes idle keeps its entries until it is torn down.
+
+Sixty seconds is therefore when an address stops being *used*, not a deadline by which it
+is gone. `privacy.html` §1 currently tells visitors it is "held in memory for that minute",
+which is tighter than the code guarantees. That wording belongs to #86; it is noted here
+rather than changed.
 
 Any stale checkout or cached view showing `app.js` posting to `formsubmit.co` is wrong:
-`app.js:1459` posts to `${SUPABASE_URL}/functions/v1/contact`. The FormSubmit name still
-appears in three places in the repository, none of them live code — this record, the
-decision record above, and `README.md`'s contact-form section (around line 169), which
-explains the replacement and links that decision record by path. A repository search will
-find those, and they do not contradict the audit.
+`app.js:1459` posts to `${SUPABASE_URL}/functions/v1/contact`. No request anywhere in the
+app goes to FormSubmit. The name itself still appears in four places, so a repository search
+will return hits that do not contradict that:
+
+| Where | What it is |
+| --- | --- |
+| `supabase/functions/contact/index.ts:3` | Header comment — "Replaces FormSubmit", pointing at the decision record. A comment in a code file, not an executable reference |
+| `README.md:169` | Contact-form section; explains the replacement and links the decision record by path |
+| `docs/decisions/formsubmit-gdpr-basis.md` | The decision record itself |
+| This file | The sentence you are reading |
 
 ## A note on sourcing
 
@@ -263,6 +277,9 @@ rather than trusting this file — account state drifts, and this file does not.
       the project, and note the answer here.
 - [ ] **Confirm Preview and Development** for the nine credentials removed from
       Production. The audit established Production only; #92 asks for every environment.
+- [ ] **Confirm no local `.env` holds a privileged key.** The repository side is clean
+      (ignored, only `.env.example` tracked, nothing in git history), but an untracked file
+      on a developer machine is the one location #92 names that this record cannot reach.
 - [ ] **`privacy.html` §1 on the rate-limit IP** — it says the address is held in memory
       "for that minute", while the sweep that would make that true runs only on a later
       request to the same instance. A wording question for
