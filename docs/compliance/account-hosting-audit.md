@@ -11,11 +11,17 @@ MFA across the account chain, confirmation that no `service_role` key is deploye
 recorded decision on the function processing region. Its fourth item asks that each result
 be written down "so the next review doesn't have to re-ask." This is that record.
 
-**One of those three is not closed.** The MFA chain is complete and the region decision is
-recorded, but a credential capable of bypassing row-level security — the project's JWT
-signing secret — is still configured in Vercel. Section 2 has the detail and the follow-ups
-carry the action. Read this file as "here is where things stand", not "everything is
-settled".
+**Where the three stand.** The MFA chain is complete. The region item is satisfied on #92's
+own terms — it asks for the *Vercel* function region, and `fra1` is now a recorded decision
+— but that is narrower than it sounds, because no Vercel Function exists and contact data is
+actually processed by a Supabase Edge Function, whose region this record documents rather
+than decides; pinning it is open under
+[#32](https://github.com/Dor-bl/moi-app/issues/32), exactly where #92 put it. The key audit
+is **not** closed: a credential capable of bypassing row-level security — the project's JWT
+signing secret — is still configured in Vercel.
+
+Section 2 has the detail on the key, section 3 on the regions, and the follow-ups carry both
+actions. Read this file as "here is where things stand", not "everything is settled".
 
 It is **not** an Article 30 record of processing activities. It does not enumerate
 processing purposes, legal bases, categories of data subject, or retention periods across
