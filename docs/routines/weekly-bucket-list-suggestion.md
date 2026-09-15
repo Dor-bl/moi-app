@@ -82,12 +82,14 @@ The five categories, exactly as they appear in `js/data.js`:
 
 - **One open suggestion at a time.** Before doing anything, check for an open suggestion
   PR. If one exists, the routine stops and reports it, rather than stacking a second.
-- Recognise a previous suggestion by a head branch **starting with**
-  `claude/keen-edison` — match on the prefix, never the exact branch name; see below for
-  why. As a secondary signal, the PR title starts with `feat: add` and ends with
+- Recognise a previous suggestion by a head branch **starting with this routine's current
+  outcome-branch prefix** — match on the prefix, never the exact branch name; see below
+  for why, and for how to find the prefix, which is **not** guaranteed to be the one
+  written here. As a secondary signal, the PR title starts with `feat: add` and ends with
   `to the bucket list` (#67 is `feat: add seal-spotting boat trip from Lauwersoog to the
   bucket list`). Match those two ends, not a fixed middle: the item name sits between
-  them, unquoted.
+  them, unquoted. When the two signals disagree, trust the title: the branch prefix is the
+  half that goes stale.
 - Also skim recently closed suggestion PRs — an item that was already proposed and
   rejected should not come back.
 
@@ -105,22 +107,41 @@ then fails at `git push` with HTTP 403. That is exactly what happened on the fir
 run (2026-09-05): a verified item, lint passing, committed locally, and nothing to show
 for it once the container was reclaimed.
 
-Setting the source in the UI creates the outcome branch automatically. Here it came out
-as `claude/keen-edison` — an arbitrary generated name, unrelated to what this routine
-does, and **not** something to rename to a tidier one, since the authorization is what
-makes the push work.
+Setting the source in the UI creates the outcome branch automatically, with an arbitrary
+generated name unrelated to what this routine does — and **not** something to rename to a
+tidier one, since the authorization is what makes the push work.
 
 ### The branch name is a prefix, not a literal
 
-On push the platform appends a per-session suffix, so a run actually lands on something
-like `claude/keen-edison-rywxf6`. Two consequences:
+On push the platform appends a per-session suffix, so a run lands on something like
+`<outcome-branch>-rywxf6`. Two consequences:
 
-- The run still branches off `origin/main` as usual; it is the **branch name** that
-  must start with the authorized prefix. Do not base the work on `claude/keen-edison`
-  itself. The suffix that appears on push is expected, not an error.
+- The run still branches off `origin/main` as usual; it is the **branch name** that must
+  start with the authorized prefix. Do not base the work on the outcome branch itself.
+  The suffix that appears on push is expected, not an error.
 - Anything looking for previous suggestion PRs must **match the prefix**. An exact-string
-  comparison against `claude/keen-edison` silently matches nothing, which would defeat
-  the one-open-suggestion rule and stack a second PR every week.
+  comparison silently matches nothing, which would defeat the one-open-suggestion rule
+  and stack a second PR every week.
+
+### The prefix changes — look it up, do not trust this file
+
+Reconfiguring the routine's source regenerates the outcome branch, so the prefix is not
+stable and any copy of it written down goes stale silently. It has already drifted once:
+
+| Prefix | Evidence |
+| --- | --- |
+| `claude/keen-edison` | what #67 actually pushed to (`claude/keen-edison-rywxf6`, merged 5 Sep 2026) |
+| `claude/epic-hamilton` | the outcome branch configured on the Routine as of 15 Sep 2026 |
+
+Nothing announced that change, and nothing failed loudly because of it: a prefix match
+against the old name simply finds no previous suggestion, so the one-open-suggestion
+guard passes when it should have stopped the run. The cost is silent duplicate PRs, which
+is why the title check above is the signal to trust.
+
+**So read the prefix off the Routine itself** — the outcome branch in the claude.ai
+Routines UI, or `list_triggers`, where it appears at
+`session_request.config.outcomes[].git_repository.git_info.branches`. Treat the table
+above as history, not as configuration.
 
 ### Backstop
 
