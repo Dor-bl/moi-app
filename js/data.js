@@ -352,6 +352,15 @@ const BUCKET_LIST = [
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Go ice skating on a frozen diep or pond', nl: 'Schaats op een bevroren diep of vijver' },
         tip: { en: 'When it freezes hard enough, whole neighbourhoods lace up on the nearest canal or pond — a rare but treasured Groningen winter tradition.', nl: 'Als het hard genoeg vriest, bindt de hele buurt de schaatsen onder voor het dichtstbijzijnde diepje of vijvertje — een zeldzame maar geliefde Groningse wintertraditie.' }
+    },
+    {
+        id: '44',
+        coords: [53.4000, 6.4528],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Go wadlopen (guided mudflat walking) from Pieterburen', nl: 'Ga wadlopen (begeleid) vanuit Pieterburen' },
+        tip: { en: "This is the real deal, not the postcard version of the Wad: a guide walks the group out onto the exposed seabed at low tide, an hour or two slogging through clay, sand, and tidal creeks with nothing but horizon and wading birds around you. Sign in at the shop on the Hoofdstraat before you start, and don't wear anything you're attached to — the mud keeps the odd shoe.", nl: 'Dit is de echte versie van het Wad, geen ansichtkaartuitje: een gids leidt de groep bij laag water de drooggevallen zeebodem op, een uur of twee ploeteren door klei, zand en geultjes, met alleen de horizon en wadvogels om je heen. Meld je vooraf bij de winkel aan de Hoofdstraat, en trek niets aan waar je aan gehecht bent — de modder houdt weleens een schoen.' },
+        url: 'https://wadlopen-pieterburen.nl/',
+        urlLabel: { en: 'Wadlopen Pieterburen Tours 🥾', nl: 'Wadlopen Pieterburen Tochten 🥾' }
     }
 ];
 
