@@ -82,14 +82,17 @@ The five categories, exactly as they appear in `js/data.js`:
 
 - **One open suggestion at a time.** Before doing anything, check for an open suggestion
   PR. If one exists, the routine stops and reports it, rather than stacking a second.
-- Recognise a previous suggestion by a head branch **starting with this routine's current
-  outcome-branch prefix** — match on the prefix, never the exact branch name; see below
-  for why, and for how to find the prefix, which is **not** guaranteed to be the one
-  written here. As a secondary signal, the PR title starts with `feat: add` and ends with
-  `to the bucket list` (#67 is `feat: add seal-spotting boat trip from Lauwersoog to the
-  bucket list`). Match those two ends, not a fixed middle: the item name sits between
-  them, unquoted. When the two signals disagree, trust the title: the branch prefix is the
-  half that goes stale.
+- **Recognise a previous suggestion by its PR title. That check is authoritative.** The
+  title starts with `feat: add` and ends with `to the bucket list` (#67 is `feat: add
+  seal-spotting boat trip from Lauwersoog to the bucket list`). Match those two ends, not
+  a fixed middle: the item name sits between them, unquoted. The title shape lives in this
+  repository and in the routine's own instructions, so it cannot drift underneath you.
+- The head branch prefix is a **secondary, corroborating** check only — never a filter
+  that can veto the title match. Treat the two as OR, not AND: a PR whose title matches is
+  a previous suggestion even if its branch prefix does not, which is exactly the case that
+  arises after the outcome branch is regenerated. Match on the prefix rather than the exact
+  branch name, and read the prefix off the Routine rather than from this file; see below
+  for how, and for why it is **not** guaranteed to be the one written here.
 - Also skim recently closed suggestion PRs — an item that was already proposed and
   rejected should not come back.
 
