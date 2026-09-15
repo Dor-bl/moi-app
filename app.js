@@ -772,13 +772,6 @@ function renderEvents() {
     const upcoming = getUpcomingEvents(EVENTS, today);
     const t = UI_TRANSLATIONS[currentLang];
 
-    const freshness = document.createElement('p');
-    freshness.className = 'events-freshness';
-    freshness.textContent = upcoming.length
-        ? t.eventsCoverage.replace('{through}', formatEventsCoverageEnd(upcoming, currentLang))
-        : t.eventsCoverageEmpty;
-    eventsContainer.appendChild(freshness);
-
     if (upcoming.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'events-empty';
@@ -786,6 +779,11 @@ function renderEvents() {
         eventsContainer.appendChild(empty);
         return;
     }
+
+    const freshness = document.createElement('p');
+    freshness.className = 'events-freshness';
+    freshness.textContent = t.eventsCoverage.replace('{through}', formatEventsCoverageEnd(upcoming, currentLang));
+    eventsContainer.appendChild(freshness);
 
     const fragment = document.createDocumentFragment();
     upcoming.forEach(event => fragment.appendChild(buildEventCard(event, today)));

@@ -238,8 +238,7 @@ test('both languages carry every events string', () => {
             'eventsHappeningNow',
             'eventsMoreInfo',
             'eventsEmpty',
-            'eventsCoverage',
-            'eventsCoverageEmpty'
+            'eventsCoverage'
         ]) {
             assert.ok(UI_TRANSLATIONS[lang][key], `${lang} is missing ${key}`);
         }
