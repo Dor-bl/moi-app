@@ -416,6 +416,14 @@ const EVENTS = [
         title: { en: 'Carbidschieten', nl: 'Carbidschieten' },
         location: { en: 'Villages around the province', nl: 'Dorpen in de provincie' },
         tip: { en: 'Milk churns, calcium carbide, and a very loud bang across the fields on New Year\'s Eve. A northern tradition you have to drive out of the city to see properly.', nl: 'Melkbussen, carbid en een enorme knal over het land op oudejaarsdag. Een noordelijke traditie waarvoor je de stad uit moet om het goed mee te maken.' }
+    },
+    {
+        id: 'wijnwandeling-haren-2026',
+        date: '2026-09-18',
+        title: { en: 'Wine Walk Haren', nl: 'Wijnwandeling Haren' },
+        location: { en: 'Eemke van der Veenpad, Haren centre', nl: 'Eemke van der Veenpad, centrum Haren' },
+        tip: { en: 'Buy a glass at the Ervaar Haren food truck by the church, then walk between the shops and restaurants in Haren\'s centre tasting Spanish wines and snacks. It is the opening night of a new themed Friday series, not a standing yearly date, so this exact edition will not come back the same way next year.', nl: 'Koop een glas bij de foodtruck van Ervaar Haren voor de kerk en wandel langs de winkels en horeca in het centrum van Haren voor Spaanse wijnen en hapjes. Het is de aftrap van een nieuwe reeks thema-avonden, geen vaste jaarlijkse datum, dus deze editie komt volgend jaar niet zomaar op dezelfde manier terug.' },
+        url: 'https://www.ervaarharen.nl/event/wijnloop-haren/'
     }
 ];
 
