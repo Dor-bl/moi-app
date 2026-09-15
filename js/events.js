@@ -1,5 +1,5 @@
 // Events Module - Shared Global Exports: todayInGroningen, resolveOccurrence,
-// getUpcomingEvents, isHappeningNow, formatEventDate
+// getUpcomingEvents, isHappeningNow, formatEventDate, formatEventsCoverageEnd
 // Dependencies: none. Pure date logic, so tests can drive it without a DOM.
 
 // "Today" is Groningen's calendar day, not the device's. Everything here ships to
@@ -115,4 +115,23 @@ function formatEventDate(event, lang, today = todayInGroningen()) {
     return event.endDate
         ? formatter.formatRange(start, new Date(`${event.endDate}T00:00:00Z`))
         : formatter.format(start);
+}
+
+// Freshness signal for the Events view: there is no per-user "as of" timestamp
+// to show, so the honest thing to state is what date range the list currently
+// covers. That way a quiet stretch reads as "nothing until {through}" instead
+// of leaving visitors to guess whether the page is stale.
+function formatEventsCoverageEnd(upcomingEvents, lang) {
+    const lastEnd = upcomingEvents.reduce(
+        (latest, event) => (spanEnd(event) > latest ? spanEnd(event) : latest),
+        upcomingEvents[0].date
+    );
+
+    const formatter = new Intl.DateTimeFormat(lang === 'nl' ? 'nl-NL' : 'en-GB', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC'
+    });
+
+    return formatter.format(new Date(`${lastEnd}T00:00:00Z`));
 }

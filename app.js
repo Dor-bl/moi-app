@@ -770,11 +770,19 @@ function renderEvents() {
     eventsContainer.innerHTML = '';
 
     const upcoming = getUpcomingEvents(EVENTS, today);
+    const t = UI_TRANSLATIONS[currentLang];
+
+    const freshness = document.createElement('p');
+    freshness.className = 'events-freshness';
+    freshness.textContent = upcoming.length
+        ? t.eventsCoverage.replace('{through}', formatEventsCoverageEnd(upcoming, currentLang))
+        : t.eventsCoverageEmpty;
+    eventsContainer.appendChild(freshness);
 
     if (upcoming.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'events-empty';
-        empty.textContent = UI_TRANSLATIONS[currentLang].eventsEmpty;
+        empty.textContent = t.eventsEmpty;
         eventsContainer.appendChild(empty);
         return;
     }
