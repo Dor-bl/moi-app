@@ -96,14 +96,47 @@ Two related rules, for the same reason:
 - **Never invent an event.** Every entry must be a real, verifiable thing happening in
   the city or province of Groningen.
 
-## Verifying dates
+## Finding events: discovery and verification are different jobs
 
-Each date added or changed must be read off the event's **own official page** — not an
-aggregator, not a listings site, not a cached search snippet, and not memory.
+They have different rules, and conflating them is how this goes wrong in either
+direction — either the list never grows, or it grows with dates nobody checked.
+
+### Discovery — which events exist and are worth listing
+
+Use listings and tourism sites freely here. They are the right tool for the job: a
+curated calendar knows that a small Wine Walk in Haren is happening at all, while the
+event's own site only exists if someone built one. Good starting points:
+
+- [visitgroningen.nl](https://www.visitgroningen.nl) — the city and province tourism site
+- [ervaarharen.nl](https://www.ervaarharen.nl) — Haren, part of the municipality of
+  Groningen; a real source of local events (the Wine Walk in [#127](https://github.com/Dor-bl/moi-app/pull/127)
+  came from there)
+- [gemeente.groningen.nl/evenementenkalender](https://gemeente.groningen.nl/evenementenkalender)
+  — the municipal events calendar
+
+The floating festivals below are known to be missing and are the obvious place to start,
+but they are not a closed list. If discovery turns up something else genuinely worth a
+newcomer's time in the city or province, propose it — prefer what is distinctly
+Groningen over what could be anywhere.
+
+### Verification — the exact dates
+
+Here the rule is strict, and it does **not** relax for an event that was discovered on a
+listings site. Each date added or changed must be read off the event's **own official
+page** — not an aggregator, not a listings site, not a cached search snippet, and not
+memory.
+
+This is not pedantry. A check in September 2026 found WinterWelVaart listed as both
+11–13 and 19–21 December by different third-party sites; taking the first hit would have
+put a wrong date on the live page.
+
+Where an event has no official page of its own — small local happenings often don't —
+say so plainly in the PR, name the best source used, and let the reviewer decide. Do not
+quietly downgrade the standard and present it as verified.
 
 The pull request body must cite, for every event it touches, the URL the dates came
-from, so review is click-and-verify rather than re-research. An event whose dates could
-not be confirmed from its official page does not go in the PR.
+from, so review is click-and-verify rather than re-research. Where discovery and
+verification used different sources, name both.
 
 ## Event shape
 
