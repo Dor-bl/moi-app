@@ -433,6 +433,24 @@ const EVENTS = [
         location: { en: 'Eemke van der Veenpad, Haren centre', nl: 'Eemke van der Veenpad, centrum Haren' },
         tip: { en: 'Runs 18:00–21:00: buy a glass at the Ervaar Haren food truck by the church, then walk between the shops and restaurants in Haren\'s centre tasting Spanish wines and snacks. It is the opening night of a new themed Friday series, not a standing yearly date, so this exact edition will not come back the same way next year.', nl: 'Van 18:00 tot 21:00 uur: koop een glas bij de foodtruck van Ervaar Haren voor de kerk en wandel langs de winkels en horeca in het centrum van Haren voor Spaanse wijnen en hapjes. Het is de aftrap van een nieuwe reeks thema-avonden, geen vaste jaarlijkse datum, dus deze editie komt volgend jaar niet zomaar op dezelfde manier terug.' },
         url: 'https://www.ervaarharen.nl/event/wijnloop-haren/'
+    },
+    {
+        id: 'winterwelvaart-2026',
+        date: '2026-12-11',
+        endDate: '2026-12-13',
+        title: { en: 'WinterWelVaart', nl: 'WinterWelVaart' },
+        location: { en: 'A-kwartier, city centre', nl: 'A-kwartier, binnenstad' },
+        tip: { en: 'Around twenty historic ships light up the quays of the A-kwartier for a long December weekend, with an arts trail through the old warehouses, live music and glühwein against the old harbour houses. Free to wander and easily the most atmospheric way to do Christmas in Groningen.', nl: 'Zo\'n twintig historische schepen verlichten de kades van het A-kwartier tijdens een lang decemberweekend, met een kunstroute door de oude pakhuizen, muziek en glühwein tegen de gevels van de vroegere haven. Gratis toegankelijk en veruit de sfeervolste manier om kerst in Groningen te beleven.' },
+        url: 'https://winterwelvaart.nl/'
+    },
+    {
+        id: 'esns-2027',
+        date: '2027-01-13',
+        endDate: '2027-01-16',
+        title: { en: 'Eurosonic Noorderslag (ESNS)', nl: 'Eurosonic Noorderslag (ESNS)' },
+        location: { en: 'Venues across the city centre', nl: 'Podia door de hele binnenstad' },
+        tip: { en: 'Europe\'s leading showcase festival for new music fills dozens of venues across town for four days. Most nights need an industry badge, but the closing Saturday, Noorderslag, sells public tickets, so it is worth planning around if you like discovering bands early.', nl: 'Het toonaangevende Europese showcasefestival voor nieuwe muziek vult dagenlang tientallen podia door de hele stad. De meeste avonden zijn voor badgehouders, maar op de afsluitende zaterdag, Noorderslag, zijn er gewoon kaartjes te koop, dus die avond is de moeite waard als je van nieuwe bands houdt.' },
+        url: 'https://esns.nl/en/'
     }
 ];
 
