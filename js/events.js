@@ -6,18 +6,35 @@
 // one city, so a phone left on another timezone should not drop an event a few
 // hours early or late around midnight.
 //
+// ⚡ Bolt Performance Optimization:
+// Cache Intl.DateTimeFormat instances to prevent repeated reallocation inside functions
+// Impact: Reduces formatting overhead significantly (from O(N) allocation per render to O(1)).
+const _todayFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Amsterdam',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+});
+
+const _eventFormatters = {
+    en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' }),
+    nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', timeZone: 'UTC' }),
+    enYear: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }),
+    nlYear: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+};
+
+const _coverageFormatters = {
+    en: new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+    nl: new Intl.DateTimeFormat('nl-NL', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+};
+
 // Built from formatToParts rather than format(): every comparison and slice below
 // treats this as ISO YYYY-MM-DD, and a locale's output *order* is a formatting
 // convention rather than a guarantee. Reading the parts out by name cannot drift
 // with the engine's CLDR data, and a wrong shape here would break filtering
 // silently rather than loudly.
 function todayInGroningen(now = new Date()) {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Europe/Amsterdam',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).formatToParts(now);
+    const parts = _todayFormatter.formatToParts(now);
 
     const part = type => parts.find(candidate => candidate.type === type).value;
     return `${part('year')}-${part('month')}-${part('day')}`;
@@ -104,12 +121,16 @@ function isHappeningNow(event, today) {
 // parsed as UTC and formatted as UTC: they are calendar days, not moments, and
 // letting the device's timezone shift them is the bug this avoids.
 function formatEventDate(event, lang, today = todayInGroningen()) {
-    const options = { day: 'numeric', month: 'long', timeZone: 'UTC' };
-    if (event.date.slice(0, 4) !== today.slice(0, 4)) {
-        options.year = 'numeric';
+    const withYear = event.date.slice(0, 4) !== today.slice(0, 4);
+    const isNl = lang === 'nl';
+
+    let formatter;
+    if (withYear) {
+        formatter = isNl ? _eventFormatters.nlYear : _eventFormatters.enYear;
+    } else {
+        formatter = isNl ? _eventFormatters.nl : _eventFormatters.en;
     }
 
-    const formatter = new Intl.DateTimeFormat(lang === 'nl' ? 'nl-NL' : 'en-GB', options);
     const start = new Date(`${event.date}T00:00:00Z`);
 
     return event.endDate
@@ -127,11 +148,7 @@ function formatEventsCoverageEnd(upcomingEvents, lang) {
         upcomingEvents[0].date
     );
 
-    const formatter = new Intl.DateTimeFormat(lang === 'nl' ? 'nl-NL' : 'en-GB', {
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'UTC'
-    });
+    const formatter = lang === 'nl' ? _coverageFormatters.nl : _coverageFormatters.en;
 
     return formatter.format(new Date(`${lastEnd}T00:00:00Z`));
 }
