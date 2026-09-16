@@ -114,10 +114,10 @@ event's own site only exists if someone built one. Good starting points:
 - [gemeente.groningen.nl/evenementenkalender](https://gemeente.groningen.nl/evenementenkalender)
   — the municipal events calendar
 
-The floating festivals below are known to be missing and are the obvious place to start,
-but they are not a closed list. If discovery turns up something else genuinely worth a
-newcomer's time in the city or province, propose it — prefer what is distinctly
-Groningen over what could be anywhere.
+The floating festivals under *Floating dates* above are known to be missing and are the
+obvious place to start, but they are not a closed list. If discovery turns up something
+else genuinely worth a newcomer's time in the city or province, propose it — prefer what
+is distinctly Groningen over what could be anywhere.
 
 ### Verification — the exact dates
 
@@ -131,8 +131,12 @@ This is not pedantry. A check in September 2026 found WinterWelVaart listed as b
 put a wrong date on the live page.
 
 Where an event has no official page of its own — small local happenings often don't —
-say so plainly in the PR, name the best source used, and let the reviewer decide. Do not
-quietly downgrade the standard and present it as verified.
+**still include it**. Skipping it would undo the discovery rule above: the routine would
+find the small local events and then throw them away again for want of a page nobody
+built. Put the best source you have in `url`, and state plainly in the PR that there is
+no official page and which source the dates came from. Whether that is good enough to
+merge is the reviewer's call, not the run's. What is never acceptable is quietly
+presenting an unofficial source as if it were verified.
 
 The pull request body must cite, for every event it touches, the URL the dates came
 from, so review is click-and-verify rather than re-research. Where discovery and
@@ -163,7 +167,7 @@ it — and it is what keeps the check reporting the gap until someone can fill i
     title: { en: '...', nl: '...' },
     location: { en: '...', nl: '...' },
     tip: { en: '...', nl: '...' },
-    url: 'https://...'         // the official page the dates came from
+    url: 'https://...'         // official page when there is one — see below
 }
 ```
 
@@ -174,6 +178,11 @@ it — and it is what keeps the check reporting the gap until someone can fill i
 - `endDate` is the last day of the run, inclusive. Omit it for single-day events.
 - Give a floating edition a year-suffixed `id` (`noorderzon-2027`), since it is a
   specific edition rather than a standing tradition.
+- `url` is optional, and it is where a **visitor** goes to read more — not a record of
+  how the dates were checked. Use the event's official page when it has one, which is
+  normally the same page the dates were verified against. When it has none, the best
+  listings page belongs there rather than an empty field; the PR is where you say that
+  is what it is.
 
 ## What else the change has to touch
 
