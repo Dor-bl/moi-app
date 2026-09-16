@@ -767,7 +767,6 @@ function buildEventCard(event, today) {
 function renderEvents() {
     const today = todayInGroningen();
     eventsRenderedOn = today;
-    eventsContainer.innerHTML = '';
 
     const upcoming = getUpcomingEvents(EVENTS, today);
     const t = UI_TRANSLATIONS[currentLang];
@@ -776,18 +775,18 @@ function renderEvents() {
         const empty = document.createElement('p');
         empty.className = 'events-empty';
         empty.textContent = t.eventsEmpty;
-        eventsContainer.appendChild(empty);
+        eventsContainer.replaceChildren(empty);
         return;
     }
 
     const freshness = document.createElement('p');
     freshness.className = 'events-freshness';
     freshness.textContent = t.eventsCoverage.replace('{through}', formatEventsCoverageEnd(upcoming, currentLang));
-    eventsContainer.appendChild(freshness);
 
     const fragment = document.createDocumentFragment();
+    fragment.appendChild(freshness);
     upcoming.forEach(event => fragment.appendChild(buildEventCard(event, today)));
-    eventsContainer.appendChild(fragment);
+    eventsContainer.replaceChildren(fragment);
 }
 
 function updateProgress() {
