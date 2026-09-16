@@ -770,14 +770,20 @@ function renderEvents() {
     eventsContainer.innerHTML = '';
 
     const upcoming = getUpcomingEvents(EVENTS, today);
+    const t = UI_TRANSLATIONS[currentLang];
 
     if (upcoming.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'events-empty';
-        empty.textContent = UI_TRANSLATIONS[currentLang].eventsEmpty;
+        empty.textContent = t.eventsEmpty;
         eventsContainer.appendChild(empty);
         return;
     }
+
+    const freshness = document.createElement('p');
+    freshness.className = 'events-freshness';
+    freshness.textContent = t.eventsCoverage.replace('{through}', formatEventsCoverageEnd(upcoming, currentLang));
+    eventsContainer.appendChild(freshness);
 
     const fragment = document.createDocumentFragment();
     upcoming.forEach(event => fragment.appendChild(buildEventCard(event, today)));

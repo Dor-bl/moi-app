@@ -591,6 +591,13 @@ body[data-active-view="events"] .filters-container {
     color: var(--primary-color);
 }
 
+.events-freshness {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.75rem;
+    margin: -0.5rem 0 0.25rem;
+}
+
 .events-empty {
     text-align: center;
     color: var(--text-light);
