@@ -10,10 +10,10 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 
 - **Category Achievement Badges 🏆**: Complete all items in a category (e.g. *Food & Drink*) to unlock special badges like **Groninger Foodie 🍟**, **Culture Explorer 🏛️**, **True Stadjer 🚴‍♂️**, and **Groningen Legend 👑**, complete with real-time celebratory toasts and profile badge showcase.
 - **User Login & Cloud Sync (Google 1-Click & Magic Links)**: Users can sign in to save progress and memory notes, keeping state synchronized across mobile devices and laptops.
-- **Interactive Groningen Map View 🗺️**: Switch seamlessly between List View and Map View. Features interactive map pins for all 43 locations across Groningen with real-time status (Green for completed, Orange for pending).
+- **Interactive Groningen Map View 🗺️**: Switch seamlessly between List View and Map View. Features interactive map pins for all 44 locations across Groningen with real-time status (Green for completed, Orange for pending).
 - **Upcoming Events View 📅**: A third view alongside List and Map showing what's on in Groningen — Koningsdag, Bommen Berend, Sint Maarten, carbidschieten — with a *Happening now* badge for anything currently running. Events drop off the page by themselves the day after they finish, with no deploy needed: the list is filtered at render time against the current date in `Europe/Amsterdam`, and traditions on a fixed calendar date roll forward to their next occurrence automatically. Run `npm run events:check` to see what's still ahead and what needs fresh dates.
 - **Multi-Language Support (EN 🇬🇧 / NL 🇳🇱)**: Toggle instantly between English and Dutch for all items, tips, categories, and milestone badges.
-- **43 Curated Groningen Bucket List Items**: Handpicked experiences spanning Food & Drink, Culture & Sights, Daily Life, Groningen Classics, and Nature & Wildlife.
+- **44 Curated Groningen Bucket List Items**: Handpicked experiences spanning Food & Drink, Culture & Sights, Daily Life, Groningen Classics, and Nature & Wildlife.
 - **Contact & Item Suggestions Form**: Expats can easily get in touch, suggest new Groningen bucket list items, report bugs, or send feedback with full bilingual support.
 - **Category Filtering**: Easily filter items by category (*Food & Drink*, *Culture & Sights*, *Daily Life*, *Groningen Classics*, *Nature & Wildlife*).
 - **Interactive Details & Memories**: Click any card to open a detailed modal with local tips ("Why locals do it") and add personal memory notes.
@@ -178,6 +178,34 @@ supabase link --project-ref <your-project-ref>   # once
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx  # from resend.com/api-keys
 supabase functions deploy contact --no-verify-jwt
 ```
+
+Pushing a change to `supabase/functions/contact/` on `main` now redeploys that
+function automatically — only that path, so adding a second function means
+extending the workflow rather than relying on it — see `.github/workflows/deploy-functions.yml` — so the commands
+above are for the first deploy, for recovering when CI cannot, or for deploying
+from a branch before merging. The workflow needs two repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `SUPABASE_ACCESS_TOKEN` | A personal access token from *Account -> Access Tokens* in the Supabase dashboard |
+| `SUPABASE_PROJECT_REF` | The project ref, the subdomain of your `*.supabase.co` URL |
+
+Without them the job fails loudly with a message naming what is missing, rather
+than appearing to succeed.
+
+After deploying, the job asks the live function for the exact preflight a browser
+sends and fails if the answer would not let the POST through — checking the
+production origin, a Vercel preview origin, and one origin that must be refused.
+The preview probe is not decoration: a preview-origin CORS mismatch is what
+started #103, and production can keep working while previews break. If preview
+hostnames ever change shape, update both the allow-list in
+`supabase/functions/contact/index.ts` and the probe in the workflow.
+
+The workflow pins both `supabase/setup-cli` (to a commit SHA — `@v1` is a branch
+upstream, so it moves on its own) and the Supabase CLI version, because that job
+runs third-party code with a production deploy token in scope. Bump them
+deliberately; a stale pin fails at deploy time, which is the right direction to
+fail in.
 
 **`--no-verify-jwt` is required, not optional.** Without it the platform rejects the
 browser's CORS preflight before the function runs: preflights carry no `Authorization`

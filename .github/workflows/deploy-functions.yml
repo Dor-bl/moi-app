@@ -1,0 +1,208 @@
+name: Deploy Edge Functions
+
+# supabase/functions/ is the one part of this repo nothing ships automatically.
+# The site deploys from main via Vercel, so before this workflow existed a
+# change here could merge, go green, and never reach production — with no
+# symptom beyond the contact form behaving like the older code. That happened
+# once during #103.
+#
+# Runs when the function sources change, so ordinary front-end work does not
+# redeploy the backend for no reason. Editing this workflow also triggers it,
+# deliberately: that is how the first run happens without a function change.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      # Scoped to the one function this job deploys. A wider filter would run a
+      # green deployment of `contact` when some other function changed, leaving
+      # that one stale — the exact false signal this workflow exists to remove.
+      # Adding a second function means extending the deploy and verify steps
+      # below, and widening this.
+      - 'supabase/functions/contact/**'
+      - '.github/workflows/deploy-functions.yml'
+  # For redeploying without a code change — after rotating RESEND_API_KEY, say,
+  # or to recover when a deploy failed and the fix is not in the diff.
+  workflow_dispatch:
+
+# Two deploys racing would overwrite the same function, so serialise them.
+# `cancel-in-progress: false` protects the *running* deploy only — a
+# half-finished deploy is worse than a slow one. GitHub still keeps just one
+# pending run, so a third push supersedes a waiting second one. That is fine
+# here and worth being precise about rather than claiming every run survives:
+# main is cumulative, so the superseded run would have deployed code that the
+# surviving run deploys anyway.
+#
+# Keyed by ref, and that is load-bearing rather than cosmetic. With one shared
+# group, a dispatch from a feature branch joins main's queue, evicts the one
+# pending main push, and *then* fails the guard below — leaving production on
+# the older function with every check green. Only main ever reaches the deploy
+# step, so per-ref keys serialise real deploys exactly as before while keeping
+# runs that are about to be refused out of main's queue entirely.
+concurrency:
+  group: deploy-edge-functions-${{ github.ref }}
+  cancel-in-progress: false
+
+# Third-party actions run in this job with production deploy secrets in scope.
+# It only ever reads the checkout, so give it nothing else.
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy contact function
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      # workflow_dispatch runs against whatever ref was selected, and checkout
+      # follows it. Without this a maintainer could pick a feature branch from
+      # the Actions UI and put unmerged function code straight into production.
+      # Refusing is better than quietly checking out main instead: the deploy
+      # you asked for and the deploy you got should be the same one.
+      - name: Refuse to deploy anything but main
+        if: github.ref != 'refs/heads/main'
+        env:
+          # Never interpolate the ref into the script body. Actions substitutes
+          # it as text before bash parses the line, so a branch named
+          # `foo"; exit 0; #` would close the echo, exit the step successfully
+          # and skip the `exit 1` below — turning this guard into a no-op and
+          # deploying that branch. Through the environment it is only ever data.
+          SELECTED_REF: ${{ github.ref }}
+        run: |
+          echo "::error::This workflow deploys to production and runs from main only. Got '$SELECTED_REF'. Merge first, or use the manual command in the README to deploy a branch deliberately."
+          exit 1
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Both inputs here are pinned, because this job holds a production deploy
+      # token and everything it runs can reach it. `@v1` is a *branch* in
+      # supabase/setup-cli, not a tag, so it moves without a change here; and
+      # `version: latest` resolves through the GitHub releases API at run time,
+      # which makes every run install whatever shipped most recently (and adds
+      # an unauthenticated API call that can rate-limit the deploy). Pinned, the
+      # bytes this job executes change only when this line does.
+      #
+      # Bump both deliberately: read the diff for the action, and the CLI
+      # changelog for the version. A stale pin fails loudly at deploy time,
+      # which is the direction this should fail in.
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        with:
+          version: 2.117.0
+
+      - name: Deploy contact function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$PROJECT_REF" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF must be set as repository secrets. See README, 'Contact form (Supabase Edge Function)'."
+            exit 1
+          fi
+          # --no-verify-jwt is required, not a preference: the platform rejects
+          # the browser's unauthenticated OPTIONS preflight otherwise, and the
+          # form breaks for every visitor while curl checks still pass.
+          supabase functions deploy contact \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
+      - name: Verify the deployed function answers a preflight
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          # Deploying successfully is not the same as working. This asks the
+          # live function for the exact preflight a browser sends and fails the
+          # job unless the answer would actually let the POST through. Every
+          # assertion here is one the browser makes silently: if any is wrong
+          # the form breaks for every visitor while a plain curl POST — which
+          # sends no preflight — still looks fine.
+          url="https://${PROJECT_REF}.supabase.co/functions/v1/contact"
+
+          # Bounded: without a timeout a stalled endpoint holds this
+          # serialised slot until GitHub's job limit, leaving later pushes
+          # queued behind it and production stale.
+          preflight() {
+            curl -sS -i -X OPTIONS "$url" \
+              --connect-timeout 10 --max-time 30 \
+              -H "Origin: $1" \
+              -H 'Access-Control-Request-Method: POST' \
+              -H 'Access-Control-Request-Headers: authorization, apikey, content-type'
+          }
+
+          header_value() {
+            printf '%s' "$2" | grep -i "^$1:" | head -1 | cut -d: -f2- | tr -d '\r' | sed 's/^ *//; s/ *$//'
+          }
+
+          # --- The production origin: the whole handshake ---------------------
+          prod='https://moicheck.nl'
+          headers=$(preflight "$prod")
+          echo "$headers" | head -20
+
+          # Any 2xx satisfies a browser, and 204 is the conventional no-body
+          # preflight answer. Pinning 200 would fail a healthy deployment the
+          # day someone changes the handler's OPTIONS status, and block every
+          # deploy after it.
+          status=$(printf '%s' "$headers" | head -1 | awk '{print $2}')
+          case "$status" in
+            2??) ;;
+            *)
+              echo "::error::Preflight returned $status, expected 2xx. A 401 means the function was deployed without --no-verify-jwt."
+              exit 1
+              ;;
+          esac
+
+          # Exact match, not a prefix: `https://moicheck.nl.evil.example` starts
+          # with the right string and is a different site entirely.
+          allow_origin=$(header_value 'access-control-allow-origin' "$headers")
+          if [ "$allow_origin" != "$prod" ]; then
+            echo "::error::Preflight allowed origin '$allow_origin', expected exactly '$prod'. The contact form would be blocked in the browser."
+            exit 1
+          fi
+
+          # Allowing the origin is not enough: the browser also checks that the
+          # method and every requested header come back permitted.
+          allow_methods=$(header_value 'access-control-allow-methods' "$headers" | tr 'A-Z' 'a-z' | tr -d ' ')
+          case ",$allow_methods," in
+            *,post,*) ;;
+            *) echo "::error::Preflight did not allow POST (got '$allow_methods')."; exit 1 ;;
+          esac
+
+          allow_headers=$(header_value 'access-control-allow-headers' "$headers" | tr 'A-Z' 'a-z' | tr -d ' ')
+          for required in authorization apikey content-type; do
+            case ",$allow_headers," in
+              *,"$required",*) ;;
+              *) echo "::error::Preflight did not allow the '$required' header (got '$allow_headers'). The client sends it on every submission."; exit 1 ;;
+            esac
+          done
+
+          # --- A Vercel preview origin ---------------------------------------
+          # The allow-list deliberately covers preview deployments, and a
+          # preview-origin mismatch is the failure that motivated #103 in the
+          # first place. Checking only production would let that class regress
+          # silently: the function would keep answering moicheck.nl correctly
+          # while every preview submission failed. This origin is a real one —
+          # the preview built from main.
+          preview='https://moi-app-git-main-blayzer.vercel.app'
+          headers=$(preflight "$preview")
+          allow_origin=$(header_value 'access-control-allow-origin' "$headers")
+          if [ "$allow_origin" != "$preview" ]; then
+            echo "::error::Preflight for the preview origin '$preview' allowed '$allow_origin'. Preview deployments could not submit the contact form. If previews moved to a different hostname shape, update both the function's allow-list and this probe."
+            exit 1
+          fi
+
+          # --- An origin that must be refused --------------------------------
+          # The two probes above only prove the allow-list is not too tight.
+          # This one proves it is not too loose, which is the direction that
+          # matters: a pattern widened by accident hands any site the ability
+          # to post through this endpoint as a visitor's browser. The value is
+          # the exact shape a prefix match would wave through.
+          hostile='https://moicheck.nl.evil.example'
+          headers=$(preflight "$hostile")
+          allow_origin=$(header_value 'access-control-allow-origin' "$headers")
+          if [ "$allow_origin" = "$hostile" ]; then
+            echo "::error::Preflight echoed the disallowed origin '$hostile'. The allow-list in supabase/functions/contact/index.ts accepts origins it should refuse."
+            exit 1
+          fi
+
+          echo "Preflight OK: $status, origin exactly $prod, POST and all required headers allowed; preview origin echoed; disallowed origin refused."

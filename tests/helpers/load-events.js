@@ -27,7 +27,8 @@ export function loadEventsModule() {
             resolveOccurrence,
             getUpcomingEvents,
             isHappeningNow,
-            formatEventDate
+            formatEventDate,
+            formatEventsCoverageEnd
         };
     `, context, { filename: 'test-hooks.js' });
 

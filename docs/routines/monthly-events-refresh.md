@@ -96,14 +96,51 @@ Two related rules, for the same reason:
 - **Never invent an event.** Every entry must be a real, verifiable thing happening in
   the city or province of Groningen.
 
-## Verifying dates
+## Finding events: discovery and verification are different jobs
 
-Each date added or changed must be read off the event's **own official page** — not an
-aggregator, not a listings site, not a cached search snippet, and not memory.
+They have different rules, and conflating them is how this goes wrong in either
+direction — either the list never grows, or it grows with dates nobody checked.
+
+### Discovery — which events exist and are worth listing
+
+Use listings and tourism sites freely here. They are the right tool for the job: a
+curated calendar knows that a small Wine Walk in Haren is happening at all, while the
+event's own site only exists if someone built one. Good starting points:
+
+- [visitgroningen.nl](https://www.visitgroningen.nl) — the city and province tourism site
+- [ervaarharen.nl](https://www.ervaarharen.nl) — Haren, part of the municipality of
+  Groningen; a real source of local events (the Wine Walk in [#127](https://github.com/Dor-bl/moi-app/pull/127)
+  came from there)
+- [gemeente.groningen.nl/evenementenkalender](https://gemeente.groningen.nl/evenementenkalender)
+  — the municipal events calendar
+
+The floating festivals under *Floating dates* above are known to be missing and are the
+obvious place to start, but they are not a closed list. If discovery turns up something
+else genuinely worth a newcomer's time in the city or province, propose it — prefer what
+is distinctly Groningen over what could be anywhere.
+
+### Verification — the exact dates
+
+Here the rule is strict, and it does **not** relax for an event that was discovered on a
+listings site. Each date added or changed must be read off the event's **own official
+page** — not an aggregator, not a listings site, not a cached search snippet, and not
+memory.
+
+This is not pedantry. A check in September 2026 found WinterWelVaart listed as both
+11–13 and 19–21 December by different third-party sites; taking the first hit would have
+put a wrong date on the live page.
+
+Where an event has no official page of its own — small local happenings often don't —
+**still include it**. Skipping it would undo the discovery rule above: the routine would
+find the small local events and then throw them away again for want of a page nobody
+built. Put the best source you have in `url`, and state plainly in the PR that there is
+no official page and which source the dates came from. Whether that is good enough to
+merge is the reviewer's call, not the run's. What is never acceptable is quietly
+presenting an unofficial source as if it were verified.
 
 The pull request body must cite, for every event it touches, the URL the dates came
-from, so review is click-and-verify rather than re-research. An event whose dates could
-not be confirmed from its official page does not go in the PR.
+from, so review is click-and-verify rather than re-research. Where discovery and
+verification used different sources, name both.
 
 ## Event shape
 
@@ -130,7 +167,7 @@ it — and it is what keeps the check reporting the gap until someone can fill i
     title: { en: '...', nl: '...' },
     location: { en: '...', nl: '...' },
     tip: { en: '...', nl: '...' },
-    url: 'https://...'         // the official page the dates came from
+    url: 'https://...'         // official page when there is one — see below
 }
 ```
 
@@ -141,6 +178,11 @@ it — and it is what keeps the check reporting the gap until someone can fill i
 - `endDate` is the last day of the run, inclusive. Omit it for single-day events.
 - Give a floating edition a year-suffixed `id` (`noorderzon-2027`), since it is a
   specific edition rather than a standing tradition.
+- `url` is optional, and it is where a **visitor** goes to read more — not a record of
+  how the dates were checked. Use the event's official page when it has one, which is
+  normally the same page the dates were verified against. When it has none, the best
+  listings page belongs there rather than an empty field; the PR is where you say that
+  is what it is.
 
 ## What else the change has to touch
 

@@ -30,3 +30,7 @@
 ## 2024-05-24 - Intl.DateTimeFormat caching in JS
 **Learning:** Instantiating `Intl.DateTimeFormat` inside frequently called functions (like date formatters inside `map` loops) causes massive performance overhead due to its expensive setup cost.
 **Action:** Always extract `new Intl.DateTimeFormat` into file-scoped constants when the locale and options are known ahead of time.
+
+## 2026-09-13 - DOM Clearing and Insertion Overhead
+**Learning:** Re-rendering DOM lists by first clearing the container with `innerHTML = ''` and then inserting new nodes with `appendChild()` causes multiple reflows/repaints, forces HTML parser overhead, and creates an intermediate empty DOM state that can cause visual jitter.
+**Action:** Use `replaceChildren(node1, node2, ...)` or `replaceChildren(documentFragment)` instead. It atomically clears the container and inserts the new children in a single operation, improving performance by reducing browser reflows and bypassing the HTML parser entirely.
