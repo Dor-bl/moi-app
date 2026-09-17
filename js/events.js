@@ -153,6 +153,10 @@ function formatEventDate(event, lang, today = todayInGroningen()) {
 // covers. That way a quiet stretch reads as "nothing until {through}" instead
 // of leaving visitors to guess whether the page is stale.
 function formatEventsCoverageEnd(upcomingEvents, lang) {
+    if (upcomingEvents.length === 0) {
+        throw new Error('formatEventsCoverageEnd requires at least one event');
+    }
+
     const lastEnd = upcomingEvents.reduce(
         (latest, event) => (spanEnd(event) > latest ? spanEnd(event) : latest),
         upcomingEvents[0].date

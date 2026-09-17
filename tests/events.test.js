@@ -249,6 +249,13 @@ test('an empty list is a supported state, not a crash', () => {
     assert.deepEqual(getUpcomingEvents([], '2026-09-12'), []);
 });
 
+test('coverage explicitly rejects an empty list', () => {
+    assert.throws(
+        () => formatEventsCoverageEnd([], 'en'),
+        /formatEventsCoverageEnd requires at least one event/
+    );
+});
+
 test('coverage reads through the latest span end, not just the last-sorted start', () => {
     // A long-running festival starting first can still end after a short event
     // that starts later - sorting by start date must not be mistaken for
