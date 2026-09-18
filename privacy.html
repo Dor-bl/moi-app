@@ -97,7 +97,7 @@
     <main class="legal-page">
         <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
         <h1>Privacy Policy</h1>
-        <p class="updated">Last updated: 12 September 2026</p>
+        <p class="updated">Last updated: 18 September 2026</p>
 
         <section>
             <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen. This policy explains what personal data we collect, why, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
@@ -184,7 +184,18 @@
 
         <section>
             <h2>5. Cookies &amp; local storage</h2>
-            <p>We don't use advertising or tracking cookies. We use your browser's local storage to remember your theme, language, your completed items and notes, and (for signed-in users) a session token so you stay logged in and a marker holding your account ID, which records which account the saved progress belongs to so that it is never uploaded under a different account. The completed items, notes and account marker are removed from that browser when you sign out. Supabase may set similar local storage entries to manage your authenticated session.</p>
+            <p>We don't use advertising or tracking cookies, and you won't see a cookie banner here. The ePrivacy rules — article 11.7a of the Dutch Telecommunicatiewet — require consent before storing or reading information on your device, <em>unless</em> it is strictly necessary for the service you asked for. Everything we store falls under that exception, either because it <em>is</em> the service or because it only records a choice you made yourself:</p>
+            <ul>
+                <li><code>moiCheckState</code> — your completed items and memory notes. Remembering what you ticked off <em>is</em> the service; without it the app does nothing.</li>
+                <li><code>moiCheckLang</code> — your language choice, English or Dutch. Records a choice you made yourself.</li>
+                <li><code>moiCheckTheme</code> — your light, dark or system theme choice. Records a choice you made yourself.</li>
+                <li><code>theme</code> — the same theme choice under the name an older version of the app used. We read it once, copy it across and delete it. Records a choice you made yourself, and is cleaned up on your first visit.</li>
+                <li><code>moiCheckCompletedCollapsed</code> — whether you left the completed-items section expanded or collapsed. Records a choice you made yourself.</li>
+                <li><strong>Supabase session token</strong> — keeps you signed in between visits. Strictly necessary to stay signed in, which only happens because you asked to sign in.</li>
+                <li><code>moiCheckSyncedUser</code> — which account the saved progress belongs to. Written only after you sign in, so your progress is never uploaded under a different account.</li>
+            </ul>
+            <p>The completed items, notes and account marker are removed from that browser when you sign out. Supabase manages its own session entry while you are signed in.</p>
+            <p>Vercel Web Analytics is absent from this list because it stores nothing on your device at all — no cookies, no local storage — so the consent rule above is never triggered by it. It does see your IP address as part of serving the page, which is covered in sections 1 and 2.</p>
         </section>
 
         <section>
