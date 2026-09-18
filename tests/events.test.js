@@ -122,6 +122,29 @@ test('happening-now covers the whole run and nothing outside it', () => {
     assert.equal(isHappeningNow(singleDay, '2026-09-18'), true);
 });
 
+// The regression from the screenshot: a date-only check flagged a timed event
+// as "happening now" from midnight, hours before its actual start.
+test('a timed event only happens now within its published hours', () => {
+    const timed = { ...singleDay, startTime: '18:00', endTime: '21:00' };
+
+    assert.equal(isHappeningNow(timed, '2026-09-18', new Date('2026-09-18T06:00:00Z')), false, 'before it opens (08:00 Amsterdam)');
+    assert.equal(isHappeningNow(timed, '2026-09-18', new Date('2026-09-18T17:00:00Z')), true, 'mid-run (19:00 Amsterdam)');
+    assert.equal(isHappeningNow(timed, '2026-09-18', new Date('2026-09-18T19:30:00Z')), false, 'after it closes (21:30 Amsterdam)');
+    assert.equal(isHappeningNow(timed, '2026-09-18', new Date('2026-09-18T16:00:00Z')), true, 'right at opening (18:00 Amsterdam)');
+    assert.equal(isHappeningNow(timed, '2026-09-18', new Date('2026-09-18T19:00:00Z')), true, 'right at closing (21:00 Amsterdam)');
+});
+
+test('a timed event with no endTime stays happening for the rest of its day', () => {
+    const openEnded = { ...singleDay, startTime: '18:00' };
+
+    assert.equal(isHappeningNow(openEnded, '2026-09-18', new Date('2026-09-18T06:00:00Z')), false, 'before it starts');
+    assert.equal(isHappeningNow(openEnded, '2026-09-18', new Date('2026-09-18T21:30:00Z')), true, 'late but still that day (23:30 Amsterdam)');
+});
+
+test('an event without a startTime still happens now all day, unaffected', () => {
+    assert.equal(isHappeningNow(singleDay, '2026-09-18', new Date('2026-09-18T00:30:00Z')), true, 'early morning, 02:30 Amsterdam (CEST)');
+});
+
 test('dates render as calendar days in both languages', () => {
     assert.equal(formatEventDate(singleDay, 'en', '2026-01-01'), '18 September');
     assert.equal(formatEventDate(singleDay, 'nl', '2026-01-01'), '18 september');
