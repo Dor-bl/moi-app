@@ -142,7 +142,7 @@ test('a timed event with no endTime stays happening for the rest of its day', ()
 });
 
 test('an event without a startTime still happens now all day, unaffected', () => {
-    assert.equal(isHappeningNow(singleDay, '2026-09-18', new Date('2026-09-18T00:30:00Z')), true, 'just after midnight in Amsterdam');
+    assert.equal(isHappeningNow(singleDay, '2026-09-18', new Date('2026-09-18T00:30:00Z')), true, 'early morning, 02:30 Amsterdam (CEST)');
 });
 
 test('dates render as calendar days in both languages', () => {

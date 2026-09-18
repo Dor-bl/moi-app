@@ -118,11 +118,13 @@ function getUpcomingEvents(events, today = todayInGroningen()) {
 // like Sint Maarten that has no fixed start.
 function isHappeningNow(event, today, now = new Date()) {
     if (!(event.date <= today && !hasEnded(event, today))) return false;
+    if (!event.startTime && !event.endTime) return true;
 
-    if (event.startTime && today === event.date && timeInGroningen(now) < event.startTime) {
+    const clock = timeInGroningen(now);
+    if (event.startTime && today === event.date && clock < event.startTime) {
         return false;
     }
-    if (event.endTime && today === spanEnd(event) && timeInGroningen(now) > event.endTime) {
+    if (event.endTime && today === spanEnd(event) && clock > event.endTime) {
         return false;
     }
 
