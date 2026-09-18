@@ -164,12 +164,17 @@ it — and it is what keeps the check reporting the gap until someone can fill i
     date: '2027-08-19',        // ISO, Groningen local calendar date
     endDate: '2027-08-29',     // only for multi-day runs
     // annual: true,           // ONLY for strictly fixed calendar dates
+    // kidFriendly: true,      // ONLY when the event/attraction is genuinely aimed at kids
     title: { en: '...', nl: '...' },
     location: { en: '...', nl: '...' },
     tip: { en: '...', nl: '...' },
     url: 'https://...'         // official page when there is one — see below
 }
 ```
+
+- `kidFriendly: true` renders a "Kid-friendly" badge on the card (see `eventsKidFriendly` in
+  `UI_TRANSLATIONS`). Set it only when the event's own page says so, the same way dates are
+  verified — do not infer it from a venue's general reputation.
 
 - `id` must be unique and must not be renamed once shipped.
 - `title`, `location` and `tip` are bilingual. The NL is not a literal translation; it

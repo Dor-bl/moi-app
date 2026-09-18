@@ -730,6 +730,13 @@ function buildEventCard(event, today) {
         badge.textContent = t.eventsHappeningNow;
         date.appendChild(badge);
     }
+
+    if (event.kidFriendly) {
+        const badge = document.createElement('span');
+        badge.className = 'event-kid-badge';
+        badge.textContent = t.eventsKidFriendly;
+        date.appendChild(badge);
+    }
     card.appendChild(date);
 
     const title = document.createElement('h2');

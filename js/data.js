@@ -441,6 +441,16 @@ const EVENTS = [
         location: { en: 'Eemke van der Veenpad, Haren centre', nl: 'Eemke van der Veenpad, centrum Haren' },
         tip: { en: 'Runs 18:00–21:00: buy a glass at the Ervaar Haren food truck by the church, then walk between the shops and restaurants in Haren\'s centre tasting Spanish wines and snacks. It is the opening night of a new themed Friday series, not a standing yearly date, so this exact edition will not come back the same way next year.', nl: 'Van 18:00 tot 21:00 uur: koop een glas bij de foodtruck van Ervaar Haren voor de kerk en wandel langs de winkels en horeca in het centrum van Haren voor Spaanse wijnen en hapjes. Het is de aftrap van een nieuwe reeks thema-avonden, geen vaste jaarlijkse datum, dus deze editie komt volgend jaar niet zomaar op dezelfde manier terug.' },
         url: 'https://www.ervaarharen.nl/event/wijnloop-haren/'
+    },
+    {
+        id: 'lego-fabuland-expositie',
+        date: '2026-02-14',
+        endDate: '2027-01-31',
+        kidFriendly: true,
+        title: { en: 'LEGO Fabuland Exhibition', nl: 'LEGO Fabuland Expositie' },
+        location: { en: 'LEGiO-museum, Grootegast', nl: 'LEGiO-museum, Grootegast' },
+        tip: { en: 'A historical overview of LEGO Fabuland sets from 1979–1989, built around anthropomorphic animal characters aimed at kids aged two to six. See a diorama put together by Henk Roede and rare pieces from the theme — a good rainy-day trip out of the city with young kids.', nl: 'Een historisch overzicht van LEGO Fabuland-sets uit 1979–1989, gebouwd rond antropomorfe dierenfiguren voor kinderen van twee tot zes jaar. Bekijk een diorama van Henk Roede en zeldzame stukken uit het thema — een leuk uitje buiten de stad voor een regenachtige dag met jonge kinderen.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
     }
 ];
 
@@ -553,6 +563,7 @@ const UI_TRANSLATIONS = {
         viewEvents: 'Events',
         viewDetails: 'View Details',
         eventsHappeningNow: 'Happening now',
+        eventsKidFriendly: 'Kid-friendly',
         eventsMoreInfo: 'More info',
         eventsEmpty: 'Nothing on the calendar right now. Check back soon — the Groningen year fills up fast.',
         eventsCoverage: 'Events shown through {through}',
@@ -649,6 +660,7 @@ const UI_TRANSLATIONS = {
         viewEvents: 'Agenda',
         viewDetails: 'Bekijk Details',
         eventsHappeningNow: 'Nu bezig',
+        eventsKidFriendly: 'Kindvriendelijk',
         eventsMoreInfo: 'Meer info',
         eventsEmpty: 'Nog niets op de agenda. Kom snel weer terug — het Groningse jaar loopt snel vol.',
         eventsCoverage: 'Agenda toont evenementen tot en met {through}',

@@ -557,6 +557,20 @@ body[data-active-view="events"] .filters-container {
     background-color: var(--primary-btn-bg);
 }
 
+/* Outline rather than a solid fill: --accent-dark-color is the text-on-card-bg
+   token already used by .event-date/.event-location, so this stays legible in
+   both themes without needing its own vetted "safe as a white-text fill" color. */
+.event-kid-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    color: var(--accent-dark-color);
+    border: 1px solid currentColor;
+}
+
 /* An event that has started reads as the important one on the page, so it gets
    the only coloured edge here; everything else stays quiet. */
 .event-card.happening-now {
