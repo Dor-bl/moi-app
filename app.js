@@ -706,11 +706,6 @@ function renderList() {
     }
 }
 
-// The Groningen date this view was last built against. An event drops off the
-// page when the day rolls over, and a phone can sit on this tab overnight, so a
-// re-render is needed on wake — but only when the date actually moved.
-let eventsRenderedOn = null;
-
 function buildEventCard(event, today) {
     const t = UI_TRANSLATIONS[currentLang];
     const now = isHappeningNow(event, today);
@@ -766,7 +761,6 @@ function buildEventCard(event, today) {
 
 function renderEvents() {
     const today = todayInGroningen();
-    eventsRenderedOn = today;
 
     const upcoming = getUpcomingEvents(EVENTS, today);
     const t = UI_TRANSLATIONS[currentLang];
@@ -1288,12 +1282,13 @@ function setupEventListeners() {
     mapViewBtn.addEventListener('click', () => switchView('map'));
     eventsViewBtn.addEventListener('click', () => switchView('events'));
 
-    // A tab left open overnight would otherwise still be showing yesterday's
-    // list when it comes back. Only re-renders when the Groningen date has
-    // actually moved on since this view was built.
+    // A tab backgrounded before an endTime cutoff (or left open overnight) can
+    // resume with a stale card: mobile browsers throttle or freeze the minute
+    // timer below while hidden, so becoming visible again is its own trigger
+    // rather than something the timer can be trusted to catch promptly.
     document.addEventListener('visibilitychange', () => {
         if (document.hidden || currentView !== 'events') return;
-        if (todayInGroningen() !== eventsRenderedOn) renderEvents();
+        renderEvents();
     });
 
     // startTime/endTime are minute-granularity, so a card can go stale mid-visit
