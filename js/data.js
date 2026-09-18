@@ -415,7 +415,6 @@ const EVENTS = [
         date: '2026-08-28',
         annual: true,
         free: true,
-        publicHoliday: true,
         title: { en: 'Bommen Berend (Gronings Ontzet)', nl: 'Bommen Berend (Gronings Ontzet)' },
         location: { en: 'City centre', nl: 'Binnenstad' },
         tip: { en: 'Groningen celebrates driving off the bishop of Munster in 1672, and has done every year since. This is the most Groninger day of the year: a city holiday nobody outside the province has heard of.', nl: 'Groningen viert dat het in 1672 de bisschop van Munster verjoeg, en doet dat sindsdien elk jaar. Dit is de meest Groningse dag van het jaar: een stadsfeest waar niemand buiten de provincie van heeft gehoord.' }
