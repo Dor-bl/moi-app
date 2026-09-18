@@ -90,6 +90,20 @@
                 <div id="progressFill" class="progress-fill"></div>
             </div>
         </div>
+        <div class="view-toggle-container">
+            <button class="view-btn active" id="listViewBtn" aria-pressed="true" data-view="list">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span id="txtListView">List</span>
+            </button>
+            <button class="view-btn" id="mapViewBtn" aria-pressed="false" data-view="map">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                <span id="txtMapView">Map</span>
+            </button>
+            <button class="view-btn" id="eventsViewBtn" aria-pressed="false" data-view="events">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span id="txtEventsView">Events</span>
+            </button>
+        </div>
         <div class="filters-container">
             <button class="filter-pill active" data-filter="All">All</button>
             <button class="filter-pill" data-filter="Food & Drink">Food</button>
@@ -105,20 +119,6 @@
             <button class="event-filter-pill" id="eventFilterKidsBtn" data-event-filter="kidFriendly" aria-pressed="false">Kids</button>
             <button class="event-filter-pill" id="eventFilterFreeBtn" data-event-filter="free" aria-pressed="false">Free</button>
             <button class="event-filter-pill" id="eventFilterHolidayBtn" data-event-filter="publicHoliday" aria-pressed="false">Holiday</button>
-        </div>
-        <div class="view-toggle-container">
-            <button class="view-btn active" id="listViewBtn" aria-pressed="true" data-view="list">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                <span id="txtListView">List</span>
-            </button>
-            <button class="view-btn" id="mapViewBtn" aria-pressed="false" data-view="map">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-                <span id="txtMapView">Map</span>
-            </button>
-            <button class="view-btn" id="eventsViewBtn" aria-pressed="false" data-view="events">
-                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                <span id="txtEventsView">Events</span>
-            </button>
         </div>
     </header>
 

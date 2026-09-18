@@ -335,15 +335,22 @@ h1 {
     transition: width 0.5s ease-out;
 }
 
-.filters-container {
+/* Filters follow the List/Map/Events tabs now, so the dashed separator that
+   used to sit above the tabs sits above whichever filter row is showing. */
+.filters-container,
+.event-filters-container {
     display: flex;
     gap: 0.5rem;
     overflow-x: auto;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
     padding-bottom: 0.75rem;
+    border-top: 1px dashed var(--border-color);
     scrollbar-width: none;
 }
 
-.filters-container::-webkit-scrollbar {
+.filters-container::-webkit-scrollbar,
+.event-filters-container::-webkit-scrollbar {
     display: none;
 }
 
@@ -351,9 +358,6 @@ h1 {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--border-color);
 }
 
 .view-btn {
@@ -519,18 +523,6 @@ body[data-active-view="events"] .list-container,
 body[data-active-view="events"] .map-wrapper,
 body[data-active-view="events"] .progress-container,
 body[data-active-view="events"] .filters-container {
-    display: none;
-}
-
-.event-filters-container {
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 0.75rem;
-    scrollbar-width: none;
-}
-
-.event-filters-container::-webkit-scrollbar {
     display: none;
 }
 
