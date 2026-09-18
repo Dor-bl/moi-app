@@ -558,8 +558,8 @@ body[data-active-view="events"] .filters-container {
 }
 
 /* Outline rather than a solid fill: --accent-dark-color is the text-on-card-bg
-   token already used by .event-date/.event-location, so this stays legible in
-   both themes without needing its own vetted "safe as a white-text fill" color. */
+   token already used by .event-date, so this stays legible in both themes
+   without needing its own vetted "safe as a white-text fill" color. */
 .event-kid-badge {
     font-size: 0.6875rem;
     font-weight: 700;
