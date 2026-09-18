@@ -232,6 +232,18 @@ test('every shipped event is well formed', () => {
     }
 });
 
+// buildEventCard/getFilteredEvents render or filter on any truthy value, but a
+// stray string or object here would signal something other than a plain yes/no.
+test('kidFriendly, free and publicHoliday, when set, are exactly true', () => {
+    for (const event of EVENTS) {
+        for (const flag of ['kidFriendly', 'free', 'publicHoliday']) {
+            if (flag in event) {
+                assert.equal(event[flag], true, `${event.id} ${flag} must be true, or omitted entirely`);
+            }
+        }
+    }
+});
+
 // A leap day cannot recur yearly, so an `annual` entry landing on one is a data
 // mistake. Catching it here is why events.js needs no runtime leap-year handling.
 test('annual events sit on dates that exist every year', () => {
@@ -259,6 +271,11 @@ test('both languages carry every events string', () => {
         for (const key of [
             'viewEvents',
             'eventsHappeningNow',
+            'eventsKidFriendly',
+            'eventsFilterKids',
+            'eventsFilterFree',
+            'eventsFilterHoliday',
+            'eventsFilterEmpty',
             'eventsMoreInfo',
             'eventsEmpty',
             'eventsCoverage'

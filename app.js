@@ -9,6 +9,10 @@ let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
 const storedLang = localStorage.getItem('moiCheckLang');
 let currentLang = ALLOWED_LANGS.includes(storedLang) ? storedLang : 'en';
 let currentFilter = 'All';
+// Independent toggles, ANDed together: an event must match every active key to
+// show. Keys are EVENTS field names directly, so adding a filter is adding one
+// entry here plus a pill in index.html rather than a parallel vocabulary.
+const activeEventFilters = new Set();
 let currentView = 'list';
 let selectedItemId = null;
 // null = no explicit choice yet, so the section auto-collapses once it grows.
@@ -41,6 +45,13 @@ function getFilteredItems(filter) {
     return filter === 'All' ? BUCKET_LIST : (itemsByCategory[filter] || []);
 }
 
+// An event must be truthy on every active key, so turning on both "Kids" and
+// "Free" narrows to events that are both, not either.
+function getFilteredEvents(events, filters) {
+    if (filters.size === 0) return events;
+    return events.filter(event => [...filters].every(key => event[key]));
+}
+
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
 const filterPills = document.querySelectorAll('.filter-pill');
@@ -52,6 +63,10 @@ const listViewBtn = document.getElementById('listViewBtn');
 const mapViewBtn = document.getElementById('mapViewBtn');
 const eventsViewBtn = document.getElementById('eventsViewBtn');
 const eventsContainer = document.getElementById('eventsContainer');
+const eventFilterPills = document.querySelectorAll('.event-filter-pill');
+const eventFilterKidsBtn = document.getElementById('eventFilterKidsBtn');
+const eventFilterFreeBtn = document.getElementById('eventFilterFreeBtn');
+const eventFilterHolidayBtn = document.getElementById('eventFilterHolidayBtn');
 
 // Detail Modal Elements
 const detailModal = document.getElementById('detailModal');
@@ -184,6 +199,9 @@ function updateLanguageUI() {
     document.getElementById('txtListView').textContent = t.viewList;
     document.getElementById('txtMapView').textContent = t.viewMap;
     document.getElementById('txtEventsView').textContent = t.viewEvents;
+    eventFilterKidsBtn.textContent = t.eventsFilterKids;
+    eventFilterFreeBtn.textContent = t.eventsFilterFree;
+    eventFilterHolidayBtn.textContent = t.eventsFilterHoliday;
 
     document.querySelector('.memory-section h3').textContent = t.addMemory;
     memoryNote.placeholder = t.memoryPlaceholder;
@@ -725,6 +743,13 @@ function buildEventCard(event, today) {
         badge.textContent = t.eventsHappeningNow;
         date.appendChild(badge);
     }
+
+    if (event.kidFriendly) {
+        const badge = document.createElement('span');
+        badge.className = 'event-kid-badge';
+        badge.textContent = t.eventsKidFriendly;
+        date.appendChild(badge);
+    }
     card.appendChild(date);
 
     const title = document.createElement('h2');
@@ -773,13 +798,25 @@ function renderEvents() {
         return;
     }
 
+    // Coverage reads off the full list regardless of active filters: it states
+    // how far the underlying data reaches, not what is currently narrowed to.
     const freshness = document.createElement('p');
     freshness.className = 'events-freshness';
     freshness.textContent = t.eventsCoverage.replace('{through}', formatEventsCoverageEnd(upcoming, currentLang));
 
     const fragment = document.createDocumentFragment();
     fragment.appendChild(freshness);
-    upcoming.forEach(event => fragment.appendChild(buildEventCard(event, today)));
+
+    const visible = getFilteredEvents(upcoming, activeEventFilters);
+    if (visible.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'events-empty';
+        empty.textContent = t.eventsFilterEmpty;
+        fragment.appendChild(empty);
+    } else {
+        visible.forEach(event => fragment.appendChild(buildEventCard(event, today)));
+    }
+
     eventsContainer.replaceChildren(fragment);
 }
 
@@ -1316,6 +1353,23 @@ function setupEventListeners() {
             pill.classList.add('active');
             currentFilter = pill.dataset.filter;
             renderList();
+        });
+    });
+
+    // Event filters: each pill toggles independently, unlike the single-select
+    // category pills above.
+    eventFilterPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            const key = pill.dataset.eventFilter;
+            const isActive = activeEventFilters.has(key);
+            if (isActive) {
+                activeEventFilters.delete(key);
+            } else {
+                activeEventFilters.add(key);
+            }
+            pill.classList.toggle('active', !isActive);
+            pill.setAttribute('aria-pressed', String(!isActive));
+            renderEvents();
         });
     });
     
