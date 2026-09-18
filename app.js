@@ -1296,6 +1296,15 @@ function setupEventListeners() {
         if (todayInGroningen() !== eventsRenderedOn) renderEvents();
     });
 
+    // startTime/endTime are minute-granularity, so a card can go stale mid-visit
+    // (a "happening now" badge that should appear, or an event whose endTime
+    // just passed) with no other trigger to catch it. A once-a-minute tick is
+    // enough to keep the open tab honest without polling faster than the data
+    // can actually change.
+    setInterval(() => {
+        if (currentView === 'events') renderEvents();
+    }, 60 * 1000);
+
     // Language buttons
     langBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
