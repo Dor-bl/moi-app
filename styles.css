@@ -460,7 +460,8 @@ h1 {
     font-family: inherit;
 }
 
-.filter-pill {
+.filter-pill,
+.event-filter-pill {
     white-space: nowrap;
     padding: 0.5rem 1rem;
     border-radius: 2rem;
@@ -474,7 +475,8 @@ h1 {
     font-family: inherit;
 }
 
-.filter-pill.active {
+.filter-pill.active,
+.event-filter-pill.active {
     background-color: var(--text-color);
     color: var(--card-bg);
     border-color: var(--text-color);
@@ -509,12 +511,26 @@ h1 {
    hides them too. */
 body[data-active-view="list"] .map-wrapper,
 body[data-active-view="list"] .events-container,
+body[data-active-view="list"] .event-filters-container,
 body[data-active-view="map"] .list-container,
 body[data-active-view="map"] .events-container,
+body[data-active-view="map"] .event-filters-container,
 body[data-active-view="events"] .list-container,
 body[data-active-view="events"] .map-wrapper,
 body[data-active-view="events"] .progress-container,
 body[data-active-view="events"] .filters-container {
+    display: none;
+}
+
+.event-filters-container {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.75rem;
+    scrollbar-width: none;
+}
+
+.event-filters-container::-webkit-scrollbar {
     display: none;
 }
 

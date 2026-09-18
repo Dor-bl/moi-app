@@ -98,6 +98,14 @@
             <button class="filter-pill" data-filter="Groningen Classics">Classics</button>
             <button class="filter-pill" data-filter="Nature & Wildlife">Nature</button>
         </div>
+        <!-- Independent toggles (not a single-select like .filter-pill above), so
+             each carries its own aria-pressed rather than sharing the .active/All
+             pattern the category filters use. -->
+        <div class="event-filters-container">
+            <button class="event-filter-pill" id="eventFilterKidsBtn" data-event-filter="kidFriendly" aria-pressed="false">Kids</button>
+            <button class="event-filter-pill" id="eventFilterFreeBtn" data-event-filter="free" aria-pressed="false">Free</button>
+            <button class="event-filter-pill" id="eventFilterHolidayBtn" data-event-filter="publicHoliday" aria-pressed="false">Holiday</button>
+        </div>
         <div class="view-toggle-container">
             <button class="view-btn active" id="listViewBtn" aria-pressed="true" data-view="list">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>

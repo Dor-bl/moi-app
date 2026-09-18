@@ -232,12 +232,14 @@ test('every shipped event is well formed', () => {
     }
 });
 
-// buildEventCard renders the badge on any truthy value, but a stray string or
-// object here would signal something other than a plain yes/no.
-test('kidFriendly, when set, is exactly true', () => {
+// buildEventCard/getFilteredEvents render or filter on any truthy value, but a
+// stray string or object here would signal something other than a plain yes/no.
+test('kidFriendly, free and publicHoliday, when set, are exactly true', () => {
     for (const event of EVENTS) {
-        if ('kidFriendly' in event) {
-            assert.equal(event.kidFriendly, true, `${event.id} kidFriendly must be true, or omitted entirely`);
+        for (const flag of ['kidFriendly', 'free', 'publicHoliday']) {
+            if (flag in event) {
+                assert.equal(event[flag], true, `${event.id} ${flag} must be true, or omitted entirely`);
+            }
         }
     }
 });
@@ -270,6 +272,10 @@ test('both languages carry every events string', () => {
             'viewEvents',
             'eventsHappeningNow',
             'eventsKidFriendly',
+            'eventsFilterKids',
+            'eventsFilterFree',
+            'eventsFilterHoliday',
+            'eventsFilterEmpty',
             'eventsMoreInfo',
             'eventsEmpty',
             'eventsCoverage'

@@ -165,6 +165,9 @@ it — and it is what keeps the check reporting the gap until someone can fill i
     endDate: '2027-08-29',     // only for multi-day runs
     // annual: true,           // ONLY for strictly fixed calendar dates
     // kidFriendly: true,      // ONLY when the event/attraction is genuinely aimed at kids
+    // free: true,             // ONLY when attending costs nothing (paid extras, e.g. a
+                                // drink token, don't disqualify — the event itself must be free)
+    // publicHoliday: true,    // ONLY for events tied to an official Dutch public holiday
     title: { en: '...', nl: '...' },
     location: { en: '...', nl: '...' },
     tip: { en: '...', nl: '...' },
@@ -172,9 +175,13 @@ it — and it is what keeps the check reporting the gap until someone can fill i
 }
 ```
 
-- `kidFriendly: true` renders a "Kid-friendly" badge on the card (see `eventsKidFriendly` in
-  `UI_TRANSLATIONS`). Set it only when the event's own page says so, the same way dates are
-  verified — do not infer it from a venue's general reputation.
+- `kidFriendly: true`, `free: true` and `publicHoliday: true` each render as a filter pill in
+  the Events view (`eventsFilterKids`/`eventsFilterFree`/`eventsFilterHoliday` in
+  `UI_TRANSLATIONS`); `kidFriendly` also renders its own "Kid-friendly" badge on the card
+  (`eventsKidFriendly`). Set any of them only when the event's own page (or, for `publicHoliday`,
+  well-known fact — Koningsdag needs no citation) says so, the same way dates are verified — do
+  not infer `kidFriendly` from a venue's general reputation, or `free` from an event merely
+  lacking a listed ticket price.
 
 - `id` must be unique and must not be renamed once shipped.
 - `title`, `location` and `tip` are bilingual. The NL is not a literal translation; it
