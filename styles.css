@@ -335,15 +335,22 @@ h1 {
     transition: width 0.5s ease-out;
 }
 
-.filters-container {
+/* Filters follow the List/Map/Events tabs now, so the dashed separator that
+   used to sit above the tabs sits above whichever filter row is showing. */
+.filters-container,
+.event-filters-container {
     display: flex;
     gap: 0.5rem;
     overflow-x: auto;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
     padding-bottom: 0.75rem;
+    border-top: 1px dashed var(--border-color);
     scrollbar-width: none;
 }
 
-.filters-container::-webkit-scrollbar {
+.filters-container::-webkit-scrollbar,
+.event-filters-container::-webkit-scrollbar {
     display: none;
 }
 
@@ -351,9 +358,6 @@ h1 {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--border-color);
 }
 
 .view-btn {
@@ -460,7 +464,8 @@ h1 {
     font-family: inherit;
 }
 
-.filter-pill {
+.filter-pill,
+.event-filter-pill {
     white-space: nowrap;
     padding: 0.5rem 1rem;
     border-radius: 2rem;
@@ -474,7 +479,8 @@ h1 {
     font-family: inherit;
 }
 
-.filter-pill.active {
+.filter-pill.active,
+.event-filter-pill.active {
     background-color: var(--text-color);
     color: var(--card-bg);
     border-color: var(--text-color);
@@ -509,8 +515,10 @@ h1 {
    hides them too. */
 body[data-active-view="list"] .map-wrapper,
 body[data-active-view="list"] .events-container,
+body[data-active-view="list"] .event-filters-container,
 body[data-active-view="map"] .list-container,
 body[data-active-view="map"] .events-container,
+body[data-active-view="map"] .event-filters-container,
 body[data-active-view="events"] .list-container,
 body[data-active-view="events"] .map-wrapper,
 body[data-active-view="events"] .progress-container,
@@ -555,6 +563,20 @@ body[data-active-view="events"] .filters-container {
     border-radius: 20px;
     color: white;
     background-color: var(--primary-btn-bg);
+}
+
+/* Outline rather than a solid fill: --accent-dark-color is the text-on-card-bg
+   token already used by .event-date, so this stays legible in both themes
+   without needing its own vetted "safe as a white-text fill" color. */
+.event-kid-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    color: var(--accent-dark-color);
+    border: 1px solid currentColor;
 }
 
 /* An event that has started reads as the important one on the page, so it gets

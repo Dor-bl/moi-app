@@ -393,6 +393,8 @@ const EVENTS = [
         // Moved to Saturday the 26th in years when the 27th is a Sunday, which is
         // the law rather than a local variation: 2031 and 2036 next, 2014 last.
         notOnSunday: true,
+        free: true,
+        publicHoliday: true,
         title: { en: "King's Day", nl: 'Koningsdag' },
         location: { en: 'Across the city', nl: 'Door de hele stad' },
         tip: { en: 'The whole city turns orange and the vrijmarkt takes over the pavements, with half of Groningen selling the other half their old stuff. Wear something orange or you will feel underdressed.', nl: 'De hele stad kleurt oranje en de vrijmarkt neemt de stoepen over, waarbij half Groningen zijn oude spullen aan de andere helft verkoopt. Trek iets oranjes aan, anders voel je je ondergekleed.' }
@@ -401,6 +403,8 @@ const EVENTS = [
         id: 'bevrijdingsdag',
         date: '2026-05-05',
         annual: true,
+        free: true,
+        publicHoliday: true,
         title: { en: 'Liberation Day Festival', nl: 'Bevrijdingsfestival' },
         location: { en: 'Stadspark', nl: 'Stadspark' },
         tip: { en: 'A free open-air festival in the Stadspark marking the end of the occupation. Go for the afternoon: the line-up is genuinely good and nobody pays in.', nl: 'Een gratis openluchtfestival in het Stadspark dat het einde van de bezetting markeert. Ga in de middag: de line-up is echt goed en niemand betaalt entree.' },
@@ -410,6 +414,7 @@ const EVENTS = [
         id: 'bommen-berend',
         date: '2026-08-28',
         annual: true,
+        free: true,
         title: { en: 'Bommen Berend (Gronings Ontzet)', nl: 'Bommen Berend (Gronings Ontzet)' },
         location: { en: 'City centre', nl: 'Binnenstad' },
         tip: { en: 'Groningen celebrates driving off the bishop of Munster in 1672, and has done every year since. This is the most Groninger day of the year: a city holiday nobody outside the province has heard of.', nl: 'Groningen viert dat het in 1672 de bisschop van Munster verjoeg, en doet dat sindsdien elk jaar. Dit is de meest Groningse dag van het jaar: een stadsfeest waar niemand buiten de provincie van heeft gehoord.' }
@@ -418,6 +423,8 @@ const EVENTS = [
         id: 'sint-maarten',
         date: '2026-11-11',
         annual: true,
+        kidFriendly: true,
+        free: true,
         title: { en: 'Sint Maarten', nl: 'Sint Maarten' },
         location: { en: 'Doorstep to doorstep', nl: 'Van deur tot deur' },
         tip: { en: 'Children go door to door after dark with paper lanterns, singing for sweets. In the north this is a proper institution rather than a curiosity, so buy candy in advance and answer the doorbell.', nl: 'Kinderen gaan na het donker met lampionnen langs de deuren en zingen voor snoep. In het noorden is dit een echt instituut en geen curiositeit, dus koop op tijd snoep en doe open.' }
@@ -426,6 +433,7 @@ const EVENTS = [
         id: 'carbidschieten',
         date: '2026-12-31',
         annual: true,
+        free: true,
         title: { en: 'Carbidschieten', nl: 'Carbidschieten' },
         location: { en: 'Villages around the province', nl: 'Dorpen in de provincie' },
         tip: { en: 'Milk churns, calcium carbide, and a very loud bang across the fields on New Year\'s Eve. A northern tradition you have to drive out of the city to see properly.', nl: 'Melkbussen, carbid en een enorme knal over het land op oudejaarsdag. Een noordelijke traditie waarvoor je de stad uit moet om het goed mee te maken.' }
@@ -443,9 +451,20 @@ const EVENTS = [
         url: 'https://www.ervaarharen.nl/event/wijnloop-haren/'
     },
     {
+        id: 'lego-fabuland-expositie',
+        date: '2026-02-14',
+        endDate: '2027-01-31',
+        kidFriendly: true,
+        title: { en: 'LEGO Fabuland Exhibition', nl: 'LEGO Fabuland Expositie' },
+        location: { en: 'LEGiO-museum, Grootegast', nl: 'LEGiO-museum, Grootegast' },
+        tip: { en: 'A historical overview of LEGO Fabuland sets from 1979–1989, built around anthropomorphic animal characters aimed at kids aged two to six. See a diorama put together by Henk Roede and rare pieces from the theme — a good rainy-day trip out of the city with young kids.', nl: 'Een historisch overzicht van LEGO Fabuland-sets uit 1979–1989, gebouwd rond antropomorfe dierenfiguren voor kinderen van twee tot zes jaar. Bekijk een diorama van Henk Roede en zeldzame stukken uit het thema — een leuk uitje buiten de stad voor een regenachtige dag met jonge kinderen.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
+    },
+    {
         id: 'winterwelvaart-2026',
         date: '2026-12-11',
         endDate: '2026-12-13',
+        free: true,
         title: { en: 'WinterWelVaart', nl: 'WinterWelVaart' },
         location: { en: 'A-kwartier, city centre', nl: 'A-kwartier, binnenstad' },
         tip: { en: 'Around twenty historic ships light up the quays of the A-kwartier for a long December weekend, with an arts trail through the old warehouses, live music and glühwein against the old harbour houses. Free to wander and easily the most atmospheric way to do Christmas in Groningen.', nl: 'Zo\'n twintig historische schepen verlichten de kades van het A-kwartier tijdens een lang decemberweekend, met een kunstroute door de oude pakhuizen, muziek en glühwein tegen de gevels van de vroegere haven. Gratis toegankelijk en veruit de sfeervolste manier om kerst in Groningen te beleven.' },
@@ -571,6 +590,11 @@ const UI_TRANSLATIONS = {
         viewEvents: 'Events',
         viewDetails: 'View Details',
         eventsHappeningNow: 'Happening now',
+        eventsKidFriendly: 'Kid-friendly',
+        eventsFilterKids: 'Kids',
+        eventsFilterFree: 'Free',
+        eventsFilterHoliday: 'Holiday',
+        eventsFilterEmpty: 'No events match these filters right now. Try clearing one.',
         eventsMoreInfo: 'More info',
         eventsEmpty: 'Nothing on the calendar right now. Check back soon — the Groningen year fills up fast.',
         eventsCoverage: 'Events shown through {through}',
@@ -667,6 +691,11 @@ const UI_TRANSLATIONS = {
         viewEvents: 'Agenda',
         viewDetails: 'Bekijk Details',
         eventsHappeningNow: 'Nu bezig',
+        eventsKidFriendly: 'Kindvriendelijk',
+        eventsFilterKids: 'Kinderen',
+        eventsFilterFree: 'Gratis',
+        eventsFilterHoliday: 'Feestdag',
+        eventsFilterEmpty: 'Geen evenementen voldoen nu aan deze filters. Zet er één uit.',
         eventsMoreInfo: 'Meer info',
         eventsEmpty: 'Nog niets op de agenda. Kom snel weer terug — het Groningse jaar loopt snel vol.',
         eventsCoverage: 'Agenda toont evenementen tot en met {through}',
