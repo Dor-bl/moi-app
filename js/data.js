@@ -381,6 +381,10 @@ const BUCKET_LIST = [
 //   them onto the wrong weekdays and advertise dates that were never real. They
 //   carry explicit dates, verified against the official page, and get refreshed
 //   once a year. A lapsed one drops off the page by itself rather than lying.
+//
+//   `startTime`/`endTime` (HH:MM, Groningen wall-clock) are only for events with
+//   an actual published start time. They narrow "Happening now" to those hours
+//   instead of the whole day. Leave both off rather than guessing a time.
 const EVENTS = [
     {
         id: 'koningsdag',
@@ -429,6 +433,10 @@ const EVENTS = [
     {
         id: 'wijnwandeling-haren-2026',
         date: '2026-09-18',
+        // Timed event: "Happening now" only shows between these hours, not for
+        // the whole day. Wall-clock times in Groningen, HH:MM.
+        startTime: '18:00',
+        endTime: '21:00',
         title: { en: 'Wine Walk Haren', nl: 'Wijnwandeling Haren' },
         location: { en: 'Eemke van der Veenpad, Haren centre', nl: 'Eemke van der Veenpad, centrum Haren' },
         tip: { en: 'Runs 18:00–21:00: buy a glass at the Ervaar Haren food truck by the church, then walk between the shops and restaurants in Haren\'s centre tasting Spanish wines and snacks. It is the opening night of a new themed Friday series, not a standing yearly date, so this exact edition will not come back the same way next year.', nl: 'Van 18:00 tot 21:00 uur: koop een glas bij de foodtruck van Ervaar Haren voor de kerk en wandel langs de winkels en horeca in het centrum van Haren voor Spaanse wijnen en hapjes. Het is de aftrap van een nieuwe reeks thema-avonden, geen vaste jaarlijkse datum, dus deze editie komt volgend jaar niet zomaar op dezelfde manier terug.' },

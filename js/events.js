@@ -1,5 +1,6 @@
 // Events Module - Shared Global Exports: todayInGroningen, resolveOccurrence,
 // getUpcomingEvents, isHappeningNow, formatEventDate, formatEventsCoverageEnd
+// timeInGroningen is internal only - nothing outside this file needs the clock.
 // Dependencies: none. Pure date logic, so tests can drive it without a DOM.
 
 // "Today" is Groningen's calendar day, not the device's. Everything here ships to
@@ -21,6 +22,21 @@ function todayInGroningen(now = new Date()) {
 
     const part = type => parts.find(candidate => candidate.type === type).value;
     return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+// Same idea as todayInGroningen, but the clock: an event's startTime/endTime are
+// written as Groningen wall-clock hours, so this is what a comparison against
+// them needs, regardless of which timezone the visitor's device is set to.
+function timeInGroningen(now = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/Amsterdam',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+    }).formatToParts(now);
+
+    const part = type => parts.find(candidate => candidate.type === type).value;
+    return `${part('hour')}:${part('minute')}`;
 }
 
 function spanEnd(event) {
@@ -95,8 +111,22 @@ function getUpcomingEvents(events, today = todayInGroningen()) {
         .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-function isHappeningNow(event, today) {
-    return event.date <= today && !hasEnded(event, today);
+// Day-granularity by default: an event is "happening now" for its whole span.
+// startTime/endTime narrow that to the actual hours on the day they apply to
+// (its first day for startTime, its last for endTime) — most entries carry
+// neither and keep the old all-day behaviour, which is correct for something
+// like Sint Maarten that has no fixed start.
+function isHappeningNow(event, today, now = new Date()) {
+    if (!(event.date <= today && !hasEnded(event, today))) return false;
+
+    if (event.startTime && today === event.date && timeInGroningen(now) < event.startTime) {
+        return false;
+    }
+    if (event.endTime && today === spanEnd(event) && timeInGroningen(now) > event.endTime) {
+        return false;
+    }
+
+    return true;
 }
 
 // Intl handles the range shapes per locale ("20-30 August", "28 December - 2
