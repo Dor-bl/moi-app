@@ -43,8 +43,14 @@ function spanEnd(event) {
     return event.endDate || event.date;
 }
 
-function hasEnded(event, today) {
-    return spanEnd(event) < today;
+// Day-granularity by default, but a timed event's endTime cuts its last day
+// short: once the clock passes it, the event is spent for the rest of that day
+// too, rather than lingering in the list until midnight.
+function hasEnded(event, today, now = new Date()) {
+    const end = spanEnd(event);
+    if (end < today) return true;
+    if (end > today) return false;
+    return Boolean(event.endTime) && timeInGroningen(now) > event.endTime;
 }
 
 function withYear(isoDate, year) {
@@ -86,26 +92,26 @@ function occurrenceFor(event, startYear) {
 // Only `annual: true` entries roll. They must be events on a genuinely fixed
 // calendar date - a festival whose dates float (Noorderzon, Eurosonic) would drift
 // onto the wrong weekdays, so those carry explicit dates and are refreshed by hand.
-function resolveOccurrence(event, today) {
+function resolveOccurrence(event, today, now = new Date()) {
     if (!event.annual) return event;
 
     const thisYear = Number(today.slice(0, 4));
 
     // Last year's start comes first: a span crossing New Year can still be running.
     const carriedOver = occurrenceFor(event, thisYear - 1);
-    if (!hasEnded(carriedOver, today)) return carriedOver;
+    if (!hasEnded(carriedOver, today, now)) return carriedOver;
 
     // It is the END of the span that decides whether this year's occurrence is
     // spent. Judging by the start would fling a festival into next year on its
     // own day two.
     const current = occurrenceFor(event, thisYear);
-    return hasEnded(current, today) ? occurrenceFor(event, thisYear + 1) : current;
+    return hasEnded(current, today, now) ? occurrenceFor(event, thisYear + 1) : current;
 }
 
-function getUpcomingEvents(events, today = todayInGroningen()) {
+function getUpcomingEvents(events, today = todayInGroningen(), now = new Date()) {
     return events
-        .map(event => resolveOccurrence(event, today))
-        .filter(event => !hasEnded(event, today))
+        .map(event => resolveOccurrence(event, today, now))
+        .filter(event => !hasEnded(event, today, now))
         // Full ISO strings, so an event rolled into next year sorts after this
         // December. Comparing month-day would quietly reverse that.
         .sort((a, b) => a.date.localeCompare(b.date));
@@ -117,7 +123,7 @@ function getUpcomingEvents(events, today = todayInGroningen()) {
 // neither and keep the old all-day behaviour, which is correct for something
 // like Sint Maarten that has no fixed start.
 function isHappeningNow(event, today, now = new Date()) {
-    if (!(event.date <= today && !hasEnded(event, today))) return false;
+    if (!(event.date <= today && !hasEnded(event, today, now))) return false;
     if (!event.startTime && !event.endTime) return true;
 
     const clock = timeInGroningen(now);
