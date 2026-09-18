@@ -459,6 +459,25 @@ const EVENTS = [
         location: { en: 'LEGiO-museum, Grootegast', nl: 'LEGiO-museum, Grootegast' },
         tip: { en: 'A historical overview of LEGO Fabuland sets from 1979–1989, built around anthropomorphic animal characters aimed at kids aged two to six. See a diorama put together by Henk Roede and rare pieces from the theme — a good rainy-day trip out of the city with young kids.', nl: 'Een historisch overzicht van LEGO Fabuland-sets uit 1979–1989, gebouwd rond antropomorfe dierenfiguren voor kinderen van twee tot zes jaar. Bekijk een diorama van Henk Roede en zeldzame stukken uit het thema — een leuk uitje buiten de stad voor een regenachtige dag met jonge kinderen.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
+    },
+    {
+        id: 'winterwelvaart-2026',
+        date: '2026-12-11',
+        endDate: '2026-12-13',
+        free: true,
+        title: { en: 'WinterWelVaart', nl: 'WinterWelVaart' },
+        location: { en: 'A-kwartier, city centre', nl: 'A-kwartier, binnenstad' },
+        tip: { en: 'Around twenty historic ships light up the quays of the A-kwartier for a long December weekend, with an arts trail through the old warehouses, live music and glühwein against the old harbour houses. Free to wander and easily the most atmospheric way to do Christmas in Groningen.', nl: 'Zo\'n twintig historische schepen verlichten de kades van het A-kwartier tijdens een lang decemberweekend, met een kunstroute door de oude pakhuizen, muziek en glühwein tegen de gevels van de vroegere haven. Gratis toegankelijk en veruit de sfeervolste manier om kerst in Groningen te beleven.' },
+        url: 'https://winterwelvaart.nl/'
+    },
+    {
+        id: 'esns-2027',
+        date: '2027-01-13',
+        endDate: '2027-01-16',
+        title: { en: 'Eurosonic Noorderslag (ESNS)', nl: 'Eurosonic Noorderslag (ESNS)' },
+        location: { en: 'Venues across the city centre', nl: 'Podia door de hele binnenstad' },
+        tip: { en: 'Europe\'s leading showcase festival for new music fills dozens of venues across town for four days. Most nights need an industry badge, but the closing Saturday, Noorderslag, sells public tickets, so it is worth planning around if you like discovering bands early.', nl: 'Het toonaangevende Europese showcasefestival voor nieuwe muziek vult dagenlang tientallen podia door de hele stad. De meeste avonden zijn voor badgehouders, maar op de afsluitende zaterdag, Noorderslag, zijn er gewoon kaartjes te koop, dus die avond is de moeite waard als je van nieuwe bands houdt.' },
+        url: 'https://esns.nl/en/'
     }
 ];
 

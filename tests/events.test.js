@@ -285,6 +285,33 @@ test('both languages carry every events string', () => {
     }
 });
 
+// The regression this session fixed: a timed event used to stay listed on
+// the Events tab until midnight even though its published hours were over.
+test('a timed event drops off the upcoming list once its endTime passes', () => {
+    const timed = { ...singleDay, startTime: '18:00', endTime: '21:00' };
+
+    assert.equal(
+        getUpcomingEvents([timed], '2026-09-18', new Date('2026-09-18T19:00:00Z')).length,
+        1,
+        'still listed mid-run (21:00 Amsterdam)'
+    );
+    assert.equal(
+        getUpcomingEvents([timed], '2026-09-18', new Date('2026-09-18T19:30:00Z')).length,
+        0,
+        'gone once past its endTime (21:30 Amsterdam)'
+    );
+});
+
+test('a timed event with no endTime stays on the upcoming list all day', () => {
+    const openEnded = { ...singleDay, startTime: '18:00' };
+
+    assert.equal(
+        getUpcomingEvents([openEnded], '2026-09-18', new Date('2026-09-18T21:30:00Z')).length,
+        1,
+        'late but still that day (23:30 Amsterdam)'
+    );
+});
+
 test('an empty list is a supported state, not a crash', () => {
     assert.deepEqual(getUpcomingEvents([], '2026-09-12'), []);
 });

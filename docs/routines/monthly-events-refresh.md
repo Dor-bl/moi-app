@@ -262,3 +262,4 @@ because dates were not yet announced.
 | Date | Events touched | PR |
 | --- | --- | --- |
 | — | Initial fixed-date list shipped by hand | [#116](https://github.com/Dor-bl/moi-app/pull/116) |
+| 2026-09-16 | Added `winterwelvaart-2026` (11–13 Dec 2026) and `esns-2027` (13–16 Jan 2027); Noorderzon and Bloemetjesmarkt checked but left out, no next edition announced on their official pages yet | (this PR) |
