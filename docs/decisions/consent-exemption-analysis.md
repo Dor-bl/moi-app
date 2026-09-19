@@ -12,6 +12,10 @@ difference between a reasoned decision and an oversight is whether the reasoning
 written down. If the Autoriteit Persoonsgegevens ever asks why there is no notice, this is
 the answer.
 
+`privacy.html` section 5 is the visitor-facing version of the same conclusion, in plain
+language (#137). This document is the internal record: the enumeration method, the
+citations, the things deliberately not built, and the conditions that would invalidate it.
+
 ## The rule
 
 Article 5(3) ePrivacy — article 11.7a Telecommunicatiewet in the Netherlands — requires
