@@ -271,8 +271,11 @@ the allow-list, back into the path.
 ### Why there is no cookie banner
 
 Everything MoiCheck stores on a visitor's device is exempt from the ePrivacy consent
-requirement — it is either the service itself (your ticked items) or a preference you set
-(theme, language). The key-by-key reasoning, and what would change it, is written up in
+requirement, on one of three grounds: it is the service itself (completed items and
+notes), a preference the visitor set (theme, language, completed-list layout), or strictly
+necessary for sign-in, which only happens because they asked to sign in (the Supabase
+session token and the account marker). The key-by-key reasoning, and what would change it,
+is written up in
 [`docs/decisions/consent-exemption-analysis.md`](docs/decisions/consent-exemption-analysis.md);
 `privacy.html` section 5 states the same thing in plain language for visitors. Add a new
 storage key that is neither of those two things and that analysis needs revisiting.

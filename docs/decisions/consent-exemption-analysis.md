@@ -28,7 +28,7 @@ Two things follow that are easy to get wrong:
   preference (not personal data) and not a server-side IP log (personal data, but nothing
   stored on the device).
 - It covers **reading** as well as writing. A key the app only reads and deletes is still
-  in scope.
+  in scope (`initTheme()` in `js/theme.js` does exactly that with the legacy `theme` key).
 
 Anything that is not device storage — an outbound request carrying an IP, for instance —
 is an Article 6 GDPR legal-basis question, which a consent banner does not address. Those
@@ -38,17 +38,21 @@ are handled in `privacy.html` sections 1 and 2, not here.
 
 Enumerated from source rather than from memory, by grepping shipping code for
 `localStorage`, `sessionStorage`, `indexedDB` and `document.cookie` (excluding tests and
-`assets/vendor/`):
+`assets/vendor/`).
 
-| Key | Written at | Purpose | Exemption |
+Sites are named by function rather than by line. An earlier draft of this table carried
+line numbers and they were stale within a day — the numbers were correct when written and
+a merge moved them. Re-run the grep above to locate them exactly.
+
+| Key | Written by | Purpose | Exemption |
 | --- | --- | --- | --- |
-| `moiCheckState` | `js/utils.js:41` | Completed items and memory notes | **Is the service.** The app's entire function is remembering which items you ticked. |
-| `moiCheckLang` | `app.js:286` | Language choice | User's own explicit choice |
-| `moiCheckTheme` | `js/theme.js:43` | Theme choice | User's own explicit choice |
-| `theme` | read and removed at `js/theme.js:29-32` | Legacy name for the theme choice, migrated to `moiCheckTheme` on first visit | User's own explicit choice; in scope because reading counts, exempt for the same reason |
-| `moiCheckCompletedCollapsed` | `app.js:659` | Whether the completed section is collapsed | User's own explicit choice |
+| `moiCheckState` | `saveState()` in `js/utils.js` | Completed items and memory notes | **Is the service.** The app's entire function is remembering which items you ticked. |
+| `moiCheckLang` | `setLanguage()` in `app.js` | Language choice | User's own explicit choice |
+| `moiCheckTheme` | `setTheme()` in `js/theme.js` | Theme choice | User's own explicit choice |
+| `theme` | read and removed by `initTheme()` in `js/theme.js` | Legacy name for the theme choice, migrated to `moiCheckTheme` on first visit | User's own explicit choice; in scope because reading counts, exempt for the same reason |
+| `moiCheckCompletedCollapsed` | `buildCompletedDivider()` in `app.js` | Whether the completed section is collapsed | User's own explicit choice |
 | Supabase session token | vendored client, `assets/vendor/supabase-js-*.js` | Keeps a signed-in user signed in | **Strictly necessary** for a service the user explicitly requested by signing in |
-| `moiCheckSyncedUser` | `js/auth.js:263` | Account ID the saved progress belongs to | Written only after sign-in; prevents progress uploading under the wrong account |
+| `moiCheckSyncedUser` | `syncCloudProgress()` in `js/auth.js` | Account ID the saved progress belongs to | Written only after sign-in; prevents progress uploading under the wrong account |
 
 No non-exempt storage remains, so there is nothing to ask consent for.
 
