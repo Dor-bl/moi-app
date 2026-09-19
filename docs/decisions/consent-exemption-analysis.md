@@ -91,8 +91,11 @@ was a consent question to begin with — a network request carrying an IP is Art
 not Article 5(3) ePrivacy.
 
 - **Web fonts.** `styles.css` self-hosts Plus Jakarta Sans from `assets/fonts/`. The
-  leftover Google Fonts tags on `privacy.html` were removed in #96. The repo now contains
-  no reference to `fonts.googleapis.com` or `fonts.gstatic.com`.
+  leftover Google Fonts tags on `privacy.html` were removed in #96, and no shipping HTML or
+  CSS loads from Google's font hosts any more — no `<link>`, no `@import`, no request.
+  Stated as "what loads" rather than "what the repo contains" on purpose: grepping for
+  those hostnames now finds prose, this line included, so a claim about the strings
+  appearing anywhere would be false the moment it was written.
 - **Unconditional CDN loads.** Supabase is vendored under `assets/vendor/` (#95) and
   Leaflet loads from unpkg only on the first switch to Map view (#96). A visitor who stays
   on the list reaches no third-party host.
