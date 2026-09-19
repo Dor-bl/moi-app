@@ -214,8 +214,8 @@ const BUCKET_LIST = [
         id: '27',
         coords: [53.4068, 6.6713],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
-        title: { en: 'Tour the Menkemaborg in Uithuizen', nl: 'Bezoek de Menkemaborg in Uithuizen' },
-        tip: { en: 'One of the best-preserved Groninger borgen with 18th-century interiors and beautiful gardens.', nl: 'Een van de best bewaarde Groninger borgen met een prachtig ingericht interieur en baroktuinen.' },
+        title: { en: 'Visit Menkemaborg in Uithuizen', nl: 'Bezoek de Menkemaborg in Uithuizen' },
+        tip: { en: 'Groningen\'s own kind of castle, furnished as it was and out in the Ommelanden. Fraeylemaborg in Slochteren has the grander park; Ewsum in Middelstum is a ruin you can wander for free.', nl: 'Groningens eigen soort borg, ingericht zoals het ooit was en gelegen in de Ommelanden. Fraeylemaborg in Slochteren heeft het grotere park; Ewsum in Middelstum is een ruïne die je gratis kunt verkennen.' },
         url: 'https://www.menkemaborg.nl',
         urlLabel: { en: 'Menkemaborg Website 🏰', nl: 'Menkemaborg Website 🏰' }
     },
