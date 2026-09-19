@@ -27,8 +27,9 @@ Two things follow that are easy to get wrong:
 - The rule is about **device storage**, not about personal data. It covers a theme
   preference (not personal data) and not a server-side IP log (personal data, but nothing
   stored on the device).
-- It covers **reading** as well as writing. A key the app only reads and deletes is still
-  in scope (`initTheme()` in `js/theme.js` does exactly that with the legacy `theme` key).
+- It covers **reading** as well as writing. A key the app only reads is still in scope
+  (`initTheme()` in `js/theme.js` reads the legacy `theme` key, and deletes it only when it
+  actually migrates it).
 
 Anything that is not device storage — an outbound request carrying an IP, for instance —
 is an Article 6 GDPR legal-basis question, which a consent banner does not address. Those
@@ -49,7 +50,7 @@ a merge moved them. Re-run the grep above to locate them exactly.
 | `moiCheckState` | `saveState()` in `js/utils.js` | Completed items and memory notes | **Is the service.** The app's entire function is remembering which items you ticked. |
 | `moiCheckLang` | `setLanguage()` in `app.js` | Language choice | User's own explicit choice |
 | `moiCheckTheme` | `setTheme()` in `js/theme.js` | Theme choice | User's own explicit choice |
-| `theme` | read and removed by `initTheme()` in `js/theme.js` | Legacy name for the theme choice, migrated to `moiCheckTheme` on first visit | User's own explicit choice; in scope because reading counts, exempt for the same reason |
+| `theme` | read by `initTheme()` in `js/theme.js`, removed only when migrated | Legacy name for the theme choice. `initTheme()` migrates it **only** when `moiCheckTheme` is absent or empty *and* the legacy value is non-empty; in any other state the key is left in place, so "we delete it" is not unconditionally true. | User's own explicit choice; in scope because reading counts, exempt for the same reason |
 | `moiCheckCompletedCollapsed` | `buildCompletedDivider()` in `app.js` | Whether the completed section is collapsed | User's own explicit choice |
 | Supabase session token | vendored client, `assets/vendor/supabase-js-*.js` | Keeps a signed-in user signed in | **Strictly necessary** for a service the user explicitly requested by signing in |
 | `moiCheckSyncedUser` | `syncCloudProgress()` in `js/auth.js` | Account ID the saved progress belongs to | **Strictly necessary** for the sync the user asked for by signing in: it is what stops progress being uploaded under a different account on a shared device. Written only after sign-in, removed on sign-out. |
