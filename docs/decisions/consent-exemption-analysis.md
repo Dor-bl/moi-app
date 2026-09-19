@@ -101,8 +101,8 @@ not Article 5(3) ePrivacy.
 
 Re-run the enumeration above and revisit this document if any of the following happens:
 
-- A new `localStorage` / `sessionStorage` / cookie key is added that fits none of the three
-  grounds above — not the service itself, not a preference the user set, and not strictly
+- A new `localStorage`, `sessionStorage`, IndexedDB or cookie store is added that fits none
+  of the three grounds above — not the service itself, not a preference the user set, and not strictly
   necessary for something they explicitly asked for.
 - Analytics is replaced with a product that stores anything on the device.
 - An embedded third party (a video player, a map provider with its own storage, a chat
