@@ -65,6 +65,17 @@
         }
         .legal-page th { color: var(--text-light); font-weight: 700; }
         .legal-page a { color: var(--primary-color); }
+        /* The storage table's first column holds long key names; give it enough
+           room that they don't break mid-word on a normal screen. */
+        .storage-table th:first-child, .storage-table td:first-child { width: 30%; }
+        .legal-page code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.85em;
+            color: var(--text-light);
+            /* Key names are long unbreakable tokens; without this the storage
+               table forces the page wider than a phone screen. */
+            overflow-wrap: anywhere;
+        }
         .brand-title { font-size: 1.75rem; font-weight: 800; margin: 0; }
     </style>
 </head>
@@ -184,7 +195,47 @@
 
         <section>
             <h2>5. Cookies &amp; local storage</h2>
-            <p>We don't use advertising or tracking cookies. We use your browser's local storage to remember your theme, language, your completed items and notes, and (for signed-in users) a session token so you stay logged in and a marker holding your account ID, which records which account the saved progress belongs to so that it is never uploaded under a different account. The completed items, notes and account marker are removed from that browser when you sign out. Supabase may set similar local storage entries to manage your authenticated session.</p>
+            <p>We don't use advertising or tracking cookies, and nothing we store follows you to other websites. Everything in the table below is kept by your own browser, on your own device.</p>
+            <p>Dutch law &mdash; article 11.7a of the Telecommunicatiewet, which implements article 5(3) of the ePrivacy Directive &mdash; requires us to ask your permission before storing anything on your device, <em>unless</em> it is strictly necessary to provide the service you asked for. We don't show a consent banner because everything we store falls inside that exemption: each item below is either the feature you came to MoiCheck for, or a setting you chose yourself.</p>
+            <table class="storage-table">
+                <thead>
+                    <tr><th>What we store</th><th>What it does</th><th>Why it needs no consent</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Completed items &amp; memory notes<br><code>moiCheckState</code></td>
+                        <td>Remembers which things you've ticked off, and anything you wrote about them.</td>
+                        <td>Strictly necessary: remembering your progress is the service. Without it, MoiCheck would forget everything the moment you closed the tab.</td>
+                    </tr>
+                    <tr>
+                        <td>Language<br><code>moiCheckLang</code></td>
+                        <td>Keeps the app in the language you picked.</td>
+                        <td>A setting you chose yourself, stored only to honour that choice.</td>
+                    </tr>
+                    <tr>
+                        <td>Theme<br><code>moiCheckTheme</code></td>
+                        <td>Keeps the light, dark, or system appearance you picked.</td>
+                        <td>A setting you chose yourself, stored only to honour that choice.</td>
+                    </tr>
+                    <tr>
+                        <td>Completed-list layout<br><code>moiCheckCompletedCollapsed</code></td>
+                        <td>Remembers whether you left the completed section folded away.</td>
+                        <td>A setting you chose yourself, stored only to honour that choice.</td>
+                    </tr>
+                    <tr>
+                        <td>Sign-in session<br><em>set and managed by Supabase</em></td>
+                        <td>Keeps you signed in, so you don't have to request a new magic link on every page.</td>
+                        <td>Strictly necessary to provide sign-in &mdash; which happens only because you asked to sign in. If you never sign in, it is never created.</td>
+                    </tr>
+                    <tr>
+                        <td>Account marker<br><code>moiCheckSyncedUser</code></td>
+                        <td>Records which account the saved progress belongs to.</td>
+                        <td>Strictly necessary to sync safely: it is what stops progress being uploaded under a different account on a shared device. It is created only when you sign in and removed when you sign out; if your session ends while the app is closed, it is cleared the next time you open the app.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>The visitor statistics described in section 1 come from Vercel Web Analytics, which sets no cookies and stores nothing at all on your device, so the permission rule above does not apply to it.</p>
+            <p>When you sign out, your completed items, notes, and the account marker are cleared from that browser, so the next person to sign in on a shared device does not inherit them. Your language, theme, and layout preferences are device settings rather than personal data, so those stay. You can remove everything at any time by clearing your browser's site data for MoiCheck.</p>
         </section>
 
         <section>
