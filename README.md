@@ -278,7 +278,7 @@ session token and the account marker). The key-by-key reasoning, and what would 
 is written up in
 [`docs/decisions/consent-exemption-analysis.md`](docs/decisions/consent-exemption-analysis.md);
 `privacy.html` section 5 states the same thing in plain language for visitors. Add a new
-storage key that is neither of those two things and that analysis needs revisiting.
+storage key that fits none of those three grounds and that analysis needs revisiting.
 
 ### Account deletion (GDPR right to erasure)
 

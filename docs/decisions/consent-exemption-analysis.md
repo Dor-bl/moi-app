@@ -52,7 +52,7 @@ a merge moved them. Re-run the grep above to locate them exactly.
 | `theme` | read and removed by `initTheme()` in `js/theme.js` | Legacy name for the theme choice, migrated to `moiCheckTheme` on first visit | User's own explicit choice; in scope because reading counts, exempt for the same reason |
 | `moiCheckCompletedCollapsed` | `buildCompletedDivider()` in `app.js` | Whether the completed section is collapsed | User's own explicit choice |
 | Supabase session token | vendored client, `assets/vendor/supabase-js-*.js` | Keeps a signed-in user signed in | **Strictly necessary** for a service the user explicitly requested by signing in |
-| `moiCheckSyncedUser` | `syncCloudProgress()` in `js/auth.js` | Account ID the saved progress belongs to | Written only after sign-in; prevents progress uploading under the wrong account |
+| `moiCheckSyncedUser` | `syncCloudProgress()` in `js/auth.js` | Account ID the saved progress belongs to | **Strictly necessary** for the sync the user asked for by signing in: it is what stops progress being uploaded under a different account on a shared device. Written only after sign-in, removed on sign-out. |
 
 No non-exempt storage remains, so there is nothing to ask consent for.
 
@@ -100,8 +100,9 @@ not Article 5(3) ePrivacy.
 
 Re-run the enumeration above and revisit this document if any of the following happens:
 
-- A new `localStorage` / `sessionStorage` / cookie key is added that is not the service
-  itself and not a preference the user set.
+- A new `localStorage` / `sessionStorage` / cookie key is added that fits none of the three
+  grounds above — not the service itself, not a preference the user set, and not strictly
+  necessary for something they explicitly asked for.
 - Analytics is replaced with a product that stores anything on the device.
 - An embedded third party (a video player, a map provider with its own storage, a chat
   widget) is added to a page.
