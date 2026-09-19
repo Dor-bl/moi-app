@@ -361,6 +361,15 @@ const BUCKET_LIST = [
         tip: { en: "This is the real deal, not the postcard version of the Wad: a guide walks the group out onto the exposed seabed at low tide, an hour or two slogging through clay, sand, and tidal creeks with nothing but horizon and wading birds around you. Sign in at the shop on the Hoofdstraat before you start, and don't wear anything you're attached to — the mud keeps the odd shoe.", nl: 'Dit is de echte versie van het Wad, geen ansichtkaartuitje: een gids leidt de groep bij laag water de drooggevallen zeebodem op, een uur of twee ploeteren door klei, zand en geultjes, met alleen de horizon en wadvogels om je heen. Meld je vooraf bij de winkel aan de Hoofdstraat, en trek niets aan waar je aan gehecht bent — de modder houdt weleens een schoen.' },
         url: 'https://wadlopen-pieterburen.nl/',
         urlLabel: { en: 'Wadlopen Pieterburen Tours 🥾', nl: 'Wadlopen Pieterburen Tochten 🥾' }
+    },
+    {
+        id: '45',
+        coords: [53.2333, 7.2000],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Visit the Kiekkaaste bird hide on the Dollard', nl: 'Bezoek de Kiekkaaste aan de Dollard' },
+        tip: { en: "This is the only Dutch bird hide built outside the dike, standing on stilts in the reeds right where the Westerwoldse Aa meets the Dollard, barely 150 metres from the German border. Park at Nieuwe Statenzijl, cross the lock, and follow the wooden Marcelluspad boardwalk through the reedbed to reach it — flocks of dunlin work the mudflats below, and if you're lucky you'll spot a seal or harbour porpoise out in the channel.", nl: 'Dit is de enige vogelkijkhut van Nederland die buitendijks staat, op palen in het riet precies waar de Westerwoldse Aa de Dollard in stroomt, nog geen 150 meter van de Duitse grens. Parkeer bij Nieuwe Statenzijl, steek de sluis over en volg het houten Marcelluspad door het rietland naar de hut — bonte strandlopers foerageren op de wadplaten eronder, en met een beetje geluk zie je een zeehond of bruinvis in de geul.' },
+        url: 'https://www.visitgroningen.nl/nl/plekken/kiekkaaste',
+        urlLabel: { en: 'Kiekkaaste Bird Hide Info 🦅', nl: 'Kiekkaaste Vogelkijkhut Info 🦅' }
     }
 ];
 
