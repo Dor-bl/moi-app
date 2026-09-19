@@ -268,6 +268,18 @@ have its visitors send mail through us — the origin allow-list never gets cons
 Requiring a content type outside the safelist is what forces the preflight, and with it
 the allow-list, back into the path.
 
+### Why there is no cookie banner
+
+Everything MoiCheck stores on a visitor's device is exempt from the ePrivacy consent
+requirement, on one of three grounds: it is the service itself (completed items and
+notes), a preference the visitor set (theme, language, completed-list layout), or strictly
+necessary for sign-in, which only happens because they asked to sign in (the Supabase
+session token and the account marker). The key-by-key reasoning, and what would change it,
+is written up in
+[`docs/decisions/consent-exemption-analysis.md`](docs/decisions/consent-exemption-analysis.md);
+`privacy.html` section 5 states the same thing in plain language for visitors. Add a new
+storage key that fits none of those three grounds and that analysis needs revisiting.
+
 ### Account deletion (GDPR right to erasure)
 
 Signed-in users can delete their account and data from the profile modal (*Delete my account & data*).

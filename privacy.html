@@ -77,6 +77,17 @@
             overflow-wrap: anywhere;
         }
         .brand-title { font-size: 1.75rem; font-weight: 800; margin: 0; }
+        /* The storage table is three columns of prose, and its minimum width is
+           the sum of those columns plus 72px of cell padding — about 335px,
+           which is wider than the content column on a small phone. The key
+           names already wrap (`overflow-wrap` above), so the token length is
+           not the constraint; the padding and type size are. Below 420px both
+           come down, which returns the table to inside the page gutter at
+           360-375px and stops the page scrolling sideways at 320px. */
+        @media (max-width: 420px) {
+            .legal-page table { font-size: 0.82rem; }
+            .legal-page th, .legal-page td { padding: 0.5rem 0.4rem; }
+        }
     </style>
 </head>
 <body>
@@ -108,7 +119,7 @@
     <main class="legal-page">
         <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
         <h1>Privacy Policy</h1>
-        <p class="updated">Last updated: 12 September 2026</p>
+        <p class="updated">Last updated: 19 September 2026</p>
 
         <section>
             <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen. This policy explains what personal data we collect, why, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
@@ -216,6 +227,11 @@
                         <td>Theme<br><code>moiCheckTheme</code></td>
                         <td>Keeps the light, dark, or system appearance you picked.</td>
                         <td>A setting you chose yourself, stored only to honour that choice.</td>
+                    </tr>
+                    <tr>
+                        <td>Theme, older name<br><code>theme</code></td>
+                        <td>The same appearance setting, under the name an earlier version of MoiCheck used. If you have no current theme saved, we copy it across and delete it on your next visit; otherwise it just sits there unused until you clear your site data.</td>
+                        <td>A setting you chose yourself. Reading something already on your device falls under the same permission rule, and the same exemption.</td>
                     </tr>
                     <tr>
                         <td>Completed-list layout<br><code>moiCheckCompletedCollapsed</code></td>
