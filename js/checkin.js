@@ -43,8 +43,21 @@ function hasCheckedIn(event) {
 }
 
 function recordCheckIn(event) {
-    eventCheckIns[checkInKeyFor(event)] = { date: new Date().toISOString() };
-    saveCheckIns();
+    const key = checkInKeyFor(event);
+    eventCheckIns[key] = { date: new Date().toISOString() };
+
+    try {
+        saveCheckIns();
+    } catch (err) {
+        // Storage refused the write — a full quota, or Safari's private mode,
+        // where setItem throws. Undo the in-memory mutation before rethrowing:
+        // left in place it would render as an earned badge that vanishes on
+        // reload, and it would ride along on the next successful save of some
+        // *other* check-in. Deleting rather than restoring a previous value is
+        // right because the button is only rendered for a key not already stored.
+        delete eventCheckIns[key];
+        throw err;
+    }
 }
 
 // Two gates, both required: the event has to have opted in by carrying a checkIn
@@ -143,7 +156,23 @@ async function runCheckIn(event) {
     const verdict = judgeCheckIn(event, position);
     if (!verdict.ok) return verdict;
 
-    recordCheckIn(event);
-    if (event.badge) showBadgeToast(event.badge);
+    try {
+        recordCheckIn(event);
+    } catch (err) {
+        // Its own reason rather than a geolocation one: the position was fine
+        // and the badge was not saved, so a message about the location would be
+        // a false diagnosis of a real failure.
+        console.warn('Check-in could not be saved:', err);
+        return { ok: false, reason: 'saveFailed' };
+    }
+
+    // The badge is earned and stored by this point. A toast that throws must not
+    // turn that into a failure the user is told about.
+    try {
+        if (event.badge) showBadgeToast(event.badge);
+    } catch (err) {
+        console.warn('Badge toast failed:', err);
+    }
+
     return { ok: true };
 }

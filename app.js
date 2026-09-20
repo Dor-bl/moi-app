@@ -19,13 +19,20 @@ let selectedItemId = null;
 let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
 let resortTimer = null;
 let listNeedsResort = false;
-// Suppresses the staleness re-renders below while a check-in is waiting on a GPS
-// fix. Without it the minute tick rebuilds the card mid-request and the verdict
-// lands in a detached node — a silently dropped error message, and not a narrow
-// window either: a cold fix is allowed 15 seconds. One flag cleared in a finally,
-// rather than queueing the render: a card at most a minute stale is the trade, and
-// a successful check-in re-renders on its own.
-let checkInPending = false;
+// The occurrence key of a check-in waiting on a GPS fix, or null. It does two
+// jobs, and a cold fix is allowed 15 seconds, so neither window is narrow.
+//
+// It suppresses the staleness re-renders in setupEventListeners: the minute tick
+// would otherwise rebuild the card mid-request and drop the verdict into a
+// detached node — a silently swallowed error message. A card at most a minute
+// stale is the trade, and a successful check-in re-renders on its own.
+//
+// And it survives the re-renders it cannot suppress, because they are the user's
+// own doing: switching language or toggling a filter calls renderEvents directly.
+// Holding the key rather than a boolean lets buildCheckInBlock rebuild that card
+// still busy, instead of handing back a fresh enabled button that a second tap
+// turns into a second location read for one intent.
+let pendingCheckInKey = null;
 let leafletMap = null;
 let markersGroup = null;
 
@@ -806,7 +813,8 @@ const CHECKIN_MESSAGE_KEYS = Object.assign(Object.create(null), {
     imprecise: 'eventsCheckInImprecise',
     denied: 'eventsCheckInDenied',
     unavailable: 'eventsCheckInUnavailable',
-    timeout: 'eventsCheckInTimeout'
+    timeout: 'eventsCheckInTimeout',
+    saveFailed: 'eventsCheckInSaveFailed'
 });
 
 function buildCheckInBlock(event) {
@@ -816,6 +824,10 @@ function buildCheckInBlock(event) {
 
     const status = document.createElement('p');
     status.className = 'event-checkin-status';
+    // Every outcome here is written into this paragraph asynchronously, seconds
+    // after the tap. Without a live region a screen reader announces none of it:
+    // not the refusal, not the reason, not the badge.
+    status.setAttribute('role', 'status');
 
     // Already earned: no button, because there is nothing left to ask the
     // device for. Re-reading a location to confirm what is already stored would
@@ -831,11 +843,16 @@ function buildCheckInBlock(event) {
     const button = document.createElement('button');
     button.className = 'event-checkin-btn';
     button.type = 'button';
-    button.textContent = t.eventsCheckIn;
     // The occurrence key, not the event id: the click is handled by delegation,
     // so this is what tells the handler which card it came from — and an annual
     // event's id alone would not say which year's occurrence.
     button.dataset.checkinKey = checkInKeyFor(event);
+
+    // Rebuilt mid-request by a render the user triggered themselves, this card
+    // comes back in the state its check-in is actually in.
+    const busy = pendingCheckInKey === button.dataset.checkinKey;
+    button.textContent = busy ? t.eventsCheckInBusy : t.eventsCheckIn;
+    button.disabled = busy;
 
     // Stated before the tap, not after: the browser's permission prompt says
     // "wants to know your location" and says nothing about what happens to it.
@@ -876,21 +893,23 @@ async function handleCheckInClick(button) {
     button.disabled = true;
     button.textContent = t.eventsCheckInBusy;
     block.classList.remove('failed');
-    checkInPending = true;
+    pendingCheckInKey = button.dataset.checkinKey;
 
     let verdict;
     try {
         verdict = await runCheckIn(event);
     } catch (err) {
-        // runCheckIn turns every geolocation failure into a verdict itself, so
-        // reaching here means the write was refused — a full quota, or Safari's
-        // private mode, where setItem throws. Rare, but the alternative is an
-        // unhandled rejection leaving the button disabled on "Checking…" for
-        // the rest of the visit, with nothing on screen saying why.
-        console.warn('Check-in could not be saved:', err);
-        verdict = { ok: false, reason: 'unavailable' };
+        // runCheckIn turns every geolocation failure, and the refused write, into
+        // a verdict of its own, so nothing should reach here. It stays as a
+        // backstop because the alternative is an unhandled rejection leaving the
+        // button disabled on "Checking…" for the rest of the visit, with nothing
+        // on screen saying why. saveFailed rather than a geolocation reason: by
+        // this point the position was fine, so blaming it would be a false
+        // diagnosis of a real failure.
+        console.warn('Check-in failed unexpectedly:', err);
+        verdict = { ok: false, reason: 'saveFailed' };
     } finally {
-        checkInPending = false;
+        pendingCheckInKey = null;
     }
 
     if (verdict.ok) {
@@ -1448,7 +1467,10 @@ function setupEventListeners() {
     // builder would be rebuilt for every card, every minute, all visit.
     eventsContainer.addEventListener('click', (e) => {
         const button = e.target.closest('.event-checkin-btn');
-        if (button && !button.disabled) handleCheckInClick(button);
+        // One check-in at a time, whichever card it was started from: a second
+        // tap while a fix is in flight would mean two location reads and two
+        // toasts for one intent.
+        if (button && !button.disabled && !pendingCheckInKey) handleCheckInClick(button);
     });
 
     // A tab backgrounded before an endTime cutoff (or left open overnight) can
@@ -1456,7 +1478,7 @@ function setupEventListeners() {
     // timer below while hidden, so becoming visible again is its own trigger
     // rather than something the timer can be trusted to catch promptly.
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden || currentView !== 'events' || checkInPending) return;
+        if (document.hidden || currentView !== 'events' || pendingCheckInKey) return;
         renderEvents();
     });
 
@@ -1466,7 +1488,7 @@ function setupEventListeners() {
     // enough to keep the open tab honest without polling faster than the data
     // can actually change.
     setInterval(() => {
-        if (currentView === 'events' && !checkInPending) renderEvents();
+        if (currentView === 'events' && !pendingCheckInKey) renderEvents();
     }, 60 * 1000);
 
     // Language buttons

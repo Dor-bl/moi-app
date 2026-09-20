@@ -16,9 +16,17 @@ import { createLocalStorage } from './load-auth.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-export function loadCheckInModule({ seed = {}, lang = 'en' } = {}) {
+export function loadCheckInModule({ seed = {}, lang = 'en', failWrites = false } = {}) {
     const localStorage = createLocalStorage(seed);
+    if (failWrites) {
+        // Safari's private mode, and a full quota: setItem throws rather than
+        // silently dropping the write.
+        localStorage.setItem = () => {
+            throw new Error('QuotaExceededError');
+        };
+    }
     const toasts = [];
+    let toastThrows = false;
 
     const context = vm.createContext({
         console,
@@ -32,7 +40,10 @@ export function loadCheckInModule({ seed = {}, lang = 'en' } = {}) {
         Promise,
         localStorage,
         currentLang: lang,
-        showBadgeToast: badge => toasts.push(badge),
+        showBadgeToast: badge => {
+            if (toastThrows) throw new Error('toast exploded');
+            toasts.push(badge);
+        },
         navigator: {}
     });
 
@@ -55,7 +66,7 @@ export function loadCheckInModule({ seed = {}, lang = 'en' } = {}) {
         };
     `, context, { filename: 'test-hooks.js' });
 
-    return { ...context.__module, localStorage, toasts };
+    return { ...context.__module, localStorage, toasts, breakToast: () => { toastThrows = true; } };
 }
 
 // Shapes a GeolocationPosition the way the browser hands one over, so judgeCheckIn

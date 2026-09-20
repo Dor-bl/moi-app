@@ -189,6 +189,49 @@ test('every geolocation failure resolves to a reason with a message', async () =
     }
 });
 
+// Storage refusing the write used to leave the key in memory: the next render
+// showed an earned badge that vanished on reload, and the orphan would ride along
+// on the next successful save of some other check-in.
+test('a refused write is rolled back rather than left in memory', async () => {
+    const { runCheckIn, setGeolocation, hasCheckedIn } = loadCheckInModule({ failWrites: true });
+
+    setGeolocation({
+        getCurrentPosition: onSuccess => onSuccess(positionAt(53.2026, 6.5540, 20))
+    });
+
+    assert.deepEqual(plain(await runCheckIn(festival)), { ok: false, reason: 'saveFailed' });
+    assert.equal(hasCheckedIn(festival), false, 'nothing is left claiming to be earned');
+});
+
+// The position was fine and the badge was not saved. Reporting that as a
+// geolocation failure is a false diagnosis of a real problem.
+test('a save failure is its own reason, not a location one', async () => {
+    const { runCheckIn, setGeolocation, toasts } = loadCheckInModule({ failWrites: true });
+
+    setGeolocation({
+        getCurrentPosition: onSuccess => onSuccess(positionAt(53.2026, 6.5540, 20))
+    });
+
+    const verdict = plain(await runCheckIn(festival));
+    assert.equal(verdict.reason, 'saveFailed');
+    assert.notEqual(verdict.reason, 'unavailable');
+    assert.equal(toasts.length, 0, 'nothing to celebrate when nothing was saved');
+});
+
+// The badge is earned and stored by the time the toast runs, so a toast that
+// throws must not report the check-in as failed.
+test('a failing badge toast does not undo a saved check-in', async () => {
+    const { runCheckIn, setGeolocation, localStorage, breakToast } = loadCheckInModule();
+
+    breakToast();
+    setGeolocation({
+        getCurrentPosition: onSuccess => onSuccess(positionAt(53.2026, 6.5540, 20))
+    });
+
+    assert.deepEqual(plain(await runCheckIn(festival)), { ok: true });
+    assert.ok(localStorage.getItem('moiCheckEvents'), 'the check-in is still stored');
+});
+
 test('a browser without geolocation fails cleanly instead of throwing', async () => {
     const { runCheckIn } = loadCheckInModule();
     assert.deepEqual(plain(await runCheckIn(festival)), { ok: false, reason: 'unavailable' });
@@ -244,7 +287,8 @@ test('the shipped Bevrijdingsfestival entry has a usable check-in and badge', ()
     const keys = [
         'eventsCheckIn', 'eventsCheckInBusy', 'eventsCheckInDone', 'eventsCheckInHint',
         'eventsCheckInTooFar', 'eventsCheckInImprecise', 'eventsCheckInDenied',
-        'eventsCheckInUnavailable', 'eventsCheckInTimeout', 'eventsCheckInClosed'
+        'eventsCheckInUnavailable', 'eventsCheckInTimeout', 'eventsCheckInClosed',
+        'eventsCheckInSaveFailed'
     ];
     for (const lang of ['en', 'nl']) {
         for (const key of keys) {

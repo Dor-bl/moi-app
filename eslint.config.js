@@ -71,7 +71,7 @@ export default [
         leafletMap: "writable",
         markersGroup: "writable",
         eventCheckIns: "writable",
-        checkInPending: "writable"
+        pendingCheckInKey: "writable"
       },
     },
     rules: {
