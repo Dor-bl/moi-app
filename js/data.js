@@ -370,6 +370,13 @@ const BUCKET_LIST = [
         tip: { en: "This is the only Dutch bird hide built outside the dike, standing on stilts in the reeds right where the Westerwoldse Aa meets the Dollard, barely 150 metres from the German border. Park at Nieuwe Statenzijl, cross the lock, and follow the wooden Marcelluspad boardwalk through the reedbed to reach it — flocks of dunlin work the mudflats below, and if you're lucky you'll spot a seal or harbour porpoise out in the channel.", nl: 'Dit is de enige vogelkijkhut van Nederland die buitendijks staat, op palen in het riet precies waar de Westerwoldse Aa de Dollard in stroomt, nog geen 150 meter van de Duitse grens. Parkeer bij Nieuwe Statenzijl, steek de sluis over en volg het houten Marcelluspad door het rietland naar de hut — bonte strandlopers foerageren op de wadplaten eronder, en met een beetje geluk zie je een zeehond of bruinvis in de geul.' },
         url: 'https://www.visitgroningen.nl/nl/plekken/kiekkaaste',
         urlLabel: { en: 'Kiekkaaste Bird Hide Info 🦅', nl: 'Kiekkaaste Vogelkijkhut Info 🦅' }
+    },
+    {
+        id: '46',
+        coords: [53.3356, 6.9269],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Visit Muzeeaquarium Delfzijl on the Eems-Dollard waterfront', nl: 'Bezoek Muzeeaquarium Delfzijl aan de Eems-Dollard' },
+        tip: { en: "A small museum and aquarium combined into one, right by the Zeebad on Delfzijl's waterfront — one half traces the town's shipping and dredging history on the Eems-Dollard, the other holds tanks of fish and other creatures native to the Wadden Sea and North Sea. A low-key stop worth combining with a walk along the dike.", nl: 'Een klein museum en aquarium in één, vlak bij het Zeebad aan de waterkant van Delfzijl — het ene deel gaat over de scheepvaart- en baggergeschiedenis van de stad aan de Eems-Dollard, het andere bestaat uit bakken met vissen en ander leven uit de Waddenzee en Noordzee. Een rustig tussenstopje, goed te combineren met een wandeling over de dijk.' }
     }
 ];
 
