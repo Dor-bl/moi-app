@@ -244,7 +244,7 @@ test('the shipped Bevrijdingsfestival entry has a usable check-in and badge', ()
     const keys = [
         'eventsCheckIn', 'eventsCheckInBusy', 'eventsCheckInDone', 'eventsCheckInHint',
         'eventsCheckInTooFar', 'eventsCheckInImprecise', 'eventsCheckInDenied',
-        'eventsCheckInUnavailable', 'eventsCheckInTimeout'
+        'eventsCheckInUnavailable', 'eventsCheckInTimeout', 'eventsCheckInClosed'
     ];
     for (const lang of ['en', 'nl']) {
         for (const key of keys) {

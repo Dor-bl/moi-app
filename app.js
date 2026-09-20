@@ -832,50 +832,80 @@ function buildCheckInBlock(event) {
     button.className = 'event-checkin-btn';
     button.type = 'button';
     button.textContent = t.eventsCheckIn;
+    // The occurrence key, not the event id: the click is handled by delegation,
+    // so this is what tells the handler which card it came from — and an annual
+    // event's id alone would not say which year's occurrence.
+    button.dataset.checkinKey = checkInKeyFor(event);
 
     // Stated before the tap, not after: the browser's permission prompt says
     // "wants to know your location" and says nothing about what happens to it.
     status.textContent = t.eventsCheckInHint;
 
-    button.addEventListener('click', async () => {
-        button.disabled = true;
-        button.textContent = t.eventsCheckInBusy;
-        block.classList.remove('failed');
-        checkInPending = true;
-
-        let verdict;
-        try {
-            verdict = await runCheckIn(event);
-        } catch (err) {
-            // runCheckIn turns every geolocation failure into a verdict itself, so
-            // reaching here means the write was refused — a full quota, or Safari's
-            // private mode, where setItem throws. Rare, but the alternative is an
-            // unhandled rejection leaving the button disabled on "Checking…" for
-            // the rest of the visit, with nothing on screen saying why.
-            console.warn('Check-in could not be saved:', err);
-            verdict = { ok: false, reason: 'unavailable' };
-        } finally {
-            checkInPending = false;
-        }
-
-        if (verdict.ok) {
-            // Re-render rather than patch this card in place: the earned state is
-            // then produced by exactly the path a filter change or a language
-            // switch takes, so there is one description of "checked in" to keep
-            // right instead of two.
-            renderEvents();
-            return;
-        }
-
-        block.classList.add('failed');
-        status.textContent = t[CHECKIN_MESSAGE_KEYS[verdict.reason] || 'eventsCheckInUnavailable'];
-        button.disabled = false;
-        button.textContent = t.eventsCheckIn;
-    });
-
     block.appendChild(button);
     block.appendChild(status);
     return block;
+}
+
+// Re-resolves the occurrence a button was rendered for, re-checking the window
+// rather than trusting it: renderEvents only ticks once a minute, so an event
+// whose endTime passed since the last render must not still be earnable. The
+// alternative — holding the event in a closure per card — is the per-item
+// listener that delegation exists to avoid.
+function findCheckInEvent(key) {
+    const today = todayInGroningen();
+    return getUpcomingEvents(EVENTS, today)
+        .find(event => canCheckIn(event, today) && checkInKeyFor(event) === key) || null;
+}
+
+async function handleCheckInClick(button) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const block = button.closest('.event-checkin');
+    const status = block.querySelector('.event-checkin-status');
+
+    const event = findCheckInEvent(button.dataset.checkinKey);
+    if (!event) {
+        // The window closed between the render and the tap — the card is at most
+        // a minute stale, and the next tick drops it. Its own message, because
+        // "could not work out a location" would be a plain lie here.
+        block.classList.add('failed');
+        status.textContent = t.eventsCheckInClosed;
+        button.disabled = true;
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = t.eventsCheckInBusy;
+    block.classList.remove('failed');
+    checkInPending = true;
+
+    let verdict;
+    try {
+        verdict = await runCheckIn(event);
+    } catch (err) {
+        // runCheckIn turns every geolocation failure into a verdict itself, so
+        // reaching here means the write was refused — a full quota, or Safari's
+        // private mode, where setItem throws. Rare, but the alternative is an
+        // unhandled rejection leaving the button disabled on "Checking…" for
+        // the rest of the visit, with nothing on screen saying why.
+        console.warn('Check-in could not be saved:', err);
+        verdict = { ok: false, reason: 'unavailable' };
+    } finally {
+        checkInPending = false;
+    }
+
+    if (verdict.ok) {
+        // Re-render rather than patch this card in place: the earned state is
+        // then produced by exactly the path a filter change or a language
+        // switch takes, so there is one description of "checked in" to keep
+        // right instead of two.
+        renderEvents();
+        return;
+    }
+
+    block.classList.add('failed');
+    status.textContent = t[CHECKIN_MESSAGE_KEYS[verdict.reason] || 'eventsCheckInUnavailable'];
+    button.disabled = false;
+    button.textContent = t.eventsCheckIn;
 }
 
 function renderEvents() {
@@ -1412,6 +1442,14 @@ function setupEventListeners() {
     listViewBtn.addEventListener('click', () => switchView('list'));
     mapViewBtn.addEventListener('click', () => switchView('map'));
     eventsViewBtn.addEventListener('click', () => switchView('events'));
+
+    // Delegated from the container, like the bucket list's checkboxes above:
+    // renderEvents runs on a minute tick, so a listener bound inside the card
+    // builder would be rebuilt for every card, every minute, all visit.
+    eventsContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.event-checkin-btn');
+        if (button && !button.disabled) handleCheckInClick(button);
+    });
 
     // A tab backgrounded before an endTime cutoff (or left open overnight) can
     // resume with a stale card: mobile browsers throttle or freeze the minute
