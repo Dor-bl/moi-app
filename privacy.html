@@ -119,7 +119,7 @@
     <main class="legal-page">
         <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
         <h1>Privacy Policy</h1>
-        <p class="updated">Last updated: 19 September 2026</p>
+        <p class="updated">Last updated: 20 September 2026</p>
 
         <section>
             <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen. This policy explains what personal data we collect, why, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
@@ -158,6 +158,11 @@
                         <td>To remember your preferences and let you use the app without an account</td>
                     </tr>
                     <tr>
+                        <td>Your location &mdash; checked, never collected</td>
+                        <td>Only when you tap "I'm here" on an event that is happening right now, and only for that one tap</td>
+                        <td>To confirm you are actually at the event before awarding its badge. The check happens entirely on your device: your browser compares your coordinates to the event's location and then discards them. They are never sent to us, never written down, and we never learn where you were or whether you were anywhere at all &mdash; the only thing saved is your own device's note that you earned the badge. We never read your location in the background, and if you decline the permission nothing happens except that you don't get that badge.</td>
+                    </tr>
+                    <tr>
                         <td>Aggregate usage statistics</td>
                         <td>When you open the main MoiCheck page, and when you switch between the list, map and events views</td>
                         <td>To count visits, see which sites link here, and count how often each view (list, map, events) is opened, so we can tell whether MoiCheck is useful and which parts of it people actually use. These are counts only — no record of who opened what. No cookies are set. Like any web request, the request itself carries your IP address, your browser details, and which page you are on and which site you came from; Vercel uses these only to build the aggregates, and we only ever see those aggregates — nothing that identifies you or follows you to other websites.</td>
@@ -186,6 +191,7 @@
                 <li><strong>Account data &amp; progress/notes:</strong> kept for as long as your account exists, until you ask us to delete it.</li>
                 <li><strong>Contact-form submissions:</strong> kept in our email inbox for as long as we need them to deal with what you wrote, which means a copy also sits with whoever hosts that mailbox. We don't copy submissions into the MoiCheck app or its database, and nothing from the contact form is saved in your browser. The function that relays the message keeps no copy of its own. Resend, which delivers it, documents a retention period of 30 days for email data on its standard plans; we have not been able to confirm that against its live documentation, so treat it as their stated figure rather than one we have verified.</li>
                 <li><strong>Local preferences</strong> (theme, language, guest progress): stay on your device until you clear your browser storage.</li>
+                <li><strong>Event badges:</strong> stay on the device that earned them until you clear your browser storage. We never receive them, so there is nothing on our side to keep or delete &mdash; and nothing for us to restore if you clear them.</li>
             </ul>
         </section>
 
@@ -239,6 +245,11 @@
                         <td>A setting you chose yourself, stored only to honour that choice.</td>
                     </tr>
                     <tr>
+                        <td>Event badges<br><code>moiCheckEvents</code></td>
+                        <td>Remembers which events you checked in at, so the badge you earned is still there next time. It holds the event and the date &mdash; never a location.</td>
+                        <td>Strictly necessary: keeping the badge <em>is</em> the thing you asked for by tapping "I'm here". Nothing is stored unless you tap it, and the location check that precedes it stores nothing at all.</td>
+                    </tr>
+                    <tr>
                         <td>Sign-in session<br><em>set and managed by Supabase</em></td>
                         <td>Keeps you signed in, so you don't have to request a new magic link on every page.</td>
                         <td>Strictly necessary to provide sign-in &mdash; which happens only because you asked to sign in. If you never sign in, it is never created.</td>
@@ -250,8 +261,9 @@
                     </tr>
                 </tbody>
             </table>
+            <p>Confirming you are at an event <em>reads</em> your location from your device, which the same permission rule covers. We ask only at the moment you tap "I'm here", your browser asks you before we get anything, and your coordinates are compared to the event's and then discarded rather than stored &mdash; so what ends up saved is the badge in the table above and nothing about where you were. Section 1 describes that check in full.</p>
             <p>The visitor statistics described in section 1 come from Vercel Web Analytics, which sets no cookies and stores nothing at all on your device, so the permission rule above does not apply to it.</p>
-            <p>When you sign out, your completed items, notes, and the account marker are cleared from that browser, so the next person to sign in on a shared device does not inherit them. Your language, theme, and layout preferences are device settings rather than personal data, so those stay. You can remove everything at any time by clearing your browser's site data for MoiCheck.</p>
+            <p>When you sign out, your completed items, notes, and the account marker are cleared from that browser, so the next person to sign in on a shared device does not inherit them. Your language, theme, and layout preferences are device settings rather than personal data, so those stay. Event badges stay too, and we should be straight about the trade: they are never uploaded anywhere, so clearing them on sign-out would destroy them for good rather than restore them on your next sign-in &mdash; the cost is that on a shared device the next person can see that somebody checked in at an event. You can remove everything at any time by clearing your browser's site data for MoiCheck.</p>
         </section>
 
         <section>
