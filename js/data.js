@@ -494,6 +494,15 @@ const EVENTS = [
         location: { en: 'Venues across the city centre', nl: 'Podia door de hele binnenstad' },
         tip: { en: 'Europe\'s leading showcase festival for new music fills dozens of venues across town for four days. Most nights need an industry badge, but the closing Saturday, Noorderslag, sells public tickets, so it is worth planning around if you like discovering bands early.', nl: 'Het toonaangevende Europese showcasefestival voor nieuwe muziek vult dagenlang tientallen podia door de hele stad. De meeste avonden zijn voor badgehouders, maar op de afsluitende zaterdag, Noorderslag, zijn er gewoon kaartjes te koop, dus die avond is de moeite waard als je van nieuwe bands houdt.' },
         url: 'https://esns.nl/en/'
+    },
+    {
+        id: 'wijnfestival-groningen-2026',
+        date: '2026-09-25',
+        endDate: '2026-09-27',
+        title: { en: 'Wijnfestival Groningen (Wine Festival)', nl: 'Wijnfestival Groningen' },
+        location: { en: 'A-kerk, city centre', nl: 'A-kerk, binnenstad' },
+        tip: { en: 'This 10th edition turns the atmospheric A-kerk into a three-day wine tasting, with 20+ exhibitors pouring 250+ wines from around the world, food pairings, and live music — Friday evening through Sunday afternoon. Book online in advance for a cheaper ticket than at the door.', nl: 'Dit tiende jaar verandert de sfeervolle A-kerk drie dagen lang in een wijnproeverij, met ruim 20 exposanten en 250+ wijnen uit de hele wereld, hapjes erbij en livemuziek — van vrijdagavond tot zondagmiddag. Koop je kaartje van tevoren online, dat is goedkoper dan aan de deur.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/440554054/wijnfestival-groningen-7'
     }
 ];
 
