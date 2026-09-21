@@ -52,6 +52,7 @@ export default [
         distanceInMetres: "readonly",
         judgeCheckIn: "readonly",
         hasCheckedIn: "readonly",
+        earnedEventBadges: "readonly",
         recordCheckIn: "readonly",
         readPosition: "readonly",
         runCheckIn: "readonly",

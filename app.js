@@ -1114,7 +1114,57 @@ function renderBadges() {
         `;
         fragment.appendChild(card);
     });
+
+    // Event check-in badges share this grid rather than getting a screen of
+    // their own: one place to look for "my badges" beats two, and a second
+    // screen would need its own nav entry to hold a handful of cards.
+    //
+    // Earned ones only, and deliberately no locked counterparts. A locked card
+    // per checkable event would grow the grid every time the monthly events
+    // refresh adds one, advertise festivals rather than report achievements,
+    // and promise something this screen cannot deliver — an event badge is
+    // earned by standing in the event, not from here.
+    earnedEventBadges(EVENTS).forEach(earned => {
+        fragment.appendChild(buildEventBadgeCard(earned, t));
+    });
+
     badgesGrid.replaceChildren(fragment);
+}
+
+// createElement/textContent throughout, rather than the innerHTML the category
+// cards above are built with. That is the repo's rule for new code and what the
+// check-in block already follows; the existing call site is left alone because
+// rewriting it is not this change's job.
+function buildEventBadgeCard({ badge, date }, t) {
+    const card = document.createElement('div');
+    card.className = 'badge-card unlocked';
+
+    const icon = document.createElement('div');
+    icon.className = 'badge-icon';
+    icon.textContent = badge.icon;
+
+    const title = document.createElement('div');
+    title.className = 'badge-title';
+    title.textContent = badge.title[currentLang];
+
+    const desc = document.createElement('div');
+    desc.className = 'badge-desc';
+    desc.textContent = badge.desc[currentLang];
+
+    const tag = document.createElement('span');
+    tag.className = 'badge-progress-tag';
+    // A stored date that will not parse falls back to the plain unlocked tag.
+    // The badge was still earned, and "Earned " trailing into nothing would
+    // read as a bug in the thing being celebrated.
+    const earnedOn = formatMemoryDate(date);
+    tag.textContent = earnedOn ? t.eventsCheckInEarnedOn.replace('{date}', earnedOn) : t.unlockedTag;
+
+    const info = document.createElement('div');
+    info.className = 'badge-info';
+    info.append(title, desc, tag);
+
+    card.append(icon, info);
+    return card;
 }
 
 function openDetailModal(item) {

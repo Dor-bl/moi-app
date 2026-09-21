@@ -310,11 +310,95 @@ test('the shipped Bevrijdingsfestival entry has a usable check-in and badge', ()
         'eventsCheckIn', 'eventsCheckInBusy', 'eventsCheckInDone', 'eventsCheckInHint',
         'eventsCheckInTooFar', 'eventsCheckInImprecise', 'eventsCheckInDenied',
         'eventsCheckInUnavailable', 'eventsCheckInTimeout', 'eventsCheckInClosed',
-        'eventsCheckInSaveFailed'
+        'eventsCheckInSaveFailed', 'eventsCheckInEarnedOn'
     ];
     for (const lang of ['en', 'nl']) {
         for (const key of keys) {
             assert.equal(typeof UI_TRANSLATIONS[lang][key], 'string', `${lang}.${key} missing`);
         }
     }
+});
+
+// The bug these cover: a check-in used to be readable in exactly one place, the
+// event's own card, and renderEvents() only draws events that have not ended. So
+// a badge earned at a festival became unreachable the morning after while still
+// sitting in storage. earnedEventBadges is what lets the badges grid show it.
+
+const bommen = {
+    id: 'bommen-berend',
+    date: '2026-08-28',
+    title: { en: 'Bommen Berend', nl: 'Bommen Berend' },
+    checkIn: { coords: GROTE_MARKT, radius: 600 },
+    badge: {
+        icon: '🎆',
+        title: { en: 'Berend Beater', nl: 'Berend Verslager' },
+        desc: { en: 'Was there', nl: 'Was erbij' }
+    }
+};
+
+function withEarned(keys) {
+    return loadCheckInModule({
+        seed: {
+            moiCheckEvents: JSON.stringify(
+                Object.fromEntries(keys.map(([key, date]) => [key, { date }]))
+            )
+        }
+    });
+}
+
+test('an earned badge is still reachable long after the event has ended', () => {
+    // The whole point. Nothing here consults the calendar, so an occurrence that
+    // getUpcomingEvents would have dropped years ago still yields its badge.
+    const { earnedEventBadges } = withEarned([['test-fest@2020-05-05', '2020-05-05T14:00:00.000Z']]);
+
+    const earned = earnedEventBadges([festival]).map(plain);
+    assert.equal(earned.length, 1);
+    assert.equal(earned[0].badge.title.en, 'Badge');
+    assert.equal(earned[0].date, '2020-05-05T14:00:00.000Z');
+});
+
+test('earned badges come back newest first', () => {
+    const { earnedEventBadges } = withEarned([
+        ['test-fest@2026-05-05', '2026-05-05T14:00:00.000Z'],
+        ['bommen-berend@2026-08-28', '2026-08-28T19:00:00.000Z']
+    ]);
+
+    const icons = earnedEventBadges([festival, bommen]).map(plain).map(e => e.badge.icon);
+    assert.deepEqual(icons, ['🎆', '🕊️'], 'August should sort ahead of May');
+});
+
+test('a check-in whose event has left EVENTS is skipped, not half-rendered', () => {
+    // A one-off dropped by a data refresh, or a temporary test entry. There is no
+    // icon, title or description to draw. The key stays in storage regardless.
+    const { earnedEventBadges, localStorage } = withEarned([
+        ['test-fest@2026-05-05', '2026-05-05T14:00:00.000Z'],
+        ['long-gone@2026-01-01', '2026-01-01T12:00:00.000Z']
+    ]);
+
+    const earned = earnedEventBadges([festival]).map(plain);
+    assert.equal(earned.length, 1);
+    assert.equal(earned[0].badge.icon, '🕊️');
+    assert.match(localStorage.getItem('moiCheckEvents'), /long-gone/, 'the key must not be dropped');
+});
+
+test('an event with no badge block yields nothing to show', () => {
+    const { earnedEventBadges } = withEarned([['plain@2026-05-05', '2026-05-05T14:00:00.000Z']]);
+    assert.deepEqual(earnedEventBadges([noCheckIn]).map(plain), []);
+});
+
+test('nothing earned means an empty list rather than a throw', () => {
+    const { earnedEventBadges } = loadCheckInModule();
+    assert.deepEqual(earnedEventBadges([festival]).map(plain), []);
+});
+
+test('a stored record missing its date still reports the badge', () => {
+    // localStorage is editable by hand. The badge was earned either way, so the
+    // grid falls back to its plain unlocked tag rather than dropping the card.
+    const { earnedEventBadges } = loadCheckInModule({
+        seed: { moiCheckEvents: JSON.stringify({ 'test-fest@2026-05-05': null }) }
+    });
+
+    const earned = earnedEventBadges([festival]).map(plain);
+    assert.equal(earned.length, 1);
+    assert.equal(earned[0].date, '');
 });

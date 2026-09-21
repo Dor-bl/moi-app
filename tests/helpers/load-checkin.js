@@ -60,6 +60,7 @@ export function loadCheckInModule({ seed = {}, lang = 'en', failWrites = false }
             distanceInMetres,
             judgeCheckIn,
             hasCheckedIn,
+            earnedEventBadges,
             recordCheckIn,
             runCheckIn,
             setGeolocation: impl => { navigator.geolocation = impl; }

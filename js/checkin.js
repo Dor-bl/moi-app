@@ -1,5 +1,6 @@
 // Check-In Module - Shared Global Exports: eventCheckIns, checkInKeyFor, canCheckIn,
-// distanceInMetres, judgeCheckIn, hasCheckedIn, recordCheckIn, readPosition, runCheckIn
+// distanceInMetres, judgeCheckIn, hasCheckedIn, earnedEventBadges, recordCheckIn,
+// readPosition, runCheckIn
 // Dependencies: Expects UI_TRANSLATIONS, currentLang, isHappeningNow (js/events.js),
 // showBadgeToast (js/utils.js), navigator.geolocation.
 //
@@ -40,6 +41,42 @@ function checkInKeyFor(event) {
 // prototype on read, so membership is asked via hasOwnProperty.
 function hasCheckedIn(event) {
     return Object.prototype.hasOwnProperty.call(eventCheckIns, checkInKeyFor(event));
+}
+
+// What the badges grid asks for: every badge actually earned, newest first.
+//
+// This exists because a check-in was previously visible in exactly one place —
+// its own event's card — and renderEvents() only draws events that have not
+// ended. So a badge earned at a festival became unreachable the morning after,
+// while sitting in storage forever. Earning something you can never look at
+// again is a worse deal than the honour-system checkboxes, which at least stay
+// in the grid.
+//
+// Resolved by id from the stored key rather than by scanning occurrences: the
+// key names the occurrence it was earned at, and an annual event is one row in
+// EVENTS that resolves to a different date every year, so the 2026 badge would
+// stop matching the moment 2027's occurrence is the current one.
+function earnedEventBadges(events) {
+    return Object.keys(eventCheckIns)
+        .map(key => {
+            // Last '@' rather than the first, so an id containing one still splits
+            // at the separator checkInKeyFor actually wrote.
+            const id = key.slice(0, key.lastIndexOf('@'));
+            const event = events.find(candidate => candidate.id === id);
+
+            // The event has left EVENTS since the badge was earned — a one-off
+            // dropped by a data refresh, or a temporary entry. There is no icon,
+            // title or description to draw, and a card missing all three is worse
+            // than no card. The key stays in storage untouched, so if the event
+            // ever returns the badge returns with it.
+            if (!event || !event.badge) return null;
+
+            const record = eventCheckIns[key];
+            return { badge: event.badge, date: record ? record.date : '' };
+        })
+        .filter(Boolean)
+        // ISO strings, so lexicographic ordering is chronological. Newest first.
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
 
 function recordCheckIn(event) {
