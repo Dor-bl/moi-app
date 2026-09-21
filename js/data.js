@@ -434,7 +434,7 @@ const EVENTS = [
         // The centre is deliberately a nearby street corner rather than the
         // tester's own address: a revert drops this entry but not the git
         // history, and a 600m circle does the job either way.
-        checkIn: { coords: [53.1676, 6.6207], radius: 600 },
+        checkIn: { coords: [53.1755, 6.5912], radius: 600 },
         badge: {
             icon: '🧪',
             title: { en: 'Test Check-In', nl: 'Testincheck' },
