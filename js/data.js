@@ -519,6 +519,7 @@ const EVENTS = [
         id: 'magisch-samhain-2026',
         date: '2026-10-31',
         endDate: '2026-11-01',
+        kidFriendly: true,
         title: { en: 'Magisch Samhain (Bourtange)', nl: 'Magisch Samhain (Bourtange)' },
         location: { en: 'Vesting Bourtange, Westerwolde', nl: 'Vesting Bourtange, Westerwolde' },
         tip: { en: 'The star-shaped fortress fills with ghosts, time travellers, pirates and fire shows for the Celtic new year, which is where Halloween actually comes from. Stilt walkers between the ramparts, fortune tellers, a wishing tree, and a crowd that mostly turns up in costume. It is an hour from the city by car and worth the trip — but check the ticket page first, because earlier editions sold out on the day.', nl: 'De stervormige vesting loopt vol met geesten, tijdreizigers, piraten en vuurshows voor het Keltische nieuwjaar, waar Halloween eigenlijk vandaan komt. Steltlopers tussen de wallen, waarzeggers, een wensboom en publiek dat grotendeels verkleed komt. Een uur rijden vanuit de stad en dat dubbel en dwars waard — kijk wel eerst op de ticketpagina, want eerdere edities zaten op de dag zelf vol.' },
