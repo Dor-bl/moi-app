@@ -20,29 +20,59 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const appSource = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8');
 
-// The one region the rest of the repository promises. privacy.html section 3
-// names Ireland, and the `Verify the pinned region is the region that runs`
-// step in .github/workflows/deploy-functions.yml asserts `eu-west-1` against
-// the live function. Three places have to agree, and this is the only one that
-// runs on a change to app.js.
+const appSource = read('app.js');
+const workflowSource = read('.github', 'workflows', 'deploy-functions.yml');
+const privacySource = read('privacy.html');
+
+// One fact, spelled three ways in three files: the region app.js pins, the
+// region the deploy workflow asserts against the live function, and the country
+// privacy.html section 3 names to visitors. Two of them can drift silently —
+// the workflow does not run on front-end changes, and nobody diffs a policy
+// against a constant — so each is checked here against the same pair of values.
 //
-// An earlier version of this test accepted any EU region. That was too loose:
-// moving the pin to Paris would have passed here while section 3 still said
-// Ireland and the workflow — which does not run on front-end changes — still
-// asserted eu-west-1. Changing region is a legitimate thing to want; it just
-// has to be done in all three places at once, which is what this failing makes
-// you do.
+// An earlier version accepted any EU region and read only app.js. Both were too
+// loose: moving the pin to Paris passed, and so did editing the policy or the
+// workflow to disagree with it. Changing region is a legitimate thing to want;
+// it just has to happen in all three files at once, which is what these
+// failures make you do.
 const PINNED_REGION = 'eu-west-1';
+const PINNED_COUNTRY = 'Ireland';
 
-test('the contact form pins the Edge Function to the region the policy names', () => {
+test('app.js pins the Edge Function to the agreed region', () => {
     const declared = appSource.match(/const CONTACT_FUNCTION_REGION = '([a-z0-9-]+)'/);
     assert.ok(declared, 'CONTACT_FUNCTION_REGION is not declared in app.js');
     assert.equal(
         declared[1],
         PINNED_REGION,
-        `CONTACT_FUNCTION_REGION is "${declared[1]}". privacy.html section 3 tells visitors contact submissions are processed in Ireland (${PINNED_REGION}), and deploy-functions.yml asserts that against the live function. Change all three together or not at all`
+        `CONTACT_FUNCTION_REGION is "${declared[1]}". privacy.html section 3 tells visitors contact submissions are processed in ${PINNED_COUNTRY} (${PINNED_REGION}), and deploy-functions.yml asserts that against the live function. Change all three together or not at all`
+    );
+});
+
+test('the deploy workflow verifies the same region against the live function', () => {
+    const expected = workflowSource.match(/^\s*expected='([a-z0-9-]+)'$/m);
+    assert.ok(
+        expected,
+        "deploy-functions.yml no longer declares `expected='<region>'`. That is the value the live x-sb-edge-region check compares against; if the step was renamed or rewritten, point this test at the new shape rather than deleting it"
+    );
+    assert.equal(
+        expected[1],
+        PINNED_REGION,
+        `deploy-functions.yml checks the live function against "${expected[1]}" while app.js pins "${PINNED_REGION}". One of them is wrong, and the live check is the one visitors' data actually follows`
+    );
+});
+
+test('privacy.html tells visitors the country that region is in', () => {
+    const section = privacySource.match(/<h2>3\. Where your data is processed<\/h2>([\s\S]*?)<\/section>/);
+    assert.ok(
+        section,
+        'privacy.html no longer has a section 3 headed "Where your data is processed". The disclosure is the point of the pin; if it moved, point this test at where it went'
+    );
+    assert.match(
+        section[1],
+        new RegExp(PINNED_COUNTRY),
+        `privacy.html section 3 does not mention ${PINNED_COUNTRY}, which is where ${PINNED_REGION} is. Either the pin moved and the policy was not updated, or the policy was reworded into saying something the code does not do`
     );
 });
 
