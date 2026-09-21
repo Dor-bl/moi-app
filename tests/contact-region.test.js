@@ -25,7 +25,14 @@ const appSource = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 // Regions inside the EU/EEA, by AWS name. A pin to anything outside this list
 // is not a failed test because the pin broke — it is one because privacy.html
 // would need rewriting first.
-const EU_REGIONS = new Set(['eu-west-1', 'eu-west-2', 'eu-west-3', 'eu-central-1', 'eu-central-2', 'eu-north-1', 'eu-south-1', 'eu-south-2']);
+//
+// Two AWS regions carry an `eu-` prefix and are not in the EU/EEA:
+// `eu-west-2` is London and `eu-central-2` is Zurich. Both are third countries
+// under Chapter V — each currently holds an adequacy decision, which is a
+// different legal footing from "in the EU" and one the Commission can let
+// lapse. They are left out deliberately; re-adding either means rewriting
+// section 3 first, not widening this list.
+const EU_REGIONS = new Set(['eu-west-1', 'eu-west-3', 'eu-central-1', 'eu-north-1', 'eu-south-1', 'eu-south-2']);
 
 test('the contact form pins the Edge Function to an EU region', () => {
     const declared = appSource.match(/const CONTACT_FUNCTION_REGION = '([a-z0-9-]+)'/);
