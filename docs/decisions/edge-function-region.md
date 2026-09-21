@@ -95,13 +95,24 @@ site and the analytics, unpkg serves Leaflet, OpenStreetMap serves the tiles.
 That is why the disclosure #32 asked for went into `privacy.html` section 3 **as well as**
 the pin, rather than instead of it. The section states where data is stored (Ireland), where
 contact submissions are processed (Ireland, by this decision), and what leaves the EU anyway.
-It draws a line the first draft did not, and the distinction is the honest part: Supabase,
-Resend, Cloudflare, Google and Vercel process on our behalf, so their published DPAs — the
-Commission's Standard Contractual Clauses, plus the EU–U.S. Data Privacy Framework where the
-provider is certified — are what covers those transfers. unpkg and OpenStreetMap are not
-ours. The browser fetches from them directly, we hold no contract with either, and the
-policy says so rather than implying safeguards we are in no position to promise. #32's
-acceptance criteria wanted both halves; a pinned function alone would have satisfied
+It draws two lines the first draft did not, and they are the honest part.
+
+Supabase, Resend, Cloudflare and Vercel process on our behalf under contract, so their
+published DPAs — the Commission's Standard Contractual Clauses, plus the EU–U.S. Data
+Privacy Framework where the provider is certified — are what covers those transfers.
+
+unpkg and OpenStreetMap are not ours. The browser fetches from them directly, we hold no
+contract with either, and the policy says so rather than implying safeguards we are in no
+position to promise.
+
+**Google is deliberately in neither group**, which is the distinction most easily lost in a
+later edit. The mailbox paragraph says what is certain — the message comes to rest on
+Google's infrastructure in the United States — and stops there, because which of Google's
+terms govern `hallo@moicheck.nl` is the open follow-up below. Do not fold Google back into
+the SCC/DPF sentence without settling that first; a privacy policy is the wrong place to
+round an open question up to a safeguard.
+
+#32's acceptance criteria wanted both halves; a pinned function alone would have satisfied
 neither.
 
 ## Provenance
@@ -114,7 +125,7 @@ neither.
 | A pinned region is not re-routed during an outage | Supabase documentation, regional invocation |
 | `x-sb-edge-region` reports the region an invocation ran in | Supabase documentation, regional invocation |
 | Resend processes in the United States; EEA transfers under the SCCs, plus DPF participation | Resend's published DPA and GDPR page |
-| Google's SCCs and its adoption of the EU–U.S. DPF | Google's published data-transfer frameworks page |
+| Google's SCCs and its adoption of the EU–U.S. DPF | Google's published data-transfer frameworks page. Note what this row does **not** establish: those terms attach to Google's business services, and whether `hallo@moicheck.nl` is one is the open follow-up below. `privacy.html` claims nothing from this row |
 | The mail path itself | `supabase/functions/contact/index.ts` and `privacy.html` §2 |
 
 The region claims started as documentation rather than observation, and that gap mattered
