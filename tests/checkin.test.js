@@ -54,11 +54,6 @@ test('a precise fix inside the radius passes and one outside it does not', () =>
     );
 });
 
-// TEMPORARY (phone test) — these two tests assert ok/reason rather than the whole
-// verdict, because the throwaway diagnostic in judgeCheckIn adds an `accuracy`
-// field. REVERT WITH THE TEST EVENT: the strict shape check is the version that
-// should ship, since it is what stops a coordinate creeping into the verdict.
-
 // The failure this guards against: a desktop browser geolocating off wifi or IP
 // reports the middle of Groningen with a multi-kilometre error bound. The point
 // lands inside the radius, so a distance-only check would hand the badge to
@@ -66,27 +61,32 @@ test('a precise fix inside the radius passes and one outside it does not', () =>
 test('a fix vaguer than the radius is refused rather than accepted', () => {
     const { judgeCheckIn } = loadCheckInModule();
 
-    const vague = judgeCheckIn(festival, positionAt(53.2026, 6.5540, 20000));
-    assert.equal(vague.ok, false, 'dead centre, but a 20km error bound answers nothing');
-    assert.equal(vague.reason, 'imprecise');
+    assert.deepEqual(
+        plain(judgeCheckIn(festival, positionAt(53.2026, 6.5540, 20000))),
+        { ok: false, reason: 'imprecise' },
+        'dead centre, but a 20km error bound answers nothing'
+    );
 
     // The boundary: an error bound equal to the radius is still usable.
     assert.deepEqual(
         plain(judgeCheckIn(festival, positionAt(53.2026, 6.5540, 600))),
         { ok: true }
     );
-    const justOver = judgeCheckIn(festival, positionAt(53.2026, 6.5540, 601));
-    assert.equal(justOver.ok, false);
-    assert.equal(justOver.reason, 'imprecise');
+    assert.deepEqual(
+        plain(judgeCheckIn(festival, positionAt(53.2026, 6.5540, 601))),
+        { ok: false, reason: 'imprecise' }
+    );
 });
 
 test('a missing or non-numeric accuracy counts as imprecise, not as perfect', () => {
     const { judgeCheckIn } = loadCheckInModule();
 
     for (const accuracy of [undefined, null, NaN, Infinity]) {
-        const verdict = judgeCheckIn(festival, positionAt(53.2026, 6.5540, accuracy));
-        assert.equal(verdict.ok, false, `accuracy ${String(accuracy)} must not pass`);
-        assert.equal(verdict.reason, 'imprecise');
+        assert.deepEqual(
+            plain(judgeCheckIn(festival, positionAt(53.2026, 6.5540, accuracy))),
+            { ok: false, reason: 'imprecise' },
+            `accuracy ${String(accuracy)} must not pass`
+        );
     }
 });
 

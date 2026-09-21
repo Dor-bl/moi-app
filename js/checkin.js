@@ -108,13 +108,7 @@ function judgeCheckIn(event, position) {
     const { latitude, longitude, accuracy } = position.coords;
 
     if (!Number.isFinite(accuracy) || accuracy > radius) {
-        // TEMPORARY (phone test) — the accuracy travels with the verdict so the
-        // UI can show the measured figure. REVERT WITH THE TEST EVENT: it makes
-        // the verdict carry a location-derived number, which contradicts the
-        // "never a distance and never a position" sentence in
-        // docs/decisions/consent-exemption-analysis.md. Fine for a throwaway
-        // diagnostic, not fine to ship.
-        return { ok: false, reason: 'imprecise', accuracy };
+        return { ok: false, reason: 'imprecise' };
     }
 
     const distance = distanceInMetres([latitude, longitude], target);
