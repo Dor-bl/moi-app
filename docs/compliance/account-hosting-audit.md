@@ -208,11 +208,16 @@ regional outage, so the form fails rather than moving, with `hallo@moicheck.nl` 
 fallback. The reasoning, including why the query parameter rather than the `x-region`
 header, is in [`docs/decisions/edge-function-region.md`](../decisions/edge-function-region.md).
 
-Two things that paragraph does not settle, both carried in that record: the pin is
-documentation-based and has not been confirmed against a live invocation via
-`x-sb-edge-region`, and pinning governs only the first hop — the message still leaves the EU
-for Resend, Cloudflare and the Gmail mailbox, which is what `privacy.html` section 3
-discloses.
+The pin is also checked against reality rather than taken on documentation: the
+`Verify the pinned region is the region that runs` step in
+`.github/workflows/deploy-functions.yml` invokes the live function and fails the deploy
+unless `x-sb-edge-region` reports `eu-west-1`. It runs on every function deploy, which is
+what makes the claim in section 3 a verified one rather than an intended one.
+
+What pinning still does not settle is the rest of the journey: it governs only the first
+hop, and the message then leaves the EU for Resend, Cloudflare and the Gmail mailbox. That
+is what `privacy.html` section 3 discloses, and the decision record carries the one piece
+still open — which of Google's terms govern that mailbox.
 
 ### `ams1` is not a Vercel region
 
@@ -313,8 +318,9 @@ rather than trusting this file — account state drifts, and this file does not.
       [#32](https://github.com/Dor-bl/moi-app/issues/32): pinned to `eu-west-1`, outage
       re-routing knowingly given up, disclosure written into `privacy.html` section 3. See
       [`docs/decisions/edge-function-region.md`](../decisions/edge-function-region.md), whose
-      own follow-ups carry what remains — confirming the pin against a live invocation, and
-      the mailbox's contractual terms.
+      own follow-ups carry what remains. The live confirmation is no longer among them: the
+      deploy workflow now asserts the region against the running function. The mailbox's
+      contractual terms are, and only the account owner can settle them.
 - [ ] **Article 30 record of processing** — still unwritten, tracked in
       [#87](https://github.com/Dor-bl/moi-app/issues/87), which designates
       `docs/compliance/processing-register.md`. This file is not a substitute and should not

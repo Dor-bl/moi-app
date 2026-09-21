@@ -63,16 +63,26 @@ test('the deploy workflow verifies the same region against the live function', (
     );
 });
 
-test('privacy.html tells visitors the country that region is in', () => {
+test('privacy.html tells visitors the country the contact form is processed in', () => {
     const section = privacySource.match(/<h2>3\. Where your data is processed<\/h2>([\s\S]*?)<\/section>/);
     assert.ok(
         section,
         'privacy.html no longer has a section 3 headed "Where your data is processed". The disclosure is the point of the pin; if it moved, point this test at where it went'
     );
+
+    // The contact paragraph specifically, not the section. Section 3 opens by
+    // saying the database is in Ireland, so a search across the whole section
+    // would still pass if this paragraph were reworded to say the form is
+    // processed somewhere else — the exact drift this is here to catch.
+    const paragraph = section[1].match(/<p><strong>The contact form\.<\/strong>([\s\S]*?)<\/p>/);
+    assert.ok(
+        paragraph,
+        'privacy.html section 3 no longer has a paragraph opening "The contact form." That is the sentence the pin exists to make true; if it was reworded, point this test at the new one'
+    );
     assert.match(
-        section[1],
+        paragraph[1],
         new RegExp(PINNED_COUNTRY),
-        `privacy.html section 3 does not mention ${PINNED_COUNTRY}, which is where ${PINNED_REGION} is. Either the pin moved and the policy was not updated, or the policy was reworded into saying something the code does not do`
+        `the contact-form paragraph in privacy.html section 3 does not mention ${PINNED_COUNTRY}, which is where ${PINNED_REGION} is. Either the pin moved and the policy was not updated, or the policy was reworded into promising something the code does not do`
     );
 });
 
