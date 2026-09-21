@@ -923,7 +923,7 @@ async function handleCheckInClick(button) {
     }
 
     // Deliberately not `block` and `button`: see showCheckInFailure.
-    showCheckInFailure(key, verdict.reason);
+    showCheckInFailure(key, verdict);
 }
 
 // Nothing captured before the await is safe to write to afterwards. A render the
@@ -941,7 +941,7 @@ async function handleCheckInClick(button) {
 //
 // Matched by walking the buttons rather than with an attribute selector, so there
 // is no question of escaping a key that contains an "@".
-function showCheckInFailure(key, reason) {
+function showCheckInFailure(key, verdict) {
     const t = UI_TRANSLATIONS[currentLang];
     const button = [...eventsContainer.querySelectorAll('.event-checkin-btn')]
         .find(candidate => candidate.dataset.checkinKey === key);
@@ -952,8 +952,21 @@ function showCheckInFailure(key, reason) {
 
     const block = button.closest('.event-checkin');
     block.classList.add('failed');
-    block.querySelector('.event-checkin-status').textContent =
-        t[CHECKIN_MESSAGE_KEYS[reason] || 'eventsCheckInUnavailable'];
+
+    let message = t[CHECKIN_MESSAGE_KEYS[verdict.reason] || 'eventsCheckInUnavailable'];
+
+    // TEMPORARY (phone test) — REVERT WITH THE TEST EVENT.
+    // Two rounds of "not precise enough" with no number is guessing. A real
+    // device reporting ±20m and one reporting ±2km need opposite responses
+    // (keep the radius / raise it), and nothing on a phone shows the figure.
+    if (Number.isFinite(verdict.accuracy)) {
+        const shown = verdict.accuracy >= 1000
+            ? `${(verdict.accuracy / 1000).toFixed(1)} km`
+            : `${Math.round(verdict.accuracy)} m`;
+        message += ` [measured: ±${shown}]`;
+    }
+
+    block.querySelector('.event-checkin-status').textContent = message;
 
     // Disabling a focused button blurs it, so someone who pressed this with the
     // keyboard has been sitting on <body> ever since the tap — and re-enabling
