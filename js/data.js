@@ -423,14 +423,18 @@ const EVENTS = [
             en: '🧪 Check-in test (temporary, not a real event)',
             nl: '🧪 Inchecktest (tijdelijk, geen echt evenement)'
         },
-        location: { en: 'Grote Markt', nl: 'Grote Markt' },
+        location: { en: 'Haren', nl: 'Haren' },
         tip: {
             en: 'Not a real event. It exists so the check-in button can be tested on a phone against a real GPS fix, and will be removed before this branch merges.',
             nl: 'Geen echt evenement. Dit staat er zodat de incheckknop op een telefoon getest kan worden met een echte GPS-meting, en wordt verwijderd voordat deze branch gemerged wordt.'
         },
         // Same 600m radius as the real entry, so the test stresses the actual
         // accuracy gate rather than a lenient stand-in.
-        checkIn: { coords: [53.2194, 6.5665], radius: 600 },
+        //
+        // The centre is deliberately a nearby street corner rather than the
+        // tester's own address: a revert drops this entry but not the git
+        // history, and a 600m circle does the job either way.
+        checkIn: { coords: [53.1755, 6.5912], radius: 600 },
         badge: {
             icon: '🧪',
             title: { en: 'Test Check-In', nl: 'Testincheck' },
