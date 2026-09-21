@@ -84,8 +84,9 @@ Pinning settles where the message is *handled*. It does not follow the message.
 visitor
   -> Supabase Edge Function   eu-west-1 (Ireland), pinned here
   -> Resend                   United States
-  -> Cloudflare Email Routing United States company, global network
-  -> hallo@moicheck.nl        Gmail, Google, United States
+  -> Cloudflare Email Routing United States company, global network. Forwards, never stores:
+                              hallo@moicheck.nl is a routing address, not a mailbox
+  -> a Google mailbox         United States. Where the message comes to rest
 ```
 
 Past the first hop the message leaves the EU, and it comes to rest in a US-hosted mailbox.
@@ -154,7 +155,10 @@ mail and costs no visitor their allowance.
       the workflow changes, so it re-confirms the platform's behaviour on every function
       deploy, not on every front-end change. `tests/contact-region.test.js` covers that
       side.
-- [ ] **The mailbox's own terms.** Whether `hallo@moicheck.nl` is a Workspace mailbox or a
+- [ ] **The mailbox's own terms.** The owner confirmed (21 September) that Cloudflare Email
+      Routing forwards `hallo@moicheck.nl` to a Google mailbox, so the resting place is
+      settled and §2 now says so without implying the address is itself a Google account.
+      What is still open is the account type: whether that destination is Workspace or a
       consumer Gmail account — the latter has no controller DPA — is not established
       anywhere in this repository, and only the account owner can settle it. Section 3 no
       longer waits on that answer: rather than assert a safeguard for the mailbox, it says
