@@ -92,6 +92,13 @@ function distanceInMetres([lat1, lon1], [lat2, lon2]) {
 // radius first is what makes "too far" a real answer — if the fix cannot resolve
 // the radius, there is no question to answer and saying so is the honest outcome.
 //
+// In practice the commonest way to land here is not a weak signal but a deliberate
+// one: iOS and Android both let a site have "approximate" location, which is a
+// grid of kilometres and can never resolve a radius in the hundreds of metres.
+// That is why eventsCheckInImprecise names precise location first and the outdoors
+// hint second — found by testing on a real phone, where the old copy sent the
+// tester outside to fix something that going outside cannot fix.
+//
 // Deliberately not doing anything cleverer than this. The check is spoofable in
 // ten seconds with devtools, exactly like the honour-system checkboxes on the
 // bucket list, and it is meant as a nudge rather than proof. Anti-spoofing work
