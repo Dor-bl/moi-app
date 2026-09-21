@@ -875,25 +875,26 @@ function findCheckInEvent(key) {
 }
 
 async function handleCheckInClick(button) {
-    const t = UI_TRANSLATIONS[currentLang];
+    const key = button.dataset.checkinKey;
     const block = button.closest('.event-checkin');
-    const status = block.querySelector('.event-checkin-status');
 
-    const event = findCheckInEvent(button.dataset.checkinKey);
+    const event = findCheckInEvent(key);
     if (!event) {
         // The window closed between the render and the tap — the card is at most
         // a minute stale, and the next tick drops it. Its own message, because
-        // "could not work out a location" would be a plain lie here.
+        // "could not work out a location" would be a plain lie here. Nothing has
+        // been awaited yet, so these are still the nodes on screen.
         block.classList.add('failed');
-        status.textContent = t.eventsCheckInClosed;
+        block.querySelector('.event-checkin-status').textContent =
+            UI_TRANSLATIONS[currentLang].eventsCheckInClosed;
         button.disabled = true;
         return;
     }
 
     button.disabled = true;
-    button.textContent = t.eventsCheckInBusy;
+    button.textContent = UI_TRANSLATIONS[currentLang].eventsCheckInBusy;
     block.classList.remove('failed');
-    pendingCheckInKey = button.dataset.checkinKey;
+    pendingCheckInKey = key;
 
     let verdict;
     try {
@@ -921,10 +922,48 @@ async function handleCheckInClick(button) {
         return;
     }
 
+    // Deliberately not `block` and `button`: see showCheckInFailure.
+    showCheckInFailure(key, verdict.reason);
+}
+
+// Nothing captured before the await is safe to write to afterwards. A render the
+// user triggered mid-request — language, filter, view — replaces the card, and
+// those nodes are then detached: the verdict would land somewhere nobody can see
+// while the card actually on screen sits disabled on "Checking…" with no message
+// and no way to retry. pendingCheckInKey is already cleared by then, so nothing
+// would ever free it.
+//
+// So the live button is found again by its key and updated in place. In place
+// rather than via renderEvents() because a re-render moves keyboard focus off the
+// button the user just pressed, and this is the path where they most need to stay
+// on it. UI_TRANSLATIONS is re-read for the same reason the nodes are: the
+// language may have changed while the fix was in flight.
+//
+// Matched by walking the buttons rather than with an attribute selector, so there
+// is no question of escaping a key that contains an "@".
+function showCheckInFailure(key, reason) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const button = [...eventsContainer.querySelectorAll('.event-checkin-btn')]
+        .find(candidate => candidate.dataset.checkinKey === key);
+
+    // The card is off screen entirely — another view, or a filter that excludes
+    // it. There is nobody to tell, and the next render rebuilds it enabled.
+    if (!button) return;
+
+    const block = button.closest('.event-checkin');
     block.classList.add('failed');
-    status.textContent = t[CHECKIN_MESSAGE_KEYS[verdict.reason] || 'eventsCheckInUnavailable'];
+    block.querySelector('.event-checkin-status').textContent =
+        t[CHECKIN_MESSAGE_KEYS[reason] || 'eventsCheckInUnavailable'];
+
+    // Disabling a focused button blurs it, so someone who pressed this with the
+    // keyboard has been sitting on <body> ever since the tap — and re-enabling
+    // does not bring them back. Restore them, but only from <body>: if they
+    // tabbed elsewhere while waiting, stealing focus back would be worse than
+    // leaving it.
+    const refocus = document.activeElement === document.body;
     button.disabled = false;
     button.textContent = t.eventsCheckIn;
+    if (refocus) button.focus();
 }
 
 function renderEvents() {
