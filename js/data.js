@@ -503,6 +503,27 @@ const EVENTS = [
         location: { en: 'A-kerk, city centre', nl: 'A-kerk, binnenstad' },
         tip: { en: 'This 10th edition turns the atmospheric A-kerk into a three-day wine tasting, with 20+ exhibitors pouring 250+ wines from around the world, food pairings, and live music — Friday evening through Sunday afternoon. Book online in advance for a cheaper ticket than at the door.', nl: 'Dit tiende jaar verandert de sfeervolle A-kerk drie dagen lang in een wijnproeverij, met ruim 20 exposanten en 250+ wijnen uit de hele wereld, hapjes erbij en livemuziek — van vrijdagavond tot zondagmiddag. Koop je kaartje van tevoren online, dat is goedkoper dan aan de deur.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/440554054/wijnfestival-groningen-7'
+    },
+    {
+        id: 'pompoen-plukdagen-2026',
+        date: '2026-10-03',
+        endDate: '2026-10-04',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Pumpkin Picking Days', nl: 'Pompoen Plukdagen' },
+        location: { en: 'Nieuwlandse Akker, Huningaweg 19, Oostwold', nl: 'Nieuwlandse Akker, Huningaweg 19, Oostwold' },
+        tip: { en: 'Put your boots on and walk into the Oldambt clay to cut your own pumpkin, from giant Halloween ones to odd little decorative gourds. Around the field there is a market of local growers and makers, and activities for children as part of Oktober Kindermaand. Field and market are free — you pay only for what you carry home. Bring a crate: the drive back from Oostwold is not the moment to discover your bike basket is too small.', nl: 'Trek je laarzen aan en het Oldambtster land op om zelf je pompoen te plukken, van kolossale halloweenpompoenen tot rare kleine sierkalebassen. Rond het veld staat een markt met lokale telers en makers, en er zijn kinderactiviteiten in het kader van Oktober Kindermaand. Het veld en de markt zijn gratis — je betaalt alleen wat je meeneemt. Neem een kist mee: onderweg terug uit Oostwold is een te kleine fietstas een vervelende ontdekking.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4140262387/pompoen-plukdagen-4'
+    },
+    {
+        id: 'magisch-samhain-2026',
+        date: '2026-10-31',
+        endDate: '2026-11-01',
+        kidFriendly: true,
+        title: { en: 'Magisch Samhain (Bourtange)', nl: 'Magisch Samhain (Bourtange)' },
+        location: { en: 'Vesting Bourtange, Westerwolde', nl: 'Vesting Bourtange, Westerwolde' },
+        tip: { en: 'The star-shaped fortress fills with ghosts, time travellers, pirates and fire shows for the Celtic new year, which is where Halloween actually comes from. Stilt walkers between the ramparts, fortune tellers, a wishing tree, and a crowd that mostly turns up in costume. It is an hour from the city by car and worth the trip — but check the ticket page first, because earlier editions sold out on the day.', nl: 'De stervormige vesting loopt vol met geesten, tijdreizigers, piraten en vuurshows voor het Keltische nieuwjaar, waar Halloween eigenlijk vandaan komt. Steltlopers tussen de wallen, waarzeggers, een wensboom en publiek dat grotendeels verkleed komt. Een uur rijden vanuit de stad en dat dubbel en dwars waard — kijk wel eerst op de ticketpagina, want eerdere edities zaten op de dag zelf vol.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4161137856/magisch-samhain-1'
     }
 ];
 
