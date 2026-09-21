@@ -143,11 +143,15 @@ mail and costs no visitor their allowance.
       the workflow changes, so it re-confirms the platform's behaviour on every function
       deploy, not on every front-end change. `tests/contact-region.test.js` covers that
       side.
-- [ ] **The mailbox's own terms.** `privacy.html` §2 says Google "publishes a data
-      processing agreement", which is true of Google Workspace. Whether `hallo@moicheck.nl`
-      is a Workspace mailbox or a consumer Gmail account — the latter has no controller DPA
-      — is not established anywhere in this repository. It decides whether the section 3
-      wording holds for the inbox, which is where contact messages actually live.
+- [ ] **The mailbox's own terms.** Whether `hallo@moicheck.nl` is a Workspace mailbox or a
+      consumer Gmail account — the latter has no controller DPA — is not established
+      anywhere in this repository, and only the account owner can settle it. Section 3 no
+      longer waits on that answer: rather than assert a safeguard for the mailbox, it says
+      plainly that the message rests on Google's infrastructure in the US and that which
+      terms govern it is still being checked. §2's Google entry points at that gap instead
+      of implying it is closed. So the policy is accurate as it stands; confirming the
+      account type is what lets it say something stronger. Record the answer here, then
+      tighten both sections and their date.
 - [ ] **Per-provider transfer bases.** Section 3 cites the SCCs and the DPF generically. The
       Article 30 record in [#87](https://github.com/Dor-bl/moi-app/issues/87) is the right
       place to name, per provider, which mechanism applies and where its terms are published.

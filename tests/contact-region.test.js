@@ -4,7 +4,7 @@
 // invocation pins one, and the project's own eu-west-1 governs the database
 // only. privacy.html section 3 tells visitors the contact form is processed in
 // Ireland, so the pin in app.js is a compliance claim, not a performance
-// tweak: drop it and the policy silently stops being true.
+// tweak: drop it or move it and the policy silently stops being true.
 //
 // This reads app.js as text rather than running it. The file is a classic
 // script that wires itself to a live DOM on load — the vm harness the auth
@@ -22,24 +22,27 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const appSource = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 
-// Regions inside the EU/EEA, by AWS name. A pin to anything outside this list
-// is not a failed test because the pin broke — it is one because privacy.html
-// would need rewriting first.
+// The one region the rest of the repository promises. privacy.html section 3
+// names Ireland, and the `Verify the pinned region is the region that runs`
+// step in .github/workflows/deploy-functions.yml asserts `eu-west-1` against
+// the live function. Three places have to agree, and this is the only one that
+// runs on a change to app.js.
 //
-// Two AWS regions carry an `eu-` prefix and are not in the EU/EEA:
-// `eu-west-2` is London and `eu-central-2` is Zurich. Both are third countries
-// under Chapter V — each currently holds an adequacy decision, which is a
-// different legal footing from "in the EU" and one the Commission can let
-// lapse. They are left out deliberately; re-adding either means rewriting
-// section 3 first, not widening this list.
-const EU_REGIONS = new Set(['eu-west-1', 'eu-west-3', 'eu-central-1', 'eu-north-1', 'eu-south-1', 'eu-south-2']);
+// An earlier version of this test accepted any EU region. That was too loose:
+// moving the pin to Paris would have passed here while section 3 still said
+// Ireland and the workflow — which does not run on front-end changes — still
+// asserted eu-west-1. Changing region is a legitimate thing to want; it just
+// has to be done in all three places at once, which is what this failing makes
+// you do.
+const PINNED_REGION = 'eu-west-1';
 
-test('the contact form pins the Edge Function to an EU region', () => {
+test('the contact form pins the Edge Function to the region the policy names', () => {
     const declared = appSource.match(/const CONTACT_FUNCTION_REGION = '([a-z0-9-]+)'/);
     assert.ok(declared, 'CONTACT_FUNCTION_REGION is not declared in app.js');
-    assert.ok(
-        EU_REGIONS.has(declared[1]),
-        `CONTACT_FUNCTION_REGION is "${declared[1]}", which is not an EU region; privacy.html section 3 says contact submissions are processed in the EU`
+    assert.equal(
+        declared[1],
+        PINNED_REGION,
+        `CONTACT_FUNCTION_REGION is "${declared[1]}". privacy.html section 3 tells visitors contact submissions are processed in Ireland (${PINNED_REGION}), and deploy-functions.yml asserts that against the live function. Change all three together or not at all`
     );
 });
 
