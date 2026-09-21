@@ -107,9 +107,12 @@ contract with either, and the policy says so rather than implying safeguards we 
 position to promise.
 
 **Google is deliberately in neither group**, which is the distinction most easily lost in a
-later edit. The mailbox paragraph says what is certain — the message comes to rest on
-Google's infrastructure in the United States — and stops there, because which of Google's
-terms govern `hallo@moicheck.nl` is the open follow-up below. Do not fold Google back into
+later edit. The mailbox paragraph says what is certain — Cloudflare forwards, and the
+message comes to rest in the Google mailbox behind the address, in the United States — and
+stops there, because which of Google's terms govern *that mailbox* is the open follow-up
+below. Note the address is not the account: `hallo@moicheck.nl` is a Cloudflare routing
+address, so a claim about Google's terms has to be aimed at the destination it forwards
+into, never at the address itself. Do not fold Google back into
 the SCC/DPF sentence without settling that first; a privacy policy is the wrong place to
 round an open question up to a safeguard.
 
