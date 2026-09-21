@@ -402,44 +402,6 @@ const BUCKET_LIST = [
 //   an actual published start time. They narrow "Happening now" to those hours
 //   instead of the whole day. Leave both off rather than guessing a time.
 const EVENTS = [
-    // ---------------------------------------------------------------------
-    // TEMPORARY — phone test for the check-in flow. REMOVE BEFORE MERGE.
-    //
-    // The real check-in event (Bevrijdingsfestival) is months away, so the
-    // button cannot appear on a phone without faking the clock. This entry is
-    // dated now so the button is genuinely live on the preview deployment,
-    // letting a real device exercise a real GPS fix against the real 600m
-    // radius — the one thing the headless tests cannot tell us.
-    //
-    // Deliberately loud: the title says so in both languages, so nobody can
-    // mistake it for content. Delete this whole block (`git revert` of the
-    // commit that added it) once the phone test is done.
-    {
-        id: 'checkin-phone-test',
-        date: '2026-09-21',
-        endDate: '2026-09-28',
-        free: true,
-        title: {
-            en: '🧪 Check-in test (temporary, not a real event)',
-            nl: '🧪 Inchecktest (tijdelijk, geen echt evenement)'
-        },
-        location: { en: 'Grote Markt', nl: 'Grote Markt' },
-        tip: {
-            en: 'Not a real event. It exists so the check-in button can be tested on a phone against a real GPS fix, and will be removed before this branch merges.',
-            nl: 'Geen echt evenement. Dit staat er zodat de incheckknop op een telefoon getest kan worden met een echte GPS-meting, en wordt verwijderd voordat deze branch gemerged wordt.'
-        },
-        // Same 600m radius as the real entry, so the test stresses the actual
-        // accuracy gate rather than a lenient stand-in.
-        checkIn: { coords: [53.2194, 6.5665], radius: 600 },
-        badge: {
-            icon: '🧪',
-            title: { en: 'Test Check-In', nl: 'Testincheck' },
-            desc: {
-                en: 'Earned on a real device, against a real GPS fix. Temporary.',
-                nl: 'Verdiend op een echt apparaat, met een echte GPS-meting. Tijdelijk.'
-            }
-        }
-    },
     {
         id: 'koningsdag',
         date: '2026-04-27',
