@@ -179,7 +179,9 @@ fails if it disappears. The reasoning, and why the query parameter rather than t
 `x-region` header, is in
 [`docs/decisions/edge-function-region.md`](docs/decisions/edge-function-region.md). The
 region a live invocation actually ran in comes back in the `x-sb-edge-region` response
-header, which is the only way to confirm it end to end.
+header, which is the only way to confirm it end to end — `deploy-functions.yml` does exactly
+that after each deploy and fails if the answer is not `eu-west-1`, so the three places that
+have to agree (the pin, the policy, the platform) cannot drift apart quietly.
 
 **The function must be deployed before the client change reaches production**, or the
 form will POST to an endpoint that does not exist yet:

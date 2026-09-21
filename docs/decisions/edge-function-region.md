@@ -94,11 +94,15 @@ site and the analytics, unpkg serves Leaflet, OpenStreetMap serves the tiles.
 
 That is why the disclosure #32 asked for went into `privacy.html` section 3 **as well as**
 the pin, rather than instead of it. The section states where data is stored (Ireland), where
-contact submissions are processed (Ireland, by this decision), what leaves the EU anyway
-(the mail path, hosting, analytics, the map), and what covers it — the Commission's Standard
-Contractual Clauses in each provider's published DPA, and the EU–U.S. Data Privacy Framework
-for providers certified under it. #32's acceptance criteria wanted both halves; a pinned
-function alone would have satisfied neither.
+contact submissions are processed (Ireland, by this decision), and what leaves the EU anyway.
+It draws a line the first draft did not, and the distinction is the honest part: Supabase,
+Resend, Cloudflare, Google and Vercel process on our behalf, so their published DPAs — the
+Commission's Standard Contractual Clauses, plus the EU–U.S. Data Privacy Framework where the
+provider is certified — are what covers those transfers. unpkg and OpenStreetMap are not
+ours. The browser fetches from them directly, we hold no contract with either, and the
+policy says so rather than implying safeguards we are in no position to promise. #32's
+acceptance criteria wanted both halves; a pinned function alone would have satisfied
+neither.
 
 ## Provenance
 
@@ -113,18 +117,32 @@ function alone would have satisfied neither.
 | Google's SCCs and its adoption of the EU–U.S. DPF | Google's published data-transfer frameworks page |
 | The mail path itself | `supabase/functions/contact/index.ts` and `privacy.html` §2 |
 
-The region claims are documentation, not observation: **nothing here was confirmed against a
-live invocation.** A pin to a region name Supabase does not recognise is reported to
-re-route rather than fail ([supabase/supabase#34526](https://github.com/supabase/supabase/issues/34526)),
-so a typo would degrade silently back to nearest-user routing and look exactly like success.
-`tests/contact-region.test.js` catches an edit that drops or moves the parameter; it cannot
-catch a region name the platform rejects.
+The region claims started as documentation rather than observation, and that gap mattered
+more than it looks: a pin to a region name Supabase does not recognise is reported to
+re-route rather than fail
+([supabase/supabase#34526](https://github.com/supabase/supabase/issues/34526)), so a typo
+would degrade silently back to nearest-user routing and look exactly like success from our
+side.
+
+Two checks close it from opposite ends. `tests/contact-region.test.js` catches an edit that
+drops the parameter or points it outside the EU/EEA, but it only reads our own source — it
+cannot know what the platform did with the value. The `Verify the pinned region is the
+region that runs` step in `.github/workflows/deploy-functions.yml` asks the live function
+and fails the deploy unless `x-sb-edge-region` comes back `eu-west-1`. It invokes with a
+`text/plain` body, which the function refuses with a 415 at its first check — before any
+body is read, any rate-limit bucket is touched, or Resend is called — so the probe sends no
+mail and costs no visitor their allowance.
 
 ## Follow-up
 
-- [ ] **Confirm the pin against the live function.** Submit the form in production and read
-      `x-sb-edge-region` from the response, or curl the endpoint with the parameter. Until
-      someone does, `eu-west-1` is intended rather than verified. Record the answer here.
+- [x] **Confirm the pin against the live function.** Done by CI rather than by hand: the
+      deploy workflow invokes the live function with the parameter and fails unless
+      `x-sb-edge-region` reports `eu-west-1`. Merging the change that added that step runs
+      it, because the workflow triggers on edits to itself — so the first confirmation
+      arrives with the merge. Know its limit: it runs when `supabase/functions/contact/` or
+      the workflow changes, so it re-confirms the platform's behaviour on every function
+      deploy, not on every front-end change. `tests/contact-region.test.js` covers that
+      side.
 - [ ] **The mailbox's own terms.** `privacy.html` §2 says Google "publishes a data
       processing agreement", which is true of Google Workspace. Whether `hallo@moicheck.nl`
       is a Workspace mailbox or a consumer Gmail account — the latter has no controller DPA
