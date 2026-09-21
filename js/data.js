@@ -352,15 +352,6 @@ const BUCKET_LIST = [
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Go ice skating on a frozen diep or pond', nl: 'Schaats op een bevroren diep of vijver' },
         tip: { en: 'When it freezes hard enough, whole neighbourhoods lace up on the nearest canal or pond — a rare but treasured Groningen winter tradition.', nl: 'Als het hard genoeg vriest, bindt de hele buurt de schaatsen onder voor het dichtstbijzijnde diepje of vijvertje — een zeldzame maar geliefde Groningse wintertraditie.' }
-    },
-    {
-        id: '44',
-        coords: [53.4000, 6.4528],
-        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
-        title: { en: 'Go wadlopen (guided mudflat walking) from Pieterburen', nl: 'Ga wadlopen (begeleid) vanuit Pieterburen' },
-        tip: { en: "This is the real deal, not the postcard version of the Wad: a guide walks the group out onto the exposed seabed at low tide, an hour or two slogging through clay, sand, and tidal creeks with nothing but horizon and wading birds around you. Sign in at the shop on the Hoofdstraat before you start, and don't wear anything you're attached to — the mud keeps the odd shoe.", nl: 'Dit is de echte versie van het Wad, geen ansichtkaartuitje: een gids leidt de groep bij laag water de drooggevallen zeebodem op, een uur of twee ploeteren door klei, zand en geultjes, met alleen de horizon en wadvogels om je heen. Meld je vooraf bij de winkel aan de Hoofdstraat, en trek niets aan waar je aan gehecht bent — de modder houdt weleens een schoen.' },
-        url: 'https://wadlopen-pieterburen.nl/',
-        urlLabel: { en: 'Wadlopen Pieterburen Tours 🥾', nl: 'Wadlopen Pieterburen Tochten 🥾' }
     }
 ];
 
@@ -425,14 +416,6 @@ const EVENTS = [
         title: { en: 'Carbidschieten', nl: 'Carbidschieten' },
         location: { en: 'Villages around the province', nl: 'Dorpen in de provincie' },
         tip: { en: 'Milk churns, calcium carbide, and a very loud bang across the fields on New Year\'s Eve. A northern tradition you have to drive out of the city to see properly.', nl: 'Melkbussen, carbid en een enorme knal over het land op oudejaarsdag. Een noordelijke traditie waarvoor je de stad uit moet om het goed mee te maken.' }
-    },
-    {
-        id: 'wijnwandeling-haren-2026',
-        date: '2026-09-18',
-        title: { en: 'Wine Walk Haren', nl: 'Wijnwandeling Haren' },
-        location: { en: 'Eemke van der Veenpad, Haren centre', nl: 'Eemke van der Veenpad, centrum Haren' },
-        tip: { en: 'Runs 18:00–21:00: buy a glass at the Ervaar Haren food truck by the church, then walk between the shops and restaurants in Haren\'s centre tasting Spanish wines and snacks. It is the opening night of a new themed Friday series, not a standing yearly date, so this exact edition will not come back the same way next year.', nl: 'Van 18:00 tot 21:00 uur: koop een glas bij de foodtruck van Ervaar Haren voor de kerk en wandel langs de winkels en horeca in het centrum van Haren voor Spaanse wijnen en hapjes. Het is de aftrap van een nieuwe reeks thema-avonden, geen vaste jaarlijkse datum, dus deze editie komt volgend jaar niet zomaar op dezelfde manier terug.' },
-        url: 'https://www.ervaarharen.nl/event/wijnloop-haren/'
     }
 ];
 
@@ -547,7 +530,6 @@ const UI_TRANSLATIONS = {
         eventsHappeningNow: 'Happening now',
         eventsMoreInfo: 'More info',
         eventsEmpty: 'Nothing on the calendar right now. Check back soon — the Groningen year fills up fast.',
-        eventsCoverage: 'Events shown through {through}',
         courseLink: 'Free Dutch Course (UG) 🎓',
         signIn: 'Sign In',
         signOut: 'Sign Out',
@@ -643,7 +625,6 @@ const UI_TRANSLATIONS = {
         eventsHappeningNow: 'Nu bezig',
         eventsMoreInfo: 'Meer info',
         eventsEmpty: 'Nog niets op de agenda. Kom snel weer terug — het Groningse jaar loopt snel vol.',
-        eventsCoverage: 'Agenda toont evenementen tot en met {through}',
         courseLink: 'Gratis Cursus Nederlands (RUG) 🎓',
         signIn: 'Inloggen',
         signOut: 'Uitloggen',

@@ -10,8 +10,7 @@ const {
     resolveOccurrence,
     getUpcomingEvents,
     isHappeningNow,
-    formatEventDate,
-    formatEventsCoverageEnd
+    formatEventDate
 } = loadEventsModule();
 
 const singleDay = { id: 'single', date: '2026-09-18', title: { en: 'Single', nl: 'Single' } };
@@ -233,13 +232,7 @@ test('annual events sit on dates that exist every year', () => {
 
 test('both languages carry every events string', () => {
     for (const lang of ALLOWED_LANGS) {
-        for (const key of [
-            'viewEvents',
-            'eventsHappeningNow',
-            'eventsMoreInfo',
-            'eventsEmpty',
-            'eventsCoverage'
-        ]) {
+        for (const key of ['viewEvents', 'eventsHappeningNow', 'eventsMoreInfo', 'eventsEmpty']) {
             assert.ok(UI_TRANSLATIONS[lang][key], `${lang} is missing ${key}`);
         }
     }
@@ -247,23 +240,4 @@ test('both languages carry every events string', () => {
 
 test('an empty list is a supported state, not a crash', () => {
     assert.deepEqual(getUpcomingEvents([], '2026-09-12'), []);
-});
-
-test('coverage explicitly rejects an empty list', () => {
-    assert.throws(
-        () => formatEventsCoverageEnd([], 'en'),
-        /formatEventsCoverageEnd requires at least one event/
-    );
-});
-
-test('coverage reads through the latest span end, not just the last-sorted start', () => {
-    // A long-running festival starting first can still end after a short event
-    // that starts later - sorting by start date must not be mistaken for
-    // sorting by end date when picking the coverage's upper bound.
-    const longFestival = { id: 'long', date: '2026-09-20', endDate: '2026-11-30', title: { en: 'Long', nl: 'Long' } };
-    const laterShort = { id: 'later', date: '2026-10-05', title: { en: 'Later', nl: 'Later' } };
-
-    const upcoming = getUpcomingEvents([longFestival, laterShort], '2026-09-15');
-    assert.equal(formatEventsCoverageEnd(upcoming, 'en'), 'November 2026');
-    assert.equal(formatEventsCoverageEnd(upcoming, 'nl'), 'november 2026');
 });

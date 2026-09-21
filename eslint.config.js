@@ -45,7 +45,6 @@ export default [
         getUpcomingEvents: "readonly",
         isHappeningNow: "readonly",
         formatEventDate: "readonly",
-        formatEventsCoverageEnd: "readonly",
         renderEvents: "readonly",
         // Shared state variables
         SUPABASE_URL: "writable",

@@ -145,15 +145,18 @@ function renderFilterPills() {
         let countEl = pill.querySelector('.filter-pill-count');
 
         if (!labelEl || !countEl) {
+            pill.innerHTML = '';
+
             labelEl = document.createElement('span');
             labelEl.className = 'filter-pill-label';
+            pill.appendChild(labelEl);
 
             countEl = document.createElement('span');
             countEl.className = 'filter-pill-count';
             // The badge on its own reads as a bare number; the pill's aria-label below
             // says what it counts, so hide this from the accessibility tree.
             countEl.setAttribute('aria-hidden', 'true');
-            pill.replaceChildren(labelEl, countEl);
+            pill.appendChild(countEl);
         }
 
         if (labelEl.textContent !== label) {
@@ -664,9 +667,8 @@ function buildCompletedDivider(count, collapsed) {
 }
 
 function renderList() {
-    // ⚡ Bolt Performance Optimization:
-    // Use listContainer.replaceChildren(fragment) instead of listContainer.innerHTML = ''
-    // Impact: Avoids HTML parser overhead and intermediate empty DOM states.
+    listContainer.innerHTML = '';
+
     const filteredList = getFilteredItems(currentFilter);
 
     // ⚡ Bolt Performance Optimization:
@@ -699,7 +701,7 @@ function renderList() {
         }
     }
 
-    listContainer.replaceChildren(fragment);
+    listContainer.appendChild(fragment);
 
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
@@ -767,26 +769,21 @@ function buildEventCard(event, today) {
 function renderEvents() {
     const today = todayInGroningen();
     eventsRenderedOn = today;
+    eventsContainer.innerHTML = '';
 
     const upcoming = getUpcomingEvents(EVENTS, today);
-    const t = UI_TRANSLATIONS[currentLang];
 
     if (upcoming.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'events-empty';
-        empty.textContent = t.eventsEmpty;
-        eventsContainer.replaceChildren(empty);
+        empty.textContent = UI_TRANSLATIONS[currentLang].eventsEmpty;
+        eventsContainer.appendChild(empty);
         return;
     }
 
-    const freshness = document.createElement('p');
-    freshness.className = 'events-freshness';
-    freshness.textContent = t.eventsCoverage.replace('{through}', formatEventsCoverageEnd(upcoming, currentLang));
-
     const fragment = document.createDocumentFragment();
-    fragment.appendChild(freshness);
     upcoming.forEach(event => fragment.appendChild(buildEventCard(event, today)));
-    eventsContainer.replaceChildren(fragment);
+    eventsContainer.appendChild(fragment);
 }
 
 function updateProgress() {
@@ -877,12 +874,9 @@ function checkBadgeUnlocks(itemId, wasCompleted) {
 function renderBadges() {
     const badgesGrid = document.getElementById('badgesGrid');
     if (!badgesGrid) return;
-    const fragment = document.createDocumentFragment();
+    badgesGrid.innerHTML = '';
     const t = UI_TRANSLATIONS[currentLang];
 
-    // ⚡ Bolt Performance Optimization:
-    // Use replaceChildren(fragment) instead of innerHTML = '' + appendChild in a loop
-    // Impact: Avoids multiple reflows/repaints, HTML parser overhead, and intermediate empty DOM states.
     CATEGORY_BADGES.forEach(badge => {
         const categoryItems = itemsByCategory[badge.category] || [];
         const total = categoryItems.length;
@@ -899,9 +893,8 @@ function renderBadges() {
                 <span class="badge-progress-tag">${isUnlocked ? t.unlockedTag : `${completedCount} / ${total}`}</span>
             </div>
         `;
-        fragment.appendChild(card);
+        badgesGrid.appendChild(card);
     });
-    badgesGrid.replaceChildren(fragment);
 }
 
 function openDetailModal(item) {
@@ -917,15 +910,9 @@ function openDetailModal(item) {
     const modalLinkContainer = document.getElementById('modalLinkContainer');
     if (item.url) {
         const linkText = item.urlLabel ? item.urlLabel[currentLang] : (t.courseLink || 'Official Link ↗');
-        const linkEl = document.createElement('a');
-        linkEl.href = item.url;
-        linkEl.target = '_blank';
-        linkEl.rel = 'noopener noreferrer';
-        linkEl.className = 'item-link-btn';
-        linkEl.textContent = `${linkText} ↗`;
-        modalLinkContainer.replaceChildren(linkEl);
+        modalLinkContainer.innerHTML = `<a href="${item.url}" target="_blank" rel="noopener noreferrer" class="item-link-btn">${linkText} ↗</a>`;
     } else {
-        modalLinkContainer.replaceChildren();
+        modalLinkContainer.innerHTML = '';
     }
     
     if (isCompleted) {
@@ -991,9 +978,7 @@ function formatMemoryDate(value) {
 }
 
 function openProfileModal() {
-    // ⚡ Bolt Performance Optimization:
-    // Use replaceChildren() instead of completedList.innerHTML = ''
-    // Impact: More efficient DOM clearing and appending, bypassing HTML parser.
+    completedList.innerHTML = '';
     const t = UI_TRANSLATIONS[currentLang];
     
     renderBadges();
@@ -1013,14 +998,8 @@ function openProfileModal() {
     .map(wrapper => wrapper.merged);
     
     if (completedArr.length === 0) {
-        const p = document.createElement('p');
-        p.style.color = 'var(--text-light)';
-        p.style.textAlign = 'center';
-        p.style.padding = '2rem';
-        p.textContent = t.noMemories;
-        completedList.replaceChildren(p);
+        completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
     } else {
-        const fragment = document.createDocumentFragment();
         completedArr.forEach(item => {
             const div = document.createElement('div');
             div.className = 'completed-item';
@@ -1043,9 +1022,8 @@ function openProfileModal() {
                 div.appendChild(noteEl);
             }
 
-            fragment.appendChild(div);
+            completedList.appendChild(div);
         });
-        completedList.replaceChildren(fragment);
     }
     
     if (accountDangerZone) {
