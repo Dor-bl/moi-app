@@ -114,7 +114,15 @@ function judgeCheckIn(event, position) {
         // "never a distance and never a position" sentence in
         // docs/decisions/consent-exemption-analysis.md. Fine for a throwaway
         // diagnostic, not fine to ship.
-        return { ok: false, reason: 'imprecise', accuracy };
+        //
+        // altitude rides along for one reason: it says where the fix came from,
+        // which the accuracy figure alone does not. GNSS reports an altitude;
+        // a fix derived from wifi, cell towers or the IP address reports null.
+        // So a null altitude means the browser never consulted the satellites,
+        // and no amount of standing outdoors or re-tapping will change it — a
+        // different answer from "GPS tried and was vague", and the two need
+        // opposite fixes.
+        return { ok: false, reason: 'imprecise', accuracy, altitude: position.coords.altitude };
     }
 
     const distance = distanceInMetres([latitude, longitude], target);
