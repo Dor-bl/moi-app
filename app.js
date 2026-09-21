@@ -963,11 +963,7 @@ function showCheckInFailure(key, verdict) {
         const shown = verdict.accuracy >= 1000
             ? `${(verdict.accuracy / 1000).toFixed(1)} km`
             : `${Math.round(verdict.accuracy)} m`;
-        // The source matters more than the number. An identical figure on every
-        // tap is the signature of an IP lookup, not of a weak satellite fix, and
-        // a null altitude confirms GNSS was never consulted at all.
-        const source = Number.isFinite(verdict.altitude) ? 'gnss' : 'no-gnss';
-        message += ` [measured: ±${shown}, ${source}]`;
+        message += ` [measured: ±${shown}]`;
     }
 
     block.querySelector('.event-checkin-status').textContent = message;
