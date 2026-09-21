@@ -232,6 +232,28 @@ test('a failing badge toast does not undo a saved check-in', async () => {
     assert.ok(localStorage.getItem('moiCheckEvents'), 'the check-in is still stored');
 });
 
+// Deliberate, not an oversight: the window is judged when the user taps, not when
+// the satellite answers. A fix is allowed 15 seconds, and refusing one that lands
+// just after endTime would tell somebody standing in the festival that it has
+// finished. The direction that would be wrong — a callback resolving somewhere
+// else — is closed by the distance check instead. If this starts failing, that
+// decision was changed rather than a bug fixed.
+test('a fix that lands after the window closes still records the occurrence', async () => {
+    const { runCheckIn, setGeolocation, hasCheckedIn, canCheckIn } = loadCheckInModule();
+    const timed = { ...festival, startTime: '13:00', endTime: '23:00' };
+
+    // The window is shut by the time this resolves...
+    assert.equal(canCheckIn(timed, '2026-05-05', new Date('2026-05-05T21:10:00Z')), false);
+
+    setGeolocation({
+        getCurrentPosition: onSuccess => onSuccess(positionAt(53.2026, 6.5540, 20))
+    });
+
+    // ...and the badge is still recorded, because the tap is what claimed it.
+    assert.deepEqual(plain(await runCheckIn(timed)), { ok: true });
+    assert.equal(hasCheckedIn(timed), true);
+});
+
 test('a browser without geolocation fails cleanly instead of throwing', async () => {
     const { runCheckIn } = loadCheckInModule();
     assert.deepEqual(plain(await runCheckIn(festival)), { ok: false, reason: 'unavailable' });

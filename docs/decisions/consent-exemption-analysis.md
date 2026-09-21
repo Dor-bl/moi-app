@@ -75,8 +75,9 @@ degraded one (`eventsCheckInDenied`).
 
 What keeps this an Article 5(3) question and not also an Article 6 GDPR one is that the
 coordinate is never processed by us in any sense the GDPR would recognise: `judgeCheckIn()`
-compares it to the event's own coordinates in the page and returns a boolean; the position
-object is then unreachable. Nothing is sent to Supabase, to Vercel, or anywhere else —
+compares it to the event's own coordinates in the page and returns a verdict — `{ok: true}`,
+or `{ok: false}` with a reason naming which rule it failed, never a distance and never a
+position — after which the position object is unreachable. Nothing is sent to Supabase, to Vercel, or anywhere else —
 event check-ins are deliberately **not** synced to `user_progress`, so no attendance record
 exists on a server to disclose, retain, or delete. `tests/checkin.test.js` asserts the
 stored value contains no latitude, longitude or accuracy, so the claim in `privacy.html`
@@ -92,8 +93,8 @@ Deliberately not built, and the reasons are the ones in `CLAUDE.md` rather than 
 - **Background or repeated position reads** (`watchPosition`, a geofence, a read on load
   to pre-enable the button). Each would be a read the user did not ask for at the moment
   it happened, which is where the exemption stops applying.
-- **Syncing check-ins to the account.** It would turn a device-local boolean into a dated
-  attendance record on a server, which is a genuinely different disclosure with a
+- **Syncing check-ins to the account.** It would turn a device-local `{eventId}@{date}` key
+  and the timestamp it was earned at into a dated attendance record on a server, which is a genuinely different disclosure with a
   genuinely different retention story, in exchange for badges surviving a device change.
   If it is ever wanted, note that storing it under `user_progress` also means events would
   come back down through `syncCloudProgress()` and land in `completedItems`, which counts

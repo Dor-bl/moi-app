@@ -153,6 +153,19 @@ async function runCheckIn(event) {
         return { ok: false, reason: describeCheckInError(err) };
     }
 
+    // The window is judged when the user taps — handleCheckInClick resolves the
+    // occurrence through canCheckIn — and deliberately not again here. A fix is
+    // allowed up to the 15-second timeout, so re-checking would refuse somebody
+    // who tapped at 22:59:58, stood exactly where they said they were, and had a
+    // slow satellite: told the event has finished while standing in it. What the
+    // badge records is the occurrence that was live when they claimed it, which
+    // is the honest reading of "on the day, on the spot", and the key stored is
+    // that occurrence's regardless of which side of midnight the fix lands on.
+    //
+    // The direction that would actually be wrong — a callback resolving long
+    // after the tap, somewhere else — is already closed by the position itself,
+    // which fails the distance check below. Pinned by a test, so changing this
+    // is a decision rather than an accident.
     const verdict = judgeCheckIn(event, position);
     if (!verdict.ok) return verdict;
 
