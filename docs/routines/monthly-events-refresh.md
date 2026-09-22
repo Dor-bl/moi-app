@@ -142,6 +142,48 @@ The pull request body must cite, for every event it touches, the URL the dates c
 from, so review is click-and-verify rather than re-research. Where discovery and
 verification used different sources, name both.
 
+### What this environment can actually reach
+
+Outbound HTTPS goes through a policy-enforcing egress proxy, so "the official page"
+is only verifiable when that host is on the environment's allowlist. A blocked host
+answers `CONNECT tunnel failed, response 403`; the README at `/root/.ccr/README.md`
+says to report such a denial rather than retry or route around it, and that is the
+rule here too.
+
+Checked 21–22 September 2026, after [#143](https://github.com/Dor-bl/moi-app/pull/143)
+prompted the organiser domains to be allowlisted:
+
+| Host | Reachable | Note |
+|---|---|---|
+| `www.visitgroningen.nl` | yes | the province's tourism platform; carries schema.org `eventSchedule` data |
+| `www.ervaarharen.nl` | yes | Haren listings |
+| `www.nieuwlandseakker.nl` | yes | |
+| `www.pompoenplukdagengroningen.nl` | yes | Pompoen Plukdagen, verified end to end |
+| `www.kindermaand.nl` | yes | Oktober Kindermaand programme |
+| `www.bourtange.nl` | **connects, but challenged** | see below |
+| `gemeente.groningen.nl` | no | still 403; named as a discovery source above |
+
+**Always use the `www.` form.** The allowlist entries are wildcards over subdomains
+and do not cover the bare apex: `https://www.nieuwlandseakker.nl/` returns 200 while
+`https://nieuwlandseakker.nl/` is refused by the proxy. The same holds for
+`pompoenplukdagengroningen.nl`, `kindermaand.nl` and `bourtange.nl`. A run that tries
+the apex will read a 403 as "site unreachable" and fall back to a listing
+unnecessarily.
+
+**`www.bourtange.nl` is CAPTCHA-gated, which the allowlist cannot fix.** The proxy
+lets the connection through and the site itself answers `HTTP 202` with a
+`sg-captcha: challenge` header and a 169-byte meta-refresh to
+`/.well-known/sgcaptcha/`. That is SiteGround gating automated clients; a browser
+solves it invisibly and `curl` cannot. **Do not try to defeat it.** For a Bourtange
+event, fall back to the Visit Groningen listing and say plainly in the PR that the
+organiser page is challenge-protected and was not read — that is the *"never
+acceptable is quietly presenting an unofficial source as if it were verified"* rule
+above, applied to a page that exists but cannot be fetched.
+
+This table is a snapshot, not a guarantee: the policy is environment configuration
+and can change between runs. Probe the host you actually need rather than trusting a
+row here, and correct the row if it is wrong.
+
 ## Event shape
 
 Add to `EVENTS` in `js/data.js`, keeping the existing style and the comment block above
