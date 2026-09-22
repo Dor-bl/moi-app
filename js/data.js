@@ -377,6 +377,15 @@ const BUCKET_LIST = [
         category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
         title: { en: 'Visit Muzeeaquarium Delfzijl on the Eems-Dollard waterfront', nl: 'Bezoek Muzeeaquarium Delfzijl aan de Eems-Dollard' },
         tip: { en: "A small museum and aquarium combined into one, right by the Zeebad on Delfzijl's waterfront — one half traces the town's shipping and dredging history on the Eems-Dollard, the other holds tanks of fish and other creatures native to the Wadden Sea and North Sea. A low-key stop worth combining with a walk along the dike.", nl: 'Een klein museum en aquarium in één, vlak bij het Zeebad aan de waterkant van Delfzijl — het ene deel gaat over de scheepvaart- en baggergeschiedenis van de stad aan de Eems-Dollard, het andere bestaat uit bakken met vissen en ander leven uit de Waddenzee en Noordzee. Een rustig tussenstopje, goed te combineren met een wandeling over de dijk.' }
+    },
+    {
+        id: '47',
+        coords: [53.2179, 6.5661],
+        category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
+        title: { en: 'Join a vrijdagmiddagborrel with colleagues', nl: "Doe mee aan een vrijdagmiddagborrel met collega's" },
+        tip: { en: "Work quietly winds down around four on a Friday and everyone drifts to a terrace instead of straight home — Poelestraat and the streets around it fill up first, though regulars also swear by Zondag in the Noorderplantsoen or the canal-side tables at Het Pomphuis. Nobody plans anything after; you just stay out for one more, and skipping it a few weeks running is the fastest way to miss the office gossip.", nl: "Op vrijdag houdt het werk zo rond een uur of vier eigenlijk op en schuift iedereen aan op een terras in plaats van meteen naar huis te gaan — de Poelestraat en omgeving lopen als eerste vol, al zweren vaste klanten ook bij Zondag in het Noorderplantsoen of de tafeltjes aan het water bij Het Pomphuis. Niemand plant hierna nog iets; je blijft gewoon voor nog eentje, en het een paar weken op rij overslaan is de snelste manier om het kantoorroddel te missen." },
+        url: 'https://www.visitgroningen.nl/nl/doen/cultuur/nachtleven/vrijdagmiddagborrel-in-groningen',
+        urlLabel: { en: 'Groningen Friday Borrel Spots 🍻', nl: 'Vrijdagmiddagborrel Plekken 🍻' }
     }
 ];
 
