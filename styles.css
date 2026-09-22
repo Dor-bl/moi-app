@@ -1270,6 +1270,18 @@ textarea:focus {
     }
 }
 
+/* Spans every column so the heading sits on its own row at both the one- and
+   two-column breakpoints, rather than taking a card slot. */
+.badges-group-heading {
+    grid-column: 1 / -1;
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-light);
+}
+
 .badge-card {
     display: flex;
     align-items: center;

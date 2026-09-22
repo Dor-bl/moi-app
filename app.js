@@ -1124,9 +1124,23 @@ function renderBadges() {
     // refresh adds one, advertise festivals rather than report achievements,
     // and promise something this screen cannot deliver — an event badge is
     // earned by standing in the event, not from here.
-    earnedEventBadges(EVENTS).forEach(earned => {
-        fragment.appendChild(buildEventBadgeCard(earned, t));
-    });
+    // Headed as its own group rather than run on from the category cards. The
+    // two answer different questions — a category badge is progress through the
+    // list ("3 / 5"), an event badge is a place on a date — and unlabelled they
+    // read as one undifferentiated pile.
+    //
+    // The heading renders only when something has been earned, so nobody who has
+    // never checked in sees a new empty section, and the existing grid is
+    // untouched for them.
+    const earned = earnedEventBadges(EVENTS);
+    if (earned.length > 0) {
+        const heading = document.createElement('h4');
+        heading.className = 'badges-group-heading';
+        heading.textContent = t.achievementEventBadges;
+        fragment.appendChild(heading);
+
+        earned.forEach(badge => fragment.appendChild(buildEventBadgeCard(badge, t)));
+    }
 
     badgesGrid.replaceChildren(fragment);
 }
