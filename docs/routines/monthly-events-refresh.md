@@ -262,4 +262,5 @@ because dates were not yet announced.
 | Date | Events touched | PR |
 | --- | --- | --- |
 | — | Initial fixed-date list shipped by hand | [#116](https://github.com/Dor-bl/moi-app/pull/116) |
-| 2026-09-16 | Added `winterwelvaart-2026` (11–13 Dec 2026) and `esns-2027` (13–16 Jan 2027); Noorderzon and Bloemetjesmarkt checked but left out, no next edition announced on their official pages yet | (this PR) |
+| 2026-09-16 | Added `winterwelvaart-2026` (11–13 Dec 2026) and `esns-2027` (13–16 Jan 2027); Noorderzon and Bloemetjesmarkt checked but left out, no next edition announced on their official pages yet | [#133](https://github.com/Dor-bl/moi-app/pull/133) |
+| 2026-09-22 | Added `hortusfestival-haren-2026` (26–27 Sep 2026). Wine Walk Haren left lapsed, no next edition on ervaarharen.nl. Noorderzon says only "augustus 2027", Bloemetjesmarkt has no 2027 date. Menzis 4 Mijl (4mijl.nl) and Wild Festival (wildfestivalgroningen.nl) could not be verified because egress policy blocked both official sites | (this PR) |
