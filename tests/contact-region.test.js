@@ -79,10 +79,28 @@ test('privacy.html tells visitors the country the contact form is processed in',
         paragraph,
         'privacy.html section 3 no longer has a paragraph opening "The contact form." That is the sentence the pin exists to make true; if it was reworded, point this test at the new one'
     );
-    assert.match(
-        paragraph[1],
-        new RegExp(PINNED_COUNTRY),
-        `the contact-form paragraph in privacy.html section 3 does not mention ${PINNED_COUNTRY}, which is where ${PINNED_REGION} is. Either the pin moved and the policy was not updated, or the policy was reworded into promising something the code does not do`
+    // The claim, not the word. `Ireland` occurring somewhere in the paragraph
+    // is not what the pin makes true — "we pin ours to Ireland" is — so this
+    // matches the sentence that says so and then refuses a negated one. A
+    // rewrite that keeps the country while dropping or reversing the promise is
+    // the drift still left after this was narrowed from the section to the
+    // paragraph.
+    //
+    // That is also the limit of what a regex can do here: it checks the claim
+    // is still stated affirmatively, not that the prose around it means what it
+    // says. A policy can be made untrue in ways no pattern will catch, which is
+    // why the live x-sb-edge-region check in deploy-functions.yml exists.
+    const claim = paragraph[1].match(
+        new RegExp(`[^.]*\\bpin\\w*\\b[^.]*\\b${PINNED_COUNTRY}\\b[^.]*\\.`, 'i')
+    );
+    assert.ok(
+        claim,
+        `the contact-form paragraph in privacy.html section 3 no longer states that the function is pinned to ${PINNED_COUNTRY}, which is where ${PINNED_REGION} is. Either the pin moved and the policy was not updated, or the policy was reworded into promising something the code does not do`
+    );
+    assert.doesNotMatch(
+        claim[0],
+        /\b(?:not|never|no longer)\b/i,
+        `the sentence pinning the contact form to ${PINNED_COUNTRY} reads as a denial: "${claim[0].trim()}". app.js pins ${PINNED_REGION} and the deploy workflow checks it against the live function, so the policy would be telling visitors the opposite of what the code does`
     );
 });
 
