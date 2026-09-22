@@ -415,6 +415,37 @@ const EVENTS = [
         location: { en: 'Across the city', nl: 'Door de hele stad' },
         tip: { en: 'The whole city turns orange and the vrijmarkt takes over the pavements, with half of Groningen selling the other half their old stuff. Wear something orange or you will feel underdressed.', nl: 'De hele stad kleurt oranje en de vrijmarkt neemt de stoepen over, waarbij half Groningen zijn oude spullen aan de andere helft verkoopt. Trek iets oranjes aan, anders voel je je ondergekleed.' }
     },
+    // TEMPORARY — a throwaway entry so the check-in flow can be exercised on a
+    // real phone. Not a real event, and removed before anything merges.
+    {
+        id: 'checkin-office-retest',
+        date: '2026-09-22',
+        endDate: '2026-09-29',
+        free: true,
+        title: {
+            en: '🧪 Check-in retest (temporary, not a real event)',
+            nl: '🧪 Inchecktest (tijdelijk, geen echt evenement)'
+        },
+        location: { en: 'Haren', nl: 'Haren' },
+        tip: {
+            en: 'Not a real event. It exists so the check-in button and the badges grid can be tested on a phone against a real GPS fix, and will be removed before this branch merges.',
+            nl: 'Geen echt evenement. Dit staat er zodat de incheckknop en het badgesoverzicht op een telefoon getest kunnen worden met een echte GPS-meting, en wordt verwijderd voordat deze branch gemerged wordt.'
+        },
+        // Same 600m radius as the real entry, so the test stresses the actual
+        // accuracy gate rather than a lenient stand-in. The centre is a nearby
+        // street corner rather than the tester's own address, and is the same
+        // point an earlier reverted test entry used, so this adds nothing new
+        // to the git history.
+        checkIn: { coords: [53.1755, 6.5912], radius: 600 },
+        badge: {
+            icon: '🧪',
+            title: { en: 'Test Check-In', nl: 'Testincheck' },
+            desc: {
+                en: 'Earned on a real device, against a real GPS fix. Temporary.',
+                nl: 'Behaald op een echt apparaat, met een echte GPS-meting. Tijdelijk.'
+            }
+        }
+    },
     {
         id: 'bevrijdingsdag',
         date: '2026-05-05',
