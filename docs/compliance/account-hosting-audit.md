@@ -215,9 +215,11 @@ unless `x-sb-edge-region` reports `eu-west-1`. It runs on every function deploy,
 what makes the claim in section 3 a verified one rather than an intended one.
 
 What pinning still does not settle is the rest of the journey: it governs only the first
-hop, and the message then leaves the EU for Resend, Cloudflare and the Gmail mailbox. That
-is what `privacy.html` section 3 discloses, and the decision record carries the one piece
-still open — which of Google's terms govern that mailbox.
+hop, and the message then leaves the EU for Resend, Cloudflare and the mailbox behind
+`hallo@moicheck.nl`. That is what `privacy.html` section 3 discloses. The terms on that last
+hop are settled and uncomfortable: a personal Gmail account under consumer terms, so no
+processor contract covers it. What remains open is not what the terms are but whether to
+keep them, which the decision record carries with the options.
 
 ### `ams1` is not a Vercel region
 
@@ -318,9 +320,11 @@ rather than trusting this file — account state drifts, and this file does not.
       [#32](https://github.com/Dor-bl/moi-app/issues/32): pinned to `eu-west-1`, outage
       re-routing knowingly given up, disclosure written into `privacy.html` section 3. See
       [`docs/decisions/edge-function-region.md`](../decisions/edge-function-region.md), whose
-      own follow-ups carry what remains. The live confirmation is no longer among them: the
-      deploy workflow now asserts the region against the running function. The mailbox's
-      contractual terms are, and only the account owner can settle them.
+      own follow-ups carry what remains. Two things have since left that list: the live
+      confirmation, because the deploy workflow now asserts the region against the running
+      function, and the mailbox's terms, which the owner settled on 22 September — a
+      personal Gmail account under consumer terms, with no processor contract. What is still
+      open there is whether to move it somewhere that offers one.
 - [ ] **Article 30 record of processing** — still unwritten, tracked in
       [#87](https://github.com/Dor-bl/moi-app/issues/87), which designates
       `docs/compliance/processing-register.md`. This file is not a substitute and should not

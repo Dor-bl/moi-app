@@ -131,7 +131,7 @@ neither.
 | A pinned region is not re-routed during an outage | Supabase documentation, regional invocation |
 | `x-sb-edge-region` reports the region an invocation ran in | Supabase documentation, regional invocation |
 | Resend processes in the United States; EEA transfers under the SCCs, plus DPF participation | Resend's published DPA and GDPR page |
-| Google's SCCs and its adoption of the EU–U.S. DPF | Google's published data-transfer frameworks page. Note what this row does **not** establish: those terms attach to Google's business services, and whether `hallo@moicheck.nl` is one is the open follow-up below. `privacy.html` claims nothing from this row |
+| Google's SCCs and its adoption of the EU–U.S. DPF | Google's published data-transfer frameworks page. Note what this row does **not** establish: those terms attach to Google's business services, and the destination mailbox is **not** one of them — the owner confirmed a personal account under consumer terms on 22 September. `privacy.html` claims nothing from this row, and should not be made to |
 | The mail path itself | `supabase/functions/contact/index.ts` and `privacy.html` §2 |
 
 The region claims started as documentation rather than observation, and that gap mattered
@@ -173,14 +173,9 @@ mail and costs no visitor their allowance.
       path inside the EU apart from Resend and make section 3 shorter rather than longer.
       Worth its own issue. Note also that this account is the recovery address for the other
       five in the account chain (`docs/compliance/account-hosting-audit.md` §1), so moving it
-      is not only a privacy question — the latter has no controller DPA — is not established
-      anywhere in this repository, and only the account owner can settle it. Section 3 no
-      longer waits on that answer: rather than assert a safeguard for the mailbox, it says
-      plainly that the message rests on Google's infrastructure in the US and that which
-      terms govern it is still being checked. §2's Google entry points at that gap instead
-      of implying it is closed. So the policy is accurate as it stands; confirming the
-      account type is what lets it say something stronger. Record the answer here, then
-      tighten both sections and their date.
+      is not only a privacy question. Whichever way it goes, `privacy.html` §2 and section 3
+      describe the arrangement as it stands today, so changing the destination means
+      rewriting both and bumping the policy's date.
 - [ ] **Per-provider transfer bases.** Section 3 cites the SCCs and the DPF generically. The
       Article 30 record in [#87](https://github.com/Dor-bl/moi-app/issues/87) is the right
       place to name, per provider, which mechanism applies and where its terms are published.
