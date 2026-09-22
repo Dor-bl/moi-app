@@ -246,6 +246,17 @@ jobs:
           status=$(printf '%s' "$headers" | head -1 | awk '{print $2}')
           region=$(header_value 'x-sb-edge-region' "$headers")
 
+          # The 415 is the probe's safety, so assert it rather than describing
+          # it in a comment. Any other status means the function did not reject
+          # this request at its first check, and the invocation may have taken a
+          # rate-limit slot or reached Resend — a probe that sends mail is not a
+          # probe. Fix the request rather than this check: pick one the deployed
+          # function still refuses just as early.
+          if [ "$status" != "415" ]; then
+            echo "::error::The region probe expected 415 (text/plain refused before the body is read) but got $status. The invocation may have consumed a rate-limit slot or sent mail, so its region is not trustworthy evidence either. Check what supabase/functions/contact/index.ts now does with an unsupported content type and send a request it still refuses at the first check."
+            exit 1
+          fi
+
           if [ -z "$region" ]; then
             echo "::error::The function answered $status but reported no x-sb-edge-region header, so the region privacy.html section 3 promises cannot be confirmed. Check whether the platform still reports it before assuming this is harmless — and if it does not, section 3 needs to say what can actually be established."
             exit 1
