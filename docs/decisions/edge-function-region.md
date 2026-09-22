@@ -131,7 +131,7 @@ neither.
 | A pinned region is not re-routed during an outage | Supabase documentation, regional invocation |
 | `x-sb-edge-region` reports the region an invocation ran in | Supabase documentation, regional invocation |
 | Resend processes in the United States; EEA transfers under the SCCs, plus DPF participation | Resend's published DPA and GDPR page |
-| Google's SCCs and its adoption of the EU–U.S. DPF | Google's published data-transfer frameworks page. Note what this row does **not** establish: those terms attach to Google's business services, and the destination mailbox is **not** one of them — the owner confirmed a personal account under consumer terms on 22 September. `privacy.html` claims nothing from this row, and should not be made to |
+| Google's SCCs and its adoption of the EU–U.S. DPF | Google's published data-transfer frameworks page. Note what this row does **not** establish: those terms attach to Google's business services, and the destination mailbox is **not** one of them — the owner confirmed a personal account under consumer terms on 22 September. `privacy.html` claims nothing from this row, and must not be edited to claim anything from it while the destination stays a consumer account |
 | The mail path itself | `supabase/functions/contact/index.ts` and `privacy.html` §2 |
 
 The region claims started as documentation rather than observation, and that gap mattered
