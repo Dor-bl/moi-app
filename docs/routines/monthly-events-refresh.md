@@ -162,13 +162,15 @@ prompted the organiser domains to be allowlisted:
 | `www.kindermaand.nl` | yes | Oktober Kindermaand programme |
 | `www.bourtange.nl` | **connects, but challenged** | see below |
 | `gemeente.groningen.nl` | no | still 403; named as a discovery source above |
+| `wijnfestival-groningen.nl` | no | still 403 on both `www.` and apex; the domain [#142](https://github.com/Dor-bl/moi-app/pull/142) was blocked on |
 
 **Always use the `www.` form.** The allowlist entries are wildcards over subdomains
 and do not cover the bare apex: `https://www.nieuwlandseakker.nl/` returns 200 while
 `https://nieuwlandseakker.nl/` is refused by the proxy. The same holds for
-`pompoenplukdagengroningen.nl`, `kindermaand.nl` and `bourtange.nl`. A run that tries
-the apex will read a 403 as "site unreachable" and fall back to a listing
-unnecessarily.
+`pompoenplukdagengroningen.nl`, `kindermaand.nl` and `bourtange.nl`. Probe the apex
+and you get the proxy's 403, not the site — a run that reads that as "no official
+page is reachable" takes the unverified path below for a page it could simply have
+fetched. Before concluding any organiser page is out of reach, try the `www.` form.
 
 **`www.bourtange.nl` is CAPTCHA-gated, which the allowlist cannot fix.** The proxy
 lets the connection through and the site itself answers `HTTP 202` with a
