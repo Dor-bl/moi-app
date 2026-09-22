@@ -106,15 +106,17 @@ unpkg and OpenStreetMap are not ours. The browser fetches from them directly, we
 contract with either, and the policy says so rather than implying safeguards we are in no
 position to promise.
 
-**Google is deliberately in neither group**, which is the distinction most easily lost in a
-later edit. The mailbox paragraph says what is certain — Cloudflare forwards, and the
-message comes to rest in the Google mailbox behind the address, in the United States — and
-stops there, because which of Google's terms govern *that mailbox* is the open follow-up
-below. Note the address is not the account: `hallo@moicheck.nl` is a Cloudflare routing
-address, so a claim about Google's terms has to be aimed at the destination it forwards
-into, never at the address itself. Do not fold Google back into
-the SCC/DPF sentence without settling that first; a privacy policy is the wrong place to
-round an open question up to a safeguard.
+**Google is deliberately in neither group**, and now for a settled reason rather than an
+open one. The owner confirmed on 22 September that the destination is a **personal Gmail
+account**, held under Google's consumer terms — so there is no Article 28 processor
+contract behind that hop, and none of Google's business DPA or DPF coverage reaches it. The
+policy says exactly that instead of implying otherwise.
+
+Note the address is not the account: `hallo@moicheck.nl` is a Cloudflare routing address, so
+a claim about Google's terms has to be aimed at the destination it forwards into, never at
+the address itself. **Do not fold Google into the SCC/DPF sentence** unless the mailbox
+actually moves to a provider that gives one; the fact that Google publishes a DPA for
+Workspace does not make it apply to a consumer account.
 
 #32's acceptance criteria wanted both halves; a pinned function alone would have satisfied
 neither.
@@ -158,11 +160,20 @@ mail and costs no visitor their allowance.
       the workflow changes, so it re-confirms the platform's behaviour on every function
       deploy, not on every front-end change. `tests/contact-region.test.js` covers that
       side.
-- [ ] **The mailbox's own terms.** The owner confirmed (21 September) that Cloudflare Email
-      Routing forwards `hallo@moicheck.nl` to a Google mailbox, so the resting place is
-      settled and §2 now says so without implying the address is itself a Google account.
-      What is still open is the account type: whether that destination is Workspace or a
-      consumer Gmail account — the latter has no controller DPA — is not established
+- [x] **The mailbox's own terms** — settled, and the answer is the uncomfortable one. It is a
+      personal Gmail account under consumer terms, confirmed by the owner on 22 September.
+      `privacy.html` §2 and section 3 now say so plainly. The remaining question is not what
+      the terms are but whether to keep them; see the next item.
+- [ ] **Consider moving the mailbox somewhere with a DPA.** This is now the least protected
+      hop in the contact path — which is a strange place to end up in the same change that
+      pinned the processing to Ireland. Three options, in rising order of how much they fix:
+      disclose and live with it (done, and honest); Google Workspace, which buys the DPA and
+      DPF coverage for a few euros a month and needs no change beyond the Cloudflare routing
+      destination; or an EU-hosted mailbox with a DPA, which would put the whole contact
+      path inside the EU apart from Resend and make section 3 shorter rather than longer.
+      Worth its own issue. Note also that this account is the recovery address for the other
+      five in the account chain (`docs/compliance/account-hosting-audit.md` §1), so moving it
+      is not only a privacy question — the latter has no controller DPA — is not established
       anywhere in this repository, and only the account owner can settle it. Section 3 no
       longer waits on that answer: rather than assert a safeguard for the mailbox, it says
       plainly that the message rests on Google's infrastructure in the US and that which

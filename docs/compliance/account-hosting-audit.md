@@ -53,7 +53,7 @@ require a second factor.
 | Vercel | Hosting and deployment of the site | **Enabled** | Pre-existing |
 | GitHub | Source of truth; deploys flow from it | **Enabled** | Pre-existing |
 | Resend | Delivers contact-form mail and magic links | **Enabled** | During this audit |
-| Google (behind `hallo@moicheck.nl`) | The mailbox itself; receives password-reset mail for the others | **Enabled** | Pre-existing |
+| Google (behind `hallo@moicheck.nl`) | The mailbox itself — a **personal** Gmail account, not Workspace, so no processor contract covers it (see [`docs/decisions/edge-function-region.md`](../decisions/edge-function-region.md)); also receives password-reset mail for the others | **Enabled** | Pre-existing |
 | Cloudflare | Runs Email Routing for the domain | **Enabled** | Pre-existing |
 
 ### Cloudflare was missing from #92's list
