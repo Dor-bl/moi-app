@@ -821,6 +821,9 @@ function buildCheckInBlock(event) {
     const t = UI_TRANSLATIONS[currentLang];
     const block = document.createElement('div');
     block.className = 'event-checkin';
+    // The button carries this too, but the earned state has no button, and after a
+    // successful check-in the card has to be found again to put focus back on it.
+    block.dataset.checkinKey = checkInKeyFor(event);
 
     const status = document.createElement('p');
     status.className = 'event-checkin-status';
@@ -918,12 +921,45 @@ async function handleCheckInClick(button) {
         // then produced by exactly the path a filter change or a language
         // switch takes, so there is one description of "checked in" to keep
         // right instead of two.
+        //
+        // But the re-render destroys the button that was just pressed, which
+        // costs two things the failure path already protects. Read whether focus
+        // is ours to move BEFORE rendering, for the same reason as below: the tap
+        // disabled the button, and disabling a focused button drops focus to
+        // <body>, so that is what "still here" looks like. Someone who tabbed
+        // away while waiting has not.
+        const refocus = document.activeElement === document.body;
         renderEvents();
+        if (refocus) focusEarnedCard(key);
         return;
     }
 
     // Deliberately not `block` and `button`: see showCheckInFailure.
     showCheckInFailure(key, verdict.reason);
+}
+
+// Success is the one outcome with nothing left on screen to speak or land on: the
+// button is gone, replaced by "You were there ✓". Moving focus onto that line
+// fixes both halves at once — the keyboard user keeps their place in the page
+// instead of being dumped at the top of the document, and screen readers read a
+// newly focused element, which is what actually gets the result announced.
+//
+// The role="status" on that paragraph does not cover this. A live region
+// announces mutations to a region already in the document; this one arrives from
+// renderEvents() with its text in place, and that is not reliably spoken. The
+// badge toast cannot stand in either — it is a plain div with no live region.
+//
+// tabindex="-1" so it can take focus without joining the tab order. Nothing to
+// focus (the card filtered out of view, say) means nobody to tell, exactly as on
+// the failure path.
+function focusEarnedCard(key) {
+    const block = [...eventsContainer.querySelectorAll('.event-checkin')]
+        .find(node => node.dataset.checkinKey === key);
+    const status = block && block.querySelector('.event-checkin-status');
+    if (!status) return;
+
+    status.tabIndex = -1;
+    status.focus();
 }
 
 // Nothing captured before the await is safe to write to afterwards. A render the
