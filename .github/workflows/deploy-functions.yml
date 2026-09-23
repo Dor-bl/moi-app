@@ -103,8 +103,15 @@ jobs:
           # --no-verify-jwt is required, not a preference: the platform rejects
           # the browser's unauthenticated OPTIONS preflight otherwise, and the
           # form breaks for every visitor while curl checks still pass.
+          # --use-api bundles server-side instead of pulling
+          # ghcr.io/supabase/edge-runtime to bundle on the runner. The Docker
+          # path made every deploy depend on a container registry we do not
+          # control: on 23 September GHCR answered toomanyrequests to all three
+          # of the CLI's internal retries and to a re-run, so the function could
+          # not ship at all while nothing was wrong with it or with Supabase.
           supabase functions deploy contact \
             --project-ref "$PROJECT_REF" \
+            --use-api \
             --no-verify-jwt
 
       - name: Verify the deployed function answers a preflight
