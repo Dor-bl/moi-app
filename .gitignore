@@ -13,4 +13,6 @@ node_modules/
 Thumbs.db
 
 # Tooling
-.claude/
+# Local Claude Code state stays out; shared project skills are tracked.
+.claude/*
+!.claude/skills/
