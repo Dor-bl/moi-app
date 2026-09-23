@@ -400,7 +400,8 @@ const BUCKET_LIST = [
 //
 //   `startTime`/`endTime` (HH:MM, Groningen wall-clock) are only for events with
 //   an actual published start time. They narrow "Happening now" to those hours
-//   instead of the whole day. Leave both off rather than guessing a time.
+//   instead of the whole day, on every day of a multi-day run. Leave both off
+//   rather than guessing a time.
 const EVENTS = [
     {
         id: 'koningsdag',
@@ -508,8 +509,6 @@ const EVENTS = [
         id: 'hortusfestival-haren-2026',
         date: '2026-09-26',
         endDate: '2026-09-27',
-        // startTime gates only the first day and endTime only the last, so the
-        // badge still shows overnight on Saturday; the event model has no daily hours.
         startTime: '10:00',
         endTime: '17:00',
         title: { en: 'Hortusfestival: 400 Years of Growth', nl: 'Hortusfestival: 400 jaar groei' },
