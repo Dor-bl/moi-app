@@ -132,6 +132,7 @@ neither.
 | `x-sb-edge-region` reports the region an invocation ran in | Supabase documentation, regional invocation |
 | Resend processes in the United States; EEA transfers under the SCCs, plus DPF participation | Resend's published DPA and GDPR page |
 | Google's SCCs and its adoption of the EU–U.S. DPF | Google's published data-transfer frameworks page. Note what this row does **not** establish: those terms attach to Google's business services, and the destination mailbox is **not** one of them — the owner confirmed a personal account under consumer terms on 22 September. `privacy.html` claims nothing from this row, and must not be edited to claim anything from it while the destination stays a consumer account |
+| **The pin is honoured in production** | **Observed, not inferred.** On 23 September 2026 the owner invoked the live function with `?forceFunctionRegion=eu-west-1` from outside CI and it answered `HTTP/2 415` with `x-sb-edge-region: eu-west-1` — the 415 being the media-type refusal, so the observation cost no mail and no visitor's rate-limit allowance. This is the row the rest of the table could not supply: every region claim above it is documentation |
 | The mail path itself | `supabase/functions/contact/index.ts` and `privacy.html` §2 |
 
 The region claims started as documentation rather than observation, and that gap mattered
@@ -152,11 +153,14 @@ mail and costs no visitor their allowance.
 
 ## Follow-up
 
-- [x] **Confirm the pin against the live function.** Done by CI rather than by hand: the
+- [x] **Confirm the pin against the live function.** Done twice over. By hand on 23
+      September 2026, before this change merged: a pinned invocation answered `415` with
+      `x-sb-edge-region: eu-west-1`, which is the first direct observation that the platform
+      honours the parameter rather than silently re-routing. And by CI from here on: the
       deploy workflow invokes the live function with the parameter and fails unless
       `x-sb-edge-region` reports `eu-west-1`. Merging the change that added that step runs
-      it, because the workflow triggers on edits to itself — so the first confirmation
-      arrives with the merge. Know its limit: it runs when `supabase/functions/contact/` or
+      it, because the workflow triggers on edits to itself — so the merge re-confirms by
+      machine what the hand check above established once. Know its limit: it runs when `supabase/functions/contact/` or
       the workflow changes, so it re-confirms the platform's behaviour on every function
       deploy, not on every front-end change. `tests/contact-region.test.js` covers that
       side.
