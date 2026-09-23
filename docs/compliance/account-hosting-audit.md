@@ -323,8 +323,11 @@ rather than trusting this file — account state drifts, and this file does not.
       own follow-ups carry what remains. Two things have since left that list: the live
       confirmation, because the deploy workflow now asserts the region against the running
       function, and the mailbox's terms, which the owner settled on 22 September — a
-      personal Gmail account under consumer terms, with no processor contract. What is still
-      open there is whether to move it somewhere that offers one.
+      personal Gmail account under consumer terms, with no processor contract. Whether to move
+      it somewhere that offers one is now settled too: it stays, disclosed, because Workspace
+      is a recurring cost this project has no income for
+      ([#152](https://github.com/Dor-bl/moi-app/issues/152), which lists what should reopen
+      it).
 - [ ] **Article 30 record of processing** — still unwritten, tracked in
       [#87](https://github.com/Dor-bl/moi-app/issues/87), which designates
       `docs/compliance/processing-register.md`. This file is not a substitute and should not

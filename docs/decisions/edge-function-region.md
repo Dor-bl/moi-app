@@ -168,18 +168,23 @@ mail and costs no visitor their allowance.
       personal Gmail account under consumer terms, confirmed by the owner on 22 September.
       `privacy.html` §2 and section 3 now say so plainly. The remaining question is not what
       the terms are but whether to keep them; see the next item.
-- [ ] **Consider moving the mailbox somewhere with a DPA.** This is now the least protected
-      hop in the contact path — which is a strange place to end up in the same change that
-      pinned the processing to Ireland. Three options, in rising order of how much they fix:
-      disclose and live with it (done, and honest); Google Workspace, which buys the DPA and
-      DPF coverage for a few euros a month and needs no change beyond the Cloudflare routing
-      destination; or an EU-hosted mailbox with a DPA, which would put the whole contact
-      path inside the EU apart from Resend and make section 3 shorter rather than longer.
-      Worth its own issue. Note also that this account is the recovery address for the other
-      five in the account chain (`docs/compliance/account-hosting-audit.md` §1), so moving it
-      is not only a privacy question. Whichever way it goes, `privacy.html` §2 and section 3
-      describe the arrangement as it stands today, so changing the destination means
-      rewriting both and bumping the policy's date.
+- [x] **Whether to move the mailbox somewhere with a DPA** — decided on 23 September 2026:
+      **keep the personal Gmail account, disclosed as it is.** Google Workspace charges a
+      monthly subscription and MoiCheck has no income, so the owner chose disclosure over a
+      recurring cost. That is a proportionate answer for a contact form carrying a name, an
+      address and a message, and the policy already describes the arrangement accurately
+      rather than implying a safeguard that does not exist.
+      [#152](https://github.com/Dor-bl/moi-app/issues/152) holds the reasoning, the options
+      priced against each other, and the conditions that should reopen it — the first being
+      the project earning anything at all, since cost is the whole basis of the decision.
+      What does not change with it: this is still the least protected hop in the contact
+      path, which is a strange place to end up in the same change that pinned the processing
+      to Ireland, and saying so is the point of the disclosure. This account is also the
+      recovery address for the other five in the account chain
+      (`docs/compliance/account-hosting-audit.md` §1), so a future move is not only a privacy
+      question. Whichever way it goes later, `privacy.html` §2 and section 3 describe the
+      arrangement as it stands today, so changing the destination means rewriting both and
+      bumping the policy's date.
 - [ ] **Per-provider transfer bases.** Section 3 cites the SCCs and the DPF generically. The
       Article 30 record in [#87](https://github.com/Dor-bl/moi-app/issues/87) is the right
       place to name, per provider, which mechanism applies and where its terms are published.
