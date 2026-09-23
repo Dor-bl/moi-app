@@ -163,6 +163,7 @@ prompted the organiser domains to be allowlisted:
 | `www.bourtange.nl` | **connects, but challenged** | see below |
 | `gemeente.groningen.nl` | no | still 403; named as a discovery source above |
 | `wijnfestival-groningen.nl` | no | still 403 on both `www.` and apex; the domain [#142](https://github.com/Dor-bl/moi-app/pull/142) was blocked on |
+| `plantsoenloop.nl` | no | 403 on both `www.` and apex (checked 23 September 2026) |
 
 **Always use the `www.` form.** The allowlist entries are wildcards over subdomains
 and do not cover the bare apex: `https://www.nieuwlandseakker.nl/` returns 200 while
@@ -327,3 +328,4 @@ because dates were not yet announced.
 | — | Initial fixed-date list shipped by hand | [#116](https://github.com/Dor-bl/moi-app/pull/116) |
 | 2026-09-16 | Added `winterwelvaart-2026` (11–13 Dec 2026) and `esns-2027` (13–16 Jan 2027); Noorderzon and Bloemetjesmarkt checked but left out, no next edition announced on their official pages yet | [#133](https://github.com/Dor-bl/moi-app/pull/133) |
 | 2026-09-22 | Added `hortusfestival-haren-2026` (26–27 Sep 2026). Wine Walk Haren left lapsed, no next edition on ervaarharen.nl. Noorderzon says only "augustus 2027", Bloemetjesmarkt has no 2027 date. Menzis 4 Mijl (4mijl.nl) and Wild Festival (wildfestivalgroningen.nl) could not be verified because egress policy blocked both official sites. Nacht van Kunst & Wetenschap: official domain blocked and no 2027 date found anywhere | (this PR) |
+| 2026-09-23 | Added `plantsoenloop-2026` (7 Nov 2026, 09:00–16:00) by hand on request. Egress policy blocked the official site plantsoenloop.nl, so the date, hours and price came from visitgroningen.nl | (this PR) |
