@@ -142,6 +142,69 @@ The pull request body must cite, for every event it touches, the URL the dates c
 from, so review is click-and-verify rather than re-research. Where discovery and
 verification used different sources, name both.
 
+### What this environment can actually reach
+
+Outbound HTTPS goes through a policy-enforcing egress proxy, so "the official page"
+is only verifiable when that host is on the environment's allowlist. A blocked host
+fails the CONNECT with a 403 (`curl` reports `CONNECT tunnel failed, response 403`)
+rather than returning a page. Report such a denial; never retry it as if it were
+flaky, and never route around it.
+
+Checked 21–22 September 2026, after [#143](https://github.com/Dor-bl/moi-app/pull/143)
+prompted the organiser domains to be allowlisted:
+
+| Host | Reachable | Note |
+|---|---|---|
+| `www.visitgroningen.nl` | yes | the province's tourism platform; carries schema.org `eventSchedule` data |
+| `www.ervaarharen.nl` | yes | Haren listings |
+| `www.nieuwlandseakker.nl` | yes | |
+| `www.pompoenplukdagengroningen.nl` | yes | Pompoen Plukdagen, verified end to end |
+| `www.kindermaand.nl` | yes | Oktober Kindermaand programme |
+| `www.bourtange.nl` | **connects, but challenged** | see below |
+| `gemeente.groningen.nl` | no | still 403; named as a discovery source above |
+| `wijnfestival-groningen.nl` | no | still 403 on both `www.` and apex; the domain [#142](https://github.com/Dor-bl/moi-app/pull/142) was blocked on |
+
+**Always use the `www.` form.** The allowlist entries are wildcards over subdomains
+and do not cover the bare apex: `https://www.nieuwlandseakker.nl/` returns 200 while
+`https://nieuwlandseakker.nl/` is refused by the proxy. The same holds for
+`pompoenplukdagengroningen.nl`, `kindermaand.nl` and `bourtange.nl`. Probe the apex
+and you get the proxy's 403, not the site — a run that reads that as "no official
+page is reachable" takes the unverified path below for a page it could simply have
+fetched. Before concluding any organiser page is out of reach, try the `www.` form.
+
+**`www.bourtange.nl` is CAPTCHA-gated, which the allowlist cannot fix.** The proxy
+lets the connection through and the site itself answers `HTTP 202` with a
+`sg-captcha: challenge` header and a 169-byte meta-refresh to
+`/.well-known/sgcaptcha/`. That is SiteGround gating automated clients; a browser
+solves it invisibly and `curl` cannot. **Do not try to defeat it.**
+
+A challenge-protected page is **not** the "no official page of its own" case above,
+and must not be treated as one. That carve-out exists for events nobody built a site
+for, where no better source is obtainable by anyone. Here the page exists, carries
+the dates, and a person can read it in a browser — as happened in
+[#143](https://github.com/Dor-bl/moi-app/pull/143), where the Samhain dates were
+confirmed that way after this routine could not fetch them. So a run may **not**
+substitute a listing on its own authority and call the dates verified; that would
+reopen precisely the wrong-date risk the section above exists to close.
+
+What a run does instead, in order:
+
+1. **Ask.** Say the organiser page is challenge-protected, name the URL, and ask for
+   the dates to be read from it. A one-click human check beats a weaker source.
+2. **If proposing the entry anyway**, mark it `UNVERIFIED` in the PR body, state that
+   the listing is the only source read, and say so per event rather than once in
+   passing. It is then the reviewer's decision to merge, exactly as for an event with
+   no official page — but taken knowingly, not inherited from a run's own judgement.
+3. **Never present a listing as verification** when the organiser page exists. Where
+   the two disagree, say so and stop rather than picking one.
+
+Leaving the event out is always acceptable. An absent event costs the page nothing; a
+wrong date on a live site is the one failure this whole design is built to prevent.
+
+This table is a snapshot, not a guarantee: the policy is environment configuration
+and can change between runs. Probe the host you actually need rather than trusting a
+row here, and correct the row if it is wrong.
+
 ## Event shape
 
 Add to `EVENTS` in `js/data.js`, keeping the existing style and the comment block above

@@ -377,6 +377,15 @@ const BUCKET_LIST = [
         category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
         title: { en: 'Visit Muzeeaquarium Delfzijl on the Eems-Dollard waterfront', nl: 'Bezoek Muzeeaquarium Delfzijl aan de Eems-Dollard' },
         tip: { en: "A small museum and aquarium combined into one, right by the Zeebad on Delfzijl's waterfront — one half traces the town's shipping and dredging history on the Eems-Dollard, the other holds tanks of fish and other creatures native to the Wadden Sea and North Sea. A low-key stop worth combining with a walk along the dike.", nl: 'Een klein museum en aquarium in één, vlak bij het Zeebad aan de waterkant van Delfzijl — het ene deel gaat over de scheepvaart- en baggergeschiedenis van de stad aan de Eems-Dollard, het andere bestaat uit bakken met vissen en ander leven uit de Waddenzee en Noordzee. Een rustig tussenstopje, goed te combineren met een wandeling over de dijk.' }
+    },
+    {
+        id: '47',
+        coords: [53.2179, 6.5661],
+        category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
+        title: { en: 'Join a vrijdagmiddagborrel with colleagues', nl: "Doe mee aan een vrijdagmiddagborrel met collega's" },
+        tip: { en: "Work quietly winds down around four on a Friday and everyone drifts to a terrace instead of straight home — Poelestraat and the streets around it fill up first, though regulars also swear by Zondag in the Noorderplantsoen or the canal-side tables at Het Pomphuis. Nobody plans anything after; you just stay out for one more, and skipping it a few weeks running is the fastest way to miss the office gossip.", nl: "Op vrijdag houdt het werk zo rond een uur of vier eigenlijk op en schuift iedereen aan op een terras in plaats van meteen naar huis te gaan — de Poelestraat en omgeving lopen als eerste vol, al zweren vaste klanten ook bij Zondag in het Noorderplantsoen of de tafeltjes aan het water bij Het Pomphuis. Niemand plant hierna nog iets; je blijft gewoon voor nog eentje, en het een paar weken op rij overslaan is de snelste manier om het kantoorroddel te missen." },
+        url: 'https://www.visitgroningen.nl/nl/doen/cultuur/nachtleven/vrijdagmiddagborrel-in-groningen',
+        urlLabel: { en: 'Groningen Friday Borrel Spots 🍻', nl: 'Vrijdagmiddagborrel Plekken 🍻' }
     }
 ];
 
@@ -520,6 +529,27 @@ const EVENTS = [
         location: { en: 'A-kerk, city centre', nl: 'A-kerk, binnenstad' },
         tip: { en: 'This 10th edition turns the atmospheric A-kerk into a three-day wine tasting, with 20+ exhibitors pouring 250+ wines from around the world, food pairings, and live music — Friday evening through Sunday afternoon. Book online in advance for a cheaper ticket than at the door.', nl: 'Dit tiende jaar verandert de sfeervolle A-kerk drie dagen lang in een wijnproeverij, met ruim 20 exposanten en 250+ wijnen uit de hele wereld, hapjes erbij en livemuziek — van vrijdagavond tot zondagmiddag. Koop je kaartje van tevoren online, dat is goedkoper dan aan de deur.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/440554054/wijnfestival-groningen-7'
+    },
+    {
+        id: 'pompoen-plukdagen-2026',
+        date: '2026-10-03',
+        endDate: '2026-10-04',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Pumpkin Picking Days', nl: 'Pompoen Plukdagen' },
+        location: { en: 'Nieuwlandse Akker, Huningaweg 19, Oostwold', nl: 'Nieuwlandse Akker, Huningaweg 19, Oostwold' },
+        tip: { en: 'Put your boots on and walk into the Oldambt clay to cut your own pumpkin, from giant Halloween ones to odd little decorative gourds. Around the field there is a market of local growers and makers, and activities for children as part of Oktober Kindermaand. Field and market are free — you pay only for what you carry home. Bring a crate: the drive back from Oostwold is not the moment to discover your bike basket is too small.', nl: 'Trek je laarzen aan en het Oldambtster land op om zelf je pompoen te plukken, van kolossale halloweenpompoenen tot rare kleine sierkalebassen. Rond het veld staat een markt met lokale telers en makers, en er zijn kinderactiviteiten in het kader van Oktober Kindermaand. Het veld en de markt zijn gratis — je betaalt alleen wat je meeneemt. Neem een kist mee: onderweg terug uit Oostwold is een te kleine fietstas een vervelende ontdekking.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4140262387/pompoen-plukdagen-4'
+    },
+    {
+        id: 'magisch-samhain-2026',
+        date: '2026-10-31',
+        endDate: '2026-11-01',
+        kidFriendly: true,
+        title: { en: 'Magisch Samhain (Bourtange)', nl: 'Magisch Samhain (Bourtange)' },
+        location: { en: 'Vesting Bourtange, Westerwolde', nl: 'Vesting Bourtange, Westerwolde' },
+        tip: { en: 'The star-shaped fortress fills with ghosts, time travellers, pirates and fire shows for the Celtic new year, which is where Halloween actually comes from. Stilt walkers between the ramparts, fortune tellers, a wishing tree, and a crowd that mostly turns up in costume. It is an hour from the city by car and worth the trip — but check the ticket page first, because earlier editions sold out on the day.', nl: 'De stervormige vesting loopt vol met geesten, tijdreizigers, piraten en vuurshows voor het Keltische nieuwjaar, waar Halloween eigenlijk vandaan komt. Steltlopers tussen de wallen, waarzeggers, een wensboom en publiek dat grotendeels verkleed komt. Een uur rijden vanuit de stad en dat dubbel en dwars waard — kijk wel eerst op de ticketpagina, want eerdere edities zaten op de dag zelf vol.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4161137856/magisch-samhain-1'
     }
 ];
 
