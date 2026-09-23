@@ -151,7 +151,8 @@ rather than returning a page. Report such a denial; never retry it as if it were
 flaky, and never route around it.
 
 Checked 21–22 September 2026, after [#143](https://github.com/Dor-bl/moi-app/pull/143)
-prompted the organiser domains to be allowlisted:
+prompted the organiser domains to be allowlisted (the `plantsoenloop.nl` row was
+added on 23 September 2026):
 
 | Host | Reachable | Note |
 |---|---|---|
@@ -163,7 +164,7 @@ prompted the organiser domains to be allowlisted:
 | `www.bourtange.nl` | **connects, but challenged** | see below |
 | `gemeente.groningen.nl` | no | still 403; named as a discovery source above |
 | `wijnfestival-groningen.nl` | no | still 403 on both `www.` and apex; the domain [#142](https://github.com/Dor-bl/moi-app/pull/142) was blocked on |
-| `plantsoenloop.nl` | no | 403 on both `www.` and apex (checked 23 September 2026) |
+| `plantsoenloop.nl` | no | 403 on both `www.` and apex |
 
 **Always use the `www.` form.** The allowlist entries are wildcards over subdomains
 and do not cover the bare apex: `https://www.nieuwlandseakker.nl/` returns 200 while
