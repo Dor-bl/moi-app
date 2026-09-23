@@ -231,19 +231,29 @@ jobs:
           # function rejects at its first check: text/plain earns a 415 before
           # it reads a body, touches a rate-limit bucket, or calls Resend, so
           # this probe sends no mail and costs no visitor their allowance.
-          headers=$(curl -sS -i -X POST "$url" \
+          # Headers to a file and the status from curl itself, rather than
+          # reading the first line of a combined -i dump. A response can carry
+          # more than one header block — a 100 Continue or a 103 Early Hints
+          # ahead of the real one — and then the first status line and the
+          # first matching header belong to a block that is not the answer.
+          # %{http_code} is curl's final response code, which is the one the
+          # check below is about.
+          headers_file="$(mktemp)"
+          status=$(curl -sS -X POST "$url" \
             --connect-timeout 10 --max-time 30 \
             -H 'Origin: https://moicheck.nl' \
             -H 'Content-Type: text/plain' \
-            --data 'region probe')
+            --data 'region probe' \
+            -D "$headers_file" -o /dev/null -w '%{http_code}')
+          headers=$(cat "$headers_file")
 
           # Defined again rather than shared: each step is its own shell, so
-          # the copy in the preflight step above does not exist here.
+          # the copy in the preflight step above does not exist here. Last
+          # match rather than first, for the same reason as the status above.
           header_value() {
-            printf '%s' "$2" | grep -i "^$1:" | head -1 | cut -d: -f2- | tr -d '\r' | sed 's/^ *//; s/ *$//'
+            printf '%s' "$2" | grep -i "^$1:" | tail -1 | cut -d: -f2- | tr -d '\r' | sed 's/^ *//; s/ *$//'
           }
 
-          status=$(printf '%s' "$headers" | head -1 | awk '{print $2}')
           region=$(header_value 'x-sb-edge-region' "$headers")
 
           # The 415 is the probe's safety, so assert it rather than describing
