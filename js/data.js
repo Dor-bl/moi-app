@@ -409,8 +409,7 @@ const BUCKET_LIST = [
 //
 //   `startTime`/`endTime` (HH:MM, Groningen wall-clock) are only for events with
 //   an actual published start time. They narrow "Happening now" to those hours
-//   instead of the whole day, on every day of a multi-day run. Leave both off
-//   rather than guessing a time.
+//   instead of the whole day. Leave both off rather than guessing a time.
 const EVENTS = [
     {
         id: 'koningsdag',

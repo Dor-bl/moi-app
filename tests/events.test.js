@@ -134,16 +134,6 @@ test('a timed event only happens now within its published hours', () => {
     assert.equal(isHappeningNow(timed, '2026-09-18', new Date('2026-09-18T19:00:00Z')), true, 'right at closing (21:00 Amsterdam)');
 });
 
-test('a multi-day timed event keeps its hours on every day, not just the ends', () => {
-    const weekend = { id: 'weekend', date: '2026-09-26', endDate: '2026-09-27', startTime: '10:00', endTime: '17:00', title: { en: 'W', nl: 'W' } };
-
-    assert.equal(isHappeningNow(weekend, '2026-09-26', new Date('2026-09-26T09:00:00Z')), true, 'first day, 11:00 Amsterdam');
-    assert.equal(isHappeningNow(weekend, '2026-09-26', new Date('2026-09-26T17:00:00Z')), false, 'first evening, 19:00 Amsterdam');
-    assert.equal(isHappeningNow(weekend, '2026-09-27', new Date('2026-09-27T06:00:00Z')), false, 'second morning, 08:00 Amsterdam');
-    assert.equal(isHappeningNow(weekend, '2026-09-27', new Date('2026-09-27T12:00:00Z')), true, 'second day, 14:00 Amsterdam');
-    assert.equal(getUpcomingEvents([weekend], '2026-09-26', new Date('2026-09-26T17:00:00Z')).length, 1, 'still listed between the days');
-});
-
 test('a timed event with no endTime stays happening for the rest of its day', () => {
     const openEnded = { ...singleDay, startTime: '18:00' };
 

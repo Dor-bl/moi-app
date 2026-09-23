@@ -118,15 +118,21 @@ function getUpcomingEvents(events, today = todayInGroningen(), now = new Date())
 }
 
 // Day-granularity by default: an event is "happening now" for its whole span.
-// startTime/endTime are daily opening hours and narrow that on every day of the
-// span — most entries carry neither and keep the old all-day behaviour, which is
-// correct for something like Sint Maarten that has no fixed start.
+// startTime/endTime narrow that to the actual hours on the day they apply to
+// (its first day for startTime, its last for endTime) — most entries carry
+// neither and keep the old all-day behaviour, which is correct for something
+// like Sint Maarten that has no fixed start.
 function isHappeningNow(event, today, now = new Date()) {
     if (!(event.date <= today && !hasEnded(event, today, now))) return false;
+    if (!event.startTime && !event.endTime) return true;
 
     const clock = timeInGroningen(now);
-    if (event.startTime && clock < event.startTime) return false;
-    if (event.endTime && clock > event.endTime) return false;
+    if (event.startTime && today === event.date && clock < event.startTime) {
+        return false;
+    }
+    if (event.endTime && today === spanEnd(event) && clock > event.endTime) {
+        return false;
+    }
 
     return true;
 }
