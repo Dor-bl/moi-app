@@ -545,6 +545,16 @@ const EVENTS = [
         location: { en: 'Vesting Bourtange, Westerwolde', nl: 'Vesting Bourtange, Westerwolde' },
         tip: { en: 'The star-shaped fortress fills with ghosts, time travellers, pirates and fire shows for the Celtic new year, which is where Halloween actually comes from. Stilt walkers between the ramparts, fortune tellers, a wishing tree, and a crowd that mostly turns up in costume. It is an hour from the city by car and worth the trip — but check the ticket page first, because earlier editions sold out on the day.', nl: 'De stervormige vesting loopt vol met geesten, tijdreizigers, piraten en vuurshows voor het Keltische nieuwjaar, waar Halloween eigenlijk vandaan komt. Steltlopers tussen de wallen, waarzeggers, een wensboom en publiek dat grotendeels verkleed komt. Een uur rijden vanuit de stad en dat dubbel en dwars waard — kijk wel eerst op de ticketpagina, want eerdere edities zaten op de dag zelf vol.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4161137856/magisch-samhain-1'
+    },
+    {
+        id: 'plantsoenloop-2026',
+        date: '2026-11-07',
+        startTime: '09:00',
+        endTime: '16:00',
+        title: { en: 'Plantsoenloop (running race)', nl: 'Plantsoenloop' },
+        location: { en: 'Noorderplantsoen', nl: 'Noorderplantsoen' },
+        tip: { en: 'The oldest running race in Groningen, now in its 68th edition, loops through the surprisingly hilly Noorderplantsoen. There are four distances and races run from 09:00 until the last 8 km start at 15:15, so it works whether you are training for something or just want an excuse to run through the park in its autumn colours. Entry is about €17 and you need to sign up online beforehand. If you are not running, it is still worth walking over to cheer.', nl: 'De oudste hardloopwedstrijd van Groningen, dit jaar voor de 68ste keer, gaat dwars door het verrassend heuvelachtige Noorderplantsoen. Er zijn vier afstanden en de wedstrijden lopen van 09:00 tot de laatste start van de 8 km om 15:15, dus of je nu ergens voor traint of gewoon een excuus zoekt om door het park in herfstkleuren te rennen, er zit er een voor je bij. Inschrijven doe je vooraf online, voor zo\'n €17. Loop je zelf niet mee, dan is het nog steeds de moeite waard om te komen aanmoedigen.' },
+        url: 'https://plantsoenloop.nl/'
     }
 ];
 
