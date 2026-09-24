@@ -103,8 +103,15 @@ jobs:
           # --no-verify-jwt is required, not a preference: the platform rejects
           # the browser's unauthenticated OPTIONS preflight otherwise, and the
           # form breaks for every visitor while curl checks still pass.
+          # --use-api bundles server-side instead of pulling
+          # ghcr.io/supabase/edge-runtime to bundle on the runner. The Docker
+          # path made every deploy depend on a container registry we do not
+          # control: on 23 September GHCR answered toomanyrequests to all three
+          # of the CLI's internal retries and to a re-run, so the function could
+          # not ship at all while nothing was wrong with it or with Supabase.
           supabase functions deploy contact \
             --project-ref "$PROJECT_REF" \
+            --use-api \
             --no-verify-jwt
 
       - name: Verify the deployed function answers a preflight
@@ -206,3 +213,75 @@ jobs:
           fi
 
           echo "Preflight OK: $status, origin exactly $prod, POST and all required headers allowed; preview origin echoed; disallowed origin refused."
+
+      - name: Verify the pinned region is the region that runs
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          # privacy.html section 3 tells visitors their contact message is
+          # processed in Ireland. That is a claim about the platform's routing,
+          # not about our code: app.js sends ?forceFunctionRegion=eu-west-1,
+          # and an unrecognised region is re-routed rather than refused
+          # (supabase/supabase#34526), so a wrong value would look exactly like
+          # a working one from this side. The live x-sb-edge-region header is
+          # the only thing that can tell those apart, which is why this runs
+          # here against production rather than in the unit tests.
+          #
+          # Keep this region in step with CONTACT_FUNCTION_REGION in app.js and
+          # with what section 3 says. Changing one without the others is the
+          # failure this step exists to catch.
+          expected='eu-west-1'
+          url="https://${PROJECT_REF}.supabase.co/functions/v1/contact?forceFunctionRegion=${expected}"
+
+          # A real invocation, unlike the preflight above — only a request the
+          # runtime actually executes reports its region. Deliberately one the
+          # function rejects at its first check: text/plain earns a 415 before
+          # it reads a body, touches a rate-limit bucket, or calls Resend, so
+          # this probe sends no mail and costs no visitor their allowance.
+          # Headers to a file and the status from curl itself, rather than
+          # reading the first line of a combined -i dump. A response can carry
+          # more than one header block — a 100 Continue or a 103 Early Hints
+          # ahead of the real one — and then the first status line and the
+          # first matching header belong to a block that is not the answer.
+          # %{http_code} is curl's final response code, which is the one the
+          # check below is about.
+          headers_file="$(mktemp)"
+          status=$(curl -sS -X POST "$url" \
+            --connect-timeout 10 --max-time 30 \
+            -H 'Origin: https://moicheck.nl' \
+            -H 'Content-Type: text/plain' \
+            --data 'region probe' \
+            -D "$headers_file" -o /dev/null -w '%{http_code}')
+          headers=$(cat "$headers_file")
+
+          # Defined again rather than shared: each step is its own shell, so
+          # the copy in the preflight step above does not exist here. Last
+          # match rather than first, for the same reason as the status above.
+          header_value() {
+            printf '%s' "$2" | grep -i "^$1:" | tail -1 | cut -d: -f2- | tr -d '\r' | sed 's/^ *//; s/ *$//'
+          }
+
+          region=$(header_value 'x-sb-edge-region' "$headers")
+
+          # The 415 is the probe's safety, so assert it rather than describing
+          # it in a comment. Any other status means the function did not reject
+          # this request at its first check, and the invocation may have taken a
+          # rate-limit slot or reached Resend — a probe that sends mail is not a
+          # probe. Fix the request rather than this check: pick one the deployed
+          # function still refuses just as early.
+          if [ "$status" != "415" ]; then
+            echo "::error::The region probe expected 415 (text/plain refused before the body is read) but got $status. The invocation may have consumed a rate-limit slot or sent mail, so its region is not trustworthy evidence either. Check what supabase/functions/contact/index.ts now does with an unsupported content type and send a request it still refuses at the first check."
+            exit 1
+          fi
+
+          if [ -z "$region" ]; then
+            echo "::error::The function answered $status but reported no x-sb-edge-region header, so the region privacy.html section 3 promises cannot be confirmed. Check whether the platform still reports it before assuming this is harmless — and if it does not, section 3 needs to say what can actually be established."
+            exit 1
+          fi
+
+          if [ "$region" != "$expected" ]; then
+            echo "::error::The invocation ran in '$region', not '$expected'. privacy.html section 3 tells visitors contact submissions are processed in Ireland, which is currently untrue. Either the region name is one the platform does not recognise (it re-routes rather than refusing), or pinning stopped being honoured. Fix the pin or the policy — do not leave section 3 standing."
+            exit 1
+          fi
+
+          echo "Region OK: a pinned invocation ran in $region, as privacy.html section 3 states."

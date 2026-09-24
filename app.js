@@ -1375,6 +1375,20 @@ function closeProfileModal() {
     if (hadFocus || document.activeElement === document.body) profileBtn.focus();
 }
 
+// Where the contact Edge Function is allowed to run. Supabase Edge Functions
+// otherwise execute in the region nearest the caller — the project's own
+// eu-west-1 governs the database and nothing else — so a submission sent from
+// outside the EU/EEA would be processed outside it. That is a Chapter V
+// transfer question for a form that does not need to raise one; pinning the
+// region answers it instead of disclosing it. See
+// docs/decisions/edge-function-region.md and privacy.html section 3.
+//
+// The trade-off, which is the reason this was a decision rather than an
+// oversight: a pinned region is not re-routed during a regional outage. On a
+// contact form that is acceptable — privacy.html and the form itself both
+// name hallo@moicheck.nl as the way to reach us without it.
+const CONTACT_FUNCTION_REGION = 'eu-west-1';
+
 function setupEventListeners() {
     // ⚡ Bolt Performance Optimization:
     // Event delegation on listContainer reduces memory usage by attaching one event listener
@@ -1829,7 +1843,15 @@ function setupEventListeners() {
                 throw new Error('Supabase is not configured, so the contact function is unreachable');
             }
 
-            const response = await fetch(`${SUPABASE_URL}/functions/v1/contact`, {
+            // `forceFunctionRegion` rather than the documented default, the
+            // `x-region` request header: a custom header has to appear in the
+            // function's own Access-Control-Allow-Headers or the preflight
+            // fails, and the function deploys from supabase/functions/ while
+            // this file deploys from Vercel. Get that ordering wrong once and
+            // the form is broken for everyone until the function catches up.
+            // A query parameter asks nothing of the other side. Supabase
+            // documents it for exactly this case.
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/contact?forceFunctionRegion=${CONTACT_FUNCTION_REGION}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -409,7 +409,8 @@ const BUCKET_LIST = [
 //
 //   `startTime`/`endTime` (HH:MM, Groningen wall-clock) are only for events with
 //   an actual published start time. They narrow "Happening now" to those hours
-//   instead of the whole day. Leave both off rather than guessing a time.
+//   instead of the whole day, on every day of a multi-day run. Leave both off
+//   rather than guessing a time.
 const EVENTS = [
     {
         id: 'koningsdag',
@@ -529,6 +530,17 @@ const EVENTS = [
         location: { en: 'A-kerk, city centre', nl: 'A-kerk, binnenstad' },
         tip: { en: 'This 10th edition turns the atmospheric A-kerk into a three-day wine tasting, with 20+ exhibitors pouring 250+ wines from around the world, food pairings, and live music — Friday evening through Sunday afternoon. Book online in advance for a cheaper ticket than at the door.', nl: 'Dit tiende jaar verandert de sfeervolle A-kerk drie dagen lang in een wijnproeverij, met ruim 20 exposanten en 250+ wijnen uit de hele wereld, hapjes erbij en livemuziek — van vrijdagavond tot zondagmiddag. Koop je kaartje van tevoren online, dat is goedkoper dan aan de deur.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/440554054/wijnfestival-groningen-7'
+    },
+    {
+        id: 'hortusfestival-haren-2026',
+        date: '2026-09-26',
+        endDate: '2026-09-27',
+        startTime: '10:00',
+        endTime: '17:00',
+        title: { en: 'Hortusfestival: 400 Years of Growth', nl: 'Hortusfestival: 400 jaar groei' },
+        location: { en: 'Hortus Botanicus Haren, Kerklaan 34, Haren', nl: 'Hortus Botanicus Haren, Kerklaan 34, Haren' },
+        tip: { en: 'The botanical garden turns 400 and throws a one-off weekend for it, 10:00–17:00 both days. At the centre is the De smaak naar meer market with local growers, makers and harvest produce, and around it workshops, guided tours and demonstrations across the whole garden. Save time for the Chinese Ming garden, which is unique in Europe. Tickets are sold online.', nl: 'De Hortus bestaat 400 jaar en viert dat met een eenmalig festivalweekend, beide dagen van 10.00 tot 17.00 uur. In het midden staat de markt De smaak naar meer, met streekproducten, kwekers en ambachtsmakers, en in de hele tuin zijn workshops, rondleidingen en demonstraties. Loop zeker even door de Chinese Ming-tuin, die in Europa zijn weerga niet kent. Kaartjes koop je online.' },
+        url: 'https://www.hortusharen.nl/festival/'
     },
     {
         id: 'pompoen-plukdagen-2026',

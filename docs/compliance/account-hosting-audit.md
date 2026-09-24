@@ -14,9 +14,10 @@ be written down "so the next review doesn't have to re-ask." This is that record
 **Where the three stand.** The MFA chain is complete. The region item is satisfied on #92's
 own terms — it asks for the *Vercel* function region, and `fra1` is now a recorded decision
 — but that is narrower than it sounds, because no Vercel Function exists and contact data is
-actually processed by a Supabase Edge Function, whose region this record documents rather
-than decides; pinning it is open under
-[#32](https://github.com/Dor-bl/moi-app/issues/32), exactly where #92 put it. The key audit
+actually processed by a Supabase Edge Function. This record documented that function's
+region rather than deciding it; pinning it was left to
+[#32](https://github.com/Dor-bl/moi-app/issues/32), exactly where #92 put it, and #32 has
+since pinned it to `eu-west-1` (section 3 below). The key audit
 is **not** closed: a credential capable of bypassing row-level security — the project's JWT
 signing secret — is still configured in Vercel.
 
@@ -52,7 +53,7 @@ require a second factor.
 | Vercel | Hosting and deployment of the site | **Enabled** | Pre-existing |
 | GitHub | Source of truth; deploys flow from it | **Enabled** | Pre-existing |
 | Resend | Delivers contact-form mail and magic links | **Enabled** | During this audit |
-| Google (behind `hallo@moicheck.nl`) | The mailbox itself; receives password-reset mail for the others | **Enabled** | Pre-existing |
+| Google (behind `hallo@moicheck.nl`) | The mailbox itself — a **personal** Gmail account, not Workspace, so no processor contract covers it (see [`docs/decisions/edge-function-region.md`](../decisions/edge-function-region.md)); also receives password-reset mail for the others | **Enabled** | Pre-existing |
 | Cloudflare | Runs Email Routing for the domain | **Enabled** | Pre-existing |
 
 ### Cloudflare was missing from #92's list
@@ -173,7 +174,7 @@ did the key stop being reachable", as opposed to "is it configured now".
 | Layer | Region | How it is set |
 | --- | --- | --- |
 | Supabase project `moi-app` | AWS `eu-west-1` (Ireland) | Project setting, fixed at creation |
-| Supabase Edge Functions | **Nearest the requesting user** | Platform default; not the project region |
+| Supabase Edge Functions | `eu-west-1` (Ireland) | `forceFunctionRegion` on the invocation in `app.js`; **not** the project region, and not the platform default, which is nearest the requesting user |
 | Vercel Functions | `fra1` (Frankfurt) | `vercel.json`, merged in [#121](https://github.com/Dor-bl/moi-app/pull/121) |
 | Static assets | All PoPs | Vercel CDN; not region-pinnable, by design |
 
@@ -181,7 +182,9 @@ did the key stop being reachable", as opposed to "is it configured now".
 the contact Edge Function's region "is governed by the Supabase project region, tracked
 separately in #32". The first half of that is **wrong and superseded by this record**: the
 project region governs the database, not where Edge Functions execute. The second half
-still holds — the contact function's processing region is a #32 question. #121 itself did
+still holds — the contact function's processing region was a #32 question, and #32 has now
+answered it by pinning the invocation, which is a different mechanism from the project
+setting #121 described. #121 itself did
 exactly what it says on the tin (it set `regions` for Vercel Functions); only that one
 sentence of its description misdescribes Supabase.
 
@@ -196,12 +199,27 @@ selected for that request, so a request arriving from outside the EU/EEA will ge
 processed outside the EU/EEA. That is the Chapter V transfer question itself, not a
 geographic aside — and the EU/EEA, not "Europe", is the boundary that decides it.
 
-Pinning is possible — via the `x-region` header or the `forceFunctionRegion` query
-parameter — with the caveat that a pinned region is **not** automatically re-routed during a
-regional outage, so pinning trades availability for locality. Whether to do that is the
-transfer question tracked in [#32](https://github.com/Dor-bl/moi-app/issues/32), where a
-comment is already posted. It is deliberately **not** decided here; this record describes
-the current state rather than making a new decision.
+**That was the state this audit found, and it has since been decided.** #32 resolved it by
+pinning: the contact invocation in `app.js` carries
+`?forceFunctionRegion=eu-west-1`, so a submission is processed in Ireland wherever it was
+sent from, and `privacy.html` section 3 says so. The caveat that made this a decision rather
+than an oversight stands — a pinned region is **not** automatically re-routed during a
+regional outage, so the form fails rather than moving, with `hallo@moicheck.nl` as the
+fallback. The reasoning, including why the query parameter rather than the `x-region`
+header, is in [`docs/decisions/edge-function-region.md`](../decisions/edge-function-region.md).
+
+The pin is also checked against reality rather than taken on documentation: the
+`Verify the pinned region is the region that runs` step in
+`.github/workflows/deploy-functions.yml` invokes the live function and fails the deploy
+unless `x-sb-edge-region` reports `eu-west-1`. It runs on every function deploy, which is
+what makes the claim in section 3 a verified one rather than an intended one.
+
+What pinning still does not settle is the rest of the journey: it governs only the first
+hop, and the message then leaves the EU for Resend, Cloudflare and the mailbox behind
+`hallo@moicheck.nl`. That is what `privacy.html` section 3 discloses. The terms on that last
+hop are settled and uncomfortable: a personal Gmail account under consumer terms, so no
+processor contract covers it. What remains open is not what the terms are but whether to
+keep them, which the decision record carries with the options.
 
 ### `ams1` is not a Vercel region
 
@@ -273,7 +291,7 @@ will return hits that do not contradict that:
 | `SUPABASE_JWT_SECRET` can bypass RLS | Reasoned from how Supabase signs and verifies project JWTs, not from a dashboard reading. Its continued presence is from the dashboard; whether legacy HS256 verification is still enabled is **not** settled here |
 | Vercel env changes apply only to new deployments | Vercel documentation |
 | Supabase project region `eu-west-1` | Supabase dashboard |
-| Edge Functions run nearest the user; `x-region` pinning | Supabase documentation (regional invocation) |
+| Edge Functions run nearest the user; `x-region` and `forceFunctionRegion` pinning | Supabase documentation (regional invocation) |
 | `ams1` invalid; `fra1` set | Failed deployment error, then `vercel.json` in this repository |
 | Contact flow, retention, IP window | Read from `supabase/functions/contact/index.ts` and `app.js` at commit `bdff6e1` |
 | Cloudflare Email Routing forwards the mailbox | `privacy.html` §2 |
@@ -298,9 +316,15 @@ rather than trusting this file — account state drifts, and this file does not.
       "for that minute", while the sweep that would make that true runs only on a later
       request to the same instance. A wording question for
       [#86](https://github.com/Dor-bl/moi-app/issues/86), not a code change.
-- [ ] **Edge Function region** — whether to pin the contact function to an EU region, and
-      accept the loss of outage re-routing, is open in
-      [#32](https://github.com/Dor-bl/moi-app/issues/32). Not decided here.
+- [x] **Edge Function region** — decided in
+      [#32](https://github.com/Dor-bl/moi-app/issues/32): pinned to `eu-west-1`, outage
+      re-routing knowingly given up, disclosure written into `privacy.html` section 3. See
+      [`docs/decisions/edge-function-region.md`](../decisions/edge-function-region.md), whose
+      own follow-ups carry what remains. Two things have since left that list: the live
+      confirmation, because the deploy workflow now asserts the region against the running
+      function, and the mailbox's terms, which the owner settled on 22 September — a
+      personal Gmail account under consumer terms, with no processor contract. What is still
+      open there is whether to move it somewhere that offers one.
 - [ ] **Article 30 record of processing** — still unwritten, tracked in
       [#87](https://github.com/Dor-bl/moi-app/issues/87), which designates
       `docs/compliance/processing-register.md`. This file is not a substitute and should not

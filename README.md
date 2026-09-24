@@ -171,6 +171,19 @@ see [`docs/decisions/formsubmit-gdpr-basis.md`](docs/decisions/formsubmit-gdpr-b
 for why. The function validates the submission and hands it to Resend, which delivers it
 to `hallo@moicheck.nl`.
 
+The POST carries `?forceFunctionRegion=eu-west-1`. Edge Functions otherwise run in the
+region nearest the caller — the project's own `eu-west-1` governs the database and nothing
+else — so without it a submission from outside the EU is processed outside the EU.
+`privacy.html` section 3 tells visitors it is processed in Ireland, which makes that query
+parameter a compliance claim rather than a performance tweak; `tests/contact-region.test.js`
+fails if it disappears. The reasoning, and why the query parameter rather than the
+`x-region` header, is in
+[`docs/decisions/edge-function-region.md`](docs/decisions/edge-function-region.md). The
+region a live invocation actually ran in comes back in the `x-sb-edge-region` response
+header, which is the only way to confirm it end to end — `deploy-functions.yml` does exactly
+that after each deploy and fails if the answer is not `eu-west-1`, so the three places that
+have to agree (the pin, the policy, the platform) cannot drift apart quietly.
+
 **The function must be deployed before the client change reaches production**, or the
 form will POST to an endpoint that does not exist yet:
 
@@ -281,7 +294,7 @@ a button whose whole meaning is "confirm I am here" — nothing is read in the b
 no coordinate is kept. The key-by-key reasoning, and what would change it,
 is written up in
 [`docs/decisions/consent-exemption-analysis.md`](docs/decisions/consent-exemption-analysis.md);
-`privacy.html` section 5 states the same thing in plain language for visitors. Add a new
+`privacy.html` section 6 states the same thing in plain language for visitors. Add a new
 storage key that fits none of those three grounds and that analysis needs revisiting.
 
 ### Account deletion (GDPR right to erasure)
