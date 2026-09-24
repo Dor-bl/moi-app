@@ -543,6 +543,18 @@ const EVENTS = [
         url: 'https://www.hortusharen.nl/festival/'
     },
     {
+        id: 'groninger-marktendag-2026',
+        date: '2026-10-03',
+        startTime: '09:00',
+        endTime: '17:00',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Groninger Marktendag (Market Day)', nl: 'Groninger Marktendag' },
+        location: { en: 'City centre, incl. Waagstraat and the A-kerk', nl: 'Binnenstad, o.a. Waagstraat en bij de A-kerk' },
+        tip: { en: 'The biggest one-day market in the north: 400+ stalls spread over seven themed markets — vintage, handmade, interior and lifestyle, regional products, antiques and curiosities, books and vinyl, and a goods market — winding about a kilometre through the old centre, with live music, a children\'s programme and a food court next to the A-kerk. Entry is free. It falls on German Unity Day, so expect plenty of German day-trippers: come by bike and come early.', nl: 'De grootste eendaagse markt van het Noorden: ruim 400 kramen verdeeld over zeven themamarkten — vintage, handgemaakt, interieur en lifestyle, streekproducten, antiek en curiosa, boeken en vinyl, en een warenmarkt — zo\'n kilometer lang door de oude binnenstad, met livemuziek, een kinderprogramma en een foodplein naast de A-kerk. De toegang is gratis. Het valt op de Duitse Dag van de Eenheid, dus reken op veel Duitse dagjesmensen: kom op de fiets en kom vroeg.' },
+        url: 'https://groningermarktendag.nl/'
+    },
+    {
         id: 'pompoen-plukdagen-2026',
         date: '2026-10-03',
         endDate: '2026-10-04',
