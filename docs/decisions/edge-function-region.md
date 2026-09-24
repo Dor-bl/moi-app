@@ -166,8 +166,8 @@ mail and costs no visitor their allowance.
       side.
 - [x] **The mailbox's own terms** — settled, and the answer is the uncomfortable one. It is a
       personal Gmail account under consumer terms, confirmed by the owner on 22 September.
-      `privacy.html` §2 and section 3 now say so plainly. The remaining question is not what
-      the terms are but whether to keep them; see the next item.
+      `privacy.html` §2 and section 3 now say so plainly. Whether to keep them was the
+      question that followed; the next item records the answer.
 - [x] **Whether to move the mailbox somewhere with a DPA** — decided on 23 September 2026:
       **keep the personal Gmail account, disclosed as it is.** Google Workspace charges a
       monthly subscription and MoiCheck has no income, so the owner chose disclosure over a
