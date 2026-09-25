@@ -380,6 +380,15 @@ test('a months-long run that has opened is ongoing, not before it opens or after
     assert.equal(isOngoing(exhibition, '2027-02-01'), false);
 });
 
+test('a timed long run stays dated on opening day until it opens', () => {
+    const timedExpo = { ...exhibition, startTime: '10:00', endTime: '17:00' };
+    const at = hhmm => new Date(`2026-02-14T${hhmm}:00+01:00`);
+    assert.equal(isOngoing(timedExpo, '2026-02-14', at('09:00')), false, 'before opening');
+    assert.equal(isOngoing(timedExpo, '2026-02-14', at('10:00')), true, 'once open');
+    assert.equal(isOngoing(timedExpo, '2026-02-15', new Date('2026-02-15T08:00:00+01:00')), true,
+        'later mornings stay ongoing');
+});
+
 test('weekend festivals and one-day events are never ongoing', () => {
     assert.equal(isOngoing(festival, '2026-08-25'), false, 'an 11-day run stays a dated event');
     assert.equal(isOngoing(singleDay, '2026-09-18'), false);

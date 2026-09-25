@@ -155,11 +155,14 @@ function daysInSpan(event) {
 // Ongoing events are listed apart from the dated ones. Sorted by start date, a
 // months-long exhibition would otherwise sit first with a "happening now" badge
 // for its whole run and bury what is actually coming up. Before it opens it is
-// still a dated event, since the opening itself is worth knowing about.
+// still a dated event, since the opening itself is worth knowing about — and
+// on opening day that holds until its first opening time, when it has one.
 function isOngoing(event, today, now = new Date()) {
-    return event.date <= today
-        && !hasEnded(event, today, now)
-        && daysInSpan(event) >= ONGOING_MIN_DAYS;
+    if (event.date > today || hasEnded(event, today, now)) return false;
+    if (daysInSpan(event) < ONGOING_MIN_DAYS) return false;
+
+    const [startTime] = hoursOn(event, today);
+    return event.date < today || !startTime || timeInGroningen(now) >= startTime;
 }
 
 // Intl handles the range shapes per locale ("20-30 August", "28 December - 2
