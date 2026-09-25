@@ -1,5 +1,6 @@
 // Events Module - Shared Global Exports: todayInGroningen, resolveOccurrence,
-// getUpcomingEvents, isHappeningNow, formatEventDate, formatEventsCoverageEnd
+// getUpcomingEvents, isHappeningNow, isOngoing, formatEventDate, formatEventEnd,
+// formatEventsCoverageEnd
 // timeInGroningen is internal only - nothing outside this file needs the clock.
 // Dependencies: none. Pure date logic, so tests can drive it without a DOM.
 
@@ -141,6 +142,26 @@ function isHappeningNow(event, today, now = new Date()) {
     return true;
 }
 
+// A run longer than this many days is an exhibition-style event: once it has
+// opened you can go any week, so it is not news the way a weekend festival is.
+const ONGOING_MIN_DAYS = 15;
+
+function daysInSpan(event) {
+    const start = new Date(`${event.date}T00:00:00Z`);
+    const end = new Date(`${spanEnd(event)}T00:00:00Z`);
+    return Math.round((end - start) / 86400000) + 1;
+}
+
+// Ongoing events are listed apart from the dated ones. Sorted by start date, a
+// months-long exhibition would otherwise sit first with a "happening now" badge
+// for its whole run and bury what is actually coming up. Before it opens it is
+// still a dated event, since the opening itself is worth knowing about.
+function isOngoing(event, today, now = new Date()) {
+    return event.date <= today
+        && !hasEnded(event, today, now)
+        && daysInSpan(event) >= ONGOING_MIN_DAYS;
+}
+
 // Intl handles the range shapes per locale ("20-30 August", "28 December - 2
 // January"), so there is no hand-rolled range logic to get wrong. The dates are
 // parsed as UTC and formatted as UTC: they are calendar days, not moments, and
@@ -157,6 +178,19 @@ function formatEventDate(event, lang, today = todayInGroningen()) {
     return event.endDate
         ? formatter.formatRange(start, new Date(`${event.endDate}T00:00:00Z`))
         : formatter.format(start);
+}
+
+// The end of the run on its own, for ongoing events: the start is already past,
+// so "until" is the only date that helps anyone plan.
+function formatEventEnd(event, lang, today = todayInGroningen()) {
+    const end = spanEnd(event);
+    const options = { day: 'numeric', month: 'long', timeZone: 'UTC' };
+    if (end.slice(0, 4) !== today.slice(0, 4)) {
+        options.year = 'numeric';
+    }
+
+    return new Intl.DateTimeFormat(lang === 'nl' ? 'nl-NL' : 'en-GB', options)
+        .format(new Date(`${end}T00:00:00Z`));
 }
 
 // Freshness signal for the Events view: there is no per-user "as of" timestamp

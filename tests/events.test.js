@@ -10,7 +10,9 @@ const {
     resolveOccurrence,
     getUpcomingEvents,
     isHappeningNow,
+    isOngoing,
     formatEventDate,
+    formatEventEnd,
     formatEventsCoverageEnd
 } = loadEventsModule();
 
@@ -316,7 +318,9 @@ test('both languages carry every events string', () => {
             'eventsFilterEmpty',
             'eventsMoreInfo',
             'eventsEmpty',
-            'eventsCoverage'
+            'eventsCoverage',
+            'eventsOngoing',
+            'eventsOngoingUntil'
         ]) {
             assert.ok(UI_TRANSLATIONS[lang][key], `${lang} is missing ${key}`);
         }
@@ -364,4 +368,34 @@ test('coverage reads through the latest span end, not just the last-sorted start
     const upcoming = getUpcomingEvents([longFestival, laterShort], '2026-09-15');
     assert.equal(formatEventsCoverageEnd(upcoming, 'en'), 'November 2026');
     assert.equal(formatEventsCoverageEnd(upcoming, 'nl'), 'november 2026');
+});
+
+const exhibition = { id: 'exhibition', date: '2026-02-14', endDate: '2027-01-31', title: { en: 'Expo', nl: 'Expo' } };
+
+test('a months-long run that has opened is ongoing, not before it opens or after it closes', () => {
+    assert.equal(isOngoing(exhibition, '2026-02-13'), false, 'its opening is still a dated event');
+    assert.equal(isOngoing(exhibition, '2026-02-14'), true);
+    assert.equal(isOngoing(exhibition, '2026-09-25'), true);
+    assert.equal(isOngoing(exhibition, '2027-01-31'), true, 'still on its last day');
+    assert.equal(isOngoing(exhibition, '2027-02-01'), false);
+});
+
+test('weekend festivals and one-day events are never ongoing', () => {
+    assert.equal(isOngoing(festival, '2026-08-25'), false, 'an 11-day run stays a dated event');
+    assert.equal(isOngoing(singleDay, '2026-09-18'), false);
+    const twoWeeks = { ...festival, date: '2026-08-01', endDate: '2026-08-14' };
+    const fifteenDays = { ...festival, date: '2026-08-01', endDate: '2026-08-15' };
+    assert.equal(isOngoing(twoWeeks, '2026-08-05'), false);
+    assert.equal(isOngoing(fifteenDays, '2026-08-05'), true);
+});
+
+test('an ongoing event shows when it closes, with the year only when it differs', () => {
+    assert.equal(formatEventEnd(exhibition, 'en', '2026-09-25'), '31 January 2027');
+    assert.equal(formatEventEnd(exhibition, 'nl', '2026-09-25'), '31 januari 2027');
+    assert.equal(formatEventEnd(exhibition, 'en', '2027-01-10'), '31 January');
+});
+
+test('the shipped LEGO exhibition sits in the ongoing section while it runs', () => {
+    const lego = EVENTS.find(event => event.id === 'lego-fabuland-expositie');
+    assert.equal(isOngoing(lego, '2026-09-25'), true);
 });
