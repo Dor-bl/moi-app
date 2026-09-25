@@ -43,6 +43,13 @@ function spanEnd(event) {
     return event.endDate || event.date;
 }
 
+// A day's opening hours as [start, end]. `hours` lists them per day for events
+// whose hours change across the run; any day it leaves out falls back to the
+// flat startTime/endTime, and to all day when those are missing too.
+function hoursOn(event, day) {
+    return event.hours?.[day] || [event.startTime, event.endTime];
+}
+
 // Day-granularity by default, but a timed event's endTime cuts its last day
 // short: once the clock passes it, the event is spent for the rest of that day
 // too, rather than lingering in the list until midnight.
@@ -50,7 +57,8 @@ function hasEnded(event, today, now = new Date()) {
     const end = spanEnd(event);
     if (end < today) return true;
     if (end > today) return false;
-    return Boolean(event.endTime) && timeInGroningen(now) > event.endTime;
+    const [, endTime] = hoursOn(event, today);
+    return Boolean(endTime) && timeInGroningen(now) > endTime;
 }
 
 function withYear(isoDate, year) {
@@ -119,14 +127,16 @@ function getUpcomingEvents(events, today = todayInGroningen(), now = new Date())
 
 // Day-granularity by default: an event is "happening now" for its whole span.
 // startTime/endTime are daily opening hours and narrow that on every day of the
-// span — most entries carry neither and keep the old all-day behaviour, which is
-// correct for something like Sint Maarten that has no fixed start.
+// span, and `hours` narrows specific days when the hours vary — most entries
+// carry none of these and keep the old all-day behaviour, which is correct for
+// something like Sint Maarten that has no fixed start.
 function isHappeningNow(event, today, now = new Date()) {
     if (!(event.date <= today && !hasEnded(event, today, now))) return false;
 
+    const [startTime, endTime] = hoursOn(event, today);
     const clock = timeInGroningen(now);
-    if (event.startTime && clock < event.startTime) return false;
-    if (event.endTime && clock > event.endTime) return false;
+    if (startTime && clock < startTime) return false;
+    if (endTime && clock > endTime) return false;
 
     return true;
 }
