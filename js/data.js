@@ -367,7 +367,7 @@ const BUCKET_LIST = [
         coords: [53.2333, 7.2000],
         category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
         title: { en: 'Visit the Kiekkaaste bird hide on the Dollard', nl: 'Bezoek de Kiekkaaste aan de Dollard' },
-        tip: { en: "This is the only Dutch bird hide built outside the dike, standing on stilts in the reeds right where the Westerwoldse Aa meets the Dollard, barely 150 metres from the German border. Park at Nieuwe Statenzijl, cross the lock, and follow the wooden Marcelluspad boardwalk through the reedbed to reach it — flocks of dunlin work the mudflats below, and if you're lucky you'll spot a seal or harbour porpoise out in the channel.", nl: 'Dit is de enige vogelkijkhut van Nederland die buitendijks staat, op palen in het riet precies waar de Westerwoldse Aa de Dollard in stroomt, nog geen 150 meter van de Duitse grens. Parkeer bij Nieuwe Statenzijl, steek de sluis over en volg het houten Marcelluspad door het rietland naar de hut — bonte strandlopers foerageren op de wadplaten eronder, en met een beetje geluk zie je een zeehond of bruinvis in de geul.' },
+        tip: { en: "This is the only Dutch bird hide built outside the dike, standing on stilts in the reeds right where the Westerwoldse Aa meets the Dollard, barely 150 metres from the German border. Park at Nieuwe Statenzijl, cross the lock, and follow the wooden Marcelluspad boardwalk about 600 metres through the reedbed to reach it — flocks of dunlin work the mudflats below, and if you're lucky you'll spot a seal or harbour porpoise out in the channel, so bring binoculars. It's a protected nature area: dogs aren't allowed, not even on a lead, and neither are drones.", nl: 'Dit is de enige vogelkijkhut van Nederland die buitendijks staat, op palen in het riet precies waar de Westerwoldse Aa de Dollard in stroomt, nog geen 150 meter van de Duitse grens. Parkeer bij Nieuwe Statenzijl, steek de sluis over en volg het houten Marcelluspad zo\'n 600 meter door het rietland naar de hut — bonte strandlopers foerageren op de wadplaten eronder, en met een beetje geluk zie je een zeehond of bruinvis in de geul, dus neem een verrekijker mee. Het is beschermd natuurgebied: honden zijn niet toegestaan, ook niet aangelijnd, en drones evenmin.' },
         url: 'https://www.visitgroningen.nl/nl/plekken/kiekkaaste',
         urlLabel: { en: 'Kiekkaaste Bird Hide Info 🦅', nl: 'Kiekkaaste Vogelkijkhut Info 🦅' }
     },
@@ -411,6 +411,10 @@ const BUCKET_LIST = [
 //   an actual published start time. They narrow "Happening now" to those hours
 //   instead of the whole day, on every day of a multi-day run. Leave both off
 //   rather than guessing a time.
+//
+//   `hours` is for a multi-day run whose hours differ by day: it maps each ISO
+//   day to [start, end] and overrides startTime/endTime on the days it lists.
+//   The keys are full dates, so it is for non-annual entries only.
 const EVENTS = [
     {
         id: 'koningsdag',
@@ -526,10 +530,27 @@ const EVENTS = [
         id: 'wijnfestival-groningen-2026',
         date: '2026-09-25',
         endDate: '2026-09-27',
+        // Different hours each day, per the official listing.
+        hours: {
+            '2026-09-25': ['17:00', '23:30'],
+            '2026-09-26': ['16:00', '23:30'],
+            '2026-09-27': ['15:00', '20:00']
+        },
         title: { en: 'Wijnfestival Groningen (Wine Festival)', nl: 'Wijnfestival Groningen' },
         location: { en: 'A-kerk, city centre', nl: 'A-kerk, binnenstad' },
-        tip: { en: 'This 10th edition turns the atmospheric A-kerk into a three-day wine tasting, with 20+ exhibitors pouring 250+ wines from around the world, food pairings, and live music — Friday evening through Sunday afternoon. Book online in advance for a cheaper ticket than at the door.', nl: 'Dit tiende jaar verandert de sfeervolle A-kerk drie dagen lang in een wijnproeverij, met ruim 20 exposanten en 250+ wijnen uit de hele wereld, hapjes erbij en livemuziek — van vrijdagavond tot zondagmiddag. Koop je kaartje van tevoren online, dat is goedkoper dan aan de deur.' },
+        tip: { en: 'This 10th edition turns the atmospheric A-kerk into a three-day wine tasting, with 20+ exhibitors pouring 250+ wines from around the world, food pairings, and live music. Open Friday 17:00–23:30, Saturday 16:00–23:30 and Sunday 15:00–20:00. Book online in advance for a cheaper ticket than at the door.', nl: 'Dit tiende jaar verandert de sfeervolle A-kerk drie dagen lang in een wijnproeverij, met ruim 20 exposanten en 250+ wijnen uit de hele wereld, hapjes erbij en livemuziek. Open op vrijdag van 17:00 tot 23:30, zaterdag van 16:00 tot 23:30 en zondag van 15:00 tot 20:00 uur. Koop je kaartje van tevoren online, dat is goedkoper dan aan de deur.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/440554054/wijnfestival-groningen-7'
+    },
+    {
+        id: 'eureka-2026',
+        date: '2026-09-25',
+        // Runs until midnight; 23:59 keeps the last minute inside the same day.
+        startTime: '19:30',
+        endTime: '23:59',
+        title: { en: 'Eureka! Science Festival', nl: 'Eureka! Wetenschapsfestival' },
+        location: { en: 'Forum Groningen, Nieuwe Markt 1', nl: 'Forum Groningen, Nieuwe Markt 1' },
+        tip: { en: 'The festival formerly known as European Researchers\' Night takes over the whole of Forum for an evening of science battles, talks, installations, workshops and music, this year around the theme "Resilience in Times of Change". Runs 19:30 until midnight; tickets are €8.50.', nl: 'Het festival dat vroeger European Researchers\' Night heette, neemt een avond lang heel het Forum over met wetenschapsbattles, lezingen, installaties, workshops en muziek, dit jaar rond het thema "Resilience in Times of Change". Van 19:30 tot middernacht; kaartjes kosten €8,50.' },
+        url: 'https://forum.nl/nl/agenda/talks-events/eureka-10048470'
     },
     {
         id: 'hortusfestival-haren-2026',
@@ -716,6 +737,8 @@ const UI_TRANSLATIONS = {
         eventsCheckInTimeout: 'That took too long. Outdoors it is usually quicker — try again.',
         eventsCheckInClosed: 'This event has finished, so the check-in has closed.',
         eventsCheckInSaveFailed: 'Your location checked out, but the badge could not be saved — this browser is blocking or out of storage. Private browsing usually does it.',
+        eventsOngoing: 'Ongoing — go any time',
+        eventsOngoingUntil: 'Until {date}',
         courseLink: 'Free Dutch Course (UG) 🎓',
         signIn: 'Sign In',
         signOut: 'Sign Out',
@@ -830,6 +853,8 @@ const UI_TRANSLATIONS = {
         eventsCheckInTimeout: 'Dat duurde te lang. Buiten gaat het meestal sneller — probeer het opnieuw.',
         eventsCheckInClosed: 'Dit evenement is afgelopen, dus inchecken kan niet meer.',
         eventsCheckInSaveFailed: 'Je locatie klopte, maar de badge kon niet worden opgeslagen — deze browser blokkeert opslag of zit vol. Privénavigatie doet dit meestal.',
+        eventsOngoing: 'Doorlopend — ga wanneer je wilt',
+        eventsOngoingUntil: 'Tot en met {date}',
         courseLink: 'Gratis Cursus Nederlands (RUG) 🎓',
         signIn: 'Inloggen',
         signOut: 'Uitloggen',

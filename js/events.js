@@ -1,5 +1,6 @@
 // Events Module - Shared Global Exports: todayInGroningen, resolveOccurrence,
-// getUpcomingEvents, isHappeningNow, formatEventDate, formatEventsCoverageEnd
+// getUpcomingEvents, isHappeningNow, isOngoing, formatEventDate, formatEventEnd,
+// formatEventsCoverageEnd
 // timeInGroningen is internal only - nothing outside this file needs the clock.
 // Dependencies: none. Pure date logic, so tests can drive it without a DOM.
 
@@ -43,6 +44,13 @@ function spanEnd(event) {
     return event.endDate || event.date;
 }
 
+// A day's opening hours as [start, end]. `hours` lists them per day for events
+// whose hours change across the run; any day it leaves out falls back to the
+// flat startTime/endTime, and to all day when those are missing too.
+function hoursOn(event, day) {
+    return event.hours?.[day] || [event.startTime, event.endTime];
+}
+
 // Day-granularity by default, but a timed event's endTime cuts its last day
 // short: once the clock passes it, the event is spent for the rest of that day
 // too, rather than lingering in the list until midnight.
@@ -50,7 +58,8 @@ function hasEnded(event, today, now = new Date()) {
     const end = spanEnd(event);
     if (end < today) return true;
     if (end > today) return false;
-    return Boolean(event.endTime) && timeInGroningen(now) > event.endTime;
+    const [, endTime] = hoursOn(event, today);
+    return Boolean(endTime) && timeInGroningen(now) > endTime;
 }
 
 function withYear(isoDate, year) {
@@ -119,16 +128,41 @@ function getUpcomingEvents(events, today = todayInGroningen(), now = new Date())
 
 // Day-granularity by default: an event is "happening now" for its whole span.
 // startTime/endTime are daily opening hours and narrow that on every day of the
-// span — most entries carry neither and keep the old all-day behaviour, which is
-// correct for something like Sint Maarten that has no fixed start.
+// span, and `hours` narrows specific days when the hours vary — most entries
+// carry none of these and keep the old all-day behaviour, which is correct for
+// something like Sint Maarten that has no fixed start.
 function isHappeningNow(event, today, now = new Date()) {
     if (!(event.date <= today && !hasEnded(event, today, now))) return false;
 
+    const [startTime, endTime] = hoursOn(event, today);
     const clock = timeInGroningen(now);
-    if (event.startTime && clock < event.startTime) return false;
-    if (event.endTime && clock > event.endTime) return false;
+    if (startTime && clock < startTime) return false;
+    if (endTime && clock > endTime) return false;
 
     return true;
+}
+
+// A run longer than this many days is an exhibition-style event: once it has
+// opened you can go any week, so it is not news the way a weekend festival is.
+const ONGOING_MIN_DAYS = 15;
+
+function daysInSpan(event) {
+    const start = new Date(`${event.date}T00:00:00Z`);
+    const end = new Date(`${spanEnd(event)}T00:00:00Z`);
+    return Math.round((end - start) / 86400000) + 1;
+}
+
+// Ongoing events are listed apart from the dated ones. Sorted by start date, a
+// months-long exhibition would otherwise sit first with a "happening now" badge
+// for its whole run and bury what is actually coming up. Before it opens it is
+// still a dated event, since the opening itself is worth knowing about — and
+// on opening day that holds until its first opening time, when it has one.
+function isOngoing(event, today, now = new Date()) {
+    if (event.date > today || hasEnded(event, today, now)) return false;
+    if (daysInSpan(event) < ONGOING_MIN_DAYS) return false;
+
+    const [startTime] = hoursOn(event, today);
+    return event.date < today || !startTime || timeInGroningen(now) >= startTime;
 }
 
 // Intl handles the range shapes per locale ("20-30 August", "28 December - 2
@@ -147,6 +181,19 @@ function formatEventDate(event, lang, today = todayInGroningen()) {
     return event.endDate
         ? formatter.formatRange(start, new Date(`${event.endDate}T00:00:00Z`))
         : formatter.format(start);
+}
+
+// The end of the run on its own, for ongoing events: the start is already past,
+// so "until" is the only date that helps anyone plan.
+function formatEventEnd(event, lang, today = todayInGroningen()) {
+    const end = spanEnd(event);
+    const options = { day: 'numeric', month: 'long', timeZone: 'UTC' };
+    if (end.slice(0, 4) !== today.slice(0, 4)) {
+        options.year = 'numeric';
+    }
+
+    return new Intl.DateTimeFormat(lang === 'nl' ? 'nl-NL' : 'en-GB', options)
+        .format(new Date(`${end}T00:00:00Z`));
 }
 
 // Freshness signal for the Events view: there is no per-user "as of" timestamp

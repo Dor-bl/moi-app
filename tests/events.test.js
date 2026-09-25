@@ -10,7 +10,9 @@ const {
     resolveOccurrence,
     getUpcomingEvents,
     isHappeningNow,
+    isOngoing,
     formatEventDate,
+    formatEventEnd,
     formatEventsCoverageEnd
 } = loadEventsModule();
 
@@ -144,6 +146,22 @@ test('a multi-day timed event keeps its hours on every day, not just the ends', 
     assert.equal(getUpcomingEvents([weekend], '2026-09-26', new Date('2026-09-26T17:00:00Z')).length, 1, 'still listed between the days');
 });
 
+test('per-day hours override the flat times, day by day', () => {
+    const wine = {
+        id: 'wine', date: '2026-09-25', endDate: '2026-09-27', startTime: '12:00',
+        hours: { '2026-09-25': ['17:00', '23:30'], '2026-09-27': ['15:00', '20:00'] },
+        title: { en: 'W', nl: 'W' }
+    };
+
+    assert.equal(isHappeningNow(wine, '2026-09-25', new Date('2026-09-25T13:00:00Z')), false, 'first day, 15:00 Amsterdam, before it opens');
+    assert.equal(isHappeningNow(wine, '2026-09-25', new Date('2026-09-25T15:00:00Z')), true, 'first day, 17:00 Amsterdam, right at opening');
+    assert.equal(isHappeningNow(wine, '2026-09-26', new Date('2026-09-26T10:30:00Z')), true, 'unlisted day falls back to startTime, 12:30 Amsterdam');
+    assert.equal(isHappeningNow(wine, '2026-09-27', new Date('2026-09-27T14:00:00Z')), true, 'last day, 16:00 Amsterdam');
+    assert.equal(isHappeningNow(wine, '2026-09-27', new Date('2026-09-27T18:30:00Z')), false, 'last day, 20:30 Amsterdam');
+    assert.equal(getUpcomingEvents([wine], '2026-09-27', new Date('2026-09-27T18:30:00Z')).length, 0, 'gone once the last day closes');
+    assert.equal(getUpcomingEvents([wine], '2026-09-25', new Date('2026-09-25T22:00:00Z')).length, 1, 'first-day closing does not end the run');
+});
+
 test('a timed event with no endTime stays happening for the rest of its day', () => {
     const openEnded = { ...singleDay, startTime: '18:00' };
 
@@ -227,6 +245,18 @@ test('every shipped event is well formed', () => {
             assert.ok(isRealDate(event.endDate), `${event.id} endDate is a real day`);
         }
 
+        // Keys are full dates, so they would silently stop matching once an
+        // annual entry rolls into another year.
+        if (event.hours) {
+            assert.ok(!event.annual, `${event.id} hours are for non-annual entries only`);
+            for (const [day, [start, end]] of Object.entries(event.hours)) {
+                assert.ok(isRealDate(day) && day >= event.date && day <= (event.endDate || event.date), `${event.id} hours day ${day} is inside its run`);
+                assert.match(start, /^\d\d:\d\d$/, `${event.id} ${day} start is HH:MM`);
+                assert.match(end, /^\d\d:\d\d$/, `${event.id} ${day} end is HH:MM`);
+                assert.ok(start < end, `${event.id} ${day} opens before it closes`);
+            }
+        }
+
         for (const lang of ALLOWED_LANGS) {
             assert.ok(event.title[lang], `${event.id} has a ${lang} title`);
 
@@ -288,7 +318,9 @@ test('both languages carry every events string', () => {
             'eventsFilterEmpty',
             'eventsMoreInfo',
             'eventsEmpty',
-            'eventsCoverage'
+            'eventsCoverage',
+            'eventsOngoing',
+            'eventsOngoingUntil'
         ]) {
             assert.ok(UI_TRANSLATIONS[lang][key], `${lang} is missing ${key}`);
         }
@@ -336,4 +368,43 @@ test('coverage reads through the latest span end, not just the last-sorted start
     const upcoming = getUpcomingEvents([longFestival, laterShort], '2026-09-15');
     assert.equal(formatEventsCoverageEnd(upcoming, 'en'), 'November 2026');
     assert.equal(formatEventsCoverageEnd(upcoming, 'nl'), 'november 2026');
+});
+
+const exhibition = { id: 'exhibition', date: '2026-02-14', endDate: '2027-01-31', title: { en: 'Expo', nl: 'Expo' } };
+
+test('a months-long run that has opened is ongoing, not before it opens or after it closes', () => {
+    assert.equal(isOngoing(exhibition, '2026-02-13'), false, 'its opening is still a dated event');
+    assert.equal(isOngoing(exhibition, '2026-02-14'), true);
+    assert.equal(isOngoing(exhibition, '2026-09-25'), true);
+    assert.equal(isOngoing(exhibition, '2027-01-31'), true, 'still on its last day');
+    assert.equal(isOngoing(exhibition, '2027-02-01'), false);
+});
+
+test('a timed long run stays dated on opening day until it opens', () => {
+    const timedExpo = { ...exhibition, startTime: '10:00', endTime: '17:00' };
+    const at = hhmm => new Date(`2026-02-14T${hhmm}:00+01:00`);
+    assert.equal(isOngoing(timedExpo, '2026-02-14', at('09:00')), false, 'before opening');
+    assert.equal(isOngoing(timedExpo, '2026-02-14', at('10:00')), true, 'once open');
+    assert.equal(isOngoing(timedExpo, '2026-02-15', new Date('2026-02-15T08:00:00+01:00')), true,
+        'later mornings stay ongoing');
+});
+
+test('weekend festivals and one-day events are never ongoing', () => {
+    assert.equal(isOngoing(festival, '2026-08-25'), false, 'an 11-day run stays a dated event');
+    assert.equal(isOngoing(singleDay, '2026-09-18'), false);
+    const twoWeeks = { ...festival, date: '2026-08-01', endDate: '2026-08-14' };
+    const fifteenDays = { ...festival, date: '2026-08-01', endDate: '2026-08-15' };
+    assert.equal(isOngoing(twoWeeks, '2026-08-05'), false);
+    assert.equal(isOngoing(fifteenDays, '2026-08-05'), true);
+});
+
+test('an ongoing event shows when it closes, with the year only when it differs', () => {
+    assert.equal(formatEventEnd(exhibition, 'en', '2026-09-25'), '31 January 2027');
+    assert.equal(formatEventEnd(exhibition, 'nl', '2026-09-25'), '31 januari 2027');
+    assert.equal(formatEventEnd(exhibition, 'en', '2027-01-10'), '31 January');
+});
+
+test('the shipped LEGO exhibition sits in the ongoing section while it runs', () => {
+    const lego = EVENTS.find(event => event.id === 'lego-fabuland-expositie');
+    assert.equal(isOngoing(lego, '2026-09-25'), true);
 });

@@ -738,9 +738,11 @@ function renderList() {
     }
 }
 
-function buildEventCard(event, today) {
+// Ongoing cards show only when the run ends and never the "now" badge: for an
+// event open for months, "happening now" is true every day and so says nothing.
+function buildEventCard(event, today, ongoing = false) {
     const t = UI_TRANSLATIONS[currentLang];
-    const now = isHappeningNow(event, today);
+    const now = !ongoing && isHappeningNow(event, today);
 
     const card = document.createElement('article');
     card.className = `event-card ${now ? 'happening-now' : ''}`;
@@ -748,7 +750,9 @@ function buildEventCard(event, today) {
     const date = document.createElement('div');
     date.className = 'event-date';
     const dateText = document.createElement('span');
-    dateText.textContent = formatEventDate(event, currentLang, today);
+    dateText.textContent = ongoing
+        ? t.eventsOngoingUntil.replace('{date}', formatEventEnd(event, currentLang, today))
+        : formatEventDate(event, currentLang, today);
     date.appendChild(dateText);
 
     if (now) {
@@ -1032,7 +1036,22 @@ function renderEvents() {
         empty.textContent = t.eventsFilterEmpty;
         fragment.appendChild(empty);
     } else {
-        visible.forEach(event => fragment.appendChild(buildEventCard(event, today)));
+        // Dated events first, in start order; ongoing ones after, under their own
+        // heading and soonest-closing first, so the last chance to go is on top.
+        const dated = visible.filter(event => !isOngoing(event, today));
+        const ongoing = visible
+            .filter(event => isOngoing(event, today))
+            .sort((a, b) => (a.endDate || a.date).localeCompare(b.endDate || b.date));
+
+        dated.forEach(event => fragment.appendChild(buildEventCard(event, today)));
+
+        if (ongoing.length > 0) {
+            const heading = document.createElement('h2');
+            heading.className = 'events-section-heading';
+            heading.textContent = t.eventsOngoing;
+            fragment.appendChild(heading);
+            ongoing.forEach(event => fragment.appendChild(buildEventCard(event, today, true)));
+        }
     }
 
     eventsContainer.replaceChildren(fragment);

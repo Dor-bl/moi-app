@@ -27,6 +27,8 @@ export function loadEventsModule() {
             resolveOccurrence,
             getUpcomingEvents,
             isHappeningNow,
+            isOngoing,
+            formatEventEnd,
             formatEventDate,
             formatEventsCoverageEnd
         };
