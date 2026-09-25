@@ -144,6 +144,22 @@ test('a multi-day timed event keeps its hours on every day, not just the ends', 
     assert.equal(getUpcomingEvents([weekend], '2026-09-26', new Date('2026-09-26T17:00:00Z')).length, 1, 'still listed between the days');
 });
 
+test('per-day hours override the flat times, day by day', () => {
+    const wine = {
+        id: 'wine', date: '2026-09-25', endDate: '2026-09-27', startTime: '12:00',
+        hours: { '2026-09-25': ['17:00', '23:30'], '2026-09-27': ['15:00', '20:00'] },
+        title: { en: 'W', nl: 'W' }
+    };
+
+    assert.equal(isHappeningNow(wine, '2026-09-25', new Date('2026-09-25T13:00:00Z')), false, 'first day, 15:00 Amsterdam, before it opens');
+    assert.equal(isHappeningNow(wine, '2026-09-25', new Date('2026-09-25T15:00:00Z')), true, 'first day, 17:00 Amsterdam, right at opening');
+    assert.equal(isHappeningNow(wine, '2026-09-26', new Date('2026-09-26T10:30:00Z')), true, 'unlisted day falls back to startTime, 12:30 Amsterdam');
+    assert.equal(isHappeningNow(wine, '2026-09-27', new Date('2026-09-27T14:00:00Z')), true, 'last day, 16:00 Amsterdam');
+    assert.equal(isHappeningNow(wine, '2026-09-27', new Date('2026-09-27T18:30:00Z')), false, 'last day, 20:30 Amsterdam');
+    assert.equal(getUpcomingEvents([wine], '2026-09-27', new Date('2026-09-27T18:30:00Z')).length, 0, 'gone once the last day closes');
+    assert.equal(getUpcomingEvents([wine], '2026-09-25', new Date('2026-09-25T22:00:00Z')).length, 1, 'first-day closing does not end the run');
+});
+
 test('a timed event with no endTime stays happening for the rest of its day', () => {
     const openEnded = { ...singleDay, startTime: '18:00' };
 
@@ -225,6 +241,18 @@ test('every shipped event is well formed', () => {
         if (event.endDate) {
             assert.ok(event.endDate >= event.date, `${event.id} ends on or after it starts`);
             assert.ok(isRealDate(event.endDate), `${event.id} endDate is a real day`);
+        }
+
+        // Keys are full dates, so they would silently stop matching once an
+        // annual entry rolls into another year.
+        if (event.hours) {
+            assert.ok(!event.annual, `${event.id} hours are for non-annual entries only`);
+            for (const [day, [start, end]] of Object.entries(event.hours)) {
+                assert.ok(isRealDate(day) && day >= event.date && day <= (event.endDate || event.date), `${event.id} hours day ${day} is inside its run`);
+                assert.match(start, /^\d\d:\d\d$/, `${event.id} ${day} start is HH:MM`);
+                assert.match(end, /^\d\d:\d\d$/, `${event.id} ${day} end is HH:MM`);
+                assert.ok(start < end, `${event.id} ${day} opens before it closes`);
+            }
         }
 
         for (const lang of ALLOWED_LANGS) {

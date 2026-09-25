@@ -411,6 +411,10 @@ const BUCKET_LIST = [
 //   an actual published start time. They narrow "Happening now" to those hours
 //   instead of the whole day, on every day of a multi-day run. Leave both off
 //   rather than guessing a time.
+//
+//   `hours` is for a multi-day run whose hours differ by day: it maps each ISO
+//   day to [start, end] and overrides startTime/endTime on the days it lists.
+//   The keys are full dates, so it is for non-annual entries only.
 const EVENTS = [
     {
         id: 'koningsdag',
@@ -509,9 +513,15 @@ const EVENTS = [
         id: 'wijnfestival-groningen-2026',
         date: '2026-09-25',
         endDate: '2026-09-27',
+        // Different hours each day, per the official listing.
+        hours: {
+            '2026-09-25': ['17:00', '23:30'],
+            '2026-09-26': ['16:00', '23:30'],
+            '2026-09-27': ['15:00', '20:00']
+        },
         title: { en: 'Wijnfestival Groningen (Wine Festival)', nl: 'Wijnfestival Groningen' },
         location: { en: 'A-kerk, city centre', nl: 'A-kerk, binnenstad' },
-        tip: { en: 'This 10th edition turns the atmospheric A-kerk into a three-day wine tasting, with 20+ exhibitors pouring 250+ wines from around the world, food pairings, and live music — Friday evening through Sunday afternoon. Book online in advance for a cheaper ticket than at the door.', nl: 'Dit tiende jaar verandert de sfeervolle A-kerk drie dagen lang in een wijnproeverij, met ruim 20 exposanten en 250+ wijnen uit de hele wereld, hapjes erbij en livemuziek — van vrijdagavond tot zondagmiddag. Koop je kaartje van tevoren online, dat is goedkoper dan aan de deur.' },
+        tip: { en: 'This 10th edition turns the atmospheric A-kerk into a three-day wine tasting, with 20+ exhibitors pouring 250+ wines from around the world, food pairings, and live music. Open Friday 17:00–23:30, Saturday 16:00–23:30 and Sunday 15:00–20:00. Book online in advance for a cheaper ticket than at the door.', nl: 'Dit tiende jaar verandert de sfeervolle A-kerk drie dagen lang in een wijnproeverij, met ruim 20 exposanten en 250+ wijnen uit de hele wereld, hapjes erbij en livemuziek. Open op vrijdag van 17:00 tot 23:30, zaterdag van 16:00 tot 23:30 en zondag van 15:00 tot 20:00 uur. Koop je kaartje van tevoren online, dat is goedkoper dan aan de deur.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/440554054/wijnfestival-groningen-7'
     },
     {
