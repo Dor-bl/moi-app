@@ -389,10 +389,10 @@ const BUCKET_LIST = [
     },
     {
         id: '48',
-        coords: [53.2150, 6.5660],
+        coords: [53.2189, 6.5658],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Request your huisvuilpas for the ondergrondse container', nl: 'Vraag je huisvuilpas aan voor de ondergrondse container' },
-        tip: { en: "Every address gets one free pass that opens the underground container on your street — lose it and a replacement costs almost €22, so don't leave it in the pocket of trousers headed for the wash. It also unlocks any other ondergrondse container within 300 metres of your address, handy the day yours is jammed or full.", nl: "Elk adres krijgt gratis één pasje dat de ondergrondse container in de straat opent — ben je 'm kwijt, dan kost een nieuwe bijna €22, dus laat 'm niet in de zak van de was zitten. Het pasje werkt ook op andere containers binnen 300 meter van je adres, handig als die van jou een keer vastzit of vol is." },
+        tip: { en: "Not every street in Groningen has one, but if yours is served by an ondergrondse container, the gemeente (seated right here on the Grote Markt) hands out one free huisvuilpas per address to open it — lose it and a replacement costs almost €22, so don't leave it in the pocket of trousers headed for the wash. It also opens any other ondergrondse container within 300 metres of your address, handy the day yours is jammed or full.", nl: "Niet elke straat in Groningen heeft er een, maar hoort jouw adres bij een ondergrondse container, dan geeft de gemeente (die hier aan de Grote Markt zetelt) daar gratis één huisvuilpas voor — ben je 'm kwijt, dan kost een nieuwe bijna €22, dus laat 'm niet in de zak van de was zitten. Het pasje werkt ook op andere containers binnen 300 meter van je adres, handig als die van jou een keer vastzit of vol is." },
         url: 'https://gemeente.groningen.nl/nieuwe-huisvuilpas-aanvragen',
         urlLabel: { en: 'Request a Huisvuilpas 🗑️', nl: 'Huisvuilpas Aanvragen 🗑️' }
     }
