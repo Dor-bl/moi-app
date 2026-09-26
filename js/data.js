@@ -386,6 +386,33 @@ const BUCKET_LIST = [
         tip: { en: "Work quietly winds down around four on a Friday and everyone drifts to a terrace instead of straight home — Poelestraat and the streets around it fill up first, though regulars also swear by Zondag in the Noorderplantsoen or the canal-side tables at Het Pomphuis. Nobody plans anything after; you just stay out for one more, and skipping it a few weeks running is the fastest way to miss the office gossip.", nl: "Op vrijdag houdt het werk zo rond een uur of vier eigenlijk op en schuift iedereen aan op een terras in plaats van meteen naar huis te gaan — de Poelestraat en omgeving lopen als eerste vol, al zweren vaste klanten ook bij Zondag in het Noorderplantsoen of de tafeltjes aan het water bij Het Pomphuis. Niemand plant hierna nog iets; je blijft gewoon voor nog eentje, en het een paar weken op rij overslaan is de snelste manier om het kantoorroddel te missen." },
         url: 'https://www.visitgroningen.nl/nl/doen/cultuur/nachtleven/vrijdagmiddagborrel-in-groningen',
         urlLabel: { en: 'Groningen Friday Borrel Spots 🍻', nl: 'Vrijdagmiddagborrel Plekken 🍻' }
+    },
+    {
+        id: '48',
+        coords: [53.2189, 6.5658],
+        category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
+        title: { en: 'Request your huisvuilpas for the ondergrondse container', nl: 'Vraag je huisvuilpas aan voor de ondergrondse container' },
+        tip: { en: "Not every street in Groningen has one, but if yours is served by an ondergrondse container, the gemeente (seated right here on the Grote Markt) hands out one free huisvuilpas per address to open it — lose it and a replacement costs almost €22, so don't leave it in the pocket of trousers headed for the wash. It also opens any other ondergrondse container within 300 metres of your address, handy the day yours is jammed or full.", nl: "Niet elke straat in Groningen heeft er een, maar hoort jouw adres bij een ondergrondse container, dan geeft de gemeente (die hier aan de Grote Markt zetelt) daar gratis één huisvuilpas voor — ben je 'm kwijt, dan kost een nieuwe bijna €22, dus laat 'm niet in de zak van de was zitten. Het pasje werkt ook op andere containers binnen 300 meter van je adres, handig als die van jou een keer vastzit of vol is." },
+        url: 'https://gemeente.groningen.nl/nieuwe-huisvuilpas-aanvragen',
+        urlLabel: { en: 'Request a Huisvuilpas 🗑️', nl: 'Huisvuilpas Aanvragen 🗑️' }
+    },
+    {
+        id: '49',
+        coords: [53.1425, 7.0368],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'See 20,000 roses in bloom at the Rosarium in Winschoten', nl: 'Bekijk 20.000 bloeiende rozen in het Rosarium van Winschoten' },
+        tip: { en: "Winschoten calls itself the rozenstad for good reason: the fields between Winschoten, Noordbroek and Veendam grow around 80% of the world's rose rootstocks. The Rosarium in the Stadspark is the showroom for all that — some 20,000 roses across 320 varieties, with about 25 new ones swapped in every year, and new varieties are judged here in trials before they hit the shops. Go between June and September; in winter it is mostly pruned stems.", nl: "Winschoten noemt zich niet voor niets de rozenstad: op de velden tussen Winschoten, Noordbroek en Veendam wordt zo'n 80% van alle rozenonderstammen ter wereld gekweekt. Het Rosarium in het Stadspark is daar de etalage van — zo'n 20.000 rozen in 320 soorten, met elk jaar zo'n 25 nieuwe, en nieuwe rassen worden hier in keuringen beoordeeld voordat ze in de winkel liggen. Ga tussen juni en september; in de winter staan er vooral gesnoeide stengels." },
+        url: 'https://www.visitgroningen.nl/nl/locaties/4008222099/rosarium',
+        urlLabel: { en: 'Rosarium Winschoten Info 🌹', nl: 'Rosarium Winschoten Info 🌹' }
+    },
+    {
+        id: '50',
+        coords: [53.1897, 7.0414],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Swim, sail or cycle around the Oldambtmeer', nl: 'Zwem, zeil of fiets rond het Oldambtmeer' },
+        tip: { en: "Just north of Winschoten lies a lake of over 800 hectares that did not exist until 2005, when Queen Beatrix opened the valve and farmland was flooded to make way for the Blauwestad project. It is less new than it looks: there was already a lake here in the 16th century, the Huningameer, until peat digging drained it. Today there are two sandy beaches with marked swimming zones, you can rent a sloop, canoe or SUP, and 25 km of dikes carry walking and cycling paths along the shore.", nl: "Net ten noorden van Winschoten ligt een meer van ruim 800 hectare dat er tot 2005 niet was: toen draaide koningin Beatrix de kraan open en liep landbouwgrond onder voor het project Blauwestad. Zo nieuw als het lijkt is het niet: in de 16e eeuw lag hier al het Huningameer, tot de turfwinning het droog liet vallen. Nu zijn er twee zandstranden met afgebakende zwemzones, kun je een sloep, kano of SUP huren, en lopen er over 25 km dijken wandel- en fietspaden langs het water." },
+        url: 'https://www.visitgroningen.nl/nl/locaties/359159036/oldambtmeer',
+        urlLabel: { en: 'Oldambtmeer Info 🏖️', nl: 'Oldambtmeer Info 🏖️' }
     }
 ];
 
