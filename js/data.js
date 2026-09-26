@@ -395,6 +395,15 @@ const BUCKET_LIST = [
         tip: { en: "Not every street in Groningen has one, but if yours is served by an ondergrondse container, the gemeente (seated right here on the Grote Markt) hands out one free huisvuilpas per address to open it — lose it and a replacement costs almost €22, so don't leave it in the pocket of trousers headed for the wash. It also opens any other ondergrondse container within 300 metres of your address, handy the day yours is jammed or full.", nl: "Niet elke straat in Groningen heeft er een, maar hoort jouw adres bij een ondergrondse container, dan geeft de gemeente (die hier aan de Grote Markt zetelt) daar gratis één huisvuilpas voor — ben je 'm kwijt, dan kost een nieuwe bijna €22, dus laat 'm niet in de zak van de was zitten. Het pasje werkt ook op andere containers binnen 300 meter van je adres, handig als die van jou een keer vastzit of vol is." },
         url: 'https://gemeente.groningen.nl/nieuwe-huisvuilpas-aanvragen',
         urlLabel: { en: 'Request a Huisvuilpas 🗑️', nl: 'Huisvuilpas Aanvragen 🗑️' }
+    },
+    {
+        id: '49',
+        coords: [53.1425, 7.0368],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'See 20,000 roses in bloom at the Rosarium in Winschoten', nl: 'Bekijk 20.000 bloeiende rozen in het Rosarium van Winschoten' },
+        tip: { en: "Winschoten calls itself the rozenstad for good reason: the fields between Winschoten, Noordbroek and Veendam grow around 80% of the world's rose rootstocks. The Rosarium in the Stadspark is the showroom for all that — some 20,000 roses across 320 varieties, with about 25 new ones swapped in every year, and new varieties are judged here in trials before they hit the shops. Go between June and September; in winter it is mostly pruned stems.", nl: "Winschoten noemt zich niet voor niets de rozenstad: op de velden tussen Winschoten, Noordbroek en Veendam wordt zo'n 80% van alle rozenonderstammen ter wereld gekweekt. Het Rosarium in het Stadspark is daar de etalage van — zo'n 20.000 rozen in 320 soorten, met elk jaar zo'n 25 nieuwe, en nieuwe rassen worden hier in keuringen beoordeeld voordat ze in de winkel liggen. Ga tussen juni en september; in de winter staan er vooral gesnoeide stengels." },
+        url: 'https://www.visitgroningen.nl/nl/locaties/4008222099/rosarium',
+        urlLabel: { en: 'Rosarium Winschoten Info 🌹', nl: 'Rosarium Winschoten Info 🌹' }
     }
 ];
 
