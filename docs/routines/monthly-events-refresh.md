@@ -42,8 +42,8 @@ non-zero when the list needs attention. Two things count as needing attention:
   routine unable to do the job it was created for.
 
 **If it exits 0, the run stops there.** Do not open a pull request, do not comment, do
-not "tidy" anything. A month where the list is healthy is a success, not a broken run —
-a routine that files something every month is a notification people learn to ignore.
+not "tidy" anything. A week where the list is healthy is a success, not a broken run —
+a routine that files something every week is a notification people learn to ignore.
 
 ## The rule that matters most: fixed dates vs floating ones
 
@@ -233,13 +233,16 @@ reads. For every lapsed entry the check reports, the run picks exactly one of th
      Haren, removed in [#161](https://github.com/Dor-bl/moi-app/pull/161), is the
      model case.
    - The official page says the event was **cancelled for good or discontinued**.
-   - It is a **yearly** event that lapsed **more than 12 months ago**. By then its
-     next edition should already have happened, so either the event has stopped or
-     the list missed it. Either way, the old entry reminds nobody of anything
-     useful. This case covers yearly events only. An event that may run every
-     other year, or may just be skipping a year, falls under the unclear-recurrence
-     rule below and is kept.
-3. **Keep it.** It recurs and lapsed within the last 12 months, and no successor has
+   - It lapsed **more than one full cycle ago**: 12 months for a yearly event, or
+     the known cycle for one that runs less often, such as 24 months for an event
+     held every other year. By then its next edition should already have happened,
+     so either the event has stopped or the list missed it. Either way, the old
+     entry reminds nobody of anything useful. The cycle has to be known, from the
+     entry or its official page, and the PR says which cycle was assumed and where
+     it came from. If the cycle is unknown, for example if it may run every other
+     year or may just be skipping one, the unclear-recurrence rule below applies and
+     the entry is kept.
+3. **Keep it.** It recurs, it lapsed within one full cycle, and no successor has
    been announced yet. That is the normal state for a floating festival between
    editions, and the entry stays so the check keeps asking.
 
@@ -247,10 +250,10 @@ Deleting is a data change like any other: it goes in the same refresh PR, and it
 never happens on a guess. Name every deleted entry in the PR body along with the
 reason (which of the cases above) and the evidence for it. For a one-off that is
 the entry's own `tip` or comment, quoted, or the page that says so. For a
-discontinued event it is the official page. When the only reason is the 12-month
+discontinued event it is the official page. When the only reason is the entry's
 age, say that plainly. **If you can't tell whether an entry recurs, or how often,
 keep it and ask in the run's final reply.** That rule overrides every delete case
-above, including the 12-month one.
+above, including the age-based one.
 
 A cleanup-only run is a valid outcome. If the list's only gap is a dead entry, open a
 PR that just deletes it, titled with the usual `chore: refresh` prefix so the
@@ -348,7 +351,7 @@ On push the platform appends a per-session suffix, so a run lands on something l
   The suffix that appears on push is expected, not an error.
 - Anything looking for previous refresh PRs must **match the prefix**. An exact-string
   comparison silently matches nothing, which would defeat the one-open-PR rule and stack
-  a new PR every month.
+  a new PR every week.
 
 ### Backstop
 
