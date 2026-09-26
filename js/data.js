@@ -386,6 +386,15 @@ const BUCKET_LIST = [
         tip: { en: "Work quietly winds down around four on a Friday and everyone drifts to a terrace instead of straight home — Poelestraat and the streets around it fill up first, though regulars also swear by Zondag in the Noorderplantsoen or the canal-side tables at Het Pomphuis. Nobody plans anything after; you just stay out for one more, and skipping it a few weeks running is the fastest way to miss the office gossip.", nl: "Op vrijdag houdt het werk zo rond een uur of vier eigenlijk op en schuift iedereen aan op een terras in plaats van meteen naar huis te gaan — de Poelestraat en omgeving lopen als eerste vol, al zweren vaste klanten ook bij Zondag in het Noorderplantsoen of de tafeltjes aan het water bij Het Pomphuis. Niemand plant hierna nog iets; je blijft gewoon voor nog eentje, en het een paar weken op rij overslaan is de snelste manier om het kantoorroddel te missen." },
         url: 'https://www.visitgroningen.nl/nl/doen/cultuur/nachtleven/vrijdagmiddagborrel-in-groningen',
         urlLabel: { en: 'Groningen Friday Borrel Spots 🍻', nl: 'Vrijdagmiddagborrel Plekken 🍻' }
+    },
+    {
+        id: '48',
+        coords: [53.2150, 6.5660],
+        category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
+        title: { en: 'Request your huisvuilpas for the ondergrondse container', nl: 'Vraag je huisvuilpas aan voor de ondergrondse container' },
+        tip: { en: "Every address gets one free pass that opens the underground container on your street — lose it and a replacement costs almost €22, so don't leave it in the pocket of trousers headed for the wash. It also unlocks any other ondergrondse container within 300 metres of your address, handy the day yours is jammed or full.", nl: "Elk adres krijgt gratis één pasje dat de ondergrondse container in de straat opent — ben je 'm kwijt, dan kost een nieuwe bijna €22, dus laat 'm niet in de zak van de was zitten. Het pasje werkt ook op andere containers binnen 300 meter van je adres, handig als die van jou een keer vastzit of vol is." },
+        url: 'https://gemeente.groningen.nl/nieuwe-huisvuilpas-aanvragen',
+        urlLabel: { en: 'Request a Huisvuilpas 🗑️', nl: 'Huisvuilpas Aanvragen 🗑️' }
     }
 ];
 
