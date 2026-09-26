@@ -1,18 +1,14 @@
 # Monthly Events Refresh Routine
 
-> **Not scheduled yet.** This spec describes how the routine is meant to run; no
-> Routine has been configured, so nothing fires on its own today. Standing it up needs
-> the claude.ai Routines UI — see *Push authorization* below. Until then this is the
-> plan, not a description of something already happening.
+A Claude Routine ("Monthly Groningen events refresh — moi-app") checks the `EVENTS`
+list in [`js/data.js`](../../js/data.js) for gaps and, only if it finds any, opens a
+pull request that fills them in or clears out entries that are dead.
 
-A Claude Routine is to fire on the **first of each month**, check the `EVENTS` list in
-[`js/data.js`](../../js/data.js) for gaps, and — only if it finds any — open a pull
-request filling them in.
-
-The intended schedule is `0 8 1 * *`, and cron is evaluated in UTC while Amsterdam switches
-between CEST (UTC+2) and CET (UTC+1). So the run lands at **10:00 local during summer
-time and 09:00 local during winter time**. Nothing depends on the exact hour, so the
-schedule is left alone across the DST changes rather than being re-pinned twice a year.
+Despite the name it runs **weekly**, on `0 7 * * 3`: Wednesdays at 07:00 UTC. Cron is
+evaluated in UTC while Amsterdam switches between CEST (UTC+2) and CET (UTC+1), so the
+run lands at 09:00 local in summer and 08:00 local in winter. Nothing depends on the
+exact hour, so the schedule is not re-pinned across the DST changes. A quiet week
+costs nothing: the gate below stops the run before any research.
 
 This file is the authoritative spec for what a good refresh looks like. Edit it here
 rather than editing the Routine prompt — each run reads this file first and follows it.
@@ -223,6 +219,40 @@ When a floating edition has lapsed and **no** successor has been announced yet, 
 where it is. It costs the page nothing — the date filter drops it, so visitors never see
 it — and it is what keeps the check reporting the gap until someone can fill it.
 
+### Cleaning up entries that will never come back
+
+"Leave it lapsed" is only right while a successor is still possible. Otherwise the entry
+keeps `events:check` failing for good, and a gate that never goes quiet is one nobody
+reads. For every lapsed entry the check reports, the run picks exactly one of these:
+
+1. **Replace it.** A successor edition is confirmed on the official page, so add the
+   successor and delete this entry in the same change, as above.
+2. **Delete it.** Nothing will ever replace it. That holds when any of these is true:
+   - It was a **one-off**. Its own `tip`, a comment beside it, or its official page
+     says it was a single edition, a launch night or a one-time event. The Wine Walk
+     Haren, removed in [#161](https://github.com/Dor-bl/moi-app/pull/161), is the
+     model case.
+   - The official page says the event was **cancelled for good or discontinued**.
+   - It lapsed **more than 12 months ago**. By then its next edition should already
+     have happened, so either the event has stopped or the list missed it. Either
+     way, the old entry reminds nobody of anything useful.
+3. **Keep it.** It recurs and lapsed within the last 12 months, and no successor has
+   been announced yet. That is the normal state for a floating festival between
+   editions, and the entry stays so the check keeps asking.
+
+Deleting is a data change like any other: it goes in the same refresh PR, and it
+never happens on a guess. Name every deleted entry in the PR body along with the
+reason (which of the cases above), and cite the page that shows it was a one-off or
+was discontinued. When the only reason is the 12-month age, say that plainly. If you
+can't tell whether an entry recurs, keep it and ask in the run's final reply.
+
+A cleanup-only run is a valid outcome. If the list's only gap is a dead entry, open a
+PR that just deletes it, titled with the usual `chore: refresh` prefix so the
+one-open-PR rule still recognises it.
+
+When adding a one-off in the first place, say so in its `tip` or in a comment beside
+the entry. That one line is what lets a later run delete it without re-researching.
+
 ```js
 {
     id: '<slug, or slug-YYYY for a floating edition>',
@@ -279,7 +309,8 @@ it — and it is what keeps the check reporting the gap until someone can fill i
   PR title starts with `chore: refresh`.
 - Also skim recently closed refresh PRs: dates that were proposed and rejected should
   not come back unchanged.
-- Keep the diff to `js/data.js` and this file's log table. A refresh run is not the
+- Keep the diff to `js/data.js` and this file's log table. That covers deletions
+  under *Cleaning up entries that will never come back*. A refresh run is not the
   place to change `js/events.js`, the rendering, or the tests — if the date logic looks
   wrong, report it instead of fixing it here.
 
