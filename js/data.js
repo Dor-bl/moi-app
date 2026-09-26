@@ -404,6 +404,15 @@ const BUCKET_LIST = [
         tip: { en: "Winschoten calls itself the rozenstad for good reason: the fields between Winschoten, Noordbroek and Veendam grow around 80% of the world's rose rootstocks. The Rosarium in the Stadspark is the showroom for all that — some 20,000 roses across 320 varieties, with about 25 new ones swapped in every year, and new varieties are judged here in trials before they hit the shops. Go between June and September; in winter it is mostly pruned stems.", nl: "Winschoten noemt zich niet voor niets de rozenstad: op de velden tussen Winschoten, Noordbroek en Veendam wordt zo'n 80% van alle rozenonderstammen ter wereld gekweekt. Het Rosarium in het Stadspark is daar de etalage van — zo'n 20.000 rozen in 320 soorten, met elk jaar zo'n 25 nieuwe, en nieuwe rassen worden hier in keuringen beoordeeld voordat ze in de winkel liggen. Ga tussen juni en september; in de winter staan er vooral gesnoeide stengels." },
         url: 'https://www.visitgroningen.nl/nl/locaties/4008222099/rosarium',
         urlLabel: { en: 'Rosarium Winschoten Info 🌹', nl: 'Rosarium Winschoten Info 🌹' }
+    },
+    {
+        id: '50',
+        coords: [53.1897, 7.0414],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Swim, sail or cycle around the Oldambtmeer', nl: 'Zwem, zeil of fiets rond het Oldambtmeer' },
+        tip: { en: "Just north of Winschoten lies a lake of over 800 hectares that did not exist until 2005, when Queen Beatrix opened the valve and farmland was flooded to make way for the Blauwestad project. It is less new than it looks: there was already a lake here in the 16th century, the Huningameer, until peat digging drained it. Today there are two sandy beaches with marked swimming zones, you can rent a sloop, canoe or SUP, and 25 km of dikes carry walking and cycling paths along the shore.", nl: "Net ten noorden van Winschoten ligt een meer van ruim 800 hectare dat er tot 2005 niet was: toen draaide koningin Beatrix de kraan open en liep landbouwgrond onder voor het project Blauwestad. Zo nieuw als het lijkt is het niet: in de 16e eeuw lag hier al het Huningameer, tot de turfwinning het droog liet vallen. Nu zijn er twee zandstranden met afgebakende zwemzones, kun je een sloep, kano of SUP huren, en lopen er over 25 km dijken wandel- en fietspaden langs het water." },
+        url: 'https://www.visitgroningen.nl/nl/locaties/359159036/oldambtmeer',
+        urlLabel: { en: 'Oldambtmeer Info 🏖️', nl: 'Oldambtmeer Info 🏖️' }
     }
 ];
 
