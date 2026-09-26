@@ -233,18 +233,24 @@ reads. For every lapsed entry the check reports, the run picks exactly one of th
      Haren, removed in [#161](https://github.com/Dor-bl/moi-app/pull/161), is the
      model case.
    - The official page says the event was **cancelled for good or discontinued**.
-   - It lapsed **more than 12 months ago**. By then its next edition should already
-     have happened, so either the event has stopped or the list missed it. Either
-     way, the old entry reminds nobody of anything useful.
+   - It is a **yearly** event that lapsed **more than 12 months ago**. By then its
+     next edition should already have happened, so either the event has stopped or
+     the list missed it. Either way, the old entry reminds nobody of anything
+     useful. This case covers yearly events only. An event that may run every
+     other year, or may just be skipping a year, falls under the unclear-recurrence
+     rule below and is kept.
 3. **Keep it.** It recurs and lapsed within the last 12 months, and no successor has
    been announced yet. That is the normal state for a floating festival between
    editions, and the entry stays so the check keeps asking.
 
 Deleting is a data change like any other: it goes in the same refresh PR, and it
 never happens on a guess. Name every deleted entry in the PR body along with the
-reason (which of the cases above), and cite the page that shows it was a one-off or
-was discontinued. When the only reason is the 12-month age, say that plainly. If you
-can't tell whether an entry recurs, keep it and ask in the run's final reply.
+reason (which of the cases above) and the evidence for it. For a one-off that is
+the entry's own `tip` or comment, quoted, or the page that says so. For a
+discontinued event it is the official page. When the only reason is the 12-month
+age, say that plainly. **If you can't tell whether an entry recurs, or how often,
+keep it and ask in the run's final reply.** That rule overrides every delete case
+above, including the 12-month one.
 
 A cleanup-only run is a valid outcome. If the list's only gap is a dead entry, open a
 PR that just deletes it, titled with the usual `chore: refresh` prefix so the
