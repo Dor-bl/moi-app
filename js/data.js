@@ -523,6 +523,14 @@ const EVENTS = [
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
     },
     {
+        id: 'aigrunn-2026',
+        date: '2026-11-13',
+        title: { en: 'aiGrunn Conference', nl: 'aiGrunn Conferentie' },
+        location: { en: 'City centre', nl: 'Binnenstad' },
+        tip: { en: 'The North\'s biggest AI gathering, from the people behind the PyGrunn Python conference: more than 1,000 professionals and talks across eight tracks, from tech to business and government. A good way into Groningen\'s tech scene if you work in or near AI. Tickets are sold online.', nl: 'De grootste AI-bijeenkomst van het Noorden, van de makers van de Python-conferentie PyGrunn: ruim 1000 professionals en talks verdeeld over acht tracks, van tech tot business en overheid. Een goede ingang tot de Groningse techscene als je in of rond AI werkt. Kaartjes koop je online.' },
+        url: 'https://www.aigrunn.org/'
+    },
+    {
         id: 'winterwelvaart-2026',
         date: '2026-12-11',
         endDate: '2026-12-13',
@@ -577,6 +585,22 @@ const EVENTS = [
         location: { en: 'Hortus Botanicus Haren, Kerklaan 34, Haren', nl: 'Hortus Botanicus Haren, Kerklaan 34, Haren' },
         tip: { en: 'The botanical garden turns 400 and throws a one-off weekend for it, 10:00–17:00 both days. At the centre is the De smaak naar meer market with local growers, makers and harvest produce, and around it workshops, guided tours and demonstrations across the whole garden. Save time for the Chinese Ming garden, which is unique in Europe. Tickets are sold online.', nl: 'De Hortus bestaat 400 jaar en viert dat met een eenmalig festivalweekend, beide dagen van 10.00 tot 17.00 uur. In het midden staat de markt De smaak naar meer, met streekproducten, kwekers en ambachtsmakers, en in de hele tuin zijn workshops, rondleidingen en demonstraties. Loop zeker even door de Chinese Ming-tuin, die in Europa zijn weerga niet kent. Kaartjes koop je online.' },
         url: 'https://www.hortusharen.nl/festival/'
+    },
+    {
+        id: 'culinair-haren-2026',
+        date: '2026-10-02',
+        endDate: '2026-10-04',
+        // Different hours each day, per the official listing. Saturday runs until
+        // midnight; 23:59 keeps the last minute inside the same day.
+        hours: {
+            '2026-10-02': ['17:00', '23:00'],
+            '2026-10-03': ['16:00', '23:59'],
+            '2026-10-04': ['15:00', '21:00']
+        },
+        title: { en: 'Culinair Haren (Food Festival)', nl: 'Culinair Haren' },
+        location: { en: 'Around the Dorpskerk, Haren', nl: 'Rond de Dorpskerk, Haren' },
+        tip: { en: 'Heerlijk Haren: for one weekend, local restaurants and caterers set up around the village church with small plates, finger food, seasonal dishes and wine and beer bars, while hay bales, heaters and string lights keep it cosy into the October evening. Open Friday 17:00–23:00, Saturday 16:00–midnight and Sunday 15:00–21:00. An easy bike ride south of the city and a good excuse to see Haren.', nl: 'Heerlijk Haren: een weekend lang staan lokale restaurants en cateraars rond de Dorpskerk met kleine gerechten, fingerfood, seizoensgerechten en wijn- en bierbars, terwijl hooibalen, heaters en lichtjes het ook op een oktoberavond gezellig houden. Open op vrijdag van 17:00 tot 23:00, zaterdag van 16:00 tot middernacht en zondag van 15:00 tot 21:00 uur. Een makkelijk fietstochtje ten zuiden van de stad en een mooi excuus om Haren te ontdekken.' },
+        url: 'https://www.ervaarharen.nl/event/culinair-haren/'
     },
     {
         id: 'groninger-marktendag-2026',
