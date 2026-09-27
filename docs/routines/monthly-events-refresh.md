@@ -257,6 +257,16 @@ the key sitting in their storage. That is the exact failure
 different route, and nothing about it is visible from the check output or the diff.
 The cost of keeping the entry is one line of data the date filter already hides.
 
+**"Ever shipped" has to be answerable from the entry in front of you, so never silently
+remove a `checkIn` block either.** A cleanup run reads the current `EVENTS` entry. If
+some earlier change dropped the `checkIn` — the venue moved, or the point stopped being
+a point — the entry is now indistinguishable from one that never had it, and the next
+cleanup deletes it under the cases above, orphaning the badges anyway. So when a
+`checkIn` genuinely has to go, leave a comment in its place saying the entry once
+carried one and must not be deleted. `git log -S'checkIn' -- js/data.js` is the backstop
+for anything predating this rule, but a rule that needs archaeology on every candidate
+is a rule that gets skipped; the comment is what makes it hold.
+
 (The storage key is never cleaned up either way, so if the entry is ever restored the
 badge comes back with it. That is the recovery path, not a reason to delete.)
 
@@ -345,8 +355,8 @@ badge: {
   landmark you can sanity-check beats trusting the geocoder.
 - **`radius` covers the grounds and the normal approach**, and stops short of anywhere a
   visitor could plausibly be without attending. The test enforces 100–2000 m; 600 m has
-  been cleared by a real GNSS fix at the Drafbaan. **Err generous when the centre is a
-  geocode you could not verify** — a false refusal from inside the event teaches nobody
+  been cleared by a real GNSS fix at the Drafbaan. **Err on the side of generosity when the
+  centre is a geocode you could not verify** — a false refusal from inside the event teaches nobody
   anything, and the badge was never proof in the first place.
 - **`radius` is also the accuracy gate, which is the part that surprises people.** A fix
   vaguer than the radius is refused *before* any distance is computed, because a
@@ -361,9 +371,14 @@ badge: {
   Nothing extra is needed for either.
 
 What CI already checks, so a slip fails the build rather than shipping a dead button:
-the test loops over *every* entry carrying a `checkIn` and asserts the coordinates fall
-inside the province (so a typo or a swapped lat/lon pair is caught), the radius is
-plausible, and the badge has a title and a description in **both** languages.
+the test loops over *every* entry carrying a `checkIn` and asserts the radius is
+plausible, the badge has a title and a description in **both** languages, and the
+coordinates sit inside a coarse box — 53.0–53.6 N, 6.2–7.3 E.
+
+Be clear about what that box is and is not. It is a rectangle, not the province: Roden
+sits inside it and is in Drenthe, and so does Emden, which is in Germany. What it
+reliably catches is a typo or a swapped lat/lon pair, which is what it is for. It does
+not certify that a point is in Groningen.
 
 What CI cannot check is whether the point is the *right* point. Only standing there
 proves that, and a faked position never will. The way this has been done is a throwaway
