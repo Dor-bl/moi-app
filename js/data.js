@@ -506,6 +506,14 @@ const EVENTS = [
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
     },
     {
+        id: 'aigrunn-2026',
+        date: '2026-11-13',
+        title: { en: 'aiGrunn Conference', nl: 'aiGrunn Conferentie' },
+        location: { en: 'City centre', nl: 'Binnenstad' },
+        tip: { en: 'The North\'s biggest AI gathering, from the people behind the PyGrunn Python conference: more than 1,000 professionals and talks across eight tracks, from tech to business and government. A good way into Groningen\'s tech scene if you work in or near AI. Tickets are sold online.', nl: 'De grootste AI-bijeenkomst van het Noorden, van de makers van de Python-conferentie PyGrunn: ruim 1000 professionals en talks verdeeld over acht tracks, van tech tot business en overheid. Een goede ingang tot de Groningse techscene als je in of rond AI werkt. Kaartjes koop je online.' },
+        url: 'https://www.aigrunn.org/'
+    },
+    {
         id: 'winterwelvaart-2026',
         date: '2026-12-11',
         endDate: '2026-12-13',
