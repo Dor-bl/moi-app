@@ -540,17 +540,6 @@ const EVENTS = [
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/440554054/wijnfestival-groningen-7'
     },
     {
-        id: 'eureka-2026',
-        date: '2026-09-25',
-        // Runs until midnight; 23:59 keeps the last minute inside the same day.
-        startTime: '19:30',
-        endTime: '23:59',
-        title: { en: 'Eureka! Science Festival', nl: 'Eureka! Wetenschapsfestival' },
-        location: { en: 'Forum Groningen, Nieuwe Markt 1', nl: 'Forum Groningen, Nieuwe Markt 1' },
-        tip: { en: 'The festival formerly known as European Researchers\' Night takes over the whole of Forum for an evening of science battles, talks, installations, workshops and music, this year around the theme "Resilience in Times of Change". Runs 19:30 until midnight; tickets are €8.50.', nl: 'Het festival dat vroeger European Researchers\' Night heette, neemt een avond lang heel het Forum over met wetenschapsbattles, lezingen, installaties, workshops en muziek, dit jaar rond het thema "Resilience in Times of Change". Van 19:30 tot middernacht; kaartjes kosten €8,50.' },
-        url: 'https://forum.nl/nl/agenda/talks-events/eureka-10048470'
-    },
-    {
         id: 'hortusfestival-haren-2026',
         date: '2026-09-26',
         endDate: '2026-09-27',
