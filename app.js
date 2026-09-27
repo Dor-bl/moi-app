@@ -894,7 +894,16 @@ async function handleCheckInClick(button) {
         block.classList.add('failed');
         block.querySelector('.event-checkin-status').textContent =
             UI_TRANSLATIONS[currentLang].eventsCheckInClosed;
+
+        // Read this before disabling, not after. The two other outcomes test for
+        // <body> because by then the tap's blur is long past; here nothing has
+        // been awaited, so the button is still focused from the keypress that
+        // got here and disabling it is what would drop them. The button cannot
+        // take them back either way: the window is shut, so it stays disabled.
+        // So the status line, exactly as on the success path.
+        const refocus = document.activeElement === button;
         button.disabled = true;
+        if (refocus) focusCheckInStatus(block);
         return;
     }
 
@@ -959,6 +968,14 @@ async function handleCheckInClick(button) {
 function focusEarnedCard(key) {
     const block = [...eventsContainer.querySelectorAll('.event-checkin')]
         .find(node => node.dataset.checkinKey === key);
+    focusCheckInStatus(block);
+}
+
+// Moving focus to the status line is what gets the result announced, since a
+// live region whose text arrives with it already in place is not reliably read
+// but a newly focused element is. tabIndex rather than a tabindex attribute in
+// the markup: it should be reachable this way without joining the tab order.
+function focusCheckInStatus(block) {
     const status = block && block.querySelector('.event-checkin-status');
     if (!status) return;
 
