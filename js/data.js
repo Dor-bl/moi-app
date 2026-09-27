@@ -576,7 +576,26 @@ const EVENTS = [
         title: { en: 'Hortusfestival: 400 Years of Growth', nl: 'Hortusfestival: 400 jaar groei' },
         location: { en: 'Hortus Botanicus Haren, Kerklaan 34, Haren', nl: 'Hortus Botanicus Haren, Kerklaan 34, Haren' },
         tip: { en: 'The botanical garden turns 400 and throws a one-off weekend for it, 10:00–17:00 both days. At the centre is the De smaak naar meer market with local growers, makers and harvest produce, and around it workshops, guided tours and demonstrations across the whole garden. Save time for the Chinese Ming garden, which is unique in Europe. Tickets are sold online.', nl: 'De Hortus bestaat 400 jaar en viert dat met een eenmalig festivalweekend, beide dagen van 10.00 tot 17.00 uur. In het midden staat de markt De smaak naar meer, met streekproducten, kwekers en ambachtsmakers, en in de hele tuin zijn workshops, rondleidingen en demonstraties. Loop zeker even door de Chinese Ming-tuin, die in Europa zijn weerga niet kent. Kaartjes koop je online.' },
-        url: 'https://www.hortusharen.nl/festival/'
+        url: 'https://www.hortusharen.nl/festival/',
+        // THROWAWAY BRANCH ONLY -- never merge this. Added to test the check-in
+        // flow on a real device at a real running event, which is the one thing
+        // a faked position cannot cover.
+        //
+        // 700m rather than the 600m the Bevrijdingsfestival uses. The centre is
+        // a geocode of Kerklaan 34, not a surveyed point, and the garden is
+        // about 20 hectares, so a visitor at the far end plus a centre off by a
+        // couple of hundred metres could otherwise be refused for being too far
+        // while standing inside the event. A false refusal would prove nothing;
+        // the loosened radius still exercises every step of the flow.
+        checkIn: { coords: [53.17944, 6.60250], radius: 700 },
+        badge: {
+            icon: '🌱',
+            title: { en: 'Hortus Centenarian', nl: 'Hortus-eeuwling' },
+            desc: {
+                en: 'Checked in at the Hortus Haren during its 400-year festival weekend!',
+                nl: 'Ingecheckt in de Hortus Haren tijdens het 400-jarig festivalweekend!'
+            }
+        }
     },
     {
         id: 'groninger-marktendag-2026',
