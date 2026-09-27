@@ -506,6 +506,15 @@ const EVENTS = [
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
     },
     {
+        id: 'aigrunn-hackathon-2026',
+        date: '2026-11-11',
+        endDate: '2026-11-12',
+        title: { en: 'aiGrunn Hackathon', nl: 'aiGrunn Hackathon' },
+        location: { en: 'Niemeyer, Groningen', nl: 'Niemeyer, Groningen' },
+        tip: { en: 'Two days of building in the run-up to the aiGrunn Conference, in two streams: tinker with new AI tools just to learn, or join a team on a real-world challenge set by local organisations and compete. The winners present their results on the conference stage on 13 November. Sign up via the aiGrunn site.', nl: 'Twee dagen bouwen in aanloop naar de aiGrunn Conferentie, in twee stromen: experimenteer met nieuwe AI-tools puur om te leren, of werk in een team aan een echte uitdaging van lokale organisaties en strijd mee. De winnaars presenteren hun resultaat op 13 november op het podium van de conferentie. Aanmelden via de aiGrunn-site.' },
+        url: 'https://www.aigrunn.org/'
+    },
+    {
         id: 'aigrunn-2026',
         date: '2026-11-13',
         title: { en: 'aiGrunn Conference', nl: 'aiGrunn Conferentie' },
