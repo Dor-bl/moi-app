@@ -562,6 +562,22 @@ const EVENTS = [
         url: 'https://www.hortusharen.nl/festival/'
     },
     {
+        id: 'culinair-haren-2026',
+        date: '2026-10-02',
+        endDate: '2026-10-04',
+        // Different hours each day, per the official listing. Saturday runs until
+        // midnight; 23:59 keeps the last minute inside the same day.
+        hours: {
+            '2026-10-02': ['17:00', '23:00'],
+            '2026-10-03': ['16:00', '23:59'],
+            '2026-10-04': ['15:00', '21:00']
+        },
+        title: { en: 'Culinair Haren (Food Festival)', nl: 'Culinair Haren' },
+        location: { en: 'Around the Dorpskerk, Haren', nl: 'Rond de Dorpskerk, Haren' },
+        tip: { en: 'Heerlijk Haren: for one weekend, local restaurants and caterers set up around the village church with small plates, finger food, seasonal dishes and wine and beer bars, while hay bales, heaters and string lights keep it cosy into the October evening. Open Friday 17:00–23:00, Saturday 16:00–midnight and Sunday 15:00–21:00. An easy bike ride south of the city and a good excuse to see Haren.', nl: 'Heerlijk Haren: een weekend lang staan lokale restaurants en cateraars rond de Dorpskerk met kleine gerechten, fingerfood, seizoensgerechten en wijn- en bierbars, terwijl hooibalen, heaters en lichtjes het ook op een oktoberavond gezellig houden. Open op vrijdag van 17:00 tot 23:00, zaterdag van 16:00 tot middernacht en zondag van 15:00 tot 21:00 uur. Een makkelijk fietstochtje ten zuiden van de stad en een mooi excuus om Haren te ontdekken.' },
+        url: 'https://www.ervaarharen.nl/event/culinair-haren/'
+    },
+    {
         id: 'groninger-marktendag-2026',
         date: '2026-10-03',
         startTime: '09:00',
