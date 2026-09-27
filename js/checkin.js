@@ -99,10 +99,13 @@ function recordCheckIn(event) {
 
 // Two gates, both required: the event has to have opted in by carrying a checkIn
 // block (most have no single point to stand near — "Across the city" is not a
-// coordinate), and it has to actually be on right now. isHappeningNow already
-// handles the calendar, the span and the startTime/endTime hours in Groningen's
+// coordinate), and it has to actually be on right now. The whole window rule is
+// isHappeningNow's, deliberately: it already handles the calendar, the span, the
+// daily startTime/endTime and the per-day `hours` map, all in Groningen's
 // timezone, which is the whole reason the badge means "on the day, on the spot"
-// rather than "some time that year".
+// rather than "some time that year". Delegating rather than restating it also
+// means a change there reaches the button for free — which is how per-day hours
+// arrived here without this file being touched.
 function canCheckIn(event, today, now = new Date()) {
     return Boolean(event.checkIn) && isHappeningNow(event, today, now);
 }
