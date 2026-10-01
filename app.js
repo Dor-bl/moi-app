@@ -802,7 +802,16 @@ function buildEventCard(event, today, ongoing = false) {
     // Only while the event is genuinely on and has a point to stand near, so the
     // button's presence is itself the signal that this is earnable right now
     // rather than something to come back for.
-    if (canCheckIn(event, today)) {
+    //
+    // The exception is a check-in already in flight for this occurrence. A fix
+    // is allowed 15 seconds and canCheckIn() can go false inside that window —
+    // a day's `hours` cutoff passing on a multi-day event, which leaves the card
+    // itself on screen. Dropping the block from a render the user triggered
+    // (language, filter, view) would leave the completion handler no status line
+    // to write to, so the tap would resolve into silence on a card still in
+    // front of them. pendingCheckInKey already keeps the button rendered busy
+    // across the renders it cannot suppress; this keeps the block it lives in.
+    if (canCheckIn(event, today) || pendingCheckInKey === checkInKeyFor(event)) {
         card.appendChild(buildCheckInBlock(event));
     }
 
