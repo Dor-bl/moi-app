@@ -523,6 +523,15 @@ const EVENTS = [
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
     },
     {
+        id: 'aigrunn-hackathon-2026',
+        date: '2026-11-11',
+        endDate: '2026-11-12',
+        title: { en: 'aiGrunn Hackathon', nl: 'aiGrunn Hackathon' },
+        location: { en: 'Niemeyer, Groningen', nl: 'Niemeyer, Groningen' },
+        tip: { en: 'Two days of building in the run-up to the aiGrunn Conference, in two parallel streams. Explore is open to anyone curious about AI, no experience needed: pick a technology or an idea and tinker. The Challenge stream, run with Green Business Challenge, puts teams of 18–30-year-olds with a Dutch address on a concrete problem. Food and drinks are provided, selected winners may present on the conference stage on 13 November, and participants get a discounted conference ticket. Spots are limited, so apply online.', nl: 'Twee dagen bouwen in aanloop naar de aiGrunn Conferentie, in twee parallelle stromen. Explore staat open voor iedereen die nieuwsgierig is naar AI, ervaring is niet nodig: kies een technologie of idee en ga experimenteren. De Challenge-stroom, samen met Green Business Challenge, zet teams van 18- tot 30-jarigen met een Nederlands adres op een concreet vraagstuk. Eten en drinken zijn geregeld, geselecteerde winnaars mogen mogelijk op 13 november op het podium van de conferentie presenteren en deelnemers krijgen korting op een conferentiekaartje. Er zijn beperkt plekken, dus meld je online aan.' },
+        url: 'https://www.aigrunn.org/hackathon'
+    },
+    {
         id: 'aigrunn-2026',
         date: '2026-11-13',
         title: { en: 'aiGrunn Conference', nl: 'aiGrunn Conferentie' },
@@ -574,17 +583,6 @@ const EVENTS = [
         location: { en: 'Forum Groningen, Nieuwe Markt 1', nl: 'Forum Groningen, Nieuwe Markt 1' },
         tip: { en: 'The festival formerly known as European Researchers\' Night takes over the whole of Forum for an evening of science battles, talks, installations, workshops and music, this year around the theme "Resilience in Times of Change". Runs 19:30 until midnight; tickets are €8.50.', nl: 'Het festival dat vroeger European Researchers\' Night heette, neemt een avond lang heel het Forum over met wetenschapsbattles, lezingen, installaties, workshops en muziek, dit jaar rond het thema "Resilience in Times of Change". Van 19:30 tot middernacht; kaartjes kosten €8,50.' },
         url: 'https://forum.nl/nl/agenda/talks-events/eureka-10048470'
-    },
-    {
-        id: 'hortusfestival-haren-2026',
-        date: '2026-09-26',
-        endDate: '2026-09-27',
-        startTime: '10:00',
-        endTime: '17:00',
-        title: { en: 'Hortusfestival: 400 Years of Growth', nl: 'Hortusfestival: 400 jaar groei' },
-        location: { en: 'Hortus Botanicus Haren, Kerklaan 34, Haren', nl: 'Hortus Botanicus Haren, Kerklaan 34, Haren' },
-        tip: { en: 'The botanical garden turns 400 and throws a one-off weekend for it, 10:00–17:00 both days. At the centre is the De smaak naar meer market with local growers, makers and harvest produce, and around it workshops, guided tours and demonstrations across the whole garden. Save time for the Chinese Ming garden, which is unique in Europe. Tickets are sold online.', nl: 'De Hortus bestaat 400 jaar en viert dat met een eenmalig festivalweekend, beide dagen van 10.00 tot 17.00 uur. In het midden staat de markt De smaak naar meer, met streekproducten, kwekers en ambachtsmakers, en in de hele tuin zijn workshops, rondleidingen en demonstraties. Loop zeker even door de Chinese Ming-tuin, die in Europa zijn weerga niet kent. Kaartjes koop je online.' },
-        url: 'https://www.hortusharen.nl/festival/'
     },
     {
         id: 'culinair-haren-2026',
