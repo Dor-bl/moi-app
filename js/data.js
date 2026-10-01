@@ -506,6 +506,15 @@ const EVENTS = [
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
     },
     {
+        id: 'aigrunn-hackathon-2026',
+        date: '2026-11-11',
+        endDate: '2026-11-12',
+        title: { en: 'aiGrunn Hackathon', nl: 'aiGrunn Hackathon' },
+        location: { en: 'Niemeyer, Groningen', nl: 'Niemeyer, Groningen' },
+        tip: { en: 'Two days of building in the run-up to the aiGrunn Conference, in two parallel streams. Explore is open to anyone curious about AI, no experience needed: pick a technology or an idea and tinker. The Challenge stream, run with Green Business Challenge, puts teams of 18–30-year-olds with a Dutch address on a concrete problem. Food and drinks are provided, selected winners may present on the conference stage on 13 November, and participants get a discounted conference ticket. Spots are limited, so apply online.', nl: 'Twee dagen bouwen in aanloop naar de aiGrunn Conferentie, in twee parallelle stromen. Explore staat open voor iedereen die nieuwsgierig is naar AI, ervaring is niet nodig: kies een technologie of idee en ga experimenteren. De Challenge-stroom, samen met Green Business Challenge, zet teams van 18- tot 30-jarigen met een Nederlands adres op een concreet vraagstuk. Eten en drinken zijn geregeld, geselecteerde winnaars mogen mogelijk op 13 november op het podium van de conferentie presenteren en deelnemers krijgen korting op een conferentiekaartje. Er zijn beperkt plekken, dus meld je online aan.' },
+        url: 'https://www.aigrunn.org/hackathon'
+    },
+    {
         id: 'aigrunn-2026',
         date: '2026-11-13',
         title: { en: 'aiGrunn Conference', nl: 'aiGrunn Conferentie' },
