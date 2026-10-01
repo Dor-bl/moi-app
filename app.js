@@ -943,18 +943,25 @@ async function handleCheckInClick(button) {
         // away while waiting has not.
         const refocus = document.activeElement === document.body;
 
-        // renderEvents() draws getUpcomingEvents(), which filters out anything
-        // that has ended. A fix is allowed 15 seconds, so an event whose window
-        // shut while the request was in flight is already out of that list: the
-        // re-render drops the card entirely, the earned line is never drawn, and
-        // focusEarnedCard finds nothing to put focus on. The check-in is recorded
-        // either way — what disappears is every sign of it, for the one person
-        // who cut it finest.
+        // renderEvents() draws a check-in block only while canCheckIn() holds, so
+        // that is the predicate here too — the same one buildEventCard() asks,
+        // deliberately, because anything narrower answers a different question
+        // than the one that matters: will the re-render still draw this?
         //
-        // So for that case patch the card still on screen, the way the failure
-        // path does, and leave retiring it to the next tick. By then it has been
-        // seen.
-        if (hasEnded(event, todayInGroningen())) {
+        // A fix is allowed 15 seconds, so a window that shut while the request was
+        // in flight leaves nothing to carry the earned line, in two different
+        // ways. An event that has ended is filtered out of getUpcomingEvents()
+        // and the card goes with it. An event still inside its span whose hours
+        // for today have closed keeps its card and loses just the block. Asking
+        // hasEnded() caught only the first: it tests the span's final date, so on
+        // day one of a multi-day event with per-day `hours` it is still false well
+        // past that day's closing time.
+        //
+        // The check-in is recorded either way — what disappears is every sign of
+        // it, for the one person who cut it finest. So patch the card still on
+        // screen, the way the failure path does, and leave retiring it to the next
+        // tick. By then it has been seen.
+        if (!canCheckIn(event, todayInGroningen())) {
             markCheckInEarned(key, refocus);
             return;
         }
