@@ -267,6 +267,15 @@ carried one and must not be deleted. `git log -S'checkIn' -- js/data.js` is the 
 for anything predating this rule, but a rule that needs archaeology on every candidate
 is a rule that gets skipped; the comment is what makes it hold.
 
+**Retiring a check-in means removing `checkIn` and keeping `badge`.** The two arrive
+together, so the reflex is to take them out together — and that orphans the badges just
+as completely as deleting the whole entry, while leaving an entry in `EVENTS` that looks
+cared for. `earnedEventBadges()` reads `event.badge` for the icon, title and description
+it draws, and skips any record whose event has none: `if (!event || !event.badge) return
+null;`. So `badge` is the field the earned cards actually depend on. `checkIn` is only
+the offer of the button, and removing it is the whole point of retiring one — the event
+stops being checkinnable, and everyone who already turned up keeps their card.
+
 (The storage key is never cleaned up either way, so if the entry is ever restored the
 badge comes back with it. That is the recovery path, not a reason to delete.)
 
