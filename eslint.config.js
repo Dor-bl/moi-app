@@ -44,6 +44,7 @@ export default [
         resolveOccurrence: "readonly",
         getUpcomingEvents: "readonly",
         isHappeningNow: "readonly",
+        hasEnded: "readonly",
         isOngoing: "readonly",
         formatEventEnd: "readonly",
         formatEventDate: "readonly",
