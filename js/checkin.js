@@ -21,7 +21,33 @@
 // BUCKET_LIST.length, and updateProgress() counts the keys of completedItems, so
 // folding event check-ins in there would inflate progress past 100% and make
 // "Real Groninger" unreachable-or-free depending on the festival calendar.
-let eventCheckIns = JSON.parse(localStorage.getItem('moiCheckEvents')) || {};
+// This value is untrusted input, not merely something this file wrote earlier:
+// it is user-editable, and a write can be cut short. Letting it throw here is
+// unrecoverable rather than merely wrong. In a classic script the function
+// declarations below are instantiated before any of this runs, so they survive —
+// but `eventCheckIns` is a let, so it would stay in its temporal dead zone for
+// the life of the page, and every reader of it (renderBadges(), the check-in
+// block) would throw ReferenceError on touch. The events list would not draw at
+// all. A corrupt badge store has to cost the badges, not the app.
+function readCheckIns() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('moiCheckEvents'));
+
+        // Shape as well as syntax. `5`, `"x"` and `[]` are all valid JSON, and
+        // this file is not strict, so recordCheckIn()'s `eventCheckIns[key] = ...`
+        // against a primitive is silently dropped — a check-in that looks like it
+        // worked and is gone on the next load. Rejecting the shape here keeps that
+        // guarantee in one place.
+        if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
+        return stored;
+    } catch {
+        // Also covers getItem() itself throwing, which it does when storage is
+        // blocked outright — the same fallback is right for both.
+        return {};
+    }
+}
+
+let eventCheckIns = readCheckIns();
 
 function saveCheckIns() {
     localStorage.setItem('moiCheckEvents', JSON.stringify(eventCheckIns));
