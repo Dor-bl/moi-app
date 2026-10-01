@@ -942,6 +942,23 @@ async function handleCheckInClick(button) {
         // <body>, so that is what "still here" looks like. Someone who tabbed
         // away while waiting has not.
         const refocus = document.activeElement === document.body;
+
+        // renderEvents() draws getUpcomingEvents(), which filters out anything
+        // that has ended. A fix is allowed 15 seconds, so an event whose window
+        // shut while the request was in flight is already out of that list: the
+        // re-render drops the card entirely, the earned line is never drawn, and
+        // focusEarnedCard finds nothing to put focus on. The check-in is recorded
+        // either way — what disappears is every sign of it, for the one person
+        // who cut it finest.
+        //
+        // So for that case patch the card still on screen, the way the failure
+        // path does, and leave retiring it to the next tick. By then it has been
+        // seen.
+        if (hasEnded(event, todayInGroningen())) {
+            markCheckInEarned(key, refocus);
+            return;
+        }
+
         renderEvents();
         if (refocus) focusEarnedCard(key);
         return;
@@ -969,6 +986,29 @@ function focusEarnedCard(key) {
     const block = [...eventsContainer.querySelectorAll('.event-checkin')]
         .find(node => node.dataset.checkinKey === key);
     focusCheckInStatus(block);
+}
+
+// The earned state, written into the card on screen rather than produced by a
+// re-render. Only for the occurrence that retired mid-request: every other
+// success goes through renderEvents(), so there is still one description of
+// "checked in" doing the normal work. This one mirrors the `done` branch of
+// buildCheckInBlock — no button, because there is nothing left to ask the
+// device for.
+function markCheckInEarned(key, refocus) {
+    const block = [...eventsContainer.querySelectorAll('.event-checkin')]
+        .find(node => node.dataset.checkinKey === key);
+    if (!block) return;
+
+    const button = block.querySelector('.event-checkin-btn');
+    if (button) button.remove();
+
+    block.classList.remove('failed');
+    block.classList.add('done');
+
+    const status = block.querySelector('.event-checkin-status');
+    if (status) status.textContent = UI_TRANSLATIONS[currentLang].eventsCheckInDone;
+
+    if (refocus) focusCheckInStatus(block);
 }
 
 // Moving focus to the status line is what gets the result announced, since a
@@ -1242,7 +1282,7 @@ function buildEventBadgeCard({ badge, date }, t) {
     // A stored date that will not parse falls back to the plain unlocked tag.
     // The badge was still earned, and "Earned " trailing into nothing would
     // read as a bug in the thing being celebrated.
-    const earnedOn = formatMemoryDate(date);
+    const earnedOn = formatEarnedDate(date);
     tag.textContent = earnedOn ? t.eventsCheckInEarnedOn.replace('{date}', earnedOn) : t.unlockedTag;
 
     const info = document.createElement('div');
@@ -1328,6 +1368,28 @@ const dateFormatters = {
     en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
 };
+
+// The same shape, pinned to Groningen. A check-in is keyed by the occurrence
+// resolved with todayInGroningen(), and stored as a UTC instant, so reading it
+// back in the device's own zone can disagree with the key it was filed under:
+// 00:30 on the 6th in Groningen is 22:30 on the 5th in UTC, and a phone set to
+// London or New York would caption the badge with the day before the one its
+// owner actually turned up for. The event happened in Groningen; the date it
+// happened on is Groningen's, wherever the badge is later looked at.
+const earnedDateFormatters = {
+    en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Amsterdam' }),
+    nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Amsterdam' })
+};
+
+function formatEarnedDate(value) {
+    if (!value) return '';
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) return '';
+    // Branched explicitly rather than keyed, for the reason formatMemoryDate
+    // gives: currentLang comes from localStorage.
+    const formatter = currentLang === 'nl' ? earnedDateFormatters.nl : earnedDateFormatters.en;
+    return formatter.format(parsed);
+}
 
 function formatMemoryDate(value) {
     if (!value) return '';
