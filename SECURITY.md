@@ -40,8 +40,9 @@ There is no bug bounty — the project earns no money and has none to offer.
 In scope:
 
 - the site at <https://moicheck.nl>;
-- the code in this repository, including the Supabase Edge Functions and
-  database policies under `supabase/`.
+- the code in this repository, including the Supabase Edge Function under
+  `supabase/functions/` and the database row-level security policies set up
+  by the SQL in the README.
 
 Out of scope:
 

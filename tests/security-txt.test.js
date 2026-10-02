@@ -49,7 +49,7 @@ test('security.txt has exactly one Expires, not about to lapse and under a year 
 
 test('security.txt points at SECURITY.md and is canonical on moicheck.nl', () => {
     assert.ok(fs.existsSync(path.join(ROOT, 'SECURITY.md')));
-    assert.ok(values('policy').some(v => v.endsWith('/SECURITY.md')));
+    assert.deepEqual(values('policy'), ['https://github.com/Dor-bl/moi-app/blob/main/SECURITY.md']);
     assert.deepEqual(values('canonical'), ['https://moicheck.nl/.well-known/security.txt']);
     assert.deepEqual(values('preferred-languages'), ['en, nl']);
 });
