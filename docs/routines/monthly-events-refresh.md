@@ -246,6 +246,39 @@ reads. For every lapsed entry the check reports, the run picks exactly one of th
    been announced yet. That is the normal state for a floating festival between
    editions, and the entry stays so the check keeps asking.
 
+**An entry that ever shipped a `checkIn` block is never deleted — leave it lapsed,
+whatever the cases above say.** `earnedEventBadges()` draws each earned badge by
+looking its event up in `EVENTS` and reading `event.badge`; an id it cannot find is
+skipped, deliberately, because a card with no icon, title or description is worse than
+no card. So deleting such an entry takes the badge out of every visitor's Achievement
+Badges grid — including people who physically turned up and earned it — while leaving
+the key sitting in their storage. That is the exact failure
+[#145](https://github.com/Dor-bl/moi-app/pull/145) exists to prevent, arriving by a
+different route, and nothing about it is visible from the check output or the diff.
+The cost of keeping the entry is one line of data the date filter already hides.
+
+**"Ever shipped" has to be answerable from the entry in front of you, so never silently
+remove a `checkIn` block either.** A cleanup run reads the current `EVENTS` entry. If
+some earlier change dropped the `checkIn` — the venue moved, or the point stopped being
+a point — the entry is now indistinguishable from one that never had it, and the next
+cleanup deletes it under the cases above, orphaning the badges anyway. So when a
+`checkIn` genuinely has to go, leave a comment in its place saying the entry once
+carried one and must not be deleted. `git log -S'checkIn' -- js/data.js` is the backstop
+for anything predating this rule, but a rule that needs archaeology on every candidate
+is a rule that gets skipped; the comment is what makes it hold.
+
+**Retiring a check-in means removing `checkIn` and keeping `badge`.** The two arrive
+together, so the reflex is to take them out together — and that orphans the badges just
+as completely as deleting the whole entry, while leaving an entry in `EVENTS` that looks
+cared for. `earnedEventBadges()` reads `event.badge` for the icon, title and description
+it draws, and skips any record whose event has none: `if (!event || !event.badge) return
+null;`. So `badge` is the field the earned cards actually depend on. `checkIn` is only
+the offer of the button, and removing it is the whole point of retiring one — the event
+stops being checkinnable, and everyone who already turned up keeps their card.
+
+(The storage key is never cleaned up either way, so if the entry is ever restored the
+badge comes back with it. That is the recovery path, not a reason to delete.)
+
 Deleting is a data change like any other: it goes in the same refresh PR, and it
 never happens on a guess. Name every deleted entry in the PR body along with the
 reason (which of the cases above) and the evidence for it. For a one-off that is
@@ -299,6 +332,70 @@ the entry. That one line is what lets a later run delete it without re-researchi
   normally the same page the dates were verified against. When it has none, the best
   listings page belongs there rather than an empty field; the PR is where you say that
   is what it is.
+
+### Check-in and badge (optional, and usually skipped)
+
+An event can also carry a `checkIn` block, which puts an **I'm here 📍** button on its
+card while the event is running and awards a badge to a visitor whose device confirms
+they are there. Most events should not have one. Add it only when **both** hold:
+
+- **There is a single point a visitor can stand at.** A city-wide event has none:
+  Koningsdag's vrijmarkt is the whole city, so it carries no `checkIn` and shows no
+  button. A festival terrain, a garden, a square — those have a point.
+- **Turning up is worth a badge.** The badge is permanent and personal. If the event is
+  not the kind of thing someone would be glad to have a record of attending, skip it.
+
+```js
+// The tail of the entry, continuing the shape above. `url` carries no trailing
+// comma there, because it was the last field; adding these gives it one.
+    url: 'https://...',
+    checkIn: { coords: [53.2026, 6.5540], radius: 600 },
+    badge: {
+        icon: '🕊️',
+        title: { en: 'Stadspark Liberator', nl: 'Stadspark Bevrijder' },
+        desc: { en: '...', nl: '...' }
+    }
+```
+
+- **`coords` is the terrain, not the venue's centroid.** The Bevrijdingsfestival's point
+  is the Drafbaan, where the stages are, not the middle of the Stadspark — the park is
+  ~140 hectares and its far end is nowhere near the event. A geocode of the street
+  address is a starting point, not an answer: it can land a few hundred metres out, and
+  a centre that is wrong either refuses people standing in the event or accepts people
+  who are nowhere near it. Check it against something you know — a distance to a
+  landmark you can sanity-check beats trusting the geocoder.
+- **`radius` covers the grounds and the normal approach**, and stops short of anywhere a
+  visitor could plausibly be without attending. The test enforces 100–2000 m; 600 m has
+  been cleared by a real GNSS fix at the Drafbaan. **Err on the side of generosity when the
+  centre is a geocode you could not verify** — a false refusal from inside the event teaches nobody
+  anything, and the badge was never proof in the first place.
+- **`radius` is also the accuracy gate, which is the part that surprises people.** A fix
+  vaguer than the radius is refused *before* any distance is computed, because a
+  multi-kilometre error bound centred on the city would otherwise land inside the radius
+  and hand the badge to someone on another continent. So tightening the radius does not
+  just shrink the area — it rejects more phones. A 150 m radius refuses any device that
+  only manages ±200 m, wherever it is standing.
+- **`badge` names the place and the occasion**, bilingual like everything else, in the
+  same voice as `tip`. `icon` is a single emoji.
+- **The badge is keyed to the resolved occurrence, not the event id.** A two-day festival
+  is one badge, not one per day, and an `annual: true` entry is earnable again next year.
+  Nothing extra is needed for either.
+
+What CI already checks, so a slip fails the build rather than shipping a dead button:
+the test loops over *every* entry carrying a `checkIn` and asserts the radius is
+plausible, the badge has a title and a description in **both** languages, and the
+coordinates sit inside a coarse box — 53.0–53.6 N, 6.2–7.3 E.
+
+Be clear about what that box is and is not. It is a rectangle, not the province: Roden
+sits inside it and is in Drenthe, and so does Emden, which is in Germany. What it
+reliably catches is a typo or a swapped lat/lon pair, which is what it is for. It does
+not certify that a point is in Groningen.
+
+What CI cannot check is whether the point is the *right* point. Only standing there
+proves that, and a faked position never will. The way this has been done is a throwaway
+branch carrying the new `checkIn`, pushed for its Vercel preview, tapped at the venue
+while the event is running, and then abandoned — never merged, and nothing of it in the
+events PR.
 
 ## What else the change has to touch
 
