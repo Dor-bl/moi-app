@@ -376,6 +376,17 @@ with an `actor_id`, and the address can be left behind as an unconfirmed row in
 row is harmless, but it means the person is already "registered" and will get a sign-in
 link rather than a fresh sign-up on their next attempt.
 
+### Security headers
+
+`vercel.json` sends a Content-Security-Policy and supporting headers (`X-Content-Type-Options`,
+`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) on every response. The CSP lists each
+origin the app talks to explicitly: the Supabase project, Leaflet 1.9.4 on unpkg, and OpenStreetMap
+tiles. Its main job is to limit where a compromised script could send a stolen session token.
+When you add a new third-party origin, change the Supabase project, or bump the Leaflet version,
+update the CSP in `vercel.json` too, or the browser will block the request. Keep scripts in files
+rather than inline `<script>` blocks; the policy does not allow inline scripts. The headers only
+apply on Vercel, so check a preview deployment's browser console for CSP violations before merging.
+
 ---
 
 ## 📄 License

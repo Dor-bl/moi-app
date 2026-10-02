@@ -298,17 +298,6 @@
         <p>MoiCheck &bull; <a href="index.html" class="footer-link-btn">Back to app</a></p>
     </footer>
 
-    <script>
-        (function () {
-            try {
-                var saved = localStorage.getItem('moiCheckTheme');
-                if (saved === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                } else if (saved === 'light') {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                }
-            } catch (e) { /* localStorage unavailable */ }
-        })();
-    </script>
+    <script src="js/privacy-theme.js"></script>
 </body>
 </html>
