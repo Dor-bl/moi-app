@@ -23,7 +23,7 @@ When the prose names an area but gives no location or failure, treat the noun as
 
 ## 3. Verify the claim and the mechanism before acting
 
-- **Reproduce first.** Write the failing case, watch it fail, then fix. A fix you never saw fail proves nothing.
+- **Reproduce first.** Write the failing case, watch it fail, then fix. A fix you never saw fail proves nothing. If it will not fail, confirm your premise; if that holds, the finding is not real.
 - **Assert your premise, not just the outcome.** A reproduction that fails to reproduce usually means your setup is wrong, and only a premise assertion says so.
 - **Include a valid-input control** in any suite that feeds bad input. If the healthy case fails too, the bug is in the probe.
 - **Check the stated mechanism.** It can be wrong while the conclusion is right. On 145 a finding blamed undefined globals; in a classic script the function declarations are hoisted and survive, and the real cause was a `let` stuck in its temporal dead zone, which made the impact larger. Say so in the reply and fix the real cause.
@@ -38,6 +38,6 @@ Keep three outcomes distinct, and say which one it is: **not real** (you checked
 ## 5. Reply where the finding lives
 
 - A threaded finding gets a reply on its thread. Resolve it once the fix is pushed or the reply explains why not.
-- A summary-only finding has no thread, so answer it in the PR status comment, naming the finding and the commit ([`pr-status`](../pr-status/SKILL.md) has the shape).
+- A summary-only finding has no thread, so answer it in the PR status comment. Name the finding and either the commit that fixes it or, when nothing changed, what you checked and the verdict ([`pr-status`](../pr-status/SKILL.md) has the shape).
 - Say what you **checked**, not just "fixed", including when the mechanism differed or the finding turned out already handled. A reply that only says "done" cannot be told apart from agreeing without looking.
 - Silence is right when nothing changed and no review arrived.
