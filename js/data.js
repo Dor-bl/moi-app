@@ -598,7 +598,21 @@ const EVENTS = [
         title: { en: 'Culinair Haren (Food Festival)', nl: 'Culinair Haren' },
         location: { en: 'Around the Dorpskerk, Haren', nl: 'Rond de Dorpskerk, Haren' },
         tip: { en: 'Heerlijk Haren: for one weekend, local restaurants and caterers set up around the village church with small plates, finger food, seasonal dishes and wine and beer bars, while hay bales, heaters and string lights keep it cosy into the October evening. Open Friday 17:00–23:00, Saturday 16:00–midnight and Sunday 15:00–21:00. An easy bike ride south of the city and a good excuse to see Haren.', nl: 'Heerlijk Haren: een weekend lang staan lokale restaurants en cateraars rond de Dorpskerk met kleine gerechten, fingerfood, seizoensgerechten en wijn- en bierbars, terwijl hooibalen, heaters en lichtjes het ook op een oktoberavond gezellig houden. Open op vrijdag van 17:00 tot 23:00, zaterdag van 16:00 tot middernacht en zondag van 15:00 tot 21:00 uur. Een makkelijk fietstochtje ten zuiden van de stad en een mooi excuus om Haren te ontdekken.' },
-        url: 'https://www.ervaarharen.nl/event/culinair-haren/'
+        url: 'https://www.ervaarharen.nl/event/culinair-haren/',
+        // Centred on the Dorpskerk, Kerkstraat 2: the stalls fill the grounds
+        // around the church. The point is a published coordinate that has not
+        // been checked on site, so the radius errs generous — 400m covers the
+        // churchyard and the village centre around it without reaching the
+        // Hortus or the station.
+        checkIn: { coords: [53.1726, 6.6051], radius: 400 },
+        badge: {
+            icon: '🍽️',
+            title: { en: 'Heerlijk Haren Foodie', nl: 'Heerlijk Haren Fijnproever' },
+            desc: {
+                en: 'Checked in at Culinair Haren, eating your way around the Dorpskerk!',
+                nl: 'Ingecheckt op Culinair Haren, al proevend rond de Dorpskerk!'
+            }
+        }
     },
     {
         id: 'groninger-marktendag-2026',
