@@ -1,6 +1,6 @@
 ---
 name: review-triage
-description: "How to triage Copilot and other automated review findings on a PR you opened. Covers finding a review that never notified you, reading its summary as carefully as its threads, verifying the claim and its mechanism before acting, and replying where the finding lives. Use when a review bot has reviewed your PR, when asked to address review comments, or after pushing to a PR a bot reviews."
+description: "How to triage Copilot and other automated review findings on a PR you opened. Covers finding a review that did not notify you, reading its summary as carefully as its threads, verifying the claim and its mechanism before acting, and replying where the finding lives. Use when a review bot has reviewed your PR, when asked to address review comments, or after pushing to a PR a bot reviews."
 ---
 
 # Triaging automated review findings
@@ -11,7 +11,7 @@ That is a small sample from one feature and one reviewer, not a base rate. The r
 
 ## 1. Find the review
 
-Reviews send no notification, and their timing is unpredictable: one landed nine minutes after CI went green, another about six hours after a push. Do not wait out a guessed window. After a push, end the turn and rely on a scheduled check-in if you have one.
+A review's arrival is not reliably delivered to you as an event. On 145 two reviews produced none and were found only by looking; on 166 one did arrive. Timing is unpredictable too: one landed nine minutes after CI went green, another about six hours after a push. So do not read silence as "no review", and do not wait out a guessed window. After a push, end the turn and rely on a scheduled check-in if you have one.
 
 To look: list the PR's check runs for a `copilot-pull-request-reviewer` run newer than the last one you handled, then list the review threads and note which are resolved, then list the reviews and **read the newest body**. Reviews list oldest first, so the newest is on the last page.
 
