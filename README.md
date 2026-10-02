@@ -400,6 +400,28 @@ with an `actor_id`, and the address can be left behind as an unconfirmed row in
 row is harmless, but it means the person is already "registered" and will get a sign-in
 link rather than a fresh sign-up on their next attempt.
 
+### Daily magic-link check
+
+`.github/workflows/magic-link-check.yml` asks production to send a real magic link once a
+day and fails the run if Supabase cannot. Magic-link email depends on settings that live
+only in the Supabase dashboard (the SMTP credentials, the sending domain), so a break there
+never shows up in this repo's tests. That is how #175 happened: the Resend key had become
+invalid and every send failed with a 535. A failed scheduled run emails whoever last edited
+the workflow's schedule. Run it by hand from the Actions tab after changing SMTP settings.
+
+The link goes to `delivered@resend.dev`, Resend's test address, which accepts mail without
+anyone receiving it. The request sets `create_user: false`, so the check never signs anyone
+up. One-time setup:
+
+1. In *Authentication -> Users*, choose *Add user -> Create new user* with the email
+   `delivered@resend.dev`, any password, and *Auto Confirm User* ticked. Without this user
+   the check fails with a 422.
+2. Add a repository secret `SUPABASE_ANON_KEY` with the anon key from
+   *Project Settings -> API*. The check also reads the existing `SUPABASE_PROJECT_REF`.
+
+A failure names the HTTP status. A 500 means the email could not be sent: read the cause in
+the Auth Logs as described under "Troubleshooting: magic links fail with a 500" above.
+
 ### Security headers
 
 `vercel.json` sends a Content-Security-Policy and supporting headers (`X-Content-Type-Options`,
