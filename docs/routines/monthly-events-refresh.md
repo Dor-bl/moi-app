@@ -346,13 +346,15 @@ they are there. Most events should not have one. Add it only when **both** hold:
   not the kind of thing someone would be glad to have a record of attending, skip it.
 
 ```js
-// after `url`, on the same entry
-checkIn: { coords: [53.2026, 6.5540], radius: 600 },
-badge: {
-    icon: '🕊️',
-    title: { en: 'Stadspark Liberator', nl: 'Stadspark Bevrijder' },
-    desc: { en: '...', nl: '...' }
-}
+// The tail of the entry, continuing the shape above. `url` carries no trailing
+// comma there, because it was the last field; adding these gives it one.
+    url: 'https://...',
+    checkIn: { coords: [53.2026, 6.5540], radius: 600 },
+    badge: {
+        icon: '🕊️',
+        title: { en: 'Stadspark Liberator', nl: 'Stadspark Bevrijder' },
+        desc: { en: '...', nl: '...' }
+    }
 ```
 
 - **`coords` is the terrain, not the venue's centroid.** The Bevrijdingsfestival's point
