@@ -1,0 +1,63 @@
+name: Daily magic-link check
+
+# Magic links once failed for every user for an unknown stretch: the Resend key
+# in Supabase's SMTP settings had become invalid, so every send ended in
+# `535 "Authentication credentials invalid"` (#175). Nothing in this repo had
+# changed, so no test could see it — the break lived in dashboard config. This
+# asks production to send a real magic link once a day, exactly as app.js does,
+# and fails the run if it cannot. A failed scheduled run emails the person who
+# last edited the schedule below.
+#
+# The recipient is Resend's test sink, delivered@resend.dev: it accepts mail
+# without a human receiving it and without counting against sender reputation.
+# create_user is false, so the check never signs anyone up; it needs that
+# address to exist once as a user (README, "Daily magic-link check").
+
+on:
+  schedule:
+    # Off the hour: GitHub delays and drops runs scheduled at :00 under load.
+    - cron: '17 6 * * *'
+  # For checking right after changing SMTP settings, instead of waiting a day.
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  send:
+    name: Request a magic link from production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /auth/v1/otp
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$PROJECT_REF" ] || [ -z "$ANON_KEY" ]; then
+            echo "::error::SUPABASE_PROJECT_REF and SUPABASE_ANON_KEY must be set as repository secrets. See README, 'Daily magic-link check'."
+            exit 1
+          fi
+
+          # Bounded: Supabase answers in about a second; a hang is a failure too.
+          rm -f body.json
+          status=$(curl -sS --max-time 60 -o body.json -w '%{http_code}' \
+            -X POST "https://${PROJECT_REF}.supabase.co/auth/v1/otp" \
+            -H "apikey: ${ANON_KEY}" \
+            -H "Authorization: Bearer ${ANON_KEY}" \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"delivered@resend.dev","create_user":false}') || status=000
+          body=$(cat body.json 2>/dev/null || true)
+
+          if [ "$status" = "200" ]; then
+            echo "Magic link sent: Supabase accepted the request and handed it to SMTP."
+            exit 0
+          fi
+
+          echo "::error::POST /auth/v1/otp returned HTTP $status: $body"
+          case "$status" in
+            500) echo "::error::Supabase could not send the email. Read the failing request's 'error' in Logs -> Auth Logs; see README, 'Troubleshooting: magic links fail with a 500'." ;;
+            422) echo "::error::Most likely delivered@resend.dev does not exist as a user, so create_user=false refuses it. See README, 'Daily magic-link check'." ;;
+            429) echo "::error::Supabase's email rate limit was hit. Real users may be refused too while it lasts." ;;
+            000) echo "::error::No response from Supabase within 60 seconds." ;;
+          esac
+          exit 1
