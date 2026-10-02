@@ -465,7 +465,24 @@ const EVENTS = [
         title: { en: 'Liberation Day Festival', nl: 'Bevrijdingsfestival' },
         location: { en: 'Stadspark', nl: 'Stadspark' },
         tip: { en: 'A free open-air festival in the Stadspark marking the end of the occupation. Go for the afternoon: the line-up is genuinely good and nobody pays in.', nl: 'Een gratis openluchtfestival in het Stadspark dat het einde van de bezetting markeert. Ga in de middag: de line-up is echt goed en niemand betaalt entree.' },
-        url: 'https://bevrijdingsfestivalgroningen.nl'
+        url: 'https://bevrijdingsfestivalgroningen.nl',
+        // Centred on the Drafbaan, the festival terrain rather than the park's
+        // centroid — the Stadspark is ~140 hectares and its far end is nowhere
+        // near the stages. 600m covers the grounds and the approach from the
+        // Laan Corpus den Hoorn side without reaching the city centre.
+        //
+        // Only events with a genuine point belong here. A city-wide entry
+        // (Koningsdag's vrijmarkt, Bommen Berend) has no coordinate to stand
+        // near, so it carries no checkIn block and shows no button.
+        checkIn: { coords: [53.2026, 6.5540], radius: 600 },
+        badge: {
+            icon: '🕊️',
+            title: { en: 'Stadspark Liberator', nl: 'Stadspark Bevrijder' },
+            desc: {
+                en: 'Checked in at the Bevrijdingsfestival, in the Stadspark, on Liberation Day itself!',
+                nl: 'Ingecheckt op het Bevrijdingsfestival, in het Stadspark, op Bevrijdingsdag zelf!'
+            }
+        }
     },
     {
         id: 'bommen-berend',
@@ -745,6 +762,18 @@ const UI_TRANSLATIONS = {
         eventsMoreInfo: 'More info',
         eventsEmpty: 'Nothing on the calendar right now. Check back soon — the Groningen year fills up fast.',
         eventsCoverage: 'Events shown through {through}',
+        eventsCheckIn: "I'm here 📍",
+        eventsCheckInBusy: 'Checking…',
+        eventsCheckInDone: 'You were there ✓',
+        eventsCheckInEarnedOn: 'Earned {date}',
+        eventsCheckInHint: 'Checks your location once to confirm you made it. The coordinates stay on your device — only the badge is saved.',
+        eventsCheckInTooFar: 'That does not look like the event yet. Try again once you are there.',
+        eventsCheckInImprecise: "Your location is not precise enough to confirm. Usually your browser app only has approximate location — that is a permission in your phone's settings, not on this page.",
+        eventsCheckInDenied: 'No location, no badge — a fair trade, and nothing else changes.',
+        eventsCheckInUnavailable: 'Your device could not work out a location just now.',
+        eventsCheckInTimeout: 'That took too long. Outdoors it is usually quicker — try again.',
+        eventsCheckInClosed: 'This event has finished, so the check-in has closed.',
+        eventsCheckInSaveFailed: 'Your location checked out, but the badge could not be saved — this browser is blocking or out of storage. Private browsing usually does it.',
         eventsOngoing: 'Ongoing — go any time',
         eventsOngoingUntil: 'Until {date}',
         courseLink: 'Free Dutch Course (UG) 🎓',
@@ -767,6 +796,7 @@ const UI_TRANSLATIONS = {
         magicFinishExpired: 'This link has expired or was already used. Request a new one below.',
         magicFinishRetry: 'Request a New Link',
         achievementBadges: 'Achievement Badges',
+        achievementEventBadges: 'Event check-ins',
         badgeUnlockedTag: 'BADGE UNLOCKED! 🎉',
         unlockedTag: 'Unlocked ✓',
         settingsTitle: 'Settings',
@@ -848,6 +878,18 @@ const UI_TRANSLATIONS = {
         eventsMoreInfo: 'Meer info',
         eventsEmpty: 'Nog niets op de agenda. Kom snel weer terug — het Groningse jaar loopt snel vol.',
         eventsCoverage: 'Agenda toont evenementen tot en met {through}',
+        eventsCheckIn: 'Ik ben hier 📍',
+        eventsCheckInBusy: 'Controleren…',
+        eventsCheckInDone: 'Je was erbij ✓',
+        eventsCheckInEarnedOn: 'Behaald op {date}',
+        eventsCheckInHint: 'Controleert je locatie één keer om te bevestigen dat je er bent. De coördinaten blijven op je apparaat — alleen de badge wordt opgeslagen.',
+        eventsCheckInTooFar: 'Dit lijkt nog niet het evenement. Probeer het opnieuw als je er bent.',
+        eventsCheckInImprecise: 'Je locatie is niet nauwkeurig genoeg om te bevestigen. Meestal heeft je browser-app alleen locatie bij benadering — dat is een toestemming in je telefooninstellingen, niet op deze pagina.',
+        eventsCheckInDenied: 'Geen locatie, geen badge — een eerlijke ruil, en er verandert niets anders.',
+        eventsCheckInUnavailable: 'Je apparaat kon nu geen locatie bepalen.',
+        eventsCheckInTimeout: 'Dat duurde te lang. Buiten gaat het meestal sneller — probeer het opnieuw.',
+        eventsCheckInClosed: 'Dit evenement is afgelopen, dus inchecken kan niet meer.',
+        eventsCheckInSaveFailed: 'Je locatie klopte, maar de badge kon niet worden opgeslagen — deze browser blokkeert opslag of zit vol. Privénavigatie doet dit meestal.',
         eventsOngoing: 'Doorlopend — ga wanneer je wilt',
         eventsOngoingUntil: 'Tot en met {date}',
         courseLink: 'Gratis Cursus Nederlands (RUG) 🎓',
@@ -870,6 +912,7 @@ const UI_TRANSLATIONS = {
         magicFinishExpired: 'Deze link is verlopen of al gebruikt. Vraag hieronder een nieuwe aan.',
         magicFinishRetry: 'Nieuwe Link Aanvragen',
         achievementBadges: 'Prestatiebadges',
+        achievementEventBadges: 'Bij evenementen',
         badgeUnlockedTag: 'BADGE ONTGRENDELD! 🎉',
         unlockedTag: 'Ontgrendeld ✓',
         settingsTitle: 'Instellingen',

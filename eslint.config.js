@@ -49,6 +49,15 @@ export default [
         formatEventDate: "readonly",
         formatEventsCoverageEnd: "readonly",
         renderEvents: "readonly",
+        checkInKeyFor: "readonly",
+        canCheckIn: "readonly",
+        distanceInMetres: "readonly",
+        judgeCheckIn: "readonly",
+        hasCheckedIn: "readonly",
+        earnedEventBadges: "readonly",
+        recordCheckIn: "readonly",
+        readPosition: "readonly",
+        runCheckIn: "readonly",
         // Shared state variables
         SUPABASE_URL: "writable",
         SUPABASE_ANON_KEY: "writable",
@@ -63,7 +72,9 @@ export default [
         resortTimer: "writable",
         listNeedsResort: "writable",
         leafletMap: "writable",
-        markersGroup: "writable"
+        markersGroup: "writable",
+        eventCheckIns: "writable",
+        pendingCheckInKey: "writable"
       },
     },
     rules: {

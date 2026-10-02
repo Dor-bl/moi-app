@@ -19,6 +19,20 @@ let selectedItemId = null;
 let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
 let resortTimer = null;
 let listNeedsResort = false;
+// The occurrence key of a check-in waiting on a GPS fix, or null. It does two
+// jobs, and a cold fix is allowed 15 seconds, so neither window is narrow.
+//
+// It suppresses the staleness re-renders in setupEventListeners: the minute tick
+// would otherwise rebuild the card mid-request and drop the verdict into a
+// detached node — a silently swallowed error message. A card at most a minute
+// stale is the trade, and a successful check-in re-renders on its own.
+//
+// And it survives the re-renders it cannot suppress, because they are the user's
+// own doing: switching language or toggling a filter calls renderEvents directly.
+// Holding the key rather than a boolean lets buildCheckInBlock rebuild that card
+// still busy, instead of handing back a fresh enabled button that a second tap
+// turns into a second location read for one intent.
+let pendingCheckInKey = null;
 let leafletMap = null;
 let markersGroup = null;
 
@@ -785,7 +799,284 @@ function buildEventCard(event, today, ongoing = false) {
         card.appendChild(link);
     }
 
+    // Only while the event is genuinely on and has a point to stand near, so the
+    // button's presence is itself the signal that this is earnable right now
+    // rather than something to come back for.
+    //
+    // The exception is a check-in already in flight for this occurrence. A fix
+    // is allowed 15 seconds and canCheckIn() can go false inside that window —
+    // a day's `hours` cutoff passing on a multi-day event, which leaves the card
+    // itself on screen. Dropping the block from a render the user triggered
+    // (language, filter, view) would leave the completion handler no status line
+    // to write to, so the tap would resolve into silence on a card still in
+    // front of them. pendingCheckInKey already keeps the button rendered busy
+    // across the renders it cannot suppress; this keeps the block it lives in.
+    if (canCheckIn(event, today) || pendingCheckInKey === checkInKeyFor(event)) {
+        card.appendChild(buildCheckInBlock(event));
+    }
+
     return card;
+}
+
+// Verdict reason → translation key. Null-prototyped so an unmapped reason misses
+// and falls through to the generic message rather than inheriting off
+// Object.prototype and rendering a function as a status line.
+const CHECKIN_MESSAGE_KEYS = Object.assign(Object.create(null), {
+    tooFar: 'eventsCheckInTooFar',
+    imprecise: 'eventsCheckInImprecise',
+    denied: 'eventsCheckInDenied',
+    unavailable: 'eventsCheckInUnavailable',
+    timeout: 'eventsCheckInTimeout',
+    saveFailed: 'eventsCheckInSaveFailed'
+});
+
+function buildCheckInBlock(event) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const block = document.createElement('div');
+    block.className = 'event-checkin';
+    // The button carries this too, but the earned state has no button, and after a
+    // successful check-in the card has to be found again to put focus back on it.
+    block.dataset.checkinKey = checkInKeyFor(event);
+
+    const status = document.createElement('p');
+    status.className = 'event-checkin-status';
+    // Every outcome here is written into this paragraph asynchronously, seconds
+    // after the tap. Without a live region a screen reader announces none of it:
+    // not the refusal, not the reason, not the badge.
+    status.setAttribute('role', 'status');
+
+    // Already earned: no button, because there is nothing left to ask the
+    // device for. Re-reading a location to confirm what is already stored would
+    // be a location read with no purpose, which is the one thing this feature
+    // is built not to do.
+    if (hasCheckedIn(event)) {
+        block.classList.add('done');
+        status.textContent = t.eventsCheckInDone;
+        block.appendChild(status);
+        return block;
+    }
+
+    const button = document.createElement('button');
+    button.className = 'event-checkin-btn';
+    button.type = 'button';
+    // The occurrence key, not the event id: the click is handled by delegation,
+    // so this is what tells the handler which card it came from — and an annual
+    // event's id alone would not say which year's occurrence.
+    button.dataset.checkinKey = checkInKeyFor(event);
+
+    // Rebuilt mid-request by a render the user triggered themselves, this card
+    // comes back in the state its check-in is actually in.
+    const busy = pendingCheckInKey === button.dataset.checkinKey;
+    button.textContent = busy ? t.eventsCheckInBusy : t.eventsCheckIn;
+    button.disabled = busy;
+
+    // Stated before the tap, not after: the browser's permission prompt says
+    // "wants to know your location" and says nothing about what happens to it.
+    status.textContent = t.eventsCheckInHint;
+
+    block.appendChild(button);
+    block.appendChild(status);
+    return block;
+}
+
+// Re-resolves the occurrence a button was rendered for, re-checking the window
+// rather than trusting it: renderEvents only ticks once a minute, so an event
+// whose endTime passed since the last render must not still be earnable. The
+// alternative — holding the event in a closure per card — is the per-item
+// listener that delegation exists to avoid.
+function findCheckInEvent(key) {
+    const today = todayInGroningen();
+    return getUpcomingEvents(EVENTS, today)
+        .find(event => canCheckIn(event, today) && checkInKeyFor(event) === key) || null;
+}
+
+async function handleCheckInClick(button) {
+    const key = button.dataset.checkinKey;
+    const block = button.closest('.event-checkin');
+
+    const event = findCheckInEvent(key);
+    if (!event) {
+        // The window closed between the render and the tap — the card is at most
+        // a minute stale, and the next tick drops it. Its own message, because
+        // "could not work out a location" would be a plain lie here. Nothing has
+        // been awaited yet, so these are still the nodes on screen.
+        block.classList.add('failed');
+        block.querySelector('.event-checkin-status').textContent =
+            UI_TRANSLATIONS[currentLang].eventsCheckInClosed;
+
+        // Read this before disabling, not after. The two other outcomes test for
+        // <body> because by then the tap's blur is long past; here nothing has
+        // been awaited, so the button is still focused from the keypress that
+        // got here and disabling it is what would drop them. The button cannot
+        // take them back either way: the window is shut, so it stays disabled.
+        // So the status line, exactly as on the success path.
+        const refocus = document.activeElement === button;
+        button.disabled = true;
+        if (refocus) focusCheckInStatus(block);
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = UI_TRANSLATIONS[currentLang].eventsCheckInBusy;
+    block.classList.remove('failed');
+    pendingCheckInKey = key;
+
+    let verdict;
+    try {
+        verdict = await runCheckIn(event);
+    } catch (err) {
+        // runCheckIn turns every geolocation failure, and the refused write, into
+        // a verdict of its own, so nothing should reach here. It stays as a
+        // backstop because the alternative is an unhandled rejection leaving the
+        // button disabled on "Checking…" for the rest of the visit, with nothing
+        // on screen saying why. saveFailed rather than a geolocation reason: by
+        // this point the position was fine, so blaming it would be a false
+        // diagnosis of a real failure.
+        console.warn('Check-in failed unexpectedly:', err);
+        verdict = { ok: false, reason: 'saveFailed' };
+    } finally {
+        pendingCheckInKey = null;
+    }
+
+    if (verdict.ok) {
+        // Re-render rather than patch this card in place: the earned state is
+        // then produced by exactly the path a filter change or a language
+        // switch takes, so there is one description of "checked in" to keep
+        // right instead of two.
+        //
+        // But the re-render destroys the button that was just pressed, which
+        // costs two things the failure path already protects. Read whether focus
+        // is ours to move BEFORE rendering, for the same reason as below: the tap
+        // disabled the button, and disabling a focused button drops focus to
+        // <body>, so that is what "still here" looks like. Someone who tabbed
+        // away while waiting has not.
+        const refocus = document.activeElement === document.body;
+
+        // renderEvents() draws a check-in block only while canCheckIn() holds, so
+        // that is the predicate here too — the same one buildEventCard() asks,
+        // deliberately, because anything narrower answers a different question
+        // than the one that matters: will the re-render still draw this?
+        //
+        // A fix is allowed 15 seconds, so a window that shut while the request was
+        // in flight leaves nothing to carry the earned line, in two different
+        // ways. An event that has ended is filtered out of getUpcomingEvents()
+        // and the card goes with it. An event still inside its span whose hours
+        // for today have closed keeps its card and loses just the block. Asking
+        // hasEnded() caught only the first: it tests the span's final date, so on
+        // day one of a multi-day event with per-day `hours` it is still false well
+        // past that day's closing time.
+        //
+        // The check-in is recorded either way — what disappears is every sign of
+        // it, for the one person who cut it finest. So patch the card still on
+        // screen, the way the failure path does, and leave retiring it to the next
+        // tick. By then it has been seen.
+        if (!canCheckIn(event, todayInGroningen())) {
+            markCheckInEarned(key, refocus);
+            return;
+        }
+
+        renderEvents();
+        if (refocus) focusEarnedCard(key);
+        return;
+    }
+
+    // Deliberately not `block` and `button`: see showCheckInFailure.
+    showCheckInFailure(key, verdict.reason);
+}
+
+// Success is the one outcome with nothing left on screen to speak or land on: the
+// button is gone, replaced by "You were there ✓". Moving focus onto that line
+// fixes both halves at once — the keyboard user keeps their place in the page
+// instead of being dumped at the top of the document, and screen readers read a
+// newly focused element, which is what actually gets the result announced.
+//
+// The role="status" on that paragraph does not cover this. A live region
+// announces mutations to a region already in the document; this one arrives from
+// renderEvents() with its text in place, and that is not reliably spoken. The
+// badge toast cannot stand in either — it is a plain div with no live region.
+//
+// tabindex="-1" so it can take focus without joining the tab order. Nothing to
+// focus (the card filtered out of view, say) means nobody to tell, exactly as on
+// the failure path.
+function focusEarnedCard(key) {
+    const block = [...eventsContainer.querySelectorAll('.event-checkin')]
+        .find(node => node.dataset.checkinKey === key);
+    focusCheckInStatus(block);
+}
+
+// The earned state, written into the card on screen rather than produced by a
+// re-render. Only for the occurrence that retired mid-request: every other
+// success goes through renderEvents(), so there is still one description of
+// "checked in" doing the normal work. This one mirrors the `done` branch of
+// buildCheckInBlock — no button, because there is nothing left to ask the
+// device for.
+function markCheckInEarned(key, refocus) {
+    const block = [...eventsContainer.querySelectorAll('.event-checkin')]
+        .find(node => node.dataset.checkinKey === key);
+    if (!block) return;
+
+    const button = block.querySelector('.event-checkin-btn');
+    if (button) button.remove();
+
+    block.classList.remove('failed');
+    block.classList.add('done');
+
+    const status = block.querySelector('.event-checkin-status');
+    if (status) status.textContent = UI_TRANSLATIONS[currentLang].eventsCheckInDone;
+
+    if (refocus) focusCheckInStatus(block);
+}
+
+// Moving focus to the status line is what gets the result announced, since a
+// live region whose text arrives with it already in place is not reliably read
+// but a newly focused element is. tabIndex rather than a tabindex attribute in
+// the markup: it should be reachable this way without joining the tab order.
+function focusCheckInStatus(block) {
+    const status = block && block.querySelector('.event-checkin-status');
+    if (!status) return;
+
+    status.tabIndex = -1;
+    status.focus();
+}
+
+// Nothing captured before the await is safe to write to afterwards. A render the
+// user triggered mid-request — language, filter, view — replaces the card, and
+// those nodes are then detached: the verdict would land somewhere nobody can see
+// while the card actually on screen sits disabled on "Checking…" with no message
+// and no way to retry. pendingCheckInKey is already cleared by then, so nothing
+// would ever free it.
+//
+// So the live button is found again by its key and updated in place. In place
+// rather than via renderEvents() because a re-render moves keyboard focus off the
+// button the user just pressed, and this is the path where they most need to stay
+// on it. UI_TRANSLATIONS is re-read for the same reason the nodes are: the
+// language may have changed while the fix was in flight.
+//
+// Matched by walking the buttons rather than with an attribute selector, so there
+// is no question of escaping a key that contains an "@".
+function showCheckInFailure(key, reason) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const button = [...eventsContainer.querySelectorAll('.event-checkin-btn')]
+        .find(candidate => candidate.dataset.checkinKey === key);
+
+    // The card is off screen entirely — another view, or a filter that excludes
+    // it. There is nobody to tell, and the next render rebuilds it enabled.
+    if (!button) return;
+
+    const block = button.closest('.event-checkin');
+    block.classList.add('failed');
+    block.querySelector('.event-checkin-status').textContent =
+        t[CHECKIN_MESSAGE_KEYS[reason] || 'eventsCheckInUnavailable'];
+
+    // Disabling a focused button blurs it, so someone who pressed this with the
+    // keyboard has been sitting on <body> ever since the tap — and re-enabling
+    // does not bring them back. Restore them, but only from <body>: if they
+    // tabbed elsewhere while waiting, stealing focus back would be worse than
+    // leaving it.
+    const refocus = document.activeElement === document.body;
+    button.disabled = false;
+    button.textContent = t.eventsCheckIn;
+    if (refocus) button.focus();
 }
 
 function renderEvents() {
@@ -951,7 +1242,71 @@ function renderBadges() {
         `;
         fragment.appendChild(card);
     });
+
+    // Event check-in badges share this grid rather than getting a screen of
+    // their own: one place to look for "my badges" beats two, and a second
+    // screen would need its own nav entry to hold a handful of cards.
+    //
+    // Earned ones only, and deliberately no locked counterparts. A locked card
+    // per checkable event would grow the grid every time the monthly events
+    // refresh adds one, advertise festivals rather than report achievements,
+    // and promise something this screen cannot deliver — an event badge is
+    // earned by standing in the event, not from here.
+    // Headed as its own group rather than run on from the category cards. The
+    // two answer different questions — a category badge is progress through the
+    // list ("3 / 5"), an event badge is a place on a date — and unlabelled they
+    // read as one undifferentiated pile.
+    //
+    // The heading renders only when something has been earned, so nobody who has
+    // never checked in sees a new empty section, and the existing grid is
+    // untouched for them.
+    const earned = earnedEventBadges(EVENTS);
+    if (earned.length > 0) {
+        const heading = document.createElement('h4');
+        heading.className = 'badges-group-heading';
+        heading.textContent = t.achievementEventBadges;
+        fragment.appendChild(heading);
+
+        earned.forEach(badge => fragment.appendChild(buildEventBadgeCard(badge, t)));
+    }
+
     badgesGrid.replaceChildren(fragment);
+}
+
+// createElement/textContent throughout, rather than the innerHTML the category
+// cards above are built with. That is the repo's rule for new code and what the
+// check-in block already follows; the existing call site is left alone because
+// rewriting it is not this change's job.
+function buildEventBadgeCard({ badge, date }, t) {
+    const card = document.createElement('div');
+    card.className = 'badge-card unlocked';
+
+    const icon = document.createElement('div');
+    icon.className = 'badge-icon';
+    icon.textContent = badge.icon;
+
+    const title = document.createElement('div');
+    title.className = 'badge-title';
+    title.textContent = badge.title[currentLang];
+
+    const desc = document.createElement('div');
+    desc.className = 'badge-desc';
+    desc.textContent = badge.desc[currentLang];
+
+    const tag = document.createElement('span');
+    tag.className = 'badge-progress-tag';
+    // A stored date that will not parse falls back to the plain unlocked tag.
+    // The badge was still earned, and "Earned " trailing into nothing would
+    // read as a bug in the thing being celebrated.
+    const earnedOn = formatEarnedDate(date);
+    tag.textContent = earnedOn ? t.eventsCheckInEarnedOn.replace('{date}', earnedOn) : t.unlockedTag;
+
+    const info = document.createElement('div');
+    info.className = 'badge-info';
+    info.append(title, desc, tag);
+
+    card.append(icon, info);
+    return card;
 }
 
 function openDetailModal(item) {
@@ -1029,6 +1384,28 @@ const dateFormatters = {
     en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
 };
+
+// The same shape, pinned to Groningen. A check-in is keyed by the occurrence
+// resolved with todayInGroningen(), and stored as a UTC instant, so reading it
+// back in the device's own zone can disagree with the key it was filed under:
+// 00:30 on the 6th in Groningen is 22:30 on the 5th in UTC, and a phone set to
+// London or New York would caption the badge with the day before the one its
+// owner actually turned up for. The event happened in Groningen; the date it
+// happened on is Groningen's, wherever the badge is later looked at.
+const earnedDateFormatters = {
+    en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Amsterdam' }),
+    nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Amsterdam' })
+};
+
+function formatEarnedDate(value) {
+    if (!value) return '';
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) return '';
+    // Branched explicitly rather than keyed, for the reason formatMemoryDate
+    // gives: currentLang comes from localStorage.
+    const formatter = currentLang === 'nl' ? earnedDateFormatters.nl : earnedDateFormatters.en;
+    return formatter.format(parsed);
+}
 
 function formatMemoryDate(value) {
     if (!value) return '';
@@ -1352,12 +1729,23 @@ function setupEventListeners() {
     mapViewBtn.addEventListener('click', () => switchView('map'));
     eventsViewBtn.addEventListener('click', () => switchView('events'));
 
+    // Delegated from the container, like the bucket list's checkboxes above:
+    // renderEvents runs on a minute tick, so a listener bound inside the card
+    // builder would be rebuilt for every card, every minute, all visit.
+    eventsContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.event-checkin-btn');
+        // One check-in at a time, whichever card it was started from: a second
+        // tap while a fix is in flight would mean two location reads and two
+        // toasts for one intent.
+        if (button && !button.disabled && !pendingCheckInKey) handleCheckInClick(button);
+    });
+
     // A tab backgrounded before an endTime cutoff (or left open overnight) can
     // resume with a stale card: mobile browsers throttle or freeze the minute
     // timer below while hidden, so becoming visible again is its own trigger
     // rather than something the timer can be trusted to catch promptly.
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden || currentView !== 'events') return;
+        if (document.hidden || currentView !== 'events' || pendingCheckInKey) return;
         renderEvents();
     });
 
@@ -1367,7 +1755,7 @@ function setupEventListeners() {
     // enough to keep the open tab honest without polling faster than the data
     // can actually change.
     setInterval(() => {
-        if (currentView === 'events') renderEvents();
+        if (currentView === 'events' && !pendingCheckInKey) renderEvents();
     }, 60 * 1000);
 
     // Language buttons

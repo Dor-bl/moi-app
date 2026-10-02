@@ -12,6 +12,7 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 - **User Login & Cloud Sync (Google 1-Click & Magic Links)**: Users can sign in to save progress and memory notes, keeping state synchronized across mobile devices and laptops.
 - **Interactive Groningen Map View 🗺️**: Switch seamlessly between List View and Map View. Features interactive map pins for all 50 locations across Groningen with real-time status (Green for completed, Orange for pending).
 - **Upcoming Events View 📅**: A third view alongside List and Map showing what's on in Groningen — Koningsdag, Bommen Berend, Sint Maarten, carbidschieten — with a *Happening now* badge for anything currently running. Events drop off the page by themselves the day after they finish, with no deploy needed: the list is filtered at render time against the current date in `Europe/Amsterdam`, and traditions on a fixed calendar date roll forward to their next occurrence automatically. Run `npm run events:check` to see what's still ahead and what needs fresh dates.
+- **Event Check-In Badges 📍**: While an event is actually running, its card offers an *I'm here* button that confirms you made it and awards that event's badge — the **Stadspark Liberator 🕊️** for the Bevrijdingsfestival, say. The location check happens entirely in the browser: your coordinates are compared to the event's and then discarded, so what gets saved is the badge and never a position. A fix too vague to resolve the radius is refused rather than waved through, and each occurrence of a recurring event is its own badge. Only events carrying a `checkIn: { coords, radius }` block offer it — a city-wide entry like Koningsdag has no single point to stand near.
 - **Multi-Language Support (EN 🇬🇧 / NL 🇳🇱)**: Toggle instantly between English and Dutch for all items, tips, categories, and milestone badges.
 - **50 Curated Groningen Bucket List Items**: Handpicked experiences spanning Food & Drink, Culture & Sights, Daily Life, Groningen Classics, and Nature & Wildlife.
 - **Contact & Item Suggestions Form**: Expats can easily get in touch, suggest new Groningen bucket list items, report bugs, or send feedback with full bilingual support.
@@ -287,7 +288,10 @@ Everything MoiCheck stores on a visitor's device is exempt from the ePrivacy con
 requirement, on one of three grounds: it is the service itself (completed items and
 notes), a preference the visitor set (theme, language, completed-list layout), or strictly
 necessary for sign-in, which only happens because they asked to sign in (the Supabase
-session token and the account marker). The key-by-key reasoning, and what would change it,
+session token and the account marker). The event check-in is on the same footing: reading a
+position is in scope for the rule, and it is exempt because it happens only inside a tap on
+a button whose whole meaning is "confirm I am here" — nothing is read in the background and
+no coordinate is kept. The key-by-key reasoning, and what would change it,
 is written up in
 [`docs/decisions/consent-exemption-analysis.md`](docs/decisions/consent-exemption-analysis.md);
 `privacy.html` section 6 states the same thing in plain language for visitors. Add a new
