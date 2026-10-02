@@ -57,7 +57,14 @@ jobs:
           case "$status" in
             500) echo "::error::Supabase could not send the email. Read the failing request's 'error' in Logs -> Auth Logs; see README, 'Troubleshooting: magic links fail with a 500'." ;;
             422) echo "::error::Most likely delivered@resend.dev does not exist as a user, so create_user=false refuses it. See README, 'Daily magic-link check'." ;;
-            429) echo "::error::Supabase's email rate limit was hit. Real users may be refused too while it lasts." ;;
+            429)
+              # Two limiters answer 429 here; only the response's error_code
+              # says which. They point in opposite directions for real users.
+              case "$(jq -r '.error_code // empty' body.json 2>/dev/null)" in
+                over_email_send_rate_limit) echo "::error::Supabase's email-send limit was hit (the project's hourly limit, or this address got a link within the last minute). Real users may be refused too while it lasts." ;;
+                over_request_rate_limit) echo "::error::Supabase's per-IP request limit was hit from the GitHub runner's address. Real users are most likely unaffected; re-run later." ;;
+                *) echo "::error::Rate limited, but the response names no known limiter; see the response above." ;;
+              esac ;;
             000) echo "::error::No response from Supabase within 60 seconds." ;;
           esac
           exit 1
