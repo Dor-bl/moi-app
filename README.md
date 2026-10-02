@@ -343,8 +343,19 @@ sent a valid request; a malformed one would come back as a 400 or 422.
 
 Read the real cause in *Logs -> Auth Logs* in the Supabase dashboard, on the failing
 request's `error` field. The Edge Logs entry — the one showing just
-`POST | 500 | /auth/v1/otp` — carries no body and cannot tell you anything. The causes,
-in order of likelihood:
+`POST | 500 | /auth/v1/otp` — carries no body and cannot tell you anything. If the Auth
+Logs view is hard to filter, *Logs -> Logs Explorer* reads the same source; set the window
+to a minute around the failure:
+
+```sql
+select timestamp, event_message
+from auth_logs
+where timestamp > timestamp '2026-01-01 12:00:00'
+  and timestamp < timestamp '2026-01-01 12:01:00'
+order by timestamp desc
+```
+
+The causes, in order of likelihood:
 
 1. **The email provider refused the recipient.** Most transactional senders will only
    deliver to your own account address until you verify a domain you control, and they
@@ -362,10 +373,23 @@ in order of likelihood:
    an address on that verified domain — `noreply@yourdomain.nl`, not `onboarding@resend.dev`.
    A `*.vercel.app` subdomain cannot be used: verification needs DNS records you can only
    add on a domain you own.
-2. **No custom SMTP configured at all.** Supabase's built-in sender only delivers to the
+2. **The SMTP server rejected Supabase's login.** Custom SMTP is configured, but the
+   username or password in it is wrong, so every send fails — the project owner's
+   included. The log reads:
+
+   ```
+   "error": "535 \"Authentication credentials invalid\""
+   ```
+
+   The usual cause is an API key that was deleted, rotated, or pasted wrong. With Resend,
+   create a new key with *Sending access* restricted to your domain, then in
+   *Authentication -> Emails -> SMTP Settings* set the username to `resend` and the
+   password to that key (host `smtp.resend.com`, port `465`). The settings apply on save;
+   no redeploy is needed.
+3. **No custom SMTP configured at all.** Supabase's built-in sender only delivers to the
    project's team members and is rate limited to a handful of messages per hour, so it
    fails the same way for real users. It is for development only.
-3. **A database error while creating the user.** A trigger on `auth.users` (for example a
+4. **A database error while creating the user.** A trigger on `auth.users` (for example a
    `handle_new_user` function that inserts into a profiles table) that throws will fail the
    sign-up. The log says `Database error saving new user`. This repo's schema defines no
    such trigger, so this only applies if one was added by hand in the SQL editor.
