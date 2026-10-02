@@ -30,11 +30,8 @@ const values = name => fields.filter(([k]) => k === name).map(([, v]) => v);
 
 const DAY = 24 * 60 * 60 * 1000;
 
-test('security.txt has at least one Contact', () => {
-    assert.ok(values('contact').length >= 1);
-    for (const contact of values('contact')) {
-        assert.match(contact, /^(mailto:|https:\/\/|tel:)/);
-    }
+test('security.txt Contact is our reporting address', () => {
+    assert.deepEqual(values('contact'), ['mailto:hallo@moicheck.nl']);
 });
 
 test('security.txt has exactly one Expires, not about to lapse and under a year out', () => {
@@ -42,9 +39,12 @@ test('security.txt has exactly one Expires, not about to lapse and under a year 
     assert.equal(expires.length, 1);
     const when = Date.parse(expires[0]);
     assert.ok(!Number.isNaN(when), `unparseable Expires: ${expires[0]}`);
-    const left = when - Date.now();
-    assert.ok(left > 14 * DAY, `security.txt expires ${expires[0]} — move Expires forward`);
-    assert.ok(left < 366 * DAY, `Expires ${expires[0]} is more than a year out (RFC 9116 §2.5.5)`);
+    assert.ok(when - Date.now() > 14 * DAY, `security.txt expires ${expires[0]} — move Expires forward`);
+    // A calendar year rather than 365 days, so a renewal to the same date next
+    // year still passes when that span includes 29 February.
+    const yearOut = new Date();
+    yearOut.setUTCFullYear(yearOut.getUTCFullYear() + 1);
+    assert.ok(when <= yearOut.getTime(), `Expires ${expires[0]} is more than a year out (RFC 9116 §2.5.5)`);
 });
 
 test('security.txt points at SECURITY.md and is canonical on moicheck.nl', () => {
@@ -59,5 +59,5 @@ test('vercel.json serves security.txt as text/plain', () => {
     const rule = headers.find(h => h.source === '/.well-known/security.txt');
     assert.ok(rule, 'no headers entry for /.well-known/security.txt');
     const type = rule.headers.find(h => h.key.toLowerCase() === 'content-type');
-    assert.match(type?.value ?? '', /^text\/plain/);
+    assert.equal(type?.value, 'text/plain; charset=utf-8');
 });
