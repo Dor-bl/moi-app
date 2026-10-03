@@ -16,7 +16,7 @@ Please include:
 - what you think the impact is — for example, whether another user's progress,
   memories, or email address could be read or changed.
 
-Please **do not** open a public GitHub issue for a vulnerability, and do not
+Please **do not** disclose a vulnerability publicly before it is fixed, and do not
 access, modify, or delete other users' data beyond the minimum needed to show
 the problem exists.
 
