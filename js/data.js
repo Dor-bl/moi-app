@@ -416,7 +416,7 @@ const BUCKET_LIST = [
     },
     {
         id: '51',
-        coords: [53.3335, 6.2975],
+        coords: [53.3369, 6.2971],
         category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
         title: { en: 'Learn how Zoutkamp earns its shrimp at the Visserijmuseum', nl: 'Ontdek hoe Zoutkamp aan zijn garnalen komt in het Visserijmuseum' },
         tip: { en: "Those little brown shrimp in your broodje garnaal usually start their journey from fishing boats like the ones still sailing out of Zoutkamp, the old fishing village on the Lauwersmeer. The museum sits right on the inner harbour in a former buoy shed, and it is run by locals who can tell you how the shrimp get caught, peeled and sold. Come between April and October, pair it with the seal trip or the WEC in Lauwersoog, and you will never look at a bakje garnalen the same way again.", nl: "Die kleine bruine garnaaltjes op je broodje garnaal beginnen hun reis vaak op kotters zoals die nog steeds uitvaren vanuit Zoutkamp, het oude vissersdorp aan het Lauwersmeer. Het museum zit pal aan de binnenhaven in een oude betonningsloods en wordt gerund door mensen uit het dorp, die je vertellen hoe garnalen gevangen, gepeld en verkocht worden. Ga tussen april en oktober, combineer het met de zeehondentocht of het WEC in Lauwersoog, en je kijkt nooit meer hetzelfde naar een bakje garnalen." },
