@@ -57,15 +57,19 @@ test('security.txt has exactly one Expires, not about to lapse and under a year 
 
 test('security.txt points at SECURITY.md and is canonical on moicheck.nl', () => {
     assert.ok(fs.existsSync(path.join(ROOT, 'SECURITY.md')));
-    assert.deepEqual(values('policy'), ['https://github.com/Dor-bl/moi-app/blob/main/SECURITY.md']);
+    assert.deepEqual(values('policy'), ['https://moicheck.nl/SECURITY.md']);
     assert.deepEqual(values('canonical'), ['https://moicheck.nl/.well-known/security.txt']);
     assert.deepEqual(values('preferred-languages'), ['en, nl']);
 });
 
-test('vercel.json serves security.txt as text/plain', () => {
-    const { headers } = JSON.parse(read('vercel.json'));
-    const rule = headers.find(h => h.source === '/.well-known/security.txt');
-    assert.ok(rule, 'no headers entry for /.well-known/security.txt');
-    const type = rule.headers.find(h => h.key.toLowerCase() === 'content-type');
-    assert.equal(type?.value, 'text/plain; charset=utf-8');
-});
+// The repository is private, so the policy has to be served from the site
+// itself. text/plain makes browsers display SECURITY.md rather than download it.
+for (const source of ['/.well-known/security.txt', '/SECURITY.md']) {
+    test(`vercel.json serves ${source} as text/plain`, () => {
+        const { headers } = JSON.parse(read('vercel.json'));
+        const rule = headers.find(h => h.source === source);
+        assert.ok(rule, `no headers entry for ${source}`);
+        const type = rule.headers.find(h => h.key.toLowerCase() === 'content-type');
+        assert.equal(type?.value, 'text/plain; charset=utf-8');
+    });
+}

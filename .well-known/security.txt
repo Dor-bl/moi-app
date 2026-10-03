@@ -6,4 +6,4 @@ Contact: mailto:hallo@moicheck.nl
 Expires: 2027-09-30T23:00:00.000Z
 Preferred-Languages: en, nl
 Canonical: https://moicheck.nl/.well-known/security.txt
-Policy: https://github.com/Dor-bl/moi-app/blob/main/SECURITY.md
+Policy: https://moicheck.nl/SECURITY.md
