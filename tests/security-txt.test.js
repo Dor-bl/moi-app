@@ -43,6 +43,10 @@ test('security.txt has exactly one Expires, not about to lapse and under a year 
         `Expires must be an RFC 3339 date-time: ${expires[0]}`);
     const when = Date.parse(expires[0]);
     assert.ok(!Number.isNaN(when), `unparseable Expires: ${expires[0]}`);
+    // Date.parse rolls impossible days over ("2027-02-30" becomes 2 March), so
+    // check the written day exists in its month.
+    const [y, m, d] = expires[0].slice(0, 10).split('-').map(Number);
+    assert.equal(new Date(Date.UTC(y, m - 1, d)).getUTCDate(), d, `Expires is not a real date: ${expires[0]}`);
     assert.ok(when - Date.now() > 14 * DAY, `security.txt expires ${expires[0]} — move Expires forward`);
     // A calendar year rather than 365 days, so a renewal to the same date next
     // year still passes when that span includes 29 February.
