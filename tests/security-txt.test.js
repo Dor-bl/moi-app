@@ -48,7 +48,7 @@ test('security.txt has exactly one Expires, not about to lapse and under a year 
     // year still passes when that span includes 29 February.
     const yearOut = new Date();
     yearOut.setUTCFullYear(yearOut.getUTCFullYear() + 1);
-    assert.ok(when <= yearOut.getTime(), `Expires ${expires[0]} is more than a year out (RFC 9116 §2.5.5)`);
+    assert.ok(when < yearOut.getTime(), `Expires ${expires[0]} is not under a year out (RFC 9116 §2.5.5 recommends less than a year)`);
 });
 
 test('security.txt points at SECURITY.md and is canonical on moicheck.nl', () => {
