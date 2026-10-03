@@ -413,6 +413,15 @@ const BUCKET_LIST = [
         tip: { en: "Just north of Winschoten lies a lake of over 800 hectares that did not exist until 2005, when Queen Beatrix opened the valve and farmland was flooded to make way for the Blauwestad project. It is less new than it looks: there was already a lake here in the 16th century, the Huningameer, until peat digging drained it. Today there are two sandy beaches with marked swimming zones, you can rent a sloop, canoe or SUP, and 25 km of dikes carry walking and cycling paths along the shore.", nl: "Net ten noorden van Winschoten ligt een meer van ruim 800 hectare dat er tot 2005 niet was: toen draaide koningin Beatrix de kraan open en liep landbouwgrond onder voor het project Blauwestad. Zo nieuw als het lijkt is het niet: in de 16e eeuw lag hier al het Huningameer, tot de turfwinning het droog liet vallen. Nu zijn er twee zandstranden met afgebakende zwemzones, kun je een sloep, kano of SUP huren, en lopen er over 25 km dijken wandel- en fietspaden langs het water." },
         url: 'https://www.visitgroningen.nl/nl/locaties/359159036/oldambtmeer',
         urlLabel: { en: 'Oldambtmeer Info 🏖️', nl: 'Oldambtmeer Info 🏖️' }
+    },
+    {
+        id: '51',
+        coords: [53.3335, 6.2975],
+        category: { en: 'Culture & Sights', nl: 'Cultuur & Bezienswaardigheden' },
+        title: { en: 'Learn how Zoutkamp earns its shrimp at the Visserijmuseum', nl: 'Ontdek hoe Zoutkamp aan zijn garnalen komt in het Visserijmuseum' },
+        tip: { en: "Those little brown shrimp in your broodje garnaal usually start their journey from fishing boats like the ones still sailing out of Zoutkamp, the old fishing village on the Lauwersmeer. The museum sits right on the inner harbour in a former buoy shed, and it is run by locals who can tell you how the shrimp get caught, peeled and sold. Come between April and October, pair it with the seal trip or the WEC in Lauwersoog, and you will never look at a bakje garnalen the same way again.", nl: "Die kleine bruine garnaaltjes op je broodje garnaal beginnen hun reis vaak op kotters zoals die nog steeds uitvaren vanuit Zoutkamp, het oude vissersdorp aan het Lauwersmeer. Het museum zit pal aan de binnenhaven in een oude betonningsloods en wordt gerund door mensen uit het dorp, die je vertellen hoe garnalen gevangen, gepeld en verkocht worden. Ga tussen april en oktober, combineer het met de zeehondentocht of het WEC in Lauwersoog, en je kijkt nooit meer hetzelfde naar een bakje garnalen." },
+        url: 'https://www.visserijmuseum.com/',
+        urlLabel: { en: 'Visserijmuseum Zoutkamp 🦐', nl: 'Visserijmuseum Zoutkamp 🦐' }
     }
 ];
 
