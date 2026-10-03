@@ -37,6 +37,10 @@ test('security.txt Contact is our reporting address', () => {
 test('security.txt has exactly one Expires, not about to lapse and under a year out', () => {
     const expires = values('expires');
     assert.equal(expires.length, 1);
+    // RFC 9116 §2.5.5 requires an RFC 3339 date-time. Date.parse alone would
+    // also accept "Thu, 30 Sep 2027 ..." or a bare date, which crawlers reject.
+    assert.match(expires[0], /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/,
+        `Expires must be an RFC 3339 date-time: ${expires[0]}`);
     const when = Date.parse(expires[0]);
     assert.ok(!Number.isNaN(when), `unparseable Expires: ${expires[0]}`);
     assert.ok(when - Date.now() > 14 * DAY, `security.txt expires ${expires[0]} — move Expires forward`);
