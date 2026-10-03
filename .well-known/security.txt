@@ -1,0 +1,9 @@
+# MoiCheck — how to report a security vulnerability.
+# Format: RFC 9116. The full policy is in SECURITY.md.
+# Expires must be renewed before it passes; tests/security-txt.test.js
+# starts failing CI two weeks ahead so it does not lapse silently.
+Contact: mailto:hallo@moicheck.nl
+Expires: 2027-09-30T23:00:00.000Z
+Preferred-Languages: en, nl
+Canonical: https://moicheck.nl/.well-known/security.txt
+Policy: https://github.com/Dor-bl/moi-app/blob/main/SECURITY.md
