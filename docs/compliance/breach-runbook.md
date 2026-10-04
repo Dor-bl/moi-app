@@ -343,7 +343,10 @@ What that means in practice:
 project. The pricing page lists backups as "not included" on Free. It is possible both are
 true (internal backups the customer can't download versus customer-facing backups), but
 this isn't settled. Check the dashboard (Database → Backups) and correct whichever is
-wrong. That wording belongs to [#86](https://github.com/Dor-bl/moi-app/issues/86). It also
+wrong. The backup and erasure position is owned by
+[#87](https://github.com/Dor-bl/moi-app/issues/87) (the retention policy); a correction to
+the `privacy.html` sentence itself would ride with
+[#86](https://github.com/Dor-bl/moi-app/issues/86). It also
 matters for the availability side of a breach: without a restorable backup, any deletion
 of `user_progress` is permanent.
 
@@ -557,7 +560,7 @@ in the app if you know it, otherwise both, Dutch first.
 - [ ] **Decide on log retention** (section 7, options 1–2) and record the decision here.
 - [ ] **Remove `SUPABASE_JWT_SECRET` from Vercel**: already open in the audit; the
       cheapest way to shrink this runbook's worst case.
-- [ ] **Settle the backups question** (section 7) and correct `privacy.html` or this file.
+- [ ] **Settle the backups question** (section 7) under [#87](https://github.com/Dor-bl/moi-app/issues/87), and correct `privacy.html` or this file.
 - [ ] **When #87 lands**, replace section 2's store table with a link to the register.
 - [ ] **Dry run once**: walk the first-60-minutes steps against the real dashboards to
       check every screen named here exists and every export works.
