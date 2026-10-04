@@ -644,7 +644,27 @@ const EVENTS = [
         title: { en: 'Pumpkin Picking Days', nl: 'Pompoen Plukdagen' },
         location: { en: 'Nieuwlandse Akker, Huningaweg 19, Oostwold', nl: 'Nieuwlandse Akker, Huningaweg 19, Oostwold' },
         tip: { en: 'Put your boots on and walk into the Oldambt clay to cut your own pumpkin, from giant Halloween ones to odd little decorative gourds. Around the field there is a market of local growers and makers, and activities for children as part of Oktober Kindermaand. Field and market are free — you pay only for what you carry home. Bring a crate: the drive back from Oostwold is not the moment to discover your bike basket is too small.', nl: 'Trek je laarzen aan en het Oldambtster land op om zelf je pompoen te plukken, van kolossale halloweenpompoenen tot rare kleine sierkalebassen. Rond het veld staat een markt met lokale telers en makers, en er zijn kinderactiviteiten in het kader van Oktober Kindermaand. Het veld en de markt zijn gratis — je betaalt alleen wat je meeneemt. Neem een kist mee: onderweg terug uit Oostwold is een te kleine fietstas een vervelende ontdekking.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4140262387/pompoen-plukdagen-4'
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4140262387/pompoen-plukdagen-4',
+        // Sunday's 10:30–16:00 is from the official listing's schedule, which by
+        // the time this was added only showed the last day. Saturday's hours are
+        // assumed to match, not confirmed.
+        hours: {
+            '2026-10-03': ['10:30', '16:00'],
+            '2026-10-04': ['10:30', '16:00']
+        },
+        // The published coordinate for Huningaweg 19, Oostwold. Like Culinair
+        // Haren's it has not been checked on site, and the picking field spreads
+        // out behind the farmyard, so 400m covers the field and the market around
+        // it without reaching the village.
+        checkIn: { coords: [53.2037, 7.0353], radius: 400 },
+        badge: {
+            icon: '🎃',
+            title: { en: 'Oldambt Pumpkin Picker', nl: 'Oldambtster Pompoenplukker' },
+            desc: {
+                en: 'Checked in at the Pompoen Plukdagen, cutting your own pumpkin in the Oostwold clay!',
+                nl: 'Ingecheckt op de Pompoen Plukdagen, je eigen pompoen geplukt in de Oostwolder klei!'
+            }
+        }
     },
     {
         id: 'magisch-samhain-2026',
