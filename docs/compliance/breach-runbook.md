@@ -45,7 +45,7 @@ and Article 33(5) requires it whether or not you end up notifying.
 
 | Source | What to save | Why it is urgent |
 | --- | --- | --- |
-| Supabase → Logs Explorer: **API Gateway** and **PostgREST** | Export every request touching `user_progress`, `rpc/delete_user` and `auth/v1` for the full available window | 1-day retention on Free. This is the only record of *who read which rows* |
+| Supabase → Logs Explorer: **API Gateway** and **PostgREST** | Export every request touching `user_progress`, `rpc/delete_user` and `auth/v1` for the full available window | 1-day retention on Free. The closest thing to an access record there is: request paths, query filters, status codes, caller IP and, where logged, the JWT's `sub`/role. These are **request logs, not a row-level audit**: they don't record which rows came back, so they bound scope but never prove a row *wasn't* read |
 | Supabase → **Auth** logs | Export the full window | Sign-ins, magic-link requests, token refreshes |
 | Supabase → organization **audit log** | Screenshot or export | Retained for **1 hour** on Free. Shows dashboard actions such as key rotation and policy changes |
 | Supabase → **Postgres** logs | Export | Errors, DDL (for example a dropped policy) |
@@ -81,11 +81,11 @@ users; that's accepted. Write down what you changed and when.
 | **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see the open item in [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → API / JWT Keys: roll the secret and revoke the leaked key. If the anon key changes, update `config.js` and redeploy | Every session is invalidated, so everyone is signed out. The site errors until the new anon key is deployed |
 | **Stolen user sessions** (for example via injected script) | Same rotation as above: rotating the signing key is what invalidates issued tokens | As above |
 | **Supabase dashboard account** | Change password, revoke other sessions, re-check MFA, then treat as "leaked privileged key" | As above |
-| **GitHub or Vercel account; malicious deploy** | Roll back to a known-good deployment in Vercel (Instant Rollback), revoke tokens/deploy keys, change password, re-check MFA. Then rotate Supabase keys, because a malicious script could have read sessions | Nothing user-visible beyond the rollback |
+| **GitHub or Vercel account; malicious deploy** | Roll back to a known-good deployment in Vercel (Instant Rollback), revoke tokens/deploy keys, change password, re-check MFA. Then rotate Supabase keys, because a malicious script could have read sessions | The rollback itself, plus everything the Supabase rotation breaks (row above): every user signed out, site broken until a new anon key is deployed |
 | **Contact relay** (`supabase/functions/contact`) | Supabase → Edge Functions: delete or disable `contact`; rotate `RESEND_API_KEY` with `supabase secrets set` | Contact form fails; users can still email `hallo@moicheck.nl` |
-| **Resend account** | Rotate the API key and SMTP credentials; check sending domains and logs for unknown sends | Magic-link sign-in and the contact form stop until new credentials are in Supabase |
-| **Google mailbox** (`hallo@moicheck.nl`'s destination) | Change password, sign out all sessions, review forwarding rules, filters and third-party app access | None |
-| **Cloudflare** | Change password, re-check MFA, restore Email Routing rules to the documented state | None |
+| **Resend account** | **Secure the account first**: change password, sign out all sessions, re-check MFA, remove unknown team members. Only then rotate the API key and SMTP credentials (rotating first lets an attacker still inside mint new ones), and check sending domains and logs for unknown sends | Magic-link sign-in and the contact form stop until new credentials are in Supabase |
+| **Google mailbox** (`hallo@moicheck.nl`'s destination) | **Secure the account first**: change password, sign out all sessions, re-check MFA. Then review forwarding rules, filters and third-party app access | None |
+| **Cloudflare** | **Secure the account first**: change password, revoke sessions and API tokens, re-check MFA. Then restore Email Routing rules to the documented state | None |
 | **Processor-side breach** (a provider tells you) | Follow their instructions; you're still the controller and the 72 hours run from *your* awareness (Art. 33(2) obliges them to tell you without undue delay) | Depends |
 
 To stop all sign-ins while investigating: Supabase → Authentication → Providers, disable
@@ -144,8 +144,12 @@ check runs on the device and stores nothing; see `privacy.html` §1).
 
 1. **Which data?** Match the entry point to the rows above.
 2. **How many people?** Run the counts in [Appendix B](#appendix-b-sql-for-scoping). For a
-   malicious-deploy window, use `last_sign_in_at` within the window as an upper bound and
-   say that it is one.
+   malicious-deploy or session-theft window there is **no query that gives the affected
+   set**: `last_sign_in_at` misses users whose session started before the window and kept
+   refreshing through it, and it moves when someone signs in again afterwards. Use the
+   API Gateway logs for authenticated requests during the window (by JWT `sub` where
+   logged) if they cover it; otherwise the affected set is every account that could have
+   had a live session, which in practice means all accounts. Say which one you used.
 3. **Which categories?** Contact data (email, name); app usage records (progress with
    dates); free-text notes; for the mailbox, correspondence.
 4. **Over what time window?** The earliest evidence of access to the containment time. If
@@ -409,14 +413,26 @@ select count(*) as progress_rows,
        count(*) filter (where coalesce(note, '') <> '') as rows_with_notes
   from public.user_progress;
 
--- Accounts active in a suspected window (malicious-deploy / session-theft scoping)
-select count(*) from auth.users
- where last_sign_in_at between '<start>' and '<end>';
+-- Recipient list for an Art. 34 notice (export as CSV; handle as confidential).
+-- Pick the variant matching the scope you established in section 2. Don't
+-- reuse one across incidents: each answers a different question.
 
--- Recipient list for an Art. 34 notice (export as CSV; handle as confidential)
-select email from auth.users where id in (
-  select distinct user_id from public.user_progress   -- narrow to the affected set
-);
+-- (a) Everyone: auth.users exposed, signing key leaked, malicious deploy or
+--     session theft without logs that narrow it
+select email from auth.users;
+
+-- (b) Only accounts whose progress was exposed
+select email from auth.users
+ where id in (select distinct user_id from public.user_progress);
+
+-- (c) Only accounts whose notes were exposed
+select email from auth.users
+ where id in (select distinct user_id from public.user_progress
+               where coalesce(note, '') <> '');
+
+-- (d) An explicit affected set established from logs: paste the user ids
+select email from auth.users
+ where id = any (array['<uuid>', '<uuid>']::uuid[]);
 ```
 
 Restore grants after an RLS containment (step 4), once the policy is confirmed correct.
