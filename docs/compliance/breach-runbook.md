@@ -165,10 +165,17 @@ A personal data breach is a security incident that leads to accidental or unlawf
 **destruction, loss, alteration, unauthorised disclosure of, or access to** personal data
 (Art. 4(12)). Three useful tests:
 
-- *A vulnerability with no evidence of access* (for example, a too-wide RLS policy found
-  in review, with logs showing no foreign reads) is not a breach. Record it as a security
-  incident in Appendix A and fix it. If the logs **don't reach back** far enough to show
-  that, you can't conclude "no access". Treat it as a breach with unknown scope.
+- *A vulnerability nobody used* (for example, a too-wide RLS policy found in review) is
+  not a breach. But request logs can't show which rows came back (section 1, step 2), so
+  "nobody used it" has to rest on the absence of **requests that could have exploited
+  it**, never on a judgement about what a request returned. The bar: logs covering the
+  **whole** exposure window show no request to the affected path outside the app's own
+  shape. For `user_progress` that means every request is from the `authenticated` role
+  and filtered on `user_id=eq.<the caller's own sub>`. Any request that doesn't fit
+  (anon role, missing or foreign `user_id` filter, unusual volume) means you treat it as
+  a breach with unknown rows, not as a near miss. If the logs **don't reach back** to the
+  start of the exposure, you can't conclude "not used" either: same treatment. Only when
+  the bar is met, record it as a security incident in Appendix A and fix it.
 - *Availability counts.* Losing data with no backup to restore it is a breach even if
   nobody else saw it.
 - *A misdirected email* (for example, replying to the wrong contact-form sender) is a
@@ -349,9 +356,13 @@ of `user_progress` is permanent.
 3. **Reduce the blast radius instead of extending visibility.** Closing the
    `SUPABASE_JWT_SECRET` item in the audit removes the most damaging entry point outright.
    That costs nothing, and it is the best risk reduction available.
-4. **Look at the logs routinely.** A weekly glance at the Supabase API logs for unusual
-   `user_progress` reads (volume, foreign `user_id`s) turns "found a month later" into
-   "found within the window". It's cheap, but only as good as the habit.
+4. **Look at the logs routinely.** Review the Supabase API logs for `user_progress`
+   requests outside the app's shape (anon role, missing or foreign `user_id` filter,
+   unusual volume). These are suspicious *requests*, not proven reads: the logs don't
+   show returned rows. The cadence has to match retention: on Free (1 day) only a
+   **daily** look gives continuous coverage; a weekly one samples a single day and
+   leaves the other six unseen. On Pro (7 days) weekly is enough. Either way it's only as
+   good as the habit, which is the argument for option 2 if this is to be relied on.
 
 Option 3 should happen regardless. Between 1 and 2, this file takes no position.
 
