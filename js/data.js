@@ -529,7 +529,19 @@ const EVENTS = [
         title: { en: 'LEGO Fabuland Exhibition', nl: 'LEGO Fabuland Expositie' },
         location: { en: 'LEGiO-museum, Grootegast', nl: 'LEGiO-museum, Grootegast' },
         tip: { en: 'A historical overview of LEGO Fabuland sets from 1979–1989, built around anthropomorphic animal characters aimed at kids aged two to six. See a diorama put together by Henk Roede and rare pieces from the theme — a good rainy-day trip out of the city with young kids.', nl: 'Een historisch overzicht van LEGO Fabuland-sets uit 1979–1989, gebouwd rond antropomorfe dierenfiguren voor kinderen van twee tot zes jaar. Bekijk een diorama van Henk Roede en zeldzame stukken uit het thema — een leuk uitje buiten de stad voor een regenachtige dag met jonge kinderen.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie'
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2114731788/lego-fabuland-expositie',
+        // The LEGiO-museum, Legolaan 1C, Grootegast, at the coordinate the
+        // visitgroningen.nl listing publishes. It is one building, so 300m is
+        // plenty while still allowing for an unchecked point and a weak fix.
+        checkIn: { coords: [53.2130, 6.2678], radius: 300 },
+        badge: {
+            icon: '🧱',
+            title: { en: 'Fabuland Visitor', nl: 'Fabuland-bezoeker' },
+            desc: {
+                en: 'Checked in at the LEGO Fabuland exhibition in the LEGiO-museum, Grootegast!',
+                nl: 'Ingecheckt bij de LEGO Fabuland-expositie in het LEGiO-museum in Grootegast!'
+            }
+        }
     },
     {
         id: 'aigrunn-hackathon-2026',
@@ -674,7 +686,24 @@ const EVENTS = [
         title: { en: 'Magisch Samhain (Bourtange)', nl: 'Magisch Samhain (Bourtange)' },
         location: { en: 'Vesting Bourtange, Westerwolde', nl: 'Vesting Bourtange, Westerwolde' },
         tip: { en: 'The star-shaped fortress fills with ghosts, time travellers, pirates and fire shows for the Celtic new year, which is where Halloween actually comes from. Stilt walkers between the ramparts, fortune tellers, a wishing tree, and a crowd that mostly turns up in costume. It is an hour from the city by car and worth the trip — but check the ticket page first, because earlier editions sold out on the day.', nl: 'De stervormige vesting loopt vol met geesten, tijdreizigers, piraten en vuurshows voor het Keltische nieuwjaar, waar Halloween eigenlijk vandaan komt. Steltlopers tussen de wallen, waarzeggers, een wensboom en publiek dat grotendeels verkleed komt. Een uur rijden vanuit de stad en dat dubbel en dwars waard — kijk wel eerst op de ticketpagina, want eerdere edities zaten op de dag zelf vol.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4161137856/magisch-samhain-1'
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4161137856/magisch-samhain-1',
+        // 11:00–18:00 both days, per the listing's schedule.
+        hours: {
+            '2026-10-31': ['11:00', '18:00'],
+            '2026-11-01': ['11:00', '18:00']
+        },
+        // The listing's published coordinate, inside the fortress. The star
+        // with its ramparts is roughly 500m across, so 500m covers all of it
+        // without reaching the next village.
+        checkIn: { coords: [53.0092, 7.1874], radius: 500 },
+        badge: {
+            icon: '🔥',
+            title: { en: 'Samhain at the Fortress', nl: 'Samhain in de Vesting' },
+            desc: {
+                en: 'Checked in at Magisch Samhain, among the ghosts and fire shows of Vesting Bourtange!',
+                nl: 'Ingecheckt op Magisch Samhain, tussen de geesten en vuurshows van Vesting Bourtange!'
+            }
+        }
     },
     {
         id: 'plantsoenloop-2026',
@@ -684,7 +713,19 @@ const EVENTS = [
         title: { en: 'Plantsoenloop (running race)', nl: 'Plantsoenloop' },
         location: { en: 'Noorderplantsoen', nl: 'Noorderplantsoen' },
         tip: { en: 'The oldest running race in Groningen, now in its 68th edition, loops through the surprisingly hilly Noorderplantsoen. There are four distances and races run from 09:00 until the last 8 km start at 15:15, so it works whether you are training for something or just want an excuse to run through the park in its autumn colours. Entry is about €17 and you need to sign up online beforehand. If you are not running, it is still worth walking over to cheer.', nl: 'De oudste hardloopwedstrijd van Groningen, dit jaar voor de 68ste keer, gaat dwars door het verrassend heuvelachtige Noorderplantsoen. Er zijn vier afstanden en de wedstrijden lopen van 09:00 tot de laatste start van de 8 km om 15:15, dus of je nu ergens voor traint of gewoon een excuus zoekt om door het park in herfstkleuren te rennen, er zit er een voor je bij. Inschrijven doe je vooraf online, voor zo\'n €17. Loop je zelf niet mee, dan is het nog steeds de moeite waard om te komen aanmoedigen.' },
-        url: 'https://plantsoenloop.nl/'
+        url: 'https://plantsoenloop.nl/',
+        // The same Noorderplantsoen point the bucket list uses. The park is
+        // long and narrow and the course loops all of it, so 400m covers the
+        // route and the start area without reaching the Grote Markt.
+        checkIn: { coords: [53.2241, 6.5540], radius: 400 },
+        badge: {
+            icon: '🏃',
+            title: { en: 'Plantsoen Runner', nl: 'Plantsoenloper' },
+            desc: {
+                en: 'Checked in at the Plantsoenloop, the oldest race in Groningen!',
+                nl: 'Ingecheckt bij de Plantsoenloop, de oudste hardloopwedstrijd van Groningen!'
+            }
+        }
     }
 ];
 
