@@ -726,6 +726,72 @@ const EVENTS = [
                 nl: 'Ingecheckt bij de Plantsoenloop, de oudste hardloopwedstrijd van Groningen!'
             }
         }
+    },
+    {
+        id: 'aclo-vitalis-run-2026',
+        date: '2026-10-07',
+        title: { en: 'ACLO-Vitalis Run (autumn edition)', nl: 'ACLO-Vitalis Run (najaarseditie)' },
+        location: { en: 'ACLO Sports Centre, Zernike', nl: 'Sportcentrum ACLO, Zernike' },
+        tip: { en: 'The student sports centre ACLO and the student athletics club Vitalis put on this evening run twice a year, in spring and autumn. You pick a short or a longer loop, starting from the ACLO Sports Centre. It is a relaxed way to meet Groningen\'s student running crowd, and you don\'t have to be fast. Check the ACLO site for the start time and how to sign up.', nl: 'Studentensportcentrum ACLO en studentenatletiekvereniging Vitalis organiseren deze avondloop twee keer per jaar, in het voorjaar en in het najaar. Je kiest een korte of een langere ronde, met de start bij Sportcentrum ACLO. Een ontspannen manier om de Groningse studentenloopwereld te leren kennen, en snel hoef je niet te zijn. Kijk op de site van ACLO voor de starttijd en hoe je je aanmeldt.' },
+        url: 'https://www.aclosport.nl/en/evenementen/aclo-vitalis-run/'
+    },
+    {
+        id: 'popronde-groningen-2026',
+        date: '2026-10-08',
+        free: true,
+        title: { en: 'Popronde Groningen', nl: 'Popronde Groningen' },
+        location: { en: 'Venues across the city centre', nl: 'Podia door de hele binnenstad' },
+        tip: { en: 'Popronde is a free travelling festival that visits about 40 Dutch cities every autumn, putting a new generation of Dutch bands and artists on stage in cafés, clubs, record shops and theatres. In Groningen it is one evening of hopping between venues, Vera included. Most shows are free, so it is an easy night to discover your new favourite band.', nl: 'De Popronde is een gratis reizend festival dat elk najaar zo\'n 40 Nederlandse steden aandoet, met een nieuwe lichting Nederlandse bands en artiesten in cafés, clubs, platenzaken en theaters. In Groningen is het één avond van podium naar podium, van Vera tot de kroeg om de hoek. De meeste optredens zijn gratis, dus een makkelijke avond om je nieuwe favoriete band te ontdekken.' },
+        url: 'https://popronde.nl/steden/groningen'
+    },
+    {
+        id: 'vier-mijl-2026',
+        date: '2026-10-11',
+        startTime: '10:00',
+        endTime: '16:00',
+        title: { en: 'Menzis 4 Mijl van Groningen (running race)', nl: 'Menzis 4 Mijl van Groningen' },
+        location: { en: 'Haren to the Vismarkt', nl: 'Van Haren naar de Vismarkt' },
+        tip: { en: 'The biggest running party in the north: tens of thousands of runners cover 6.4 km (four miles) from Haren to the Vismarkt, held every second weekend of October since 1987. Start numbers tend to sell out fast, so sign up early if you want to run. Otherwise find a spot along the route or at the finish: thousands of people come out to cheer, and there is music along the way.', nl: 'Het grootste loopfeest van Noord-Nederland: tienduizenden lopers leggen de 6,4 km (vier mijl) van Haren naar de Vismarkt af, al sinds 1987 elk tweede weekend van oktober. De startbewijzen zijn meestal snel uitverkocht, dus schrijf je op tijd in als je mee wilt lopen. Anders zoek je een plekje langs de route of bij de finish: duizenden toeschouwers komen aanmoedigen en onderweg is er muziek.' },
+        url: 'https://www.4mijl.nl/'
+    },
+    {
+        id: 'oktofest-groningen-2026',
+        date: '2026-10-16',
+        endDate: '2026-10-17',
+        title: { en: 'Oktofest (Oktoberfest at Stadslab)', nl: 'Oktofest (Oktoberfest in Stadslab)' },
+        location: { en: 'Stadslab, Suikerunieterrein', nl: 'Stadslab, Suikerunieterrein' },
+        tip: { en: 'Groningen\'s own Oktoberfest takes over Stadslab on the old sugar factory site for two evenings, with long beer tables, litre mugs, bratwurst, schlager and live acts. Dirndl and lederhosen are very much encouraged. Buy tickets online in advance, and if you are going with a group, a whole table is the better deal.', nl: 'Het Groningse Oktoberfest neemt twee avonden het Stadslab op het oude Suikerunieterrein over, met lange biertafels, literpullen, braadworst, schlagers en live-acts. Dirndl en lederhosen worden zeer gewaardeerd. Koop je kaartjes vooraf online, en ga je met een groep, dan is een hele tafel de betere deal.' },
+        url: 'https://oktofest.nl/'
+    },
+    {
+        id: 'bierrun-groningen-2026',
+        date: '2026-10-17',
+        startTime: '13:00',
+        endTime: '17:00',
+        title: { en: 'Bierrun Groningen (beer run)', nl: 'Bierrun Groningen' },
+        location: { en: 'Start and finish at Folkingebrew The Pub, Boterdiep', nl: 'Start en finish bij Folkingebrew The Pub, Boterdiep' },
+        tip: { en: 'A social fun run of about 8 km past four Groningen breweries, with five tasting glasses of local craft beer on the way and a beer sommelier telling stories about the city. Nobody times you, and you run together as a group, so all you need is enough fitness to run 8 km with beer in between. Tickets are €27.50 and you book online.', nl: 'Een gezellige funrun van zo\'n 8 km langs vier Groningse brouwerijen, met onderweg vijf proefglazen lokaal speciaalbier en een biersommelier die verhalen over de stad vertelt. Er is geen tijdsregistratie en je loopt samen als groep, dus je moet vooral 8 km kunnen rennen met bier tussendoor. Een kaartje kost €27,50 en je boekt online.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/1515269094/bierrun-groningen-1'
+    },
+    {
+        id: 'nacht-van-de-nacht-2026',
+        date: '2026-10-24',
+        startTime: '20:00',
+        endTime: '21:30',
+        title: { en: 'Nacht van de Nacht (Night of the Night)', nl: 'Nacht van de Nacht' },
+        location: { en: 'Molen Wilhelmina, Noorderhogebrug', nl: 'Molen Wilhelmina, Noorderhogebrug' },
+        tip: { en: 'Once a year, the Netherlands celebrates darkness with night walks, stargazing and lights switched off. Just outside the city, a walk leaves from the windmill at Noorderhogebrug into the old Reitdiep landscape: across meadows and ditches under the stars, past the Groninger Landschap visitor centre and back to the mill, which opens its doors for you. Adults pay €6 and children walk free. Sign up in advance.', nl: 'Eén keer per jaar viert Nederland het donker, met nachtwandelingen, sterrenkijken en lampen die uitgaan. Net buiten de stad vertrekt een wandeling vanaf de molen in Noorderhogebrug het oude Reitdieplandschap in: onder de sterren door weilanden en over sloten, langs het bezoekerscentrum van Het Groninger Landschap en terug naar de molen, die zijn deuren voor je openzet. Volwassenen betalen €6, kinderen lopen gratis mee. Meld je vooraf aan.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2449763556/wandeling-nacht-van-de-nacht-7'
+    },
+    {
+        id: 'suikermarkt-2026-10',
+        date: '2026-10-25',
+        startTime: '11:00',
+        endTime: '17:00',
+        title: { en: 'Suikermarkt (vintage market at EM2)', nl: 'Suikermarkt bij EM2' },
+        location: { en: 'EM2, Suikerlaan 6 (Suikerterrein)', nl: 'EM2, Suikerlaan 6 (Suikerterrein)' },
+        tip: { en: 'A festival-style market for vintage, retro, pre-loved, curiosities and handmade things, spread over the EM2 grounds on the old sugar factory site. There is live music, face painting for the kids and food trucks. Entry is €4.50 at the door, by card or cash, and under-12s get in free.', nl: 'Een markt met festivalsfeer vol vintage, retro, pre-loved, curiosa en zelfgemaakte spullen, verspreid over het terrein van EM2 op het oude Suikerunieterrein. Er is livemuziek, schminken voor de kinderen en er staan foodtrucks. De entree is €4,50 aan de deur, pinnen of contant, en tot 12 jaar is het gratis.' },
+        url: 'https://em2groningen.nl/'
     }
 ];
 
