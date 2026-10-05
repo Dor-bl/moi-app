@@ -755,7 +755,20 @@ const EVENTS = [
         title: { en: 'Menzis 4 Mijl van Groningen (running race)', nl: 'Menzis 4 Mijl van Groningen' },
         location: { en: 'Haren to the Vismarkt', nl: 'Van Haren naar de Vismarkt' },
         tip: { en: 'The biggest running party in the north: tens of thousands of runners cover 6.4 km (four miles) from Haren to the Vismarkt, held every second weekend of October since 1987. Start numbers tend to sell out fast, so sign up early if you want to run. Otherwise find a spot along the route or at the finish: thousands of people come out to cheer, and there is music along the way.', nl: 'Het grootste loopfeest van Noord-Nederland: tienduizenden lopers leggen de 6,4 km (vier mijl) van Haren naar de Vismarkt af, al sinds 1987 elk tweede weekend van oktober. De startbewijzen zijn meestal snel uitverkocht, dus schrijf je op tijd in als je mee wilt lopen. Anders zoek je een plekje langs de route of bij de finish: duizenden toeschouwers komen aanmoedigen en onderweg is er muziek.' },
-        url: 'https://www.4mijl.nl/'
+        url: 'https://www.4mijl.nl/',
+        // The finish on the Vismarkt, from the bucket list's own Vismarkt
+        // points: the visitgroningen geocode sits ~400m east, past the
+        // Martinitoren. 400m takes in the finish straight and the crowd at
+        // the Grote Markt end without reaching the start in Haren.
+        checkIn: { coords: [53.2167, 6.5648], radius: 400 },
+        badge: {
+            icon: '🏅',
+            title: { en: '4 Mijl Finisher', nl: '4 Mijl-finisher' },
+            desc: {
+                en: 'Checked in at the Vismarkt finish of the Menzis 4 Mijl, the biggest running party in the north!',
+                nl: 'Ingecheckt bij de finish van de Menzis 4 Mijl op de Vismarkt, het grootste loopfeest van het Noorden!'
+            }
+        }
     },
     {
         id: 'oktofest-groningen-2026',
@@ -769,7 +782,19 @@ const EVENTS = [
         title: { en: 'Oktofest (Oktoberfest at Stadslab)', nl: 'Oktofest (Oktoberfest in Stadslab)' },
         location: { en: 'Stadslab, Suikerunieterrein', nl: 'Stadslab, Suikerunieterrein' },
         tip: { en: 'Groningen\'s own Oktoberfest takes over Stadslab on the old sugar factory site for two evenings, with long beer tables, litre mugs, bratwurst, schlager and live acts. It starts at 19:00 on Friday and 18:00 on Saturday, doors open half an hour earlier, and the taps close at midnight. Dirndl and lederhosen are very much encouraged. Buy tickets online in advance, and if you are going with a group, a whole table is the better deal.', nl: 'Het Groningse Oktoberfest neemt twee avonden het Stadslab op het oude Suikerunieterrein over, met lange biertafels, literpullen, braadworst, schlagers en live-acts. Vrijdag gaat het om 19:00 uur los en zaterdag om 18:00 uur, de deuren gaan een halfuur eerder open en om middernacht gaat de tap dicht. Dirndl en lederhosen worden zeer gewaardeerd. Koop je kaartjes vooraf online, en ga je met een groep, dan is een hele tafel de betere deal.' },
-        url: 'https://oktofest.nl/'
+        url: 'https://oktofest.nl/',
+        // Stadslab, Suikerlaan 15, per its visitgroningen geocode; EM2 two
+        // doors down geocodes ~130m away, which agrees. Not checked on site,
+        // so the radius is generous and covers the whole Stadslab terrain.
+        checkIn: { coords: [53.2111, 6.5388], radius: 400 },
+        badge: {
+            icon: '🍺',
+            title: { en: 'Oktofest Reveller', nl: 'Oktofestganger' },
+            desc: {
+                en: 'Checked in at Oktofest, raising a litre mug at Stadslab on the old sugar factory site!',
+                nl: 'Ingecheckt op Oktofest, met een literpul in Stadslab op het oude Suikerunieterrein!'
+            }
+        }
     },
     {
         id: 'bierrun-groningen-2026',
