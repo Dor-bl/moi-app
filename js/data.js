@@ -730,9 +730,12 @@ const EVENTS = [
     {
         id: 'aclo-vitalis-run-2026',
         date: '2026-10-07',
+        // Only the start is published; there is no end time to narrow to.
+        startTime: '18:00',
+        free: true,
         title: { en: 'ACLO-Vitalis Run (autumn edition)', nl: 'ACLO-Vitalis Run (najaarseditie)' },
         location: { en: 'ACLO Sports Centre, Zernike', nl: 'Sportcentrum ACLO, Zernike' },
-        tip: { en: 'The student sports centre ACLO and the student athletics club Vitalis put on this evening run twice a year, in spring and autumn. You pick a short or a longer loop, starting from the ACLO Sports Centre. It is a relaxed way to meet Groningen\'s student running crowd, and you don\'t have to be fast. Check the ACLO site for the start time and how to sign up.', nl: 'Studentensportcentrum ACLO en studentenatletiekvereniging Vitalis organiseren deze avondloop twee keer per jaar, in het voorjaar en in het najaar. Je kiest een korte of een langere ronde, met de start bij Sportcentrum ACLO. Een ontspannen manier om de Groningse studentenloopwereld te leren kennen, en snel hoef je niet te zijn. Kijk op de site van ACLO voor de starttijd en hoe je je aanmeldt.' },
+        tip: { en: 'The student sports centre ACLO and the student athletics club Vitalis put on this evening run twice a year, in spring and autumn. Choose 3.5 km or 6.2 km. It is open to everyone, beginners included, and it is free. The start is at 18:00 at the ACLO Sports Centre, and you collect your race number at the entrance between 17:00 and 17:45. Sign up through the form on the ACLO page.', nl: 'Studentensportcentrum ACLO en studentenatletiekvereniging Vitalis organiseren deze avondloop twee keer per jaar, in het voorjaar en in het najaar. Je kiest tussen 3,5 en 6,2 km. Iedereen mag meedoen, ook beginners, en deelname is gratis. De start is om 18:00 bij Sportcentrum ACLO; je startnummer haal je tussen 17:00 en 17:45 op bij de ingang. Aanmelden doe je via het formulier op de pagina van ACLO.' },
         url: 'https://www.aclosport.nl/en/evenementen/aclo-vitalis-run/'
     },
     {
