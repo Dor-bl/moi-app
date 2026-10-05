@@ -140,7 +140,7 @@ check runs on the device and stores nothing; see `privacy.html` §1).
 | Google mailbox | All contact correspondence, plus password-reset mail for the other accounts, which makes this the top of the chain |
 | Cloudflare | Future mail to `hallo@moicheck.nl` (redirect), not past mail |
 
-### Answering the four questions the AP form asks
+### Answering the AP form's scoping questions
 
 1. **Which data?** Match the entry point to the rows above.
 2. **How many people?** Run the counts in [Appendix B](#appendix-b-sql-for-scoping). For a
@@ -149,7 +149,8 @@ check runs on the device and stores nothing; see `privacy.html` §1).
    refreshing through it, and it moves when someone signs in again afterwards. Use the
    API Gateway logs for authenticated requests during the window (by JWT `sub` where
    logged) if they cover it; otherwise the affected set is every account that could have
-   had a live session, which in practice means all accounts. Say which one you used.
+   had a live session, which in practice means all accounts. Say which one you used. The
+   form accepts a minimum and a maximum (section 6), so give both rather than a guess.
 3. **Which categories?** Contact data (email, name); app usage records (progress with
    dates); free-text notes; for the mailbox, correspondence.
 4. **Over what time window?** The earliest evidence of access to the containment time. If
@@ -206,7 +207,7 @@ Personal data breach confirmed (section 3)?
                            expect to add to it (Art. 33(4)), then supplement
 ```
 
-The default is **notify**. The exemption is "unlikely to result in a risk", which is a
+The default is **notify**, and the AP's own guidance agrees: when in doubt, report. The exemption is "unlikely to result in a risk", which is a
 low bar to fail: an exposed list of email addresses tied to a named app is usually a risk
 (phishing). Late notification has to come with reasons for the delay (Art. 33(1)), and
 "we were still investigating" is weaker than a partial notification on time.
@@ -250,7 +251,14 @@ adjust for the facts; don't start from a blank page.
   presence, but a reader can't tell the difference. Tied to an email address, a set of
   rows sketches someone's movements and habits around Groningen.
 - **Email addresses are identifying.** Joined with the rows above, there is no
-  pseudonymisation to fall back on.
+  pseudonymisation to fall back on. The AP names email addresses specifically as data that
+  look harmless but enable targeted phishing.
+- **The AP counts location profiling as high risk.** Its risk guidance says to assume high
+  risk in any case for "information about personal aspects, intended for drawing up or
+  using profiles", including profiling based on "behaviour and location". Nobody here
+  builds profiles, but a leaked set of dated places per email address is exactly that
+  material in someone else's hands. This is the strongest argument against treating a
+  progress leak as low risk.
 - **Contact-form messages are free text too**, and the mailbox holding them has no
   processor contract (`privacy.html` §3).
 
@@ -285,30 +293,63 @@ Never put recipients in To/CC.
 
 ## 6. The AP's notification route
 
-> Recorded from secondary sources on 4 October 2026: the AP's own site was not reachable
-> from the environment this was drafted in. **Re-check on the AP website
-> (autoriteitpersoonsgegevens.nl → "Datalek melden") before relying on it, and update this
-> section.**
+> Verified against the AP's own pages on 5 October 2026: "This is how you report a data
+> breach" (last edited 22 July 2026), "Reporting or not reporting a data breach", "This is
+> how you inform victims about a data breach", and the AP's *Questionnaire personal data
+> breach notification form* (v1.0, September 2022). Links are in the sourcing table. The
+> AP changes these pages; re-read them during the dry run (see follow-ups).
 
-- **Where:** the AP's online data breach notification form ("meldloket datalekken") on
-  autoriteitpersoonsgegevens.nl. There is no email or phone route for the formal
-  notification.
-- **Login:** the form requires DigiD (as a natural person) or eHerkenning (as an
-  organisation). MoiCheck has no legal entity, so this is the owner's **DigiD**. Check
-  now that the DigiD login works and the app is installed. Discovering at hour 70 that
-  it doesn't is the scenario this file exists to prevent.
-- **What it asks** (the Art. 33(3) minimum, which the form follows):
-  - the nature of the breach: what happened, when, when discovered, how;
-  - categories and approximate number of people affected;
-  - categories and approximate number of records affected;
-  - a contact point: `hallo@moicheck.nl`;
-  - the likely consequences (section 5);
-  - measures taken or proposed, including mitigation (section 1, step 4);
-  - whether and how individuals have been or will be notified.
-- **Incomplete notifications** can be submitted and supplemented later (Art. 33(4)).
-  Keep the reference number the form gives you; supplements and withdrawals are made
-  against it.
-- **Save** a copy (PDF or screenshots) of everything submitted into the incident record.
+- **Where:** only through the online **Meldformulier datalekken**,
+  `https://datalekken.autoriteitpersoonsgegevens.nl/` (Dutch only). The AP accepts no
+  notification by phone, post or email.
+- **Login:** none. An earlier draft of this file said DigiD was required, from secondary
+  sources. That is wrong: the AP's pages mention no DigiD or eHerkenning, and the form's own
+  configuration enables its `no-login` plugin. You fill it in anonymously and give contact
+  details inside it.
+- **Browser:** a current Chrome, Firefox, Edge or desktop Safari, with JavaScript on. The
+  form says Safari on iOS is **not supported yet**, so don't plan to file from an iPhone.
+- **Prepare with the questionnaire.** The AP publishes every question of the form as a
+  Word document so you can collect the answers first. Its sections: international aspects
+  (does the breach affect people in several countries?), the notifying organisation, a
+  timeline, the breach itself, the personal data involved, the affected people, measures
+  taken before, consequences and risk, and measures taken after. The answers this file
+  already gives you:
+  - **Organisation (3.1):** name and address are required; the Chamber of Commerce and
+    DPO numbers are optional. MoiCheck has no legal entity, so give the owner's name and
+    address and say that MoiCheck is a private, non-commercial project.
+  - **Contact person (3.2):** must be reachable on a direct number during office hours on
+    the day after the notification. That is the owner.
+  - **Timeline (4):** the form asks separately when the incident was *discovered* and
+    when you *became aware* that it was a breach. Appendix A records both. If it's past 72
+    hours, it asks why (4.5).
+  - **Investigation (5.2.3):** for a hack it asks whether a (forensic) investigation was
+    done, with an upload for the report or a field to explain why not. The AP expects the
+    investigation to address whether data were accessed or copied, and whether the logs
+    can rule that out. Section 2 and section 7 give the honest answer to the last part.
+  - **Scope:** the number of data records (6.3.1), and the number of people as an exact
+    figure **or a minimum and maximum** (7.3). That fits the "from at least" scoping in
+    section 2.
+  - **Encryption before the breach (8.1):** in practice "no". Supabase encrypts storage
+    at rest, but that doesn't make data unintelligible to someone reading through the API.
+  - **Informing the people affected (10):** whether, when, how and with what content;
+    paste the Appendix C text.
+  - Have the Article 30 record (#87) and the Appendix A record to hand: the questionnaire
+    lists both as information you'll need.
+- **Submitting:** a confirmation with a **notification number** appears on screen. Save or
+  print it **straight away**, because the notification can't be opened online after you
+  leave. If you see an error or a blank screen after sending, it may not have arrived:
+  submit again.
+- **Partial notification:** for a complex breach, send a preliminary notification within
+  72 hours and supplement it as you learn more. Supplements, corrections and withdrawals
+  go through the same form, using the notification number. A lost number can be requested
+  on 070-8888 500.
+- **Late:** a notification after 72 hours needs a reason, and the AP accepts one only in
+  exceptional cases. Weekend, holiday, illness and being busy are listed as **not** valid.
+- **Afterwards:** the AP usually doesn't reply. If it has questions, it contacts you
+  within two weeks.
+- **Questions about the procedure:** 088-1805 255, for organisations only.
+- **Processor-side breach:** you, as controller, still file unless you've given the
+  processor written authorisation to file for you. MoiCheck hasn't given any, so you file.
 
 ---
 
@@ -375,7 +416,8 @@ Option 3 should happen regardless. Between 1 and 2, this file takes no position.
 
 ```
 Incident ID:          YYYY-MM-DD-short-name
-Became aware (UTC):   ____  How: ____
+Discovered (UTC):     ____  How: ____
+Became aware (UTC):   ____  (the AP form asks for both; the 72 hours run from this one)
 Suspected entry point: ____
 
 Known:
@@ -389,10 +431,12 @@ Timeline (UTC):
 Evidence saved (file, sha256):
 -
 
-Scope:   data ____ | people ____ | categories ____ | window ____ (log coverage: from ____)
+Scope:   data ____ | records ____ | people exact ____ or min ____ / max ____
+         categories ____ | window ____ (log coverage: from ____)
 Breach under Art. 4(12)?            yes / no, because ____
 Art. 33 notify AP?                  yes / no, because ____
-  AP reference: ____   submitted (UTC): ____   complete / partial (next update by ____)
+  AP notification number: ____   submitted (UTC): ____   complete / partial (next update by ____)
+  Confirmation saved as: ____   (it can't be retrieved online later)
 Art. 34 notify users?               yes / no, because ____
   sent (UTC): ____   to how many: ____   via: ____
 Containment actions and what they broke:
@@ -460,13 +504,19 @@ grant select, insert, update, delete on public.user_progress to anon;  -- RLS st
 ## Appendix C: user notification email (Art. 34(2))
 
 Article 34(2) requires plain language and at least: the nature of the breach, a contact
-point, the likely consequences, and the measures taken or proposed. Fill the brackets;
-delete the bracketed alternatives that don't apply. Send each user the language they used
-in the app if you know it, otherwise both, Dutch first.
+point, the likely consequences, and the measures taken or proposed. The AP's guidance on
+warning messages adds what it checks for, and the template follows it: an alarming subject
+line, short sentences, the specific data items (not "data such as"), concrete advice rather
+than a general "be alert to phishing", and a separate message per group if different
+people lost different data. If you don't know everything yet, send a preliminary message
+now and a follow-up later; the AP recommends that over waiting.
+
+Fill the brackets; delete the bracketed alternatives that don't apply. Send each user the
+language they used in the app if you know it, otherwise both, Dutch first.
 
 ### English
 
-> **Subject:** Security incident affecting your MoiCheck account
+> **Subject:** Important: data breach involving your MoiCheck data
 >
 > Hi,
 >
@@ -503,7 +553,7 @@ in the app if you know it, otherwise both, Dutch first.
 
 ### Nederlands
 
-> **Onderwerp:** Beveiligingsincident met gevolgen voor je MoiCheck-account
+> **Onderwerp:** Belangrijk: datalek met jouw gegevens bij MoiCheck
 >
 > Hoi,
 >
@@ -550,13 +600,19 @@ in the app if you know it, otherwise both, Dutch first.
 | Data categories, processors, Google profile name | `privacy.html` §1–§4 (last updated 24 September 2026) |
 | Account chain, regions, `SUPABASE_JWT_SECRET` still deployed | [`account-hosting-audit.md`](account-hosting-audit.md), 13 September 2026 |
 | Supabase retention and backups per plan | supabase.com/pricing, read 4 October 2026 |
-| AP form, DigiD/eHerkenning, partial notifications | Secondary Dutch sources; the AP site was unreachable while drafting. **Unverified: see section 6** |
+| AP form route, no login, submission, partial and late notifications, contact numbers | AP, [This is how you report a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/this-is-how-you-report-a-data-breach) (last edited 22 July 2026), read 5 October 2026; "no login" also from the form's own configuration (`no-login` plugin) and its browser notice |
+| Form questions | AP, [Questionnaire personal data breach notification form](https://www.autoriteitpersoonsgegevens.nl/en/documents/questionnaire-personal-data-breach-notification-form) (v1.0, September 2022), read 5 October 2026 |
+| "When in doubt, report"; email and location profiling as risk factors | AP, [Reporting or not reporting a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/reporting-or-not-reporting-a-data-breach) (last edited 9 April 2025) |
+| Warning-message recommendations | AP, [This is how you inform victims about a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/this-is-how-you-inform-victims-about-a-data-breach) |
 | Articles 4(12), 33, 34 | GDPR text |
 
 ## Follow-ups
 
 - [ ] **Owner review** of sections 5 and 6 and the Dutch email. This is a draft, not legal advice.
-- [ ] **Verify section 6 on the AP website** and test the DigiD login now.
+- [x] **Verify section 6 on the AP website**: done 5 October 2026. The DigiD claim was
+      wrong and is removed; the form has no login.
+- [ ] **Download the AP questionnaire** and fill in the parts that don't depend on an
+      incident (organisation, contact person, sector), so they're ready.
 - [ ] **Decide on log retention** (section 7, options 1–2) and record the decision here.
 - [ ] **Remove `SUPABASE_JWT_SECRET` from Vercel**: already open in the audit; the
       cheapest way to shrink this runbook's worst case.
