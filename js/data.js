@@ -790,16 +790,6 @@ const EVENTS = [
         location: { en: 'Molen Wilhelmina, Noorderhogebrug', nl: 'Molen Wilhelmina, Noorderhogebrug' },
         tip: { en: 'Once a year, the Netherlands celebrates darkness with night walks, stargazing and lights switched off. Just outside the city, a walk leaves from the windmill at Noorderhogebrug into the old Reitdiep landscape: across meadows and ditches under the stars, past the Groninger Landschap visitor centre and back to the mill, which opens its doors for you. Adults pay €6 and children walk free. Sign up in advance.', nl: 'Eén keer per jaar viert Nederland het donker, met nachtwandelingen, sterrenkijken en lampen die uitgaan. Net buiten de stad vertrekt een wandeling vanaf de molen in Noorderhogebrug het oude Reitdieplandschap in: onder de sterren door weilanden en over sloten, langs het bezoekerscentrum van Het Groninger Landschap en terug naar de molen, die zijn deuren voor je openzet. Volwassenen betalen €6, kinderen lopen gratis mee. Meld je vooraf aan.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2449763556/wandeling-nacht-van-de-nacht-7'
-    },
-    {
-        id: 'suikermarkt-2026-10',
-        date: '2026-10-25',
-        startTime: '11:00',
-        endTime: '17:00',
-        title: { en: 'Suikermarkt (vintage market at EM2)', nl: 'Suikermarkt bij EM2' },
-        location: { en: 'EM2, Suikerlaan 6 (Suikerterrein)', nl: 'EM2, Suikerlaan 6 (Suikerterrein)' },
-        tip: { en: 'A festival-style market for vintage, retro, pre-loved, curiosities and handmade things, spread over the EM2 grounds on the old sugar factory site. There is live music, face painting for the kids and food trucks. Entry is €4.50 at the door, by card or cash, and under-12s get in free.', nl: 'Een markt met festivalsfeer vol vintage, retro, pre-loved, curiosa en zelfgemaakte spullen, verspreid over het terrein van EM2 op het oude Suikerunieterrein. Er is livemuziek, schminken voor de kinderen en er staan foodtrucks. De entree is €4,50 aan de deur, pinnen of contant, en tot 12 jaar is het gratis.' },
-        url: 'https://em2groningen.nl/'
     }
 ];
 
