@@ -761,9 +761,14 @@ const EVENTS = [
         id: 'oktofest-groningen-2026',
         date: '2026-10-16',
         endDate: '2026-10-17',
+        // Taps close at midnight; 23:59 keeps the last minute inside the same day.
+        hours: {
+            '2026-10-16': ['19:00', '23:59'],
+            '2026-10-17': ['18:00', '23:59']
+        },
         title: { en: 'Oktofest (Oktoberfest at Stadslab)', nl: 'Oktofest (Oktoberfest in Stadslab)' },
         location: { en: 'Stadslab, Suikerunieterrein', nl: 'Stadslab, Suikerunieterrein' },
-        tip: { en: 'Groningen\'s own Oktoberfest takes over Stadslab on the old sugar factory site for two evenings, with long beer tables, litre mugs, bratwurst, schlager and live acts. Dirndl and lederhosen are very much encouraged. Buy tickets online in advance, and if you are going with a group, a whole table is the better deal.', nl: 'Het Groningse Oktoberfest neemt twee avonden het Stadslab op het oude Suikerunieterrein over, met lange biertafels, literpullen, braadworst, schlagers en live-acts. Dirndl en lederhosen worden zeer gewaardeerd. Koop je kaartjes vooraf online, en ga je met een groep, dan is een hele tafel de betere deal.' },
+        tip: { en: 'Groningen\'s own Oktoberfest takes over Stadslab on the old sugar factory site for two evenings, with long beer tables, litre mugs, bratwurst, schlager and live acts. It starts at 19:00 on Friday and 18:00 on Saturday, doors open half an hour earlier, and the taps close at midnight. Dirndl and lederhosen are very much encouraged. Buy tickets online in advance, and if you are going with a group, a whole table is the better deal.', nl: 'Het Groningse Oktoberfest neemt twee avonden het Stadslab op het oude Suikerunieterrein over, met lange biertafels, literpullen, braadworst, schlagers en live-acts. Vrijdag gaat het om 19:00 uur los en zaterdag om 18:00 uur, de deuren gaan een halfuur eerder open en om middernacht gaat de tap dicht. Dirndl en lederhosen worden zeer gewaardeerd. Koop je kaartjes vooraf online, en ga je met een groep, dan is een hele tafel de betere deal.' },
         url: 'https://oktofest.nl/'
     },
     {
