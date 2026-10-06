@@ -763,10 +763,12 @@ const EVENTS = [
         checkIn: { coords: [53.2167, 6.5648], radius: 400 },
         badge: {
             icon: '🏅',
-            title: { en: '4 Mijl Finisher', nl: '4 Mijl-finisher' },
+            // Spectators are inside the radius too, so the badge records being
+            // there on the day, not having run.
+            title: { en: '4 Mijl Day', nl: '4 Mijl-dag' },
             desc: {
-                en: 'Checked in at the Vismarkt finish of the Menzis 4 Mijl, the biggest running party in the north!',
-                nl: 'Ingecheckt bij de finish van de Menzis 4 Mijl op de Vismarkt, het grootste loopfeest van het Noorden!'
+                en: 'Checked in at the Vismarkt finish of the Menzis 4 Mijl, the biggest running party in the north, whether you ran it or cheered!',
+                nl: 'Ingecheckt bij de finish van de Menzis 4 Mijl op de Vismarkt, het grootste loopfeest van het Noorden, of je nu meeliep of aanmoedigde!'
             }
         }
     },
@@ -789,10 +791,10 @@ const EVENTS = [
         checkIn: { coords: [53.2111, 6.5388], radius: 400 },
         badge: {
             icon: '🍺',
-            title: { en: 'Oktofest Reveller', nl: 'Oktofestganger' },
+            title: { en: 'Oktofest Night', nl: 'Oktofestavond' },
             desc: {
-                en: 'Checked in at Oktofest, raising a litre mug at Stadslab on the old sugar factory site!',
-                nl: 'Ingecheckt op Oktofest, met een literpul in Stadslab op het oude Suikerunieterrein!'
+                en: 'Checked in at Oktofest, Groningen\'s own Oktoberfest at Stadslab on the old sugar factory site!',
+                nl: 'Ingecheckt op Oktofest, het Groningse Oktoberfest in Stadslab op het oude Suikerunieterrein!'
             }
         }
     },
