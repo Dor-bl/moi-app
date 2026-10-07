@@ -168,6 +168,7 @@ function finishMagicLinkSignIn(pending) {
 // With no client ID configured the redirect-based button stays in place, so
 // this ships safely before the dashboard side is set up.
 let googleNonce = '';
+let googleSignInStarted = false;
 
 function randomHex(byteLength) {
     const bytes = crypto.getRandomValues(new Uint8Array(byteLength));
@@ -199,8 +200,14 @@ function loadGoogleIdentity() {
     });
 }
 
+// Called when the sign-in dialog opens, not on page load: fetching Google's
+// script contacts Google (IP address, its cookies), and the privacy policy
+// says that happens only when someone goes to sign in. Idempotent, since the
+// dialog opens more than once.
 async function initGoogleSignIn() {
     if (!supabaseClient || !GOOGLE_CLIENT_ID) return;
+    if (googleSignInStarted) return;
+    googleSignInStarted = true;
     // crypto.subtle only exists in secure contexts (https and localhost); the
     // redirect flow still works everywhere else.
     if (!window.crypto || !window.crypto.subtle) return;
@@ -222,7 +229,9 @@ async function initGoogleSignIn() {
         fallbackBtn.style.display = 'none';
         container.style.display = 'flex';
     } catch (err) {
-        // Script blocked or failed: leave the redirect-based button as it is.
+        // Script blocked or failed: leave the redirect-based button as it is,
+        // and allow another attempt next time the dialog opens.
+        googleSignInStarted = false;
         console.warn('Google sign-in on this origin unavailable, using redirect flow:', err);
     }
 }
@@ -275,10 +284,6 @@ async function onGoogleCredential(response) {
 
 async function initAuth() {
     if (!supabaseClient) return;
-
-    // Not awaited: the button swaps in when Google's script arrives, and the
-    // rest of auth setup should not wait on a third-party download.
-    initGoogleSignIn();
 
     try {
         // Detect if an error was passed back in hash or query parameters (e.g. expired link)

@@ -1552,6 +1552,10 @@ function setupEventListeners() {
         magicLinkSuccess.style.display = 'none';
         document.getElementById('magicFinish').style.display = 'none';
         authModal.classList.add('active');
+        // Google's button is fetched from Google only now, when someone has
+        // chosen to sign in. Not awaited: the custom button stays usable
+        // until Google's replaces it.
+        initGoogleSignIn();
     });
 
     // Sign-out confirmation modal controls

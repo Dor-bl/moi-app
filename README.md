@@ -130,6 +130,8 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 
    The consent screen then reads *"to continue to moicheck.nl"* with your app name and logo from the consent-screen settings. Leave the value empty and the app uses the redirect flow as before; nothing breaks either way.
 
+   Two things are already taken care of: the Content Security Policy in `vercel.json` allows Google's script, stylesheet, iframe and endpoints under `https://accounts.google.com/gsi/` (the four entries [Google's guide](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid) lists), and the script is fetched only when someone opens the sign-in dialog, not on every visit — the privacy policy's Google entry describes that, so keep the two in step if you change it.
+
 ### Updating the vendored Supabase client
 
 The Supabase browser client is **vendored** at `assets/vendor/supabase-js-2.116.0.js` rather
