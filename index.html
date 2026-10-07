@@ -36,12 +36,13 @@
     <meta name="twitter:description" content="The things to eat, see and do in Groningen. Tick them off as you go.">
     <meta name="twitter:image" content="https://moicheck.nl/assets/brand/og-image.png">
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase client, vendored rather than loaded from a CDN: the bytes are pinned
+         in this repo, so a compromised CDN or a bad publish cannot swap the script that
+         reads our users' session tokens. See README "Updating the vendored Supabase client". -->
+    <script src="assets/vendor/supabase-js-2.116.0.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-active-view="list">
     <header class="app-header">
         <div class="header-content">
             <div class="logo-container">
@@ -71,10 +72,6 @@
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                     </svg>
                 </button>
-                <div class="lang-toggle" id="langToggle">
-                    <button class="lang-btn active" data-lang="en">EN</button>
-                    <button class="lang-btn" data-lang="nl">NL</button>
-                </div>
                 <button id="authBtn" class="auth-btn">Sign In</button>
                 <button id="profileBtn" class="profile-btn" aria-label="Profile">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -83,12 +80,29 @@
         </div>
         <div class="progress-container">
             <div class="progress-text">
-                <span id="progressCount">0 of 31 completed</span>
+                <!-- Filled by updateProgress() on init. Left empty on purpose:
+                     a hardcoded total goes stale every time an item is added
+                     to BUCKET_LIST, and this one had already drifted. -->
+                <span id="progressCount"></span>
                 <span id="currentMilestone" class="milestone-badge">Newcomer</span>
             </div>
             <div class="progress-bar">
                 <div id="progressFill" class="progress-fill"></div>
             </div>
+        </div>
+        <div class="view-toggle-container">
+            <button class="view-btn active" id="listViewBtn" aria-pressed="true" data-view="list">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span id="txtListView">List</span>
+            </button>
+            <button class="view-btn" id="mapViewBtn" aria-pressed="false" data-view="map">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                <span id="txtMapView">Map</span>
+            </button>
+            <button class="view-btn" id="eventsViewBtn" aria-pressed="false" data-view="events">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span id="txtEventsView">Events</span>
+            </button>
         </div>
         <div class="filters-container">
             <button class="filter-pill active" data-filter="All">All</button>
@@ -98,15 +112,13 @@
             <button class="filter-pill" data-filter="Groningen Classics">Classics</button>
             <button class="filter-pill" data-filter="Nature & Wildlife">Nature</button>
         </div>
-        <div class="view-toggle-container">
-            <button class="view-btn active" id="listViewBtn" data-view="list">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                <span id="txtListView">List</span>
-            </button>
-            <button class="view-btn" id="mapViewBtn" data-view="map">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-                <span id="txtMapView">Map</span>
-            </button>
+        <!-- Independent toggles (not a single-select like .filter-pill above), so
+             each carries its own aria-pressed rather than sharing the .active/All
+             pattern the category filters use. -->
+        <div class="event-filters-container">
+            <button class="event-filter-pill" id="eventFilterKidsBtn" data-event-filter="kidFriendly" aria-pressed="false">Kids</button>
+            <button class="event-filter-pill" id="eventFilterFreeBtn" data-event-filter="free" aria-pressed="false">Free</button>
+            <button class="event-filter-pill" id="eventFilterHolidayBtn" data-event-filter="publicHoliday" aria-pressed="false">Holiday</button>
         </div>
     </header>
 
@@ -115,8 +127,16 @@
             <!-- Cards will be injected here -->
         </div>
 
-        <div class="map-wrapper" id="mapWrapper" style="display: none;">
+        <!-- Which of these is showing is driven by data-active-view on <body>,
+             set by switchView(). Deliberately not inline display styles: an
+             inline style beats the stylesheet, so the two mechanisms cannot be
+             mixed without one silently winning. -->
+        <div class="map-wrapper" id="mapWrapper">
             <div id="mapContainer" class="map-container"></div>
+        </div>
+
+        <div class="events-container" id="eventsContainer">
+            <!-- Event cards will be injected here -->
         </div>
     </main>
 
@@ -147,11 +167,14 @@
             <h2>Your Journey</h2>
             <div class="milestone-card" id="milestoneCard">
                 <h3 id="profileMilestone">Newcomer</h3>
-                <p id="profileProgressText">0 of 31 completed</p>
+                <p id="profileProgressText"></p>
             </div>
             <div class="user-account-badge" id="userAccountBadge" style="display: none;">
-                <span class="user-status-dot"></span>
-                <span id="userAccountEmail"></span>
+                <span class="user-account-info">
+                    <span class="user-status-dot"></span>
+                    <span id="userAccountEmail"></span>
+                </span>
+                <button class="badge-signout-btn" id="signOutBtn">Sign Out</button>
             </div>
             <button class="btn share-btn" id="shareBtn">Share Milestone</button>
             
@@ -210,6 +233,22 @@
                     </button>
                 </div>
             </div>
+
+            <div class="settings-group">
+                <h3 id="txtLanguageHeader" style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Language</h3>
+                <!-- The names stay in their own language on purpose: someone looking
+                     for Dutch should find "Nederlands" whatever the app is set to. -->
+                <div class="lang-options">
+                    <button class="lang-option-btn" data-lang="en">
+                        <span class="lang-icon" aria-hidden="true">🇬🇧</span>
+                        <span>English</span>
+                    </button>
+                    <button class="lang-option-btn" data-lang="nl">
+                        <span class="lang-icon" aria-hidden="true">🇳🇱</span>
+                        <span>Nederlands</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -242,6 +281,10 @@
                 <div class="form-group">
                     <label for="contactMessage" id="lblContactMessage">Message</label>
                     <textarea id="contactMessage" required placeholder="Tell us more..."></textarea>
+                </div>
+                <div class="honeypot-field" aria-hidden="true" inert>
+                    <label for="contactWebsite">Website</label>
+                    <input type="text" id="contactWebsite" name="website" tabindex="-1" autocomplete="off">
                 </div>
                 <button type="submit" class="btn primary-btn" id="contactSubmitBtn">Send Message</button>
             </form>
@@ -318,15 +361,31 @@
         </div>
     </div>
 
+    <!-- Sign-out confirmation. Kept after the delete modal in the DOM so it
+         stacks on top of the profile modal. `inert` keeps the closed dialog out
+         of the accessibility tree and the tab order; app.js lifts it only while open. -->
+    <div class="modal-overlay" id="signOutModal" inert>
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="signOutModalTitle" aria-describedby="signOutModalWarning">
+            <button class="close-btn" id="closeSignOutModal" aria-label="Close">&times;</button>
+            <h2 id="signOutModalTitle">Sign out?</h2>
+            <p id="signOutModalWarning" class="delete-warning">You'll need to sign in again to sync your progress on this device.</p>
+            <button class="btn primary-btn" id="confirmSignOutBtn">Yes, sign out</button>
+            <button class="btn secondary-btn" id="cancelSignOutBtn">Cancel</button>
+        </div>
+    </div>
+
     <footer class="app-footer">
         <p>MoiCheck &bull; <a href="privacy.html" id="footerPrivacyLink" class="footer-link-btn">Privacy Policy</a> &bull; <button id="contactBtn" class="footer-link-btn">Contact &amp; Suggestions</button></p>
     </footer>
 
+    <script src="js/analytics.js"></script>
     <script src="config.js"></script>
     <script src="js/data.js"></script>
+    <script src="js/events.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/checkin.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

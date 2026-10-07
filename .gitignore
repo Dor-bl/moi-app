@@ -12,3 +12,11 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Tooling
+# Local Claude Code state stays out wherever a .claude/ directory appears --
+# including in a subdirectory Claude Code was run from. Only the repository
+# root's shared skills are tracked. The leading **/ matters: a pattern with a
+# slash in it is anchored to the root, so a bare .claude/* stops matching
+# nested directories that the original .claude/ rule used to cover.
+**/.claude/*
+!/.claude/skills/

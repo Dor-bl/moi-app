@@ -2,6 +2,8 @@
 
 The pull request workflow in [`GEMINI.md`](GEMINI.md) applies here too: start from a fresh `origin/main`, work on a descriptive branch, commit, push, and open a PR with a clear description.
 
+**Opening the PR is pre-authorized.** Once changes are committed and pushed, open the pull request as the final step of that same workflow — do not stop to ask for confirmation first. This applies every session, not just when explicitly asked to "open a PR."
+
 ## Rules for Auth and Concurrency Design
 
 Distilled from the [PR #50 post-mortem](docs/postmortems/pr-50-account-deletion.md), where a ~60-line account-deletion feature grew into a 2,000-line distributed locking engine in `localStorage` over 49 review rounds.

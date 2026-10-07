@@ -14,9 +14,6 @@
     <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
     <link rel="canonical" href="https://moicheck.nl/privacy.html">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
         .legal-page {
@@ -68,7 +65,29 @@
         }
         .legal-page th { color: var(--text-light); font-weight: 700; }
         .legal-page a { color: var(--primary-color); }
+        /* The storage table's first column holds long key names; give it enough
+           room that they don't break mid-word on a normal screen. */
+        .storage-table th:first-child, .storage-table td:first-child { width: 30%; }
+        .legal-page code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.85em;
+            color: var(--text-light);
+            /* Key names are long unbreakable tokens; without this the storage
+               table forces the page wider than a phone screen. */
+            overflow-wrap: anywhere;
+        }
         .brand-title { font-size: 1.75rem; font-weight: 800; margin: 0; }
+        /* The storage table is three columns of prose, and its minimum width is
+           the sum of those columns plus 72px of cell padding — about 335px,
+           which is wider than the content column on a small phone. The key
+           names already wrap (`overflow-wrap` above), so the token length is
+           not the constraint; the padding and type size are. Below 420px both
+           come down, which returns the table to inside the page gutter at
+           360-375px and stops the page scrolling sideways at 320px. */
+        @media (max-width: 420px) {
+            .legal-page table { font-size: 0.82rem; }
+            .legal-page th, .legal-page td { padding: 0.5rem 0.4rem; }
+        }
     </style>
 </head>
 <body>
@@ -100,7 +119,7 @@
     <main class="legal-page">
         <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
         <h1>Privacy Policy</h1>
-        <p class="updated">Last updated: 29 August 2026</p>
+        <p class="updated">Last updated: 24 September 2026</p>
 
         <section>
             <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen. This policy explains what personal data we collect, why, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
@@ -131,41 +150,65 @@
                     <tr>
                         <td>Name, email, subject &amp; message</td>
                         <td>When you submit the contact form</td>
-                        <td>To read and reply to your feedback, bug report, or suggestion</td>
+                        <td>To read and reply to your feedback, bug report, or suggestion. The function that relays the message also reads your IP address to limit how many messages one sender can submit in a minute; it is held in memory for that minute and never written down or sent on with your message.</td>
                     </tr>
                     <tr>
                         <td>Theme, language, and (if not signed in) progress</td>
                         <td>Always, stored only in your browser</td>
                         <td>To remember your preferences and let you use the app without an account</td>
                     </tr>
+                    <tr>
+                        <td>Your location &mdash; checked, never collected</td>
+                        <td>Only when you tap "I'm here" on an event that is happening right now, and only for that one tap</td>
+                        <td>To confirm you are actually at the event before awarding its badge. The check happens entirely on your device: your browser compares your coordinates to the event's location and then discards them. They are never sent to us, never written down, and we never learn where you were or whether you were anywhere at all &mdash; the only thing saved is your own device's note that you earned the badge. We never read your location in the background, and if you decline the permission nothing happens except that you don't get that badge.</td>
+                    </tr>
+                    <tr>
+                        <td>Aggregate usage statistics</td>
+                        <td>When you open the main MoiCheck page, and when you switch between the list, map and events views</td>
+                        <td>To count visits, see which sites link here, and count how often each view (list, map, events) is opened, so we can tell whether MoiCheck is useful and which parts of it people actually use. These are counts only — no record of who opened what. No cookies are set. Like any web request, the request itself carries your IP address, your browser details, and which page you are on and which site you came from; Vercel uses these only to build the aggregates, and we only ever see those aggregates — nothing that identifies you or follows you to other websites.</td>
+                    </tr>
                 </tbody>
             </table>
-            <p>We do not collect payment information, government IDs, or any special-category data. If you never sign in or use the contact form, no personal data leaves your device.</p>
+            <p>We do not collect payment information, government IDs, or any special-category data. If you never sign in or use the contact form, we hold no personal data about you — though, as with any website, simply loading the page or the map sends standard request metadata (your IP address, browser details, and the page requested and referring site) to the providers described in section 2.</p>
         </section>
 
         <section>
             <h2>2. Who processes your data</h2>
             <ul>
-                <li><strong>Supabase</strong> — hosts our database and handles authentication (magic-link emails and Google sign-in). Your email, name, and bucket-list progress/notes are stored in Supabase's infrastructure.</li>
-                <li><strong>Google</strong> — if you choose "Continue with Google", Google handles the sign-in and shares your email and name with us via Supabase.</li>
-                <li><strong>FormSubmit.co</strong> — delivers contact-form submissions (name, email, subject, message) to our inbox by email.</li>
-                <li><strong>OpenStreetMap / Leaflet</strong> — the map view loads map tiles directly from OpenStreetMap's tile servers, which, like any web request, will see your IP address and general request metadata.</li>
-                <li><strong>Vercel</strong> — hosts the MoiCheck website itself.</li>
+                <li><strong>Supabase</strong> — hosts our database and handles authentication (magic-link emails and Google sign-in). Your email, name, and bucket-list progress/notes are stored in Supabase's infrastructure. The code that talks to Supabase is served by MoiCheck itself rather than by an outside network, so loading it reaches no third party.</li>
+                <li><strong>Google</strong> — if you choose "Continue with Google", Google handles the sign-in and shares your email and name with us via Supabase. Google also hosts the mailbox that hallo@moicheck.nl delivers into &mdash; the address itself is a Cloudflare routing address rather than an account with Google &mdash; so a copy of anything sent there, including contact-form messages, sits on Google's infrastructure too. Google publishes a data processing agreement for its business services, but this mailbox is a personal account under consumer terms rather than one of them &mdash; section 3 says what that does and does not mean.</li>
+                <li><strong>Cloudflare</strong> — runs Email Routing for our domain, which forwards mail addressed to hallo@moicheck.nl (including contact-form submissions relayed by Resend) on to the Google mailbox described above. Email Routing forwards rather than stores: there is no inbox at Cloudflare's end, which is why the message's resting place is Google's and not Cloudflare's, and, like Google, publishes a data processing agreement.</li>
+                <li><strong>Resend</strong> — delivers the email MoiCheck sends, which is two different things. It is the sender behind the sign-in links you request when you choose a magic link, so your email address and a one-time token pass through Resend every time you sign in that way. It also delivers contact-form submissions (name, email, subject, message) to our inbox. The form posts to a small function running on Supabase, which passes the message to Resend; both publish data processing agreements. If you would rather not use the form at all, email us directly at <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a> — it reaches the same inbox.</li>
+                <li><strong>OpenStreetMap, Leaflet and unpkg</strong> — the map is drawn with Leaflet, whose script and stylesheet come from the <strong>unpkg</strong> content delivery network, and the map tiles come directly from OpenStreetMap's tile servers. Both, like any web request, will see your IP address and general request metadata. Neither is contacted until you switch to Map view, so if you only ever use the list, no request reaches them at all.</li>
+                <li><strong>Vercel</strong> — hosts the MoiCheck website itself, and provides Vercel Web Analytics, which produces the aggregated statistics described above. Like any web request, these will see your IP address and general request metadata; Vercel uses them only to build the aggregates, and reports back to us only aggregated figures such as visit counts, popular pages, referring sites, and how many times each view of the app was opened. It sets no cookies and does not track visitors across other websites. Vercel publishes a data processing agreement and is certified under the EU&ndash;U.S. Data Privacy Framework.</li>
             </ul>
-            <p>We do not sell your data or share it with advertisers.</p>
+            <p>We do not sell your data or share it with advertisers. Where each of these providers handles your data, and what covers the parts of it that leave the EU, is section 3.</p>
         </section>
 
         <section>
-            <h2>3. How long we keep it</h2>
+            <h2>3. Where your data is processed</h2>
+            <p>Your account, your progress and your notes are stored in the European Union. The Supabase project behind MoiCheck runs in Ireland (AWS region <em>eu-west-1</em>), and the app copies them into no other service's store. That claim is narrower than it may sound, so here is what sits outside the live database rather than leaving you to assume there is nothing. Supabase takes automated backups of it as part of the same project, so data you have deleted persists in them until they age out &mdash; section 5 says what that means for deleting your account. Your own browser keeps your progress and notes on the device you are reading this on, which is what section 6 sets out: that copy stays in that browser, and clearing your site data removes it. And your email address reaches the providers that carry mail for us, which is the paragraph below and section 4. Supabase is itself a United States company, so its staff can reach that infrastructure to run it; that access is covered by the safeguards described at the end of this section.</p>
+            <p>Stored in the EU is not the same as never leaving it, and one piece of account data does leave. If you sign in with a magic link, the email carrying that link is sent through Resend in the United States, with your address on it &mdash; and not merely in passing: Resend's own stated retention for email data is in section 4. Signing in with Google instead does not go through Resend at all &mdash; Google handles it, as section 2 describes.</p>
+            <p><strong>The contact form.</strong> Your message is handled by a small function running on Supabase. Functions like it normally run in whichever data centre is nearest the person using them &mdash; which would mean a message sent from outside Europe was processed outside Europe. We pin ours to Ireland, so every submission is handled in the EU no matter where it is sent from. The trade-off is that the form does not move elsewhere if that region has an outage: it simply fails, and you can email <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a> directly instead, which reaches the same inbox.</p>
+            <p><strong>What does leave the EU.</strong> Handling your message in Ireland is not the end of its journey. From there it goes to Resend, then through Cloudflare Email Routing into our Gmail mailbox &mdash; and that mailbox is where it stays. Resend, Cloudflare and Google are United States companies, and none of them confines its processing to the EU. The same holds for Vercel, which serves this site and produces the visitor counts described in section 1, and for the sign-in emails above, which take the first of those same steps. So if you write to us, sign in by magic link, or simply load the page, part of that is handled outside the EU/EEA.</p>
+            <p><strong>What makes that lawful.</strong> Supabase, Resend, Cloudflare and Vercel handle data on our behalf under contract, and each publishes a data processing agreement setting out the safeguards for moving it out of the EEA: the European Commission's Standard Contractual Clauses, and, for the providers certified under it, the EU&ndash;U.S. Data Privacy Framework. We rely on the terms they publish rather than on an audit of our own, and we chose providers that offer them. You can ask us which applies to a particular provider, at the address in section 9.</p>
+            <p><strong>The mailbox, stated plainly.</strong> You will notice Google is not in that sentence, and the reason is worth giving rather than hiding. First, where your message actually ends up: hallo@moicheck.nl is not itself a mailbox but an address Cloudflare Email Routing accepts mail for and forwards on, and it forwards into a personal Google account &mdash; an ordinary Gmail inbox, in the United States. That is where your message comes to rest, and it is equally true if you skip the form and email us directly; it is the same inbox either way.</p>
+            <p>That account is held under Google's consumer terms, not a business agreement with a data processing contract behind it. So this last hop, unlike the four providers above, is not covered by one, and we would rather write that down than round it up to a safeguard we do not have. What we can tell you is concrete: the account requires two-factor authentication, nobody but us reads it, and your message is kept only as long as we need it to answer you. MoiCheck is one person's side project, and the inbox is run accordingly &mdash; if that is not a trade you want to make, please don't use the form, and don't email us either: anything you send arrives in the same place.</p>
+            <p><strong>The map is different, and we should be straight about it.</strong> Leaflet's files come from unpkg and the tiles come from OpenStreetMap, and neither is a provider we have an agreement with. Your browser fetches from them directly, the way it does with anything a page embeds, so what they see is the request itself &mdash; your IP address and the usual browser details &mdash; and they serve it from whichever of their own locations is nearest rather than from the EU. We cannot promise safeguards on your behalf with parties we have no contract with, so we are not going to. Nothing reaches either of them unless you switch to Map view; if you stay on the list, no request is made at all.</p>
+        </section>
+
+        <section>
+            <h2>4. How long we keep it</h2>
             <ul>
                 <li><strong>Account data &amp; progress/notes:</strong> kept for as long as your account exists, until you ask us to delete it.</li>
-                <li><strong>Contact-form submissions:</strong> kept in our email inbox, and a local copy is kept only in your own browser's storage until you clear it — we don't keep a separate server-side copy.</li>
+                <li><strong>Contact-form submissions:</strong> kept in our email inbox for as long as we need them to deal with what you wrote, which means a copy also sits with whoever hosts that mailbox. We don't copy submissions into the MoiCheck app or its database, and nothing from the contact form is saved in your browser. The function that relays the message keeps no copy of its own. Resend, which delivers it, documents a retention period of 30 days for email data on its standard plans; we have not been able to confirm that against its live documentation, so treat it as their stated figure rather than one we have verified.</li>
                 <li><strong>Local preferences</strong> (theme, language, guest progress): stay on your device until you clear your browser storage.</li>
+                <li><strong>Event badges:</strong> stay on the device that earned them until you clear your browser storage. We never receive them, so there is nothing on our side to keep or delete &mdash; and nothing for us to restore if you clear them.</li>
             </ul>
         </section>
 
         <section>
-            <h2>4. Your rights</h2>
+            <h2>5. Your rights</h2>
             <p>Under the GDPR, you can ask us to:</p>
             <ul>
                 <li>tell you what data we hold about you;</li>
@@ -174,29 +217,80 @@
                 <li>export your data in a portable format;</li>
                 <li>object to how we process it.</li>
             </ul>
-            <p><strong>Deleting your account yourself:</strong> when signed in, open your profile (the person icon) and choose <em>Delete my account &amp; data</em>. After you confirm, we permanently delete your completed items and notes from Supabase, remove your sign-in record, sign you out, and clear the progress saved in that browser. This cannot be undone. Copies of your progress on other devices you signed in from remain in those browsers' local storage until you clear their site data. If automatic deletion is not available on this installation, the app informs you; email us and we will delete your account manually.</p>
-            <p>To exercise any of the other rights, or if you cannot sign in to use the in-app deletion, email us at <a href="mailto:dblayzer@gmail.com">dblayzer@gmail.com</a>. We'll respond within a reasonable time and, for deletion requests, remove your account data from Supabase.</p>
-            <p>You can also clear your locally-stored data at any time by clearing your browser's site data for MoiCheck.</p>
+            <p><strong>Deleting your account yourself:</strong> when signed in, open your profile (the person icon) and choose <em>Delete my account &amp; data</em>. After you confirm, we permanently delete your completed items and notes from Supabase, remove your sign-in record, sign you out, and clear the progress saved in that browser. This cannot be undone. Two kinds of copy outlive that deletion, and neither is a way back into your account: copies of your progress on other devices you signed in from remain in those browsers' local storage until you clear their site data, and Supabase's automated backups of the database, taken before you deleted, are not edited &mdash; they age out on their own schedule, and we do not restore from one to bring an account back. If automatic deletion is not available on this installation, the app informs you; email us and we will delete your account manually.</p>
+            <p>To exercise any of the other rights, or if you cannot sign in to use the in-app deletion, email us at <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>. We'll respond within a reasonable time and, for deletion requests, remove your account data from Supabase.</p>
+            <p>Signing out clears the progress saved in that browser, so the next person to sign in on a shared device does not inherit it. You can also clear your locally-stored data at any time by clearing your browser's site data for MoiCheck.</p>
         </section>
 
         <section>
-            <h2>5. Cookies &amp; local storage</h2>
-            <p>We don't use advertising or tracking cookies. We use your browser's local storage to remember your theme, language, and (for signed-in users) a session token so you stay logged in. Supabase may set similar local storage entries to manage your authenticated session.</p>
+            <h2>6. Cookies &amp; local storage</h2>
+            <p>We don't use advertising or tracking cookies, and nothing we store follows you to other websites. Everything in the table below is kept by your own browser, on your own device.</p>
+            <p>Dutch law &mdash; article 11.7a of the Telecommunicatiewet, which implements article 5(3) of the ePrivacy Directive &mdash; requires us to ask your permission before storing anything on your device, or reading something already stored there, <em>unless</em> it is strictly necessary to provide the service you asked for. We don't show a consent banner because every item in the table below falls inside that exemption: each is either the feature you came to MoiCheck for, or a setting you chose yourself.</p>
+            <table class="storage-table">
+                <thead>
+                    <tr><th>What we store</th><th>What it does</th><th>Why it needs no consent</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Completed items &amp; memory notes<br><code>moiCheckState</code></td>
+                        <td>Remembers which things you've ticked off, and anything you wrote about them.</td>
+                        <td>Strictly necessary: remembering your progress is the service. Without it, MoiCheck would forget everything the moment you closed the tab.</td>
+                    </tr>
+                    <tr>
+                        <td>Language<br><code>moiCheckLang</code></td>
+                        <td>Keeps the app in the language you picked.</td>
+                        <td>A setting you chose yourself, stored only to honour that choice.</td>
+                    </tr>
+                    <tr>
+                        <td>Theme<br><code>moiCheckTheme</code></td>
+                        <td>Keeps the light, dark, or system appearance you picked.</td>
+                        <td>A setting you chose yourself, stored only to honour that choice.</td>
+                    </tr>
+                    <tr>
+                        <td>Theme, older name<br><code>theme</code></td>
+                        <td>The same appearance setting, under the name an earlier version of MoiCheck used. If you have no current theme saved, we copy it across and delete it on your next visit; otherwise it just sits there unused until you clear your site data.</td>
+                        <td>A setting you chose yourself. Reading something already on your device falls under the same permission rule, and the same exemption.</td>
+                    </tr>
+                    <tr>
+                        <td>Completed-list layout<br><code>moiCheckCompletedCollapsed</code></td>
+                        <td>Remembers whether you left the completed section folded away.</td>
+                        <td>A setting you chose yourself, stored only to honour that choice.</td>
+                    </tr>
+                    <tr>
+                        <td>Event badges<br><code>moiCheckEvents</code></td>
+                        <td>Remembers which events you checked in at, so the badge you earned is still there next time. It holds the event and the date &mdash; never a location.</td>
+                        <td>Strictly necessary: keeping the badge <em>is</em> the thing you asked for by tapping "I'm here". Nothing is stored unless you tap it, and the location check that precedes it stores nothing at all.</td>
+                    </tr>
+                    <tr>
+                        <td>Sign-in session<br><em>set and managed by Supabase</em></td>
+                        <td>Keeps you signed in, so you don't have to request a new magic link on every page.</td>
+                        <td>Strictly necessary to provide sign-in &mdash; which happens only because you asked to sign in. If you never sign in, it is never created.</td>
+                    </tr>
+                    <tr>
+                        <td>Account marker<br><code>moiCheckSyncedUser</code></td>
+                        <td>Records which account the saved progress belongs to.</td>
+                        <td>Strictly necessary to sync safely: it is what stops progress being uploaded under a different account on a shared device. It is created only when you sign in and removed when you sign out; if your session ends while the app is closed, it is cleared the next time you open the app.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Confirming you are at an event <em>reads</em> your location from your device, which the same permission rule covers. We ask only at the moment you tap "I'm here", your browser asks you before we get anything, and your coordinates are compared to the event's and then discarded rather than stored &mdash; so what ends up saved is the badge in the table above and nothing about where you were. Section 1 describes that check in full.</p>
+            <p>The visitor statistics described in section 1 come from Vercel Web Analytics, which sets no cookies and stores nothing at all on your device, so the permission rule above does not apply to it.</p>
+            <p>When you sign out, your completed items, notes, and the account marker are cleared from that browser, so the next person to sign in on a shared device does not inherit them. Your language, theme, and layout preferences are device settings rather than personal data, so those stay. Event badges stay too, and we should be straight about the trade: they are never uploaded anywhere, so clearing them on sign-out would destroy them for good rather than restore them on your next sign-in &mdash; the cost is that on a shared device the next person can see that somebody checked in at an event. You can remove everything at any time by clearing your browser's site data for MoiCheck.</p>
         </section>
 
         <section>
-            <h2>6. Children</h2>
+            <h2>7. Children</h2>
             <p>MoiCheck isn't directed at children, and we don't knowingly collect data from anyone under 16.</p>
         </section>
 
         <section>
-            <h2>7. Changes to this policy</h2>
+            <h2>8. Changes to this policy</h2>
             <p>If we change how we handle your data, we'll update this page and change the "last updated" date above.</p>
         </section>
 
         <section>
-            <h2>8. Contact</h2>
-            <p>Questions about this policy or your data? Email <a href="mailto:dblayzer@gmail.com">dblayzer@gmail.com</a>.</p>
+            <h2>9. Contact</h2>
+            <p>Questions about this policy or your data? Email <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>.</p>
         </section>
     </main>
 
@@ -204,17 +298,6 @@
         <p>MoiCheck &bull; <a href="index.html" class="footer-link-btn">Back to app</a></p>
     </footer>
 
-    <script>
-        (function () {
-            try {
-                var saved = localStorage.getItem('moiCheckTheme');
-                if (saved === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                } else if (saved === 'light') {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                }
-            } catch (e) { /* localStorage unavailable */ }
-        })();
-    </script>
+    <script src="js/privacy-theme.js"></script>
 </body>
 </html>

@@ -16,9 +16,11 @@ export default [
         google: "readonly",
         // Readonly shared exports across script modules
         BUCKET_LIST: "readonly",
+        EVENTS: "readonly",
         MILESTONES: "readonly",
         CATEGORY_BADGES: "readonly",
         UI_TRANSLATIONS: "readonly",
+        ALLOWED_LANGS: "readonly",
         ALLOWED_THEMES: "readonly",
         applyTheme: "readonly",
         updateThemeButtonsUI: "readonly",
@@ -41,6 +43,24 @@ export default [
         renderList: "readonly",
         updateProgress: "readonly",
         setupEventListeners: "readonly",
+        todayInGroningen: "readonly",
+        resolveOccurrence: "readonly",
+        getUpcomingEvents: "readonly",
+        isHappeningNow: "readonly",
+        isOngoing: "readonly",
+        formatEventEnd: "readonly",
+        formatEventDate: "readonly",
+        formatEventsCoverageEnd: "readonly",
+        renderEvents: "readonly",
+        checkInKeyFor: "readonly",
+        canCheckIn: "readonly",
+        distanceInMetres: "readonly",
+        judgeCheckIn: "readonly",
+        hasCheckedIn: "readonly",
+        earnedEventBadges: "readonly",
+        recordCheckIn: "readonly",
+        readPosition: "readonly",
+        runCheckIn: "readonly",
         // Shared state variables
         SUPABASE_URL: "writable",
         SUPABASE_ANON_KEY: "writable",
@@ -56,7 +76,9 @@ export default [
         resortTimer: "writable",
         listNeedsResort: "writable",
         leafletMap: "writable",
-        markersGroup: "writable"
+        markersGroup: "writable",
+        eventCheckIns: "writable",
+        pendingCheckInKey: "writable"
       },
     },
     rules: {
@@ -66,6 +88,25 @@ export default [
     },
   },
   {
-    ignores: ["node_modules/"],
+    // Tests and maintenance scripts run on Node and are ESM; the browser block
+    // above does not cover them.
+    files: ["tests/**/*.js", "scripts/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    },
+  },
+  {
+    // assets/vendor holds third-party bundles committed verbatim (see README
+    // "Updating the vendored Supabase client"). Linting them would report on
+    // somebody else's minified output, and editing them to satisfy the rules
+    // is exactly what must not happen — the bytes have to match upstream.
+    ignores: ["node_modules/", ".claude/", "assets/vendor/", "supabase/functions/"],
   },
 ];

@@ -2,14 +2,37 @@
 
 // State
 let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
-let currentLang = localStorage.getItem('moiCheckLang') || 'en';
+// Validated on read, not just on write: a stored value that is not a language we
+// ship ('undefined' from an older build, a hand-edited key, 'constructor' and
+// friends off the prototype) otherwise reaches UI_TRANSLATIONS[currentLang] and
+// throws during init, which renders an empty page rather than a wrong language.
+const storedLang = localStorage.getItem('moiCheckLang');
+let currentLang = ALLOWED_LANGS.includes(storedLang) ? storedLang : 'en';
 let currentFilter = 'All';
+// Independent toggles, ANDed together: an event must match every active key to
+// show. Keys are EVENTS field names directly, so adding a filter is adding one
+// entry here plus a pill in index.html rather than a parallel vocabulary.
+const activeEventFilters = new Set();
 let currentView = 'list';
 let selectedItemId = null;
 // null = no explicit choice yet, so the section auto-collapses once it grows.
 let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
 let resortTimer = null;
 let listNeedsResort = false;
+// The occurrence key of a check-in waiting on a GPS fix, or null. It does two
+// jobs, and a cold fix is allowed 15 seconds, so neither window is narrow.
+//
+// It suppresses the staleness re-renders in setupEventListeners: the minute tick
+// would otherwise rebuild the card mid-request and drop the verdict into a
+// detached node — a silently swallowed error message. A card at most a minute
+// stale is the trade, and a successful check-in re-renders on its own.
+//
+// And it survives the re-renders it cannot suppress, because they are the user's
+// own doing: switching language or toggling a filter calls renderEvents directly.
+// Holding the key rather than a boolean lets buildCheckInBlock rebuild that card
+// still busy, instead of handing back a fresh enabled button that a second tap
+// turns into a second location read for one intent.
+let pendingCheckInKey = null;
 let leafletMap = null;
 let markersGroup = null;
 
@@ -36,16 +59,28 @@ function getFilteredItems(filter) {
     return filter === 'All' ? BUCKET_LIST : (itemsByCategory[filter] || []);
 }
 
+// An event must be truthy on every active key, so turning on both "Kids" and
+// "Free" narrows to events that are both, not either.
+function getFilteredEvents(events, filters) {
+    if (filters.size === 0) return events;
+    return events.filter(event => [...filters].every(key => event[key]));
+}
+
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
-const mapWrapper = document.getElementById('mapWrapper');
 const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
 const currentMilestone = document.getElementById('currentMilestone');
-const langBtns = document.querySelectorAll('.lang-btn');
+const langBtns = document.querySelectorAll('.lang-option-btn');
 const listViewBtn = document.getElementById('listViewBtn');
 const mapViewBtn = document.getElementById('mapViewBtn');
+const eventsViewBtn = document.getElementById('eventsViewBtn');
+const eventsContainer = document.getElementById('eventsContainer');
+const eventFilterPills = document.querySelectorAll('.event-filter-pill');
+const eventFilterKidsBtn = document.getElementById('eventFilterKidsBtn');
+const eventFilterFreeBtn = document.getElementById('eventFilterFreeBtn');
+const eventFilterHolidayBtn = document.getElementById('eventFilterHolidayBtn');
 
 // Detail Modal Elements
 const detailModal = document.getElementById('detailModal');
@@ -67,6 +102,7 @@ const profileProgressText = document.getElementById('profileProgressText');
 const completedList = document.getElementById('completedList');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
 const deleteAccountModal = document.getElementById('deleteAccountModal');
@@ -74,6 +110,12 @@ const closeDeleteAccountModalBtn = document.getElementById('closeDeleteAccountMo
 const confirmDeleteAccountBtn = document.getElementById('confirmDeleteAccountBtn');
 const cancelDeleteAccountBtn = document.getElementById('cancelDeleteAccountBtn');
 const deleteAccountError = document.getElementById('deleteAccountError');
+
+// Sign-out Modal Elements
+const signOutModal = document.getElementById('signOutModal');
+const closeSignOutModalBtn = document.getElementById('closeSignOutModal');
+const confirmSignOutBtn = document.getElementById('confirmSignOutBtn');
+const cancelSignOutBtn = document.getElementById('cancelSignOutBtn');
 
 // Contact Modal Elements
 const contactModal = document.getElementById('contactModal');
@@ -128,19 +170,29 @@ function renderFilterPills() {
         const items = getFilteredItems(cat);
         const remaining = items.filter(i => !completedItems[i.id]).length;
 
-        pill.innerHTML = '';
+        let labelEl = pill.querySelector('.filter-pill-label');
+        let countEl = pill.querySelector('.filter-pill-count');
 
-        const labelEl = document.createElement('span');
-        labelEl.textContent = label;
-        pill.appendChild(labelEl);
+        if (!labelEl || !countEl) {
+            labelEl = document.createElement('span');
+            labelEl.className = 'filter-pill-label';
 
-        const countEl = document.createElement('span');
-        countEl.className = 'filter-pill-count';
-        countEl.textContent = remaining > 0 ? remaining : '✓';
-        // The badge on its own reads as a bare number; the pill's aria-label below
-        // says what it counts, so hide this from the accessibility tree.
-        countEl.setAttribute('aria-hidden', 'true');
-        pill.appendChild(countEl);
+            countEl = document.createElement('span');
+            countEl.className = 'filter-pill-count';
+            // The badge on its own reads as a bare number; the pill's aria-label below
+            // says what it counts, so hide this from the accessibility tree.
+            countEl.setAttribute('aria-hidden', 'true');
+            pill.replaceChildren(labelEl, countEl);
+        }
+
+        if (labelEl.textContent !== label) {
+            labelEl.textContent = label;
+        }
+
+        const countText = remaining > 0 ? remaining : '✓';
+        if (countEl.textContent !== String(countText)) {
+            countEl.textContent = countText;
+        }
 
         const status = remaining > 0
             ? t.remainingCount.replace('{count}', remaining)
@@ -153,11 +205,17 @@ function updateLanguageUI() {
     const t = UI_TRANSLATIONS[currentLang];
 
     langBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === currentLang);
+        const isCurrent = btn.dataset.lang === currentLang;
+        btn.classList.toggle('active', isCurrent);
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
     });
 
     document.getElementById('txtListView').textContent = t.viewList;
     document.getElementById('txtMapView').textContent = t.viewMap;
+    document.getElementById('txtEventsView').textContent = t.viewEvents;
+    eventFilterKidsBtn.textContent = t.eventsFilterKids;
+    eventFilterFreeBtn.textContent = t.eventsFilterFree;
+    eventFilterHolidayBtn.textContent = t.eventsFilterHoliday;
 
     document.querySelector('.memory-section h3').textContent = t.addMemory;
     memoryNote.placeholder = t.memoryPlaceholder;
@@ -184,6 +242,14 @@ function updateLanguageUI() {
     if (cancelDeleteAccountBtn) cancelDeleteAccountBtn.textContent = t.cancel;
     if (closeDeleteAccountModalBtn) closeDeleteAccountModalBtn.setAttribute('aria-label', t.closeDialog);
 
+    const signOutModalTitle = document.getElementById('signOutModalTitle');
+    if (signOutModalTitle) signOutModalTitle.textContent = t.signOutModalTitle;
+    const signOutModalWarning = document.getElementById('signOutModalWarning');
+    if (signOutModalWarning) signOutModalWarning.textContent = t.signOutModalWarning;
+    if (confirmSignOutBtn) confirmSignOutBtn.textContent = t.confirmSignOut;
+    if (cancelSignOutBtn) cancelSignOutBtn.textContent = t.cancel;
+    if (closeSignOutModalBtn) closeSignOutModalBtn.setAttribute('aria-label', t.closeDialog);
+
     // Contact modal translations
     document.getElementById('contactModalTitle').textContent = t.contactTitle;
     document.getElementById('contactModalSubtitle').textContent = t.contactSubtitle;
@@ -196,6 +262,7 @@ function updateLanguageUI() {
     document.getElementById('contactPrivacyNote').innerHTML = t.contactPrivacyNote;
     document.getElementById('contactSuccessTitle').textContent = t.successTitle;
     document.getElementById('contactSuccessText').textContent = t.successText;
+    contactSuccessClose.textContent = t.closeDialog;
 
     const select = document.getElementById('contactSubject');
     select.options[0].text = t.optSuggest;
@@ -213,6 +280,8 @@ function updateLanguageUI() {
     document.getElementById('txtThemeLight').textContent = t.themeLight;
     document.getElementById('txtThemeDark').textContent = t.themeDark;
     document.getElementById('txtThemeSystem').textContent = t.themeSystem;
+    const txtLanguageHeader = document.getElementById('txtLanguageHeader');
+    if (txtLanguageHeader) txtLanguageHeader.textContent = t.languageHeader;
 
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
@@ -245,15 +314,17 @@ function updateLanguageUI() {
 }
 
 function setLanguage(lang) {
-    if (lang === currentLang) return;
+    if (!ALLOWED_LANGS.includes(lang) || lang === currentLang) return;
     currentLang = lang;
     localStorage.setItem('moiCheckLang', currentLang);
     updateLanguageUI();
     renderList();
     updateProgress();
-    if (currentView === 'map' && leafletMap) {
-        renderMapMarkers();
-    }
+    if (currentView === 'events') renderEvents();
+    // The pins carry no text, and popups are built on open, so the map needs
+    // nothing here beyond closing a popup that is already showing the old
+    // language. renderList re-syncs the markers themselves when the map is up.
+    if (leafletMap) leafletMap.closePopup();
     
     if (detailModal.classList.contains('active') && selectedItemId) {
         persistOpenNote();
@@ -263,27 +334,128 @@ function setLanguage(lang) {
 }
 
 function switchView(view) {
+    const previousView = currentView;
     currentView = view;
-    if (view === 'list') {
-        listViewBtn.classList.add('active');
-        mapViewBtn.classList.remove('active');
-        listContainer.style.display = 'grid';
-        mapWrapper.style.display = 'none';
-        if (listNeedsResort) {
-            listNeedsResort = false;
-            renderList();
-        }
-    } else {
-        mapViewBtn.classList.add('active');
-        listViewBtn.classList.remove('active');
-        listContainer.style.display = 'none';
-        mapWrapper.style.display = 'block';
-        initOrUpdateMap();
+
+    // Which containers show is a CSS concern keyed off this one attribute, so
+    // adding a view means adding a selector rather than another display toggle
+    // in here. The buttons still carry .active themselves.
+    document.body.dataset.activeView = view;
+    [listViewBtn, mapViewBtn, eventsViewBtn].forEach(btn => {
+        const isCurrent = btn.dataset.view === view;
+        btn.classList.toggle('active', isCurrent);
+        // .active is a colour change and nothing more, so which view is showing
+        // has to be announced too — same aria-pressed treatment the language
+        // buttons get. The initial state is in the markup, since switchView does
+        // not run until someone picks a view.
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
+    });
+
+    // Which views people actually open is the missing input for deciding whether
+    // the Events tab earns its place. Note this counts *switches*, not views: the
+    // initial list view never reaches here, so view_list means "came back to the
+    // list" rather than "saw the list". view_map and view_events are comparable
+    // to each other, since both take a deliberate tap.
+    //
+    // Only on an actual change: the buttons stay clickable while active, so
+    // tapping the current one re-enters this function, and counting that would
+    // inflate whichever view people happen to tap twice. Everything above and
+    // below still runs, so a same-view tap keeps refreshing the view as before.
+    //
+    // Optional call because an ad blocker can block js/analytics.js outright, and
+    // losing analytics must not take view switching down with it.
+    if (previousView !== view) {
+        window.va?.('event', { name: `view_${view}` });
+    }
+
+    if (view === 'list' && listNeedsResort) {
+        listNeedsResort = false;
+        renderList();
+    }
+
+    if (view === 'map') {
+        // initOrUpdateMap awaits the Leaflet load, so anything that throws past
+        // it — Leaflet itself failing to build the map, say — would come back as
+        // an unhandled rejection rather than the plain console error it was
+        // while this ran synchronously.
+        initOrUpdateMap().catch(err => console.error('Map view failed to open:', err));
+    }
+
+    if (view === 'events') {
+        renderEvents();
     }
 }
 
-function initOrUpdateMap() {
-    if (!window.L) return;
+// Leaflet is only needed once someone opens the map, so its stylesheet and
+// script are fetched on first use rather than on every page load. A visitor who
+// never leaves the list view makes no request to unpkg at all.
+const LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+const LEAFLET_JS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+const LEAFLET_CSS_SRI = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+const LEAFLET_JS_SRI = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+
+let leafletLoad = null;
+
+function loadLeaflet() {
+    if (window.L) return Promise.resolve();
+    if (leafletLoad) return leafletLoad;
+
+    const styles = document.createElement('link');
+    styles.rel = 'stylesheet';
+    styles.href = LEAFLET_CSS_URL;
+    styles.integrity = LEAFLET_CSS_SRI;
+    styles.crossOrigin = '';
+    // Leaflet lays the map out from its stylesheet, so the map is built only
+    // once that has settled — the head tags this replaced gave the same
+    // ordering for free. A stylesheet that never arrives shouldn't cost the
+    // visitor the map itself, though, so failure here settles rather than
+    // throws and the map comes up unstyled instead of not at all.
+    const stylesSettled = new Promise(settle => {
+        styles.onload = settle;
+        styles.onerror = settle;
+    });
+    document.head.appendChild(styles);
+
+    const script = document.createElement('script');
+    script.src = LEAFLET_JS_URL;
+    script.integrity = LEAFLET_JS_SRI;
+    script.crossOrigin = '';
+    const scriptLoaded = new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => {
+            // Take the dead tags back out. Re-opening the map appends a fresh
+            // pair, and against a blocked CDN that would otherwise stack up a
+            // link and a script in the head on every attempt.
+            styles.remove();
+            script.remove();
+            reject(new Error('Leaflet failed to load'));
+        };
+    });
+    document.head.appendChild(script);
+
+    leafletLoad = Promise.all([stylesSettled, scriptLoaded]).then(() => undefined);
+    leafletLoad.catch(() => {
+        // Forget the failed attempt so re-opening the map tries again, the way
+        // a reload used to after a blocked or dropped CDN request.
+        leafletLoad = null;
+    });
+
+    return leafletLoad;
+}
+
+async function initOrUpdateMap() {
+    try {
+        await loadLeaflet();
+    } catch {
+        // Same outcome as the old `if (!window.L) return`: no map, but the rest
+        // of the app carries on working.
+        return;
+    }
+
+    // The script can land after the visitor has gone back to the list; building
+    // the map into a hidden container measures nothing useful, so leave it for
+    // the next time they open the map.
+    if (currentView !== 'map') return;
 
     if (!leafletMap) {
         leafletMap = L.map('mapContainer').setView([53.2194, 6.5665], 13);
@@ -296,25 +468,37 @@ function initOrUpdateMap() {
         markersGroup = L.layerGroup().addTo(leafletMap);
     }
 
-    setTimeout(() => {
-        leafletMap.invalidateSize();
-    }, 100);
+    // The container is only sized once mapWrapper is visible, so re-measure
+    // before any bounds maths runs off a stale (or zero) size.
+    leafletMap.invalidateSize();
 
-    renderMapMarkers();
+    // Opening the map always reframes it: the filter may well have changed while
+    // the list was up, and the previous view could be pointing anywhere.
+    renderMapMarkers({ refit: true });
+
+    // Some browsers report the final container size only after layout settles,
+    // which would leave that first fit framed off the old size.
+    setTimeout(() => {
+        if (!leafletMap) return;
+        leafletMap.invalidateSize();
+        fitMapToVisibleMarkers();
+    }, 100);
 }
 
-function renderMapMarkers() {
-    if (!leafletMap || !markersGroup) return;
-    markersGroup.clearLayers();
+// ⚡ Bolt Performance Optimization:
+// Cache L.divIcon instances to prevent O(N) memory allocations per render cycle.
+// Impact: Reduces garbage collection pressure and speeds up map rendering significantly
+// when toggling completed status or switching filters.
+const cachedMapIcons = {
+    todo: null,
+    done: null
+};
 
-    const t = UI_TRANSLATIONS[currentLang];
-    const filteredList = getFilteredItems(currentFilter);
-
-    filteredList.forEach(item => {
-        const isCompleted = !!completedItems[item.id];
-        
+function getMapIcon(isCompleted) {
+    const cacheKey = isCompleted ? 'done' : 'todo';
+    if (!cachedMapIcons[cacheKey]) {
         const pinColor = isCompleted ? '#047857' : '#B45309';
-        const customIcon = L.divIcon({
+        cachedMapIcons[cacheKey] = L.divIcon({
             className: 'custom-map-pin',
             html: `<div style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
                     ${isCompleted ? '✓' : '•'}
@@ -322,25 +506,124 @@ function renderMapMarkers() {
             iconSize: [28, 28],
             iconAnchor: [14, 14]
         });
+    }
+    return cachedMapIcons[cacheKey];
+}
 
-        const marker = L.marker(item.coords, { icon: customIcon });
+// Markers are built once per item and kept for the life of the map. Leaflet
+// destroys a marker's pin element whenever the marker leaves the map, so
+// clearing the group on every render rebuilt all 33 pins just to recolour the
+// single one that was toggled.
+const mapMarkers = new Map();
 
-        const popupContent = document.createElement('div');
-        popupContent.className = 'map-popup-card';
-        popupContent.innerHTML = `
-            <span class="card-category">${item.category[currentLang]}</span>
-            <h4>${item.title[currentLang]}</h4>
-            <p>${item.tip[currentLang]}</p>
-            <button class="map-popup-btn">${t.viewDetails}</button>
-        `;
+// Popup content is built when the popup opens rather than up front, so the DOM
+// is only paid for on the pins that are actually opened and a card cannot hold
+// text in a language the user has since switched away from. Leaflet calls this
+// each time it fills the popup.
+function buildMapPopup(item) {
+    const t = UI_TRANSLATIONS[currentLang];
 
-        popupContent.querySelector('.map-popup-btn').addEventListener('click', () => {
-            openDetailModal(item);
-        });
+    const popupContent = document.createElement('div');
+    popupContent.className = 'map-popup-card';
+    popupContent.innerHTML = `
+        <span class="card-category">${item.category[currentLang]}</span>
+        <h3>${item.title[currentLang]}</h3>
+        <p>${item.tip[currentLang]}</p>
+        <button class="map-popup-btn">${t.viewDetails}</button>
+    `;
 
-        marker.bindPopup(popupContent);
-        markersGroup.addLayer(marker);
+    popupContent.querySelector('.map-popup-btn').addEventListener('click', () => {
+        openDetailModal(item);
     });
+
+    return popupContent;
+}
+
+function getMapMarker(item) {
+    let marker = mapMarkers.get(item.id);
+    if (!marker) {
+        marker = L.marker(item.coords, { icon: getMapIcon(!!completedItems[item.id]) });
+        marker.bindPopup(() => buildMapPopup(item));
+        mapMarkers.set(item.id, marker);
+    }
+    return marker;
+}
+
+// getMapIcon hands back one of two shared instances, so comparing against the
+// marker's current icon is enough to tell whether the pin needs repainting.
+function setMarkerIcon(marker, isCompleted) {
+    const icon = getMapIcon(isCompleted);
+    if (marker.options.icon !== icon) {
+        marker.setIcon(icon);
+    }
+}
+
+// Keeps every visible pin on screen. Padding leaves room for the pin graphic and
+// the popup nub at the edges of the container, and the zoom cap keeps a filter
+// that matches a single item from slamming the map into street level.
+const MAP_FIT_PADDING = [48, 48];
+const MAP_FIT_MAX_ZOOM = 15;
+
+function fitMapToVisibleMarkers() {
+    if (!leafletMap || !markersGroup) return;
+
+    const bounds = L.latLngBounds([]);
+    markersGroup.eachLayer(marker => bounds.extend(marker.getLatLng()));
+
+    // A filter with nothing left to show has no bounds to fit; leave the view
+    // where it is rather than throwing the user somewhere arbitrary.
+    if (!bounds.isValid()) return;
+
+    leafletMap.fitBounds(bounds, {
+        padding: MAP_FIT_PADDING,
+        maxZoom: MAP_FIT_MAX_ZOOM
+    });
+}
+
+// The set of pins the map was last framed around. Refitting is tied to this
+// changing rather than to every render, so ticking an item off or switching
+// language repaints pins without yanking the map away from wherever the user
+// has panned it.
+let fittedMarkerKey = null;
+
+// Brings the map in line with the current filter and completion state: adds and
+// removes only the markers whose visibility changed, and repaints only the pins
+// whose colour is wrong. Whenever that changes which pins are on the map, the
+// view is refitted so the whole filtered set stays in frame.
+function renderMapMarkers({ refit = false } = {}) {
+    if (!leafletMap || !markersGroup) return;
+
+    const visibleIds = new Set();
+
+    getFilteredItems(currentFilter).forEach(item => {
+        visibleIds.add(item.id);
+        const marker = getMapMarker(item);
+        setMarkerIcon(marker, !!completedItems[item.id]);
+        if (!markersGroup.hasLayer(marker)) {
+            markersGroup.addLayer(marker);
+        }
+    });
+
+    mapMarkers.forEach((marker, id) => {
+        if (!visibleIds.has(id) && markersGroup.hasLayer(marker)) {
+            markersGroup.removeLayer(marker);
+        }
+    });
+
+    const markerKey = [...visibleIds].join('|');
+    if (refit || markerKey !== fittedMarkerKey) {
+        fittedMarkerKey = markerKey;
+        fitMapToVisibleMarkers();
+    }
+}
+
+// Toggling an item repaints exactly one pin, so the rest of the map is left
+// untouched. A no-op until the map has been opened and the marker exists.
+function updateMapMarker(id) {
+    const marker = mapMarkers.get(id);
+    if (marker) {
+        setMarkerIcon(marker, !!completedItems[id]);
+    }
 }
 
 function isCompletedCollapsed(count) {
@@ -348,25 +631,42 @@ function isCompletedCollapsed(count) {
     return completedCollapsedPref === 'true';
 }
 
+// ⚡ Bolt Performance Optimization:
+// Cache DOM nodes for bucket cards based on id and language.
+// Impact: Prevents rebuilding identical DOM nodes on every render/filter/toggle,
+// drastically reducing memory allocation, garbage collection, and render time.
+const cardCache = new Map();
+
 function buildCard(item) {
+    const cacheKey = `${item.id}_${currentLang}`;
     const isCompleted = !!completedItems[item.id];
 
-    const card = document.createElement('div');
-    card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
-    card.dataset.id = item.id;
+    let card = cardCache.get(cacheKey);
 
-    card.innerHTML = `
-        <div class="checkbox-container">
-            <div class="checkbox" data-id="${item.id}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    if (!card) {
+        card = document.createElement('div');
+        card.className = `bucket-card ${isCompleted ? 'completed' : ''}`;
+        card.dataset.id = item.id;
+
+        card.innerHTML = `
+            <div class="checkbox-container">
+                <div class="checkbox" data-id="${item.id}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
             </div>
-        </div>
-        <div class="card-content">
-            <span class="card-category">${item.category[currentLang]}</span>
-            <h3 class="card-title">${item.title[currentLang]}</h3>
-            <p class="card-tip">${item.tip[currentLang]}</p>
-        </div>
-    `;
+            <div class="card-content">
+                <span class="card-category">${item.category[currentLang]}</span>
+                <h2 class="card-title">${item.title[currentLang]}</h2>
+                <p class="card-tip">${item.tip[currentLang]}</p>
+            </div>
+        `;
+        cardCache.set(cacheKey, card);
+    } else {
+        const wasCompleted = card.classList.contains('completed');
+        if (wasCompleted !== isCompleted) {
+            card.classList.toggle('completed', isCompleted);
+        }
+    }
 
     return card;
 }
@@ -397,14 +697,24 @@ function buildCompletedDivider(count, collapsed) {
 }
 
 function renderList() {
-    listContainer.innerHTML = '';
-    
+    // ⚡ Bolt Performance Optimization:
+    // Use listContainer.replaceChildren(fragment) instead of listContainer.innerHTML = ''
+    // Impact: Avoids HTML parser overhead and intermediate empty DOM states.
     const filteredList = getFilteredItems(currentFilter);
 
-    // Completed items sink below a divider, keeping what is left to do at the top.
-    // Both partitions keep the original BUCKET_LIST order.
-    const todo = filteredList.filter(item => !completedItems[item.id]);
-    const done = filteredList.filter(item => !!completedItems[item.id]);
+    // ⚡ Bolt Performance Optimization:
+    // Replace two sequential O(N) filter passes with a single O(N) partitioning loop.
+    // Impact: Halves the iterations over the filtered list array on every UI re-render,
+    // reducing processing time when changing categories or marking items done.
+    const todo = [];
+    const done = [];
+    for (let i = 0; i < filteredList.length; i++) {
+        if (completedItems[filteredList[i].id]) {
+            done.push(filteredList[i]);
+        } else {
+            todo.push(filteredList[i]);
+        }
+    }
 
     // ⚡ Bolt Performance Optimization:
     // Use a DocumentFragment to batch all DOM insertions.
@@ -422,11 +732,403 @@ function renderList() {
         }
     }
 
-    listContainer.appendChild(fragment);
+    listContainer.replaceChildren(fragment);
 
     if (currentView === 'map' && leafletMap) {
         renderMapMarkers();
     }
+}
+
+// Ongoing cards show only when the run ends and never the "now" badge: for an
+// event open for months, "happening now" is true every day and so says nothing.
+function buildEventCard(event, today, ongoing = false) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const now = !ongoing && isHappeningNow(event, today);
+
+    const card = document.createElement('article');
+    card.className = `event-card ${now ? 'happening-now' : ''}`;
+
+    const date = document.createElement('div');
+    date.className = 'event-date';
+    const dateText = document.createElement('span');
+    dateText.textContent = ongoing
+        ? t.eventsOngoingUntil.replace('{date}', formatEventEnd(event, currentLang, today))
+        : formatEventDate(event, currentLang, today);
+    date.appendChild(dateText);
+
+    if (now) {
+        const badge = document.createElement('span');
+        badge.className = 'event-now-badge';
+        badge.textContent = t.eventsHappeningNow;
+        date.appendChild(badge);
+    }
+
+    if (event.kidFriendly) {
+        const badge = document.createElement('span');
+        badge.className = 'event-kid-badge';
+        badge.textContent = t.eventsKidFriendly;
+        date.appendChild(badge);
+    }
+    card.appendChild(date);
+
+    const title = document.createElement('h2');
+    title.className = 'event-title';
+    title.textContent = event.title[currentLang];
+    card.appendChild(title);
+
+    if (event.location) {
+        const location = document.createElement('div');
+        location.className = 'event-location';
+        location.textContent = event.location[currentLang];
+        card.appendChild(location);
+    }
+
+    if (event.tip) {
+        const tip = document.createElement('p');
+        tip.className = 'event-tip';
+        tip.textContent = event.tip[currentLang];
+        card.appendChild(tip);
+    }
+
+    if (event.url) {
+        const link = document.createElement('a');
+        link.className = 'event-link';
+        link.href = event.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = `${t.eventsMoreInfo} →`;
+        card.appendChild(link);
+    }
+
+    // Only while the event is genuinely on and has a point to stand near, so the
+    // button's presence is itself the signal that this is earnable right now
+    // rather than something to come back for.
+    //
+    // The exception is a check-in already in flight for this occurrence. A fix
+    // is allowed 15 seconds and canCheckIn() can go false inside that window —
+    // a day's `hours` cutoff passing on a multi-day event, which leaves the card
+    // itself on screen. Dropping the block from a render the user triggered
+    // (language, filter, view) would leave the completion handler no status line
+    // to write to, so the tap would resolve into silence on a card still in
+    // front of them. pendingCheckInKey already keeps the button rendered busy
+    // across the renders it cannot suppress; this keeps the block it lives in.
+    if (canCheckIn(event, today) || pendingCheckInKey === checkInKeyFor(event)) {
+        card.appendChild(buildCheckInBlock(event));
+    }
+
+    return card;
+}
+
+// Verdict reason → translation key. Null-prototyped so an unmapped reason misses
+// and falls through to the generic message rather than inheriting off
+// Object.prototype and rendering a function as a status line.
+const CHECKIN_MESSAGE_KEYS = Object.assign(Object.create(null), {
+    tooFar: 'eventsCheckInTooFar',
+    imprecise: 'eventsCheckInImprecise',
+    denied: 'eventsCheckInDenied',
+    unavailable: 'eventsCheckInUnavailable',
+    timeout: 'eventsCheckInTimeout',
+    saveFailed: 'eventsCheckInSaveFailed'
+});
+
+function buildCheckInBlock(event) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const block = document.createElement('div');
+    block.className = 'event-checkin';
+    // The button carries this too, but the earned state has no button, and after a
+    // successful check-in the card has to be found again to put focus back on it.
+    block.dataset.checkinKey = checkInKeyFor(event);
+
+    const status = document.createElement('p');
+    status.className = 'event-checkin-status';
+    // Every outcome here is written into this paragraph asynchronously, seconds
+    // after the tap. Without a live region a screen reader announces none of it:
+    // not the refusal, not the reason, not the badge.
+    status.setAttribute('role', 'status');
+
+    // Already earned: no button, because there is nothing left to ask the
+    // device for. Re-reading a location to confirm what is already stored would
+    // be a location read with no purpose, which is the one thing this feature
+    // is built not to do.
+    if (hasCheckedIn(event)) {
+        block.classList.add('done');
+        status.textContent = t.eventsCheckInDone;
+        block.appendChild(status);
+        return block;
+    }
+
+    const button = document.createElement('button');
+    button.className = 'event-checkin-btn';
+    button.type = 'button';
+    // The occurrence key, not the event id: the click is handled by delegation,
+    // so this is what tells the handler which card it came from — and an annual
+    // event's id alone would not say which year's occurrence.
+    button.dataset.checkinKey = checkInKeyFor(event);
+
+    // Rebuilt mid-request by a render the user triggered themselves, this card
+    // comes back in the state its check-in is actually in.
+    const busy = pendingCheckInKey === button.dataset.checkinKey;
+    button.textContent = busy ? t.eventsCheckInBusy : t.eventsCheckIn;
+    button.disabled = busy;
+
+    // Stated before the tap, not after: the browser's permission prompt says
+    // "wants to know your location" and says nothing about what happens to it.
+    status.textContent = t.eventsCheckInHint;
+
+    block.appendChild(button);
+    block.appendChild(status);
+    return block;
+}
+
+// Re-resolves the occurrence a button was rendered for, re-checking the window
+// rather than trusting it: renderEvents only ticks once a minute, so an event
+// whose endTime passed since the last render must not still be earnable. The
+// alternative — holding the event in a closure per card — is the per-item
+// listener that delegation exists to avoid.
+function findCheckInEvent(key) {
+    const today = todayInGroningen();
+    return getUpcomingEvents(EVENTS, today)
+        .find(event => canCheckIn(event, today) && checkInKeyFor(event) === key) || null;
+}
+
+async function handleCheckInClick(button) {
+    const key = button.dataset.checkinKey;
+    const block = button.closest('.event-checkin');
+
+    const event = findCheckInEvent(key);
+    if (!event) {
+        // The window closed between the render and the tap — the card is at most
+        // a minute stale, and the next tick drops it. Its own message, because
+        // "could not work out a location" would be a plain lie here. Nothing has
+        // been awaited yet, so these are still the nodes on screen.
+        block.classList.add('failed');
+        block.querySelector('.event-checkin-status').textContent =
+            UI_TRANSLATIONS[currentLang].eventsCheckInClosed;
+
+        // Read this before disabling, not after. The two other outcomes test for
+        // <body> because by then the tap's blur is long past; here nothing has
+        // been awaited, so the button is still focused from the keypress that
+        // got here and disabling it is what would drop them. The button cannot
+        // take them back either way: the window is shut, so it stays disabled.
+        // So the status line, exactly as on the success path.
+        const refocus = document.activeElement === button;
+        button.disabled = true;
+        if (refocus) focusCheckInStatus(block);
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = UI_TRANSLATIONS[currentLang].eventsCheckInBusy;
+    block.classList.remove('failed');
+    pendingCheckInKey = key;
+
+    let verdict;
+    try {
+        verdict = await runCheckIn(event);
+    } catch (err) {
+        // runCheckIn turns every geolocation failure, and the refused write, into
+        // a verdict of its own, so nothing should reach here. It stays as a
+        // backstop because the alternative is an unhandled rejection leaving the
+        // button disabled on "Checking…" for the rest of the visit, with nothing
+        // on screen saying why. saveFailed rather than a geolocation reason: by
+        // this point the position was fine, so blaming it would be a false
+        // diagnosis of a real failure.
+        console.warn('Check-in failed unexpectedly:', err);
+        verdict = { ok: false, reason: 'saveFailed' };
+    } finally {
+        pendingCheckInKey = null;
+    }
+
+    if (verdict.ok) {
+        // Re-render rather than patch this card in place: the earned state is
+        // then produced by exactly the path a filter change or a language
+        // switch takes, so there is one description of "checked in" to keep
+        // right instead of two.
+        //
+        // But the re-render destroys the button that was just pressed, which
+        // costs two things the failure path already protects. Read whether focus
+        // is ours to move BEFORE rendering, for the same reason as below: the tap
+        // disabled the button, and disabling a focused button drops focus to
+        // <body>, so that is what "still here" looks like. Someone who tabbed
+        // away while waiting has not.
+        const refocus = document.activeElement === document.body;
+
+        // renderEvents() draws a check-in block only while canCheckIn() holds, so
+        // that is the predicate here too — the same one buildEventCard() asks,
+        // deliberately, because anything narrower answers a different question
+        // than the one that matters: will the re-render still draw this?
+        //
+        // A fix is allowed 15 seconds, so a window that shut while the request was
+        // in flight leaves nothing to carry the earned line, in two different
+        // ways. An event that has ended is filtered out of getUpcomingEvents()
+        // and the card goes with it. An event still inside its span whose hours
+        // for today have closed keeps its card and loses just the block. Asking
+        // hasEnded() caught only the first: it tests the span's final date, so on
+        // day one of a multi-day event with per-day `hours` it is still false well
+        // past that day's closing time.
+        //
+        // The check-in is recorded either way — what disappears is every sign of
+        // it, for the one person who cut it finest. So patch the card still on
+        // screen, the way the failure path does, and leave retiring it to the next
+        // tick. By then it has been seen.
+        if (!canCheckIn(event, todayInGroningen())) {
+            markCheckInEarned(key, refocus);
+            return;
+        }
+
+        renderEvents();
+        if (refocus) focusEarnedCard(key);
+        return;
+    }
+
+    // Deliberately not `block` and `button`: see showCheckInFailure.
+    showCheckInFailure(key, verdict.reason);
+}
+
+// Success is the one outcome with nothing left on screen to speak or land on: the
+// button is gone, replaced by "You were there ✓". Moving focus onto that line
+// fixes both halves at once — the keyboard user keeps their place in the page
+// instead of being dumped at the top of the document, and screen readers read a
+// newly focused element, which is what actually gets the result announced.
+//
+// The role="status" on that paragraph does not cover this. A live region
+// announces mutations to a region already in the document; this one arrives from
+// renderEvents() with its text in place, and that is not reliably spoken. The
+// badge toast cannot stand in either — it is a plain div with no live region.
+//
+// tabindex="-1" so it can take focus without joining the tab order. Nothing to
+// focus (the card filtered out of view, say) means nobody to tell, exactly as on
+// the failure path.
+function focusEarnedCard(key) {
+    const block = [...eventsContainer.querySelectorAll('.event-checkin')]
+        .find(node => node.dataset.checkinKey === key);
+    focusCheckInStatus(block);
+}
+
+// The earned state, written into the card on screen rather than produced by a
+// re-render. Only for the occurrence that retired mid-request: every other
+// success goes through renderEvents(), so there is still one description of
+// "checked in" doing the normal work. This one mirrors the `done` branch of
+// buildCheckInBlock — no button, because there is nothing left to ask the
+// device for.
+function markCheckInEarned(key, refocus) {
+    const block = [...eventsContainer.querySelectorAll('.event-checkin')]
+        .find(node => node.dataset.checkinKey === key);
+    if (!block) return;
+
+    const button = block.querySelector('.event-checkin-btn');
+    if (button) button.remove();
+
+    block.classList.remove('failed');
+    block.classList.add('done');
+
+    const status = block.querySelector('.event-checkin-status');
+    if (status) status.textContent = UI_TRANSLATIONS[currentLang].eventsCheckInDone;
+
+    if (refocus) focusCheckInStatus(block);
+}
+
+// Moving focus to the status line is what gets the result announced, since a
+// live region whose text arrives with it already in place is not reliably read
+// but a newly focused element is. tabIndex rather than a tabindex attribute in
+// the markup: it should be reachable this way without joining the tab order.
+function focusCheckInStatus(block) {
+    const status = block && block.querySelector('.event-checkin-status');
+    if (!status) return;
+
+    status.tabIndex = -1;
+    status.focus();
+}
+
+// Nothing captured before the await is safe to write to afterwards. A render the
+// user triggered mid-request — language, filter, view — replaces the card, and
+// those nodes are then detached: the verdict would land somewhere nobody can see
+// while the card actually on screen sits disabled on "Checking…" with no message
+// and no way to retry. pendingCheckInKey is already cleared by then, so nothing
+// would ever free it.
+//
+// So the live button is found again by its key and updated in place. In place
+// rather than via renderEvents() because a re-render moves keyboard focus off the
+// button the user just pressed, and this is the path where they most need to stay
+// on it. UI_TRANSLATIONS is re-read for the same reason the nodes are: the
+// language may have changed while the fix was in flight.
+//
+// Matched by walking the buttons rather than with an attribute selector, so there
+// is no question of escaping a key that contains an "@".
+function showCheckInFailure(key, reason) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const button = [...eventsContainer.querySelectorAll('.event-checkin-btn')]
+        .find(candidate => candidate.dataset.checkinKey === key);
+
+    // The card is off screen entirely — another view, or a filter that excludes
+    // it. There is nobody to tell, and the next render rebuilds it enabled.
+    if (!button) return;
+
+    const block = button.closest('.event-checkin');
+    block.classList.add('failed');
+    block.querySelector('.event-checkin-status').textContent =
+        t[CHECKIN_MESSAGE_KEYS[reason] || 'eventsCheckInUnavailable'];
+
+    // Disabling a focused button blurs it, so someone who pressed this with the
+    // keyboard has been sitting on <body> ever since the tap — and re-enabling
+    // does not bring them back. Restore them, but only from <body>: if they
+    // tabbed elsewhere while waiting, stealing focus back would be worse than
+    // leaving it.
+    const refocus = document.activeElement === document.body;
+    button.disabled = false;
+    button.textContent = t.eventsCheckIn;
+    if (refocus) button.focus();
+}
+
+function renderEvents() {
+    const today = todayInGroningen();
+
+    const upcoming = getUpcomingEvents(EVENTS, today);
+    const t = UI_TRANSLATIONS[currentLang];
+
+    if (upcoming.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'events-empty';
+        empty.textContent = t.eventsEmpty;
+        eventsContainer.replaceChildren(empty);
+        return;
+    }
+
+    // Coverage reads off the full list regardless of active filters: it states
+    // how far the underlying data reaches, not what is currently narrowed to.
+    const freshness = document.createElement('p');
+    freshness.className = 'events-freshness';
+    freshness.textContent = t.eventsCoverage.replace('{through}', formatEventsCoverageEnd(upcoming, currentLang));
+
+    const fragment = document.createDocumentFragment();
+    fragment.appendChild(freshness);
+
+    const visible = getFilteredEvents(upcoming, activeEventFilters);
+    if (visible.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'events-empty';
+        empty.textContent = t.eventsFilterEmpty;
+        fragment.appendChild(empty);
+    } else {
+        // Dated events first, in start order; ongoing ones after, under their own
+        // heading and soonest-closing first, so the last chance to go is on top.
+        const dated = visible.filter(event => !isOngoing(event, today));
+        const ongoing = visible
+            .filter(event => isOngoing(event, today))
+            .sort((a, b) => (a.endDate || a.date).localeCompare(b.endDate || b.date));
+
+        dated.forEach(event => fragment.appendChild(buildEventCard(event, today)));
+
+        if (ongoing.length > 0) {
+            const heading = document.createElement('h2');
+            heading.className = 'events-section-heading';
+            heading.textContent = t.eventsOngoing;
+            fragment.appendChild(heading);
+            ongoing.forEach(event => fragment.appendChild(buildEventCard(event, today, true)));
+        }
+    }
+
+    eventsContainer.replaceChildren(fragment);
 }
 
 function updateProgress() {
@@ -487,9 +1189,7 @@ function toggleComplete(id, event = null) {
         card.classList.toggle('completed', !isCompleted);
     }
     scheduleListResort();
-    if (currentView === 'map' && leafletMap) {
-        renderMapMarkers();
-    }
+    updateMapMarker(id);
 
     updateProgress();
     
@@ -519,9 +1219,12 @@ function checkBadgeUnlocks(itemId, wasCompleted) {
 function renderBadges() {
     const badgesGrid = document.getElementById('badgesGrid');
     if (!badgesGrid) return;
-    badgesGrid.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     const t = UI_TRANSLATIONS[currentLang];
 
+    // ⚡ Bolt Performance Optimization:
+    // Use replaceChildren(fragment) instead of innerHTML = '' + appendChild in a loop
+    // Impact: Avoids multiple reflows/repaints, HTML parser overhead, and intermediate empty DOM states.
     CATEGORY_BADGES.forEach(badge => {
         const categoryItems = itemsByCategory[badge.category] || [];
         const total = categoryItems.length;
@@ -538,8 +1241,73 @@ function renderBadges() {
                 <span class="badge-progress-tag">${isUnlocked ? t.unlockedTag : `${completedCount} / ${total}`}</span>
             </div>
         `;
-        badgesGrid.appendChild(card);
+        fragment.appendChild(card);
     });
+
+    // Event check-in badges share this grid rather than getting a screen of
+    // their own: one place to look for "my badges" beats two, and a second
+    // screen would need its own nav entry to hold a handful of cards.
+    //
+    // Earned ones only, and deliberately no locked counterparts. A locked card
+    // per checkable event would grow the grid every time the monthly events
+    // refresh adds one, advertise festivals rather than report achievements,
+    // and promise something this screen cannot deliver — an event badge is
+    // earned by standing in the event, not from here.
+    // Headed as its own group rather than run on from the category cards. The
+    // two answer different questions — a category badge is progress through the
+    // list ("3 / 5"), an event badge is a place on a date — and unlabelled they
+    // read as one undifferentiated pile.
+    //
+    // The heading renders only when something has been earned, so nobody who has
+    // never checked in sees a new empty section, and the existing grid is
+    // untouched for them.
+    const earned = earnedEventBadges(EVENTS);
+    if (earned.length > 0) {
+        const heading = document.createElement('h4');
+        heading.className = 'badges-group-heading';
+        heading.textContent = t.achievementEventBadges;
+        fragment.appendChild(heading);
+
+        earned.forEach(badge => fragment.appendChild(buildEventBadgeCard(badge, t)));
+    }
+
+    badgesGrid.replaceChildren(fragment);
+}
+
+// createElement/textContent throughout, rather than the innerHTML the category
+// cards above are built with. That is the repo's rule for new code and what the
+// check-in block already follows; the existing call site is left alone because
+// rewriting it is not this change's job.
+function buildEventBadgeCard({ badge, date }, t) {
+    const card = document.createElement('div');
+    card.className = 'badge-card unlocked';
+
+    const icon = document.createElement('div');
+    icon.className = 'badge-icon';
+    icon.textContent = badge.icon;
+
+    const title = document.createElement('div');
+    title.className = 'badge-title';
+    title.textContent = badge.title[currentLang];
+
+    const desc = document.createElement('div');
+    desc.className = 'badge-desc';
+    desc.textContent = badge.desc[currentLang];
+
+    const tag = document.createElement('span');
+    tag.className = 'badge-progress-tag';
+    // A stored date that will not parse falls back to the plain unlocked tag.
+    // The badge was still earned, and "Earned " trailing into nothing would
+    // read as a bug in the thing being celebrated.
+    const earnedOn = formatEarnedDate(date);
+    tag.textContent = earnedOn ? t.eventsCheckInEarnedOn.replace('{date}', earnedOn) : t.unlockedTag;
+
+    const info = document.createElement('div');
+    info.className = 'badge-info';
+    info.append(title, desc, tag);
+
+    card.append(icon, info);
+    return card;
 }
 
 function openDetailModal(item) {
@@ -555,9 +1323,15 @@ function openDetailModal(item) {
     const modalLinkContainer = document.getElementById('modalLinkContainer');
     if (item.url) {
         const linkText = item.urlLabel ? item.urlLabel[currentLang] : (t.courseLink || 'Official Link ↗');
-        modalLinkContainer.innerHTML = `<a href="${item.url}" target="_blank" rel="noopener noreferrer" class="item-link-btn">${linkText} ↗</a>`;
+        const linkEl = document.createElement('a');
+        linkEl.href = item.url;
+        linkEl.target = '_blank';
+        linkEl.rel = 'noopener noreferrer';
+        linkEl.className = 'item-link-btn';
+        linkEl.textContent = `${linkText} ↗`;
+        modalLinkContainer.replaceChildren(linkEl);
     } else {
-        modalLinkContainer.innerHTML = '';
+        modalLinkContainer.replaceChildren();
     }
     
     if (isCompleted) {
@@ -604,31 +1378,77 @@ function memoryTimestamp(value) {
     return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
 }
 
+// ⚡ Bolt Performance Optimization:
+// Cache Intl.DateTimeFormat instances. toLocaleDateString recreates these internally
+// on every call, which is very slow in loops (like rendering the memory list).
+const dateFormatters = {
+    en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
+};
+
+// The same shape, pinned to Groningen. A check-in is keyed by the occurrence
+// resolved with todayInGroningen(), and stored as a UTC instant, so reading it
+// back in the device's own zone can disagree with the key it was filed under:
+// 00:30 on the 6th in Groningen is 22:30 on the 5th in UTC, and a phone set to
+// London or New York would caption the badge with the day before the one its
+// owner actually turned up for. The event happened in Groningen; the date it
+// happened on is Groningen's, wherever the badge is later looked at.
+const earnedDateFormatters = {
+    en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Amsterdam' }),
+    nl: new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Amsterdam' })
+};
+
+function formatEarnedDate(value) {
+    if (!value) return '';
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) return '';
+    // Branched explicitly rather than keyed, for the reason formatMemoryDate
+    // gives: currentLang comes from localStorage.
+    const formatter = currentLang === 'nl' ? earnedDateFormatters.nl : earnedDateFormatters.en;
+    return formatter.format(parsed);
+}
+
 function formatMemoryDate(value) {
     if (!value) return '';
     const parsed = new Date(value);
     if (isNaN(parsed.getTime())) return '';
-    return parsed.toLocaleDateString(currentLang === 'nl' ? 'nl-NL' : 'en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-    });
+    // currentLang comes from localStorage, so a keyed lookup could walk the prototype
+    // chain ('constructor' etc.) and return a non-formatter. Branch explicitly instead.
+    const formatter = currentLang === 'nl' ? dateFormatters.nl : dateFormatters.en;
+    return formatter.format(parsed);
 }
 
 function openProfileModal() {
-    completedList.innerHTML = '';
+    // ⚡ Bolt Performance Optimization:
+    // Use replaceChildren() instead of completedList.innerHTML = ''
+    // Impact: More efficient DOM clearing and appending, bypassing HTML parser.
     const t = UI_TRANSLATIONS[currentLang];
     
     renderBadges();
     
+    // ⚡ Bolt Performance Optimization:
+    // Pre-compute parsed date timestamps during .map() (Schwartzian transform)
+    // instead of calling memoryTimestamp() repeatedly within the .sort() comparator.
+    // Impact: Reduces new Date() allocations and O(N log N) date parsings, speeding up sort.
     const completedArr = Object.entries(completedItems).map(([id, data]) => {
         const item = itemsById[id];
-        return item ? { ...item, ...data } : null;
-    }).filter(Boolean).sort((a, b) => memoryTimestamp(b.date) - memoryTimestamp(a.date));
+        if (!item) return null;
+        const merged = { ...item, ...data };
+        return { merged, _parsedTimestamp: memoryTimestamp(merged.date) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b._parsedTimestamp - a._parsedTimestamp)
+    .map(wrapper => wrapper.merged);
     
     if (completedArr.length === 0) {
-        completedList.innerHTML = `<p style="color: var(--text-light); text-align: center; padding: 2rem;">${t.noMemories}</p>`;
+        const p = document.createElement('p');
+        p.style.color = 'var(--text-light)';
+        p.style.textAlign = 'center';
+        p.style.padding = '2rem';
+        p.textContent = t.noMemories;
+        completedList.replaceChildren(p);
     } else {
+        const fragment = document.createDocumentFragment();
         completedArr.forEach(item => {
             const div = document.createElement('div');
             div.className = 'completed-item';
@@ -651,8 +1471,9 @@ function openProfileModal() {
                 div.appendChild(noteEl);
             }
 
-            completedList.appendChild(div);
+            fragment.appendChild(div);
         });
+        completedList.replaceChildren(fragment);
     }
     
     if (accountDangerZone) {
@@ -668,6 +1489,20 @@ function closeProfileModal() {
     profileModal.setAttribute('inert', '');
     if (hadFocus || document.activeElement === document.body) profileBtn.focus();
 }
+
+// Where the contact Edge Function is allowed to run. Supabase Edge Functions
+// otherwise execute in the region nearest the caller — the project's own
+// eu-west-1 governs the database and nothing else — so a submission sent from
+// outside the EU/EEA would be processed outside it. That is a Chapter V
+// transfer question for a form that does not need to raise one; pinning the
+// region answers it instead of disclosing it. See
+// docs/decisions/edge-function-region.md and privacy.html section 3.
+//
+// The trade-off, which is the reason this was a decision rather than an
+// oversight: a pinned region is not re-routed during a regional outage. On a
+// contact form that is acceptable — privacy.html and the form itself both
+// name hallo@moicheck.nl as the way to reach us without it.
+const CONTACT_FUNCTION_REGION = 'eu-west-1';
 
 function setupEventListeners() {
     // ⚡ Bolt Performance Optimization:
@@ -712,16 +1547,114 @@ function setupEventListeners() {
     });
 
     // Auth Modal events
-    authBtn.addEventListener('click', async () => {
-        if (currentUser && supabaseClient) {
-            await supabaseClient.auth.signOut();
-        } else {
-            authActions.style.display = 'block';
-            magicLinkSuccess.style.display = 'none';
-            document.getElementById('magicFinish').style.display = 'none';
-            authModal.classList.add('active');
-        }
+    authBtn.addEventListener('click', () => {
+        authActions.style.display = 'block';
+        magicLinkSuccess.style.display = 'none';
+        document.getElementById('magicFinish').style.display = 'none';
+        authModal.classList.add('active');
     });
+
+    // Sign-out confirmation modal controls
+    let signOutModalReturnFocus = null;
+    let signOutModalUserId = null;
+    let signOutBusy = false;
+
+    const setSignOutBusy = (busy) => {
+        signOutBusy = busy;
+        if (confirmSignOutBtn) {
+            confirmSignOutBtn.setAttribute('aria-disabled', busy ? 'true' : 'false');
+            confirmSignOutBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+        }
+        if (cancelSignOutBtn) cancelSignOutBtn.disabled = busy;
+        if (closeSignOutModalBtn) closeSignOutModalBtn.disabled = busy;
+    };
+
+    const closeSignOutModal = () => {
+        if (signOutBusy) return;
+        signOutModalUserId = null;
+        if (signOutModal) {
+            signOutModal.classList.remove('active');
+            signOutModal.setAttribute('inert', '');
+        }
+        if (profileModal && profileModal.classList.contains('active')) {
+            profileModal.removeAttribute('inert');
+        }
+        const canTakeFocus = el => !!el && typeof el.focus === 'function' && el.isConnected
+            && !el.disabled && el.getClientRects().length > 0;
+        let target = signOutModalReturnFocus;
+        if (!canTakeFocus(target)) {
+            target = profileModal.classList.contains('active') ? closeProfileModalBtn : profileBtn;
+        }
+        if (target) target.focus();
+        signOutModalReturnFocus = null;
+    };
+
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', () => {
+            if (!supabaseClient || !currentUser) return;
+            signOutModalUserId = currentUser.id;
+            signOutModalReturnFocus = document.activeElement;
+            if (profileModal) {
+                profileModal.setAttribute('inert', '');
+            }
+            if (signOutModal) {
+                signOutModal.removeAttribute('inert');
+                signOutModal.classList.add('active');
+            }
+            if (cancelSignOutBtn) cancelSignOutBtn.focus();
+        });
+    }
+
+    if (signOutModal) {
+        signOutModal.addEventListener('keydown', (e) => {
+            if (!signOutModal.classList.contains('active')) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeSignOutModal();
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            const focusables = Array.from(signOutModal.querySelectorAll('button:not([disabled])'));
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        });
+    }
+
+    if (cancelSignOutBtn) cancelSignOutBtn.addEventListener('click', closeSignOutModal);
+    if (closeSignOutModalBtn) closeSignOutModalBtn.addEventListener('click', closeSignOutModal);
+
+    if (confirmSignOutBtn) {
+        confirmSignOutBtn.addEventListener('click', async () => {
+            if (!supabaseClient || signOutBusy) return;
+            if (!currentUser || currentUser.id !== signOutModalUserId) {
+                signOutModalReturnFocus = profileBtn;
+                closeSignOutModal();
+                closeProfileModal();
+                return;
+            }
+
+            setSignOutBusy(true);
+            try {
+                const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+                if (error) throw error;
+                setSignOutBusy(false);
+                closeSignOutModal();
+                closeProfileModal();
+            } catch (err) {
+                console.error('Sign-out failed:', err);
+                setSignOutBusy(false);
+                alert(UI_TRANSLATIONS[currentLang].signOutError);
+            }
+        });
+    }
 
     closeAuthModalBtn.addEventListener('click', () => {
         authModal.classList.remove('active');
@@ -739,7 +1672,13 @@ function setupEventListeners() {
         const { error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.href
+                // The page URL without its query or fragment. After a
+                // callback the browser keeps an empty "#" (the library
+                // clears the hash by assignment), and passing that back
+                // would make Supabase produce "##access_token=...", which it
+                // cannot parse; a stale magic-link query (?token_hash=...)
+                // should not ride along either.
+                redirectTo: window.location.origin + window.location.pathname
             }
         });
         if (error) alert(error.message);
@@ -789,11 +1728,41 @@ function setupEventListeners() {
     // View Switcher buttons
     listViewBtn.addEventListener('click', () => switchView('list'));
     mapViewBtn.addEventListener('click', () => switchView('map'));
+    eventsViewBtn.addEventListener('click', () => switchView('events'));
+
+    // Delegated from the container, like the bucket list's checkboxes above:
+    // renderEvents runs on a minute tick, so a listener bound inside the card
+    // builder would be rebuilt for every card, every minute, all visit.
+    eventsContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.event-checkin-btn');
+        // One check-in at a time, whichever card it was started from: a second
+        // tap while a fix is in flight would mean two location reads and two
+        // toasts for one intent.
+        if (button && !button.disabled && !pendingCheckInKey) handleCheckInClick(button);
+    });
+
+    // A tab backgrounded before an endTime cutoff (or left open overnight) can
+    // resume with a stale card: mobile browsers throttle or freeze the minute
+    // timer below while hidden, so becoming visible again is its own trigger
+    // rather than something the timer can be trusted to catch promptly.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden || currentView !== 'events' || pendingCheckInKey) return;
+        renderEvents();
+    });
+
+    // startTime/endTime are minute-granularity, so a card can go stale mid-visit
+    // (a "happening now" badge that should appear, or an event whose endTime
+    // just passed) with no other trigger to catch it. A once-a-minute tick is
+    // enough to keep the open tab honest without polling faster than the data
+    // can actually change.
+    setInterval(() => {
+        if (currentView === 'events' && !pendingCheckInKey) renderEvents();
+    }, 60 * 1000);
 
     // Language buttons
     langBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            setLanguage(e.target.dataset.lang);
+            setLanguage(e.currentTarget.dataset.lang);
         });
     });
 
@@ -806,6 +1775,23 @@ function setupEventListeners() {
             pill.classList.add('active');
             currentFilter = pill.dataset.filter;
             renderList();
+        });
+    });
+
+    // Event filters: each pill toggles independently, unlike the single-select
+    // category pills above.
+    eventFilterPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            const key = pill.dataset.eventFilter;
+            const isActive = activeEventFilters.has(key);
+            if (isActive) {
+                activeEventFilters.delete(key);
+            } else {
+                activeEventFilters.add(key);
+            }
+            pill.classList.toggle('active', !isActive);
+            pill.setAttribute('aria-pressed', String(!isActive));
+            renderEvents();
         });
     });
     
@@ -963,25 +1949,41 @@ function setupEventListeners() {
         const subjectVal = document.getElementById('contactSubject').value;
         const messageVal = document.getElementById('contactMessage').value;
 
-        const targetEmail = atob('ZGJsYXl6ZXJAZ21haWwuY29t');
-        
+        // Bots fill this; people never see it. Sent along so the function can
+        // drop the submission silently.
+        const websiteVal = document.getElementById('contactWebsite').value;
+
         try {
-            const response = await fetch(`https://formsubmit.co/ajax/${targetEmail}`, {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                throw new Error('Supabase is not configured, so the contact function is unreachable');
+            }
+
+            // `forceFunctionRegion` rather than the documented default, the
+            // `x-region` request header: a custom header has to appear in the
+            // function's own Access-Control-Allow-Headers or the preflight
+            // fails, and the function deploys from supabase/functions/ while
+            // this file deploys from Vercel. Get that ordering wrong once and
+            // the form is broken for everyone until the function catches up.
+            // A query parameter asks nothing of the other side. Supabase
+            // documents it for exactly this case.
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/contact?forceFunctionRegion=${CONTACT_FUNCTION_REGION}`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY
                 },
                 body: JSON.stringify({
                     name: nameVal,
                     email: emailVal,
-                    _subject: `[MoiCheck Feedback] ${subjectVal}`,
+                    subject: subjectVal,
                     message: messageVal,
-                    _captcha: 'false'
+                    website: websiteVal
                 })
             });
             if (!response.ok) {
-                throw new Error(`FormSubmit request failed with status ${response.status}`);
+                throw new Error(`Contact function failed with status ${response.status}`);
             }
 
             contactForm.style.display = 'none';
@@ -995,7 +1997,7 @@ function setupEventListeners() {
         }
     });
     
-    [detailModal, profileModal, contactModal, authModal, settingsModal, deleteAccountModal].forEach(modal => {
+    [detailModal, profileModal, contactModal, authModal, settingsModal, deleteAccountModal, signOutModal].forEach(modal => {
         if (!modal) return;
         modal.addEventListener('click', (e) => {
             if (e.target !== modal) return;
@@ -1003,6 +2005,8 @@ function setupEventListeners() {
                 closeDetailModal();
             } else if (modal === deleteAccountModal) {
                 closeDeleteAccountModal();
+            } else if (modal === signOutModal) {
+                closeSignOutModal();
             } else if (modal === profileModal) {
                 closeProfileModal();
             } else {

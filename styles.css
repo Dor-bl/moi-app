@@ -23,6 +23,7 @@
     --text-light: #475569; /* Slate-600 with 7.0:1 contrast on white / light backgrounds */
     --primary-color: #047857; /* Emerald-700 with 5.48:1 contrast with white text and on light backgrounds */
     --primary-rgb: 4, 120, 87;
+    --primary-btn-bg: #047857; /* Same as --primary-color here; 5.48:1 with white */
     --accent-color: #B45309; /* Amber-700 with 5.02:1 contrast ratio with white text */
     --accent-rgb: 180, 83, 9;
     --accent-dark-color: #92400E; /* Amber-800 with 5.88:1 contrast on light badge backgrounds */
@@ -43,6 +44,7 @@
     --text-light: #94A3B8;
     --primary-color: #10B981;
     --primary-rgb: 16, 185, 129;
+    --primary-btn-bg: #047857; /* Darker than --primary-color: #10B981 only reaches ~2.5:1 with white, below AA; Emerald-700 keeps white button text at 5.48:1 */
     --accent-color: #F59E0B;
     --accent-rgb: 245, 158, 11;
     --accent-dark-color: #FBBF24;
@@ -63,6 +65,7 @@
         --text-light: #94A3B8;
         --primary-color: #10B981;
         --primary-rgb: 16, 185, 129;
+        --primary-btn-bg: #047857; /* Darker than --primary-color: #10B981 only reaches ~2.5:1 with white, below AA; Emerald-700 keeps white button text at 5.48:1 */
         --accent-color: #F59E0B;
         --accent-rgb: 245, 158, 11;
         --accent-dark-color: #FBBF24;
@@ -139,7 +142,18 @@ body {
     gap: 0.5rem;
 }
 
-.theme-option-btn {
+.lang-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.settings-group + .settings-group {
+    margin-top: 1.5rem;
+}
+
+.theme-option-btn,
+.lang-option-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -156,15 +170,18 @@ body {
     transition: all 0.2s;
 }
 
-.theme-option-btn .theme-icon {
+.theme-option-btn .theme-icon,
+.lang-option-btn .lang-icon {
     font-size: 1.25rem;
 }
 
-.theme-option-btn:hover {
+.theme-option-btn:hover,
+.lang-option-btn:hover {
     border-color: var(--primary-color);
 }
 
-.theme-option-btn.active {
+.theme-option-btn.active,
+.lang-option-btn.active {
     border-color: var(--primary-color);
     background-color: rgba(var(--primary-rgb), 0.12);
     color: var(--primary-color);
@@ -216,10 +233,8 @@ body {
     border-color: var(--primary-color);
 }
 
-.auth-btn.user-logged-in {
-    background-color: rgba(var(--primary-rgb), 0.1);
-    color: var(--primary-color);
-    border-color: rgba(var(--primary-rgb), 0.3);
+.auth-btn[hidden] {
+    display: none;
 }
 
 .google-btn {
@@ -262,32 +277,6 @@ body {
 
 .auth-divider span {
     padding: 0 0.75rem;
-}
-
-.lang-toggle {
-    display: flex;
-    background-color: var(--bg-color);
-    padding: 2px;
-    border-radius: 20px;
-    border: 1px solid var(--border-color);
-}
-
-.lang-btn {
-    border: none;
-    background: none;
-    font-family: inherit;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 0.25rem 0.5rem;
-    border-radius: 16px;
-    cursor: pointer;
-    color: var(--text-light);
-    transition: all 0.2s;
-}
-
-.lang-btn.active {
-    background-color: var(--primary-color);
-    color: white;
 }
 
 .groningen-flag {
@@ -351,15 +340,22 @@ h1 {
     transition: width 0.5s ease-out;
 }
 
-.filters-container {
+/* Filters follow the List/Map/Events tabs now, so the dashed separator that
+   used to sit above the tabs sits above whichever filter row is showing. */
+.filters-container,
+.event-filters-container {
     display: flex;
     gap: 0.5rem;
     overflow-x: auto;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
     padding-bottom: 0.75rem;
+    border-top: 1px dashed var(--border-color);
     scrollbar-width: none;
 }
 
-.filters-container::-webkit-scrollbar {
+.filters-container::-webkit-scrollbar,
+.event-filters-container::-webkit-scrollbar {
     display: none;
 }
 
@@ -367,9 +363,6 @@ h1 {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--border-color);
 }
 
 .view-btn {
@@ -389,9 +382,9 @@ h1 {
 }
 
 .view-btn.active {
-    background-color: var(--primary-color);
+    background-color: var(--primary-btn-bg);
     color: white;
-    border-color: var(--primary-color);
+    border-color: var(--primary-btn-bg);
 }
 
 .map-wrapper {
@@ -411,7 +404,13 @@ h1 {
 }
 
 /* Custom Map Popup Styling */
-.leaflet-popup-content-wrapper {
+/* Leaflet's own stylesheet loads lazily (after this one) the first time the
+   map opens, so its same-specificity `.leaflet-popup-content-wrapper,
+   .leaflet-popup-tip { background: white; color: #333; }` rule would win on
+   source order alone and silently override the theme colors below. Scoping
+   under `.leaflet-container` (which Leaflet always puts on the map root)
+   raises specificity so these win no matter which stylesheet loaded last. */
+.leaflet-container .leaflet-popup-content-wrapper {
     background-color: var(--card-bg);
     color: var(--text-color);
     border-radius: 14px;
@@ -420,7 +419,7 @@ h1 {
     box-shadow: var(--shadow-md);
 }
 
-.leaflet-popup-tip {
+.leaflet-container .leaflet-popup-tip {
     background-color: var(--card-bg);
 }
 
@@ -444,7 +443,7 @@ h1 {
     color: var(--primary-color);
 }
 
-.map-popup-card h4 {
+.map-popup-card h3 {
     font-size: 0.95rem;
     font-weight: 700;
     margin: 0.25rem 0 0.5rem;
@@ -465,12 +464,13 @@ h1 {
     font-weight: 700;
     border: none;
     cursor: pointer;
-    background-color: var(--primary-color);
+    background-color: var(--primary-btn-bg);
     color: white;
     font-family: inherit;
 }
 
-.filter-pill {
+.filter-pill,
+.event-filter-pill {
     white-space: nowrap;
     padding: 0.5rem 1rem;
     border-radius: 2rem;
@@ -484,7 +484,8 @@ h1 {
     font-family: inherit;
 }
 
-.filter-pill.active {
+.filter-pill.active,
+.event-filter-pill.active {
     background-color: var(--text-color);
     color: var(--card-bg);
     border-color: var(--text-color);
@@ -511,6 +512,185 @@ h1 {
     gap: 1rem;
     max-width: 600px;
     margin: 0 auto;
+}
+
+/* One attribute on <body> decides which view is showing, so switchView() sets a
+   single value instead of toggling display on each container in turn. The
+   progress bar and category pills belong to the bucket list, so the events view
+   hides them too. */
+body[data-active-view="list"] .map-wrapper,
+body[data-active-view="list"] .events-container,
+body[data-active-view="list"] .event-filters-container,
+body[data-active-view="map"] .list-container,
+body[data-active-view="map"] .events-container,
+body[data-active-view="map"] .event-filters-container,
+body[data-active-view="events"] .list-container,
+body[data-active-view="events"] .map-wrapper,
+body[data-active-view="events"] .progress-container,
+body[data-active-view="events"] .filters-container {
+    display: none;
+}
+
+.events-container {
+    padding: 1.5rem;
+    display: grid;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.event-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid transparent;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.event-date {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--accent-dark-color);
+}
+
+.event-now-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    color: white;
+    background-color: var(--primary-btn-bg);
+}
+
+/* Outline rather than a solid fill: --accent-dark-color is the text-on-card-bg
+   token already used by .event-date, so this stays legible in both themes
+   without needing its own vetted "safe as a white-text fill" color. */
+.event-kid-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    color: var(--accent-dark-color);
+    border: 1px solid currentColor;
+}
+
+/* An event that has started reads as the important one on the page, so it gets
+   the only coloured edge here; everything else stays quiet. */
+.event-card.happening-now {
+    border-color: var(--primary-color);
+}
+
+.event-title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.event-location {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.event-tip {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    line-height: 1.5;
+    margin: 0.15rem 0 0;
+}
+
+.event-link {
+    justify-self: start;
+    margin-top: 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Separated by a rule rather than colour: the block is an action plus a sentence
+   of explanation, and it has to stay quiet enough that a card nobody can check
+   into yet is not visibly poorer for lacking it. */
+.event-checkin {
+    display: grid;
+    justify-items: start;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.event-checkin-btn {
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    /* Both vetted at 5.48:1 in the :root block, in both themes. */
+    background-color: var(--primary-btn-bg);
+    color: white;
+}
+
+.event-checkin-btn:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
+.event-checkin-status {
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--text-light);
+    margin: 0;
+}
+
+/* --danger-color and --primary-color are the theme's text-on-surface reds and
+   greens, not their button fills, so both stay legible on --card-bg unchanged. */
+.event-checkin.failed .event-checkin-status {
+    color: var(--danger-color);
+}
+
+.event-checkin.done .event-checkin-status {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.events-freshness {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.75rem;
+    margin: -0.5rem 0 0.25rem;
+}
+
+/* Quiet divider above the ongoing events: it separates the list, it is not
+   something to act on, so it takes the muted text colour. */
+.events-section-heading {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin: 0.75rem 0 0;
+}
+
+.events-empty {
+    text-align: center;
+    color: var(--text-light);
+    padding: 2.5rem 1rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
 }
 
 .completed-divider {
@@ -544,7 +724,10 @@ h1 {
 }
 
 .completed-divider-count {
-    background-color: var(--border-color);
+    /* --card-bg, not --border-color: against --text-light this pairing clears
+       WCAG AA (5.7:1 dark / 7.6:1 light) — --border-color only reached 4.04:1
+       in dark mode, just under the 4.5:1 normal-text threshold. */
+    background-color: var(--card-bg);
     color: var(--text-light);
     border-radius: 999px;
     padding: 0.1rem 0.5rem;
@@ -582,7 +765,7 @@ h1 {
     border-color: var(--border-color);
 }
 
-.bucket-card.completed h3 {
+.bucket-card.completed .card-title {
     text-decoration: line-through;
     color: var(--text-light);
 }
@@ -795,7 +978,7 @@ textarea:focus {
 }
 
 .primary-btn {
-    background-color: var(--primary-color);
+    background-color: var(--primary-btn-bg);
     color: white;
 }
 
@@ -844,15 +1027,18 @@ textarea:focus {
     color: white;
 }
 
-.danger-btn[aria-disabled="true"] {
+.danger-btn[aria-disabled="true"],
+#signOutModal .primary-btn[aria-disabled="true"] {
     opacity: 0.6;
     cursor: wait;
     transform: none;
 }
 
-/* Cancel and Close are disabled while a deletion runs; show it. */
+/* Cancel and Close are disabled while a deletion or sign-out runs; show it. */
 .delete-modal-content .secondary-btn:disabled,
-.delete-modal-content .close-btn:disabled {
+.delete-modal-content .close-btn:disabled,
+#signOutModal .secondary-btn:disabled,
+#signOutModal .close-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -884,8 +1070,9 @@ textarea:focus {
 .user-account-badge {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
     margin: 0.5rem 0 1rem 0;
     padding: 0.5rem 0.75rem;
     background: rgba(var(--primary-rgb), 0.08);
@@ -896,12 +1083,49 @@ textarea:focus {
     font-weight: 600;
 }
 
+.user-account-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+#userAccountEmail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .user-status-dot {
+    flex-shrink: 0;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background-color: var(--primary-color);
     box-shadow: 0 0 6px rgba(var(--primary-rgb), 0.6);
+}
+
+.badge-signout-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid rgba(var(--primary-rgb), 0.35);
+    color: var(--primary-color);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s, transform 0.1s;
+}
+
+.badge-signout-btn:hover {
+    background-color: rgba(var(--primary-rgb), 0.15);
+}
+
+.badge-signout-btn:active {
+    transform: scale(0.96);
 }
 
 .completed-list {
@@ -979,6 +1203,17 @@ textarea:focus {
     font-weight: 700;
 }
 
+/* Honeypot: positioned off-screen rather than display:none, which some bots
+   check for before deciding whether to fill a field. Never shown to people,
+   never focusable; a value in it means the submission was automated. */
+.honeypot-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
 .form-group {
     margin-bottom: 1.25rem;
 }
@@ -1049,6 +1284,18 @@ textarea:focus {
     .badges-grid {
         grid-template-columns: 1fr 1fr;
     }
+}
+
+/* Spans every column so the heading sits on its own row at both the one- and
+   two-column breakpoints, rather than taking a card slot. */
+.badges-group-heading {
+    grid-column: 1 / -1;
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-light);
 }
 
 .badge-card {

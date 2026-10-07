@@ -10,9 +10,11 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 
 - **Category Achievement Badges 🏆**: Complete all items in a category (e.g. *Food & Drink*) to unlock special badges like **Groninger Foodie 🍟**, **Culture Explorer 🏛️**, **True Stadjer 🚴‍♂️**, and **Groningen Legend 👑**, complete with real-time celebratory toasts and profile badge showcase.
 - **User Login & Cloud Sync (Google 1-Click & Magic Links)**: Users can sign in to save progress and memory notes, keeping state synchronized across mobile devices and laptops.
-- **Interactive Groningen Map View 🗺️**: Switch seamlessly between List View and Map View. Features interactive map pins for all 31 locations across Groningen with real-time status (Green for completed, Orange for pending).
+- **Interactive Groningen Map View 🗺️**: Switch seamlessly between List View and Map View. Features interactive map pins for all 51 locations across Groningen with real-time status (Green for completed, Orange for pending).
+- **Upcoming Events View 📅**: A third view alongside List and Map showing what's on in Groningen — Koningsdag, Bommen Berend, Sint Maarten, carbidschieten — with a *Happening now* badge for anything currently running. Events drop off the page by themselves the day after they finish, with no deploy needed: the list is filtered at render time against the current date in `Europe/Amsterdam`, and traditions on a fixed calendar date roll forward to their next occurrence automatically. Run `npm run events:check` to see what's still ahead and what needs fresh dates.
+- **Event Check-In Badges 📍**: While an event is actually running, its card offers an *I'm here* button that confirms you made it and awards that event's badge — the **Stadspark Liberator 🕊️** for the Bevrijdingsfestival, say. The location check happens entirely in the browser: your coordinates are compared to the event's and then discarded, so what gets saved is the badge and never a position. A fix too vague to resolve the radius is refused rather than waved through, and each occurrence of a recurring event is its own badge. Only events carrying a `checkIn: { coords, radius }` block offer it — a city-wide entry like Koningsdag has no single point to stand near.
 - **Multi-Language Support (EN 🇬🇧 / NL 🇳🇱)**: Toggle instantly between English and Dutch for all items, tips, categories, and milestone badges.
-- **31 Curated Groningen Bucket List Items**: Handpicked experiences spanning Food & Drink, Culture & Sights, Daily Life, Groningen Classics, and Nature & Wildlife.
+- **51 Curated Groningen Bucket List Items**: Handpicked experiences spanning Food & Drink, Culture & Sights, Daily Life, Groningen Classics, and Nature & Wildlife.
 - **Contact & Item Suggestions Form**: Expats can easily get in touch, suggest new Groningen bucket list items, report bugs, or send feedback with full bilingual support.
 - **Category Filtering**: Easily filter items by category (*Food & Drink*, *Culture & Sights*, *Daily Life*, *Groningen Classics*, *Nature & Wildlife*).
 - **Interactive Details & Memories**: Click any card to open a detailed modal with local tips ("Why locals do it") and add personal memory notes.
@@ -31,7 +33,6 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 [![Resend](https://img.shields.io/badge/Resend-000000?style=for-the-badge&logo=resend&logoColor=white)](https://resend.com/)
-[![FormSubmit](https://img.shields.io/badge/FormSubmit-FF6B6B?style=for-the-badge&logo=mail.ru&logoColor=white)](https://formsubmit.co/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=Leaflet&logoColor=white)](https://leafletjs.com/)
 
 - **HTML5**: Semantic structure and accessible DOM layout.
@@ -39,7 +40,7 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 - **Vanilla JavaScript (ES6+)**: Client-side application state management, dynamic DOM rendering, and local persistence.
 - **Supabase**: Backend-as-a-Service providing passwordless magic-link authentication, Google OAuth, and real-time database synchronization.
 - **Vercel**: Edge network deployment and fast static site hosting.
-- **Resend & FormSubmit**: Email infrastructure supporting contact modal submissions and user communication.
+- **Resend**: Email infrastructure — Supabase's custom SMTP for magic links, and the sender behind contact-form submissions.
 - **Leaflet & OpenStreetMap**: Interactive geospatial map view and customized location markers across Groningen.
 
 ---
@@ -115,7 +116,7 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
    ```
 3. Copy your project **URL** and **anon Key** from `Project Settings -> API`.
 4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`.
-5. Under **Authentication -> URL Configuration**, set **Site URL** to your production origin (`https://moicheck.nl`) and add it to **Redirect URLs** as well. Add any other origin you sign in from too, such as `http://localhost:8000` and your Vercel previews — a glob covers all of them at once, e.g. `https://moi-app-*-blayzer.vercel.app/**`. The app passes the origin (`window.location.origin`) as the magic-link redirect target and the current page URL (`window.location.href`) for Google sign-in, so list each origin with a trailing `/**` (`https://moicheck.nl/**`) so that any page under it is accepted; an origin that is not listed will bounce users back without a session, and magic links requested from it will open on the Site URL instead (see step 7).
+5. Under **Authentication -> URL Configuration**, set **Site URL** to your production origin (`https://moicheck.nl`) and add it to **Redirect URLs** as well. Add any other origin you sign in from too, such as `http://localhost:8000` and your Vercel previews — a glob covers all of them at once, e.g. `https://moi-app-*-blayzer.vercel.app/**`. The app passes the origin (`window.location.origin`) as the magic-link redirect target and the current page URL without its query or fragment (`window.location.origin + window.location.pathname`) for Google sign-in, so list each origin with a trailing `/**` (`https://moicheck.nl/**`) so that any page under it is accepted; an origin that is not listed will bounce users back without a session, and magic links requested from it will open on the Site URL instead (see step 7).
 6. Set up **custom SMTP** before letting anyone else sign in — see the troubleshooting note below.
 7. Under **Authentication -> Emails**, change the link in **both** the *Confirm signup* and *Magic Link* templates from `{{ .ConfirmationURL }}` to:
    ```
@@ -128,6 +129,179 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
    - Set `window.GOOGLE_CLIENT_ID` in `config.js` (or, on Vercel, add a `GOOGLE_CLIENT_ID` environment variable and extend the build command that writes `config.js` so it emits `window.GOOGLE_CLIENT_ID` too). The client ID is public — it is visible in the page regardless — so it is safe in Preview and Production alike.
 
    The consent screen then reads *"to continue to moicheck.nl"* with your app name and logo from the consent-screen settings. Leave the value empty and the app uses the redirect flow as before; nothing breaks either way.
+
+### Updating the vendored Supabase client
+
+The Supabase browser client is **vendored** at `assets/vendor/supabase-js-2.116.0.js` rather
+than loaded from a CDN. That script runs on every page load with full DOM access and can read
+the session token out of `localStorage`, so its bytes are pinned in this repo: a compromised
+CDN, or one bad publish to a floating version tag, cannot silently replace it.
+
+To move to a newer version:
+
+```bash
+# 1. Fetch the exact version from npm (npm verifies the tarball checksum for you)
+npm pack @supabase/supabase-js@<version>
+tar -xzf supabase-supabase-js-<version>.tgz
+
+# 2. The CDN entry point is the UMD build - the same file the CDN used to serve
+cp package/dist/umd/supabase.js assets/vendor/supabase-js-<version>.js
+
+# 3. Point index.html at the new filename and delete the old one
+```
+
+Keep the version in the filename: it makes the pinned version visible in `index.html`, and it
+cache-busts automatically on upgrade. Record the checksum of what you committed so a reviewer
+can confirm it matches the published package:
+
+```bash
+sha256sum assets/vendor/supabase-js-<version>.js
+```
+
+| Version | sha256 |
+| --- | --- |
+| 2.116.0 | `84ee9bf45695c1dd3ba1595b6bcfb0f09672434631351ffc8ebe9140545d5ff6` |
+
+`assets/vendor/supabase-js-LICENSE.txt` is the upstream MIT licence and must stay alongside
+the bundle. `assets/vendor/` is excluded from ESLint (`eslint.config.js`): the bundle has to
+match upstream byte for byte, so it must never be edited to satisfy a lint rule.
+
+Leaflet is still loaded from unpkg, but with an exact version and an SRI hash
+(`index.html:39-40`), which gives the same guarantee. If you ever bump it, regenerate the
+`integrity` value — dropping it would quietly remove the protection.
+
+### Contact form (Supabase Edge Function)
+
+The contact modal posts to an Edge Function rather than a third-party form service —
+see [`docs/decisions/formsubmit-gdpr-basis.md`](docs/decisions/formsubmit-gdpr-basis.md)
+for why. The function validates the submission and hands it to Resend, which delivers it
+to `hallo@moicheck.nl`.
+
+The POST carries `?forceFunctionRegion=eu-west-1`. Edge Functions otherwise run in the
+region nearest the caller — the project's own `eu-west-1` governs the database and nothing
+else — so without it a submission from outside the EU is processed outside the EU.
+`privacy.html` section 3 tells visitors it is processed in Ireland, which makes that query
+parameter a compliance claim rather than a performance tweak; `tests/contact-region.test.js`
+fails if it disappears. The reasoning, and why the query parameter rather than the
+`x-region` header, is in
+[`docs/decisions/edge-function-region.md`](docs/decisions/edge-function-region.md). The
+region a live invocation actually ran in comes back in the `x-sb-edge-region` response
+header, which is the only way to confirm it end to end — `deploy-functions.yml` does exactly
+that after each deploy and fails if the answer is not `eu-west-1`, so the three places that
+have to agree (the pin, the policy, the platform) cannot drift apart quietly.
+
+**The function must be deployed before the client change reaches production**, or the
+form will POST to an endpoint that does not exist yet:
+
+```bash
+supabase link --project-ref <your-project-ref>   # once
+supabase secrets set RESEND_API_KEY=re_xxxxxxxx  # from resend.com/api-keys
+supabase functions deploy contact --no-verify-jwt
+```
+
+Pushing a change to `supabase/functions/contact/` on `main` now redeploys that
+function automatically — only that path, so adding a second function means
+extending the workflow rather than relying on it — see `.github/workflows/deploy-functions.yml` — so the commands
+above are for the first deploy, for recovering when CI cannot, or for deploying
+from a branch before merging. The workflow needs two repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `SUPABASE_ACCESS_TOKEN` | A personal access token from *Account -> Access Tokens* in the Supabase dashboard |
+| `SUPABASE_PROJECT_REF` | The project ref, the subdomain of your `*.supabase.co` URL |
+
+Without them the job fails loudly with a message naming what is missing, rather
+than appearing to succeed.
+
+After deploying, the job asks the live function for the exact preflight a browser
+sends and fails if the answer would not let the POST through — checking the
+production origin, a Vercel preview origin, and one origin that must be refused.
+The preview probe is not decoration: a preview-origin CORS mismatch is what
+started #103, and production can keep working while previews break. If preview
+hostnames ever change shape, update both the allow-list in
+`supabase/functions/contact/index.ts` and the probe in the workflow.
+
+The workflow pins both `supabase/setup-cli` (to a commit SHA — `@v1` is a branch
+upstream, so it moves on its own) and the Supabase CLI version, because that job
+runs third-party code with a production deploy token in scope. Bump them
+deliberately; a stale pin fails at deploy time, which is the right direction to
+fail in.
+
+**`--no-verify-jwt` is required, not optional.** Without it the platform rejects the
+browser's CORS preflight before the function runs: preflights carry no `Authorization`
+header, so JWT verification has nothing to check and answers 401, and the real POST never
+leaves the browser. This was confirmed on the first deploy of this function.
+
+Losing that check costs nothing real. The anon key it would have demanded is published in
+`config.js` and served to every visitor, so it never distinguished our form from anyone
+else. What actually guards this endpoint is the `application/json` requirement (which
+forces the preflight, and with it the origin allow-list, into the path), the honeypot,
+the field validation, and the per-address rate limit.
+
+The `from` address (`noreply@moicheck.nl` in `supabase/functions/contact/index.ts`) has
+to be on a domain verified with Resend — the same requirement as the magic-link sender
+described under *Troubleshooting* below. Delivery failures never reach the visitor; read
+them in *Edge Functions -> contact -> Logs* in the Supabase dashboard.
+
+Verify end to end after deploying:
+
+```bash
+curl -X POST "https://<project-ref>.supabase.co/functions/v1/contact" \
+  -H "Authorization: Bearer <anon-key>" \
+  -H "apikey: <anon-key>" \
+  -H "Content-Type: application/json" \
+  -H "Origin: https://moicheck.nl" \
+  -d '{"name":"Test","email":"you@example.com","subject":"Say Moi","message":"Test"}'
+```
+
+A `{"ok":true}` and a message in the inbox means the function itself works.
+
+That is only half the check, and the weaker half. The browser sends a CORS preflight
+before the real POST, because the client sets `Authorization`, `apikey` and a JSON
+content type — none of which are on the fetch safelist. The curl above sends no
+preflight, so it passes even when the preflight would fail, and the form would then be
+broken for every visitor while this check still looked green. Ask for the preflight
+explicitly:
+
+```bash
+curl -i -X OPTIONS "https://<project-ref>.supabase.co/functions/v1/contact" \
+  -H "Origin: https://moicheck.nl" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization, apikey, content-type"
+```
+
+Expect a 200 carrying `access-control-allow-origin: https://moicheck.nl`. A **401 here
+means the function was deployed without `--no-verify-jwt`** — the platform rejected the
+preflight before the function saw it. Redeploy with the flag and repeat.
+
+Then submit the real form once from the deployed site, which is the only check that
+exercises the whole path at once.
+
+Spam handling is deliberately small: a honeypot field the form fills only for bots, and a
+per-instance rate limit. If that ever stops being enough, add Cloudflare Turnstile rather
+than building a shared-state limiter.
+
+The function also refuses anything that is not `application/json`. That looks like a
+formality and is not: `text/plain` is on the fetch safelist, so without the check a page
+on any origin could post a JSON body under that type, skip the preflight entirely, and
+have its visitors send mail through us — the origin allow-list never gets consulted.
+Requiring a content type outside the safelist is what forces the preflight, and with it
+the allow-list, back into the path.
+
+### Why there is no cookie banner
+
+Everything MoiCheck stores on a visitor's device is exempt from the ePrivacy consent
+requirement, on one of three grounds: it is the service itself (completed items and
+notes), a preference the visitor set (theme, language, completed-list layout), or strictly
+necessary for sign-in, which only happens because they asked to sign in (the Supabase
+session token and the account marker). The event check-in is on the same footing: reading a
+position is in scope for the rule, and it is exempt because it happens only inside a tap on
+a button whose whole meaning is "confirm I am here" — nothing is read in the background and
+no coordinate is kept. The key-by-key reasoning, and what would change it,
+is written up in
+[`docs/decisions/consent-exemption-analysis.md`](docs/decisions/consent-exemption-analysis.md);
+`privacy.html` section 6 states the same thing in plain language for visitors. Add a new
+storage key that fits none of those three grounds and that analysis needs revisiting.
 
 ### Account deletion (GDPR right to erasure)
 
@@ -175,8 +349,19 @@ sent a valid request; a malformed one would come back as a 400 or 422.
 
 Read the real cause in *Logs -> Auth Logs* in the Supabase dashboard, on the failing
 request's `error` field. The Edge Logs entry — the one showing just
-`POST | 500 | /auth/v1/otp` — carries no body and cannot tell you anything. The causes,
-in order of likelihood:
+`POST | 500 | /auth/v1/otp` — carries no body and cannot tell you anything. If the Auth
+Logs view is hard to filter, *Logs -> Logs Explorer* reads the same source; set the window
+to a minute around the failure:
+
+```sql
+select timestamp, event_message
+from auth_logs
+where timestamp > timestamp '2026-01-01 12:00:00'
+  and timestamp < timestamp '2026-01-01 12:01:00'
+order by timestamp desc
+```
+
+The causes, in order of likelihood:
 
 1. **The email provider refused the recipient.** Most transactional senders will only
    deliver to your own account address until you verify a domain you control, and they
@@ -194,10 +379,23 @@ in order of likelihood:
    an address on that verified domain — `noreply@yourdomain.nl`, not `onboarding@resend.dev`.
    A `*.vercel.app` subdomain cannot be used: verification needs DNS records you can only
    add on a domain you own.
-2. **No custom SMTP configured at all.** Supabase's built-in sender only delivers to the
+2. **The SMTP server rejected Supabase's login.** Custom SMTP is configured, but the
+   username or password in it is wrong, so every send fails — the project owner's
+   included. The log reads:
+
+   ```
+   "error": "535 \"Authentication credentials invalid\""
+   ```
+
+   The usual cause is an API key that was deleted, rotated, or pasted wrong. With Resend,
+   create a new key with *Sending access* restricted to your domain, then in
+   *Authentication -> Emails -> SMTP Settings* set the username to `resend` and the
+   password to that key (host `smtp.resend.com`, port `465`). The settings apply on save;
+   no redeploy is needed.
+3. **No custom SMTP configured at all.** Supabase's built-in sender only delivers to the
    project's team members and is rate limited to a handful of messages per hour, so it
    fails the same way for real users. It is for development only.
-3. **A database error while creating the user.** A trigger on `auth.users` (for example a
+4. **A database error while creating the user.** A trigger on `auth.users` (for example a
    `handle_new_user` function that inserts into a profiles table) that throws will fail the
    sign-up. The log says `Database error saving new user`. This repo's schema defines no
    such trigger, so this only applies if one was added by hand in the SQL editor.
@@ -207,6 +405,39 @@ with an `actor_id`, and the address can be left behind as an unconfirmed row in
 *Authentication -> Users*. After fixing delivery, check that list — a leftover unconfirmed
 row is harmless, but it means the person is already "registered" and will get a sign-in
 link rather than a fresh sign-up on their next attempt.
+
+### Daily magic-link check
+
+`.github/workflows/magic-link-check.yml` asks production to send a real magic link once a
+day and fails the run if Supabase cannot. Magic-link email depends on settings that live
+only in the Supabase dashboard (the SMTP credentials, the sending domain), so a break there
+never shows up in this repo's tests. That is how #175 happened: the Resend key had become
+invalid and every send failed with a 535. A failed scheduled run emails whoever last edited
+the workflow's schedule. Run it by hand from the Actions tab after changing SMTP settings.
+
+The link goes to `delivered@resend.dev`, Resend's test address, which accepts mail without
+anyone receiving it. The request sets `create_user: false`, so the check never signs anyone
+up. One-time setup:
+
+1. In *Authentication -> Users*, choose *Add user -> Create new user* with the email
+   `delivered@resend.dev`, any password, and *Auto Confirm User* ticked. Without this user
+   the check fails with a 422.
+2. Add a repository secret `SUPABASE_ANON_KEY` with the anon key from
+   *Project Settings -> API*. The check also reads the existing `SUPABASE_PROJECT_REF`.
+
+A failure names the HTTP status. A 500 means the email could not be sent: read the cause in
+the Auth Logs as described under "Troubleshooting: magic links fail with a 500" above.
+
+### Security headers
+
+`vercel.json` sends a Content-Security-Policy and supporting headers (`X-Content-Type-Options`,
+`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) on every response. The CSP lists each
+origin the app talks to explicitly: the Supabase project, Leaflet 1.9.4 on unpkg, and OpenStreetMap
+tiles. Its main job is to limit where a compromised script could send a stolen session token.
+When you add a new third-party origin, change the Supabase project, or bump the Leaflet version,
+update the CSP in `vercel.json` too, or the browser will block the request. Keep scripts in files
+rather than inline `<script>` blocks; the policy does not allow inline scripts. The headers only
+apply on Vercel, so check a preview deployment's browser console for CSP violations before merging.
 
 ---
 
