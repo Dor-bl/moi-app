@@ -47,7 +47,7 @@ and Article 33(5) requires it whether or not you end up notifying.
 | --- | --- | --- |
 | Supabase → Logs Explorer: **API Gateway** and **PostgREST** | Export every request touching `user_progress`, `rpc/delete_user` and `auth/v1` for the full available window | 1-day retention on Free. The closest thing to an access record there is: request paths, query filters, status codes, caller IP and, where logged, the JWT's `sub`/role. These are **request logs, not a row-level audit**: they don't record which rows came back, so they bound scope but never prove a row *wasn't* read |
 | Supabase → **Auth** logs | Export the full window | Sign-ins, magic-link requests, token refreshes |
-| Supabase → organization **audit log** | Screenshot or export | Retained for **1 hour** on Free. Shows dashboard actions such as key rotation and policy changes |
+| Supabase → organization audit log | **Not available on Free.** Platform audit logs are Team and Enterprise only (Supabase docs, *Platform Audit Logs*), so there is no record of who did what in the dashboard. Record that gap in the incident record rather than looking for an export | — |
 | Supabase → **Postgres** logs | Export | Errors, DDL (for example a dropped policy) |
 | Supabase → **Edge Functions** → `contact` → logs | Export | Contact relay invocations |
 | Supabase → SQL: RLS state **and the affected set** | Run the [snapshot queries](#appendix-b-sql-for-scoping) and save the output as CSV in the incident record | Proves which policies existed *before* you changed them, and freezes the full `user_progress` rows plus the user-id-to-email mapping as they are now. Users keep unticking items, clearing notes and deleting accounts, so a later query loses rows, notes and email addresses. These exports are the most sensitive copy of the data there is: keep them encrypted, outside any account that might be compromised, and delete them when the incident and any AP case are closed |
@@ -78,10 +78,10 @@ users; that's accepted. Write down what you changed and when.
 | Suspected entry point | Containment | What it breaks |
 | --- | --- | --- |
 | **RLS misconfiguration**: `user_progress` readable or writable beyond the owner | `revoke all on public.user_progress from anon, authenticated;` (the restore statement is in Appendix B) | Cloud sync stops for everyone; guest mode keeps working from `localStorage` |
-| **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → API / JWT Keys: roll the secret and revoke the leaked key. If the anon key changes, update `config.js` and redeploy | Every session is invalidated, so everyone is signed out. The site errors until the new anon key is deployed |
-| **Stolen user sessions** (for example via injected script) | Same rotation as above: rotating the signing key is what invalidates issued tokens | As above |
+| **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → JWT Keys / API Keys. Which step depends on the key model (Supabase docs, *JWT Signing Keys*). **Legacy JWT secret:** rolling it invalidates every token signed with it and signs everyone out; if the anon key changes, update `config.js` and redeploy. **New signing keys:** *Rotate keys* alone signs nobody out and leaves the old key trusted; you must then **revoke** the previously used key. Leaked `service_role` / secret API key: revoke it and issue a new one. Then **end sessions** as in the next row, because neither rotation ends a refresh-token session | Depends on the model: everyone signed out and the site broken until a new anon key is deployed (legacy), or no visible effect until sessions are ended (new keys) |
+| **Stolen user sessions** (for example via injected script) | Key rotation does **not** end a stolen session: the refresh token keeps working and gets new access tokens under the new key. End the sessions themselves: in the SQL editor, `delete from auth.sessions where user_id in (...)` for the affected users, or without a `where` clause for everyone. That is what sign-out does (Supabase docs, *User sessions*), and in this project the refresh tokens are deleted with their session (`refresh_tokens_session_id_fkey ... ON DELETE CASCADE`, checked 7 October 2026). Access tokens already issued stay valid until they expire (default 1 hour) unless the key that signed them is revoked as in the row above | Affected users are signed out and must sign in again |
 | **Supabase dashboard account** | Change password, revoke other sessions, re-check MFA, then treat as "leaked privileged key" | As above |
-| **GitHub or Vercel account; malicious deploy** | Roll back to a known-good deployment in Vercel (Instant Rollback), revoke tokens/deploy keys, change password, re-check MFA. Then treat it as a **leaked privileged key** (row above), because both accounts hold credentials that reach Supabase. GitHub Actions holds `SUPABASE_ACCESS_TOKEN` (a Supabase management token, used by `.github/workflows/deploy-functions.yml`), which an attacker with write access can exfiltrate by editing and running a workflow. Vercel no longer holds `SUPABASE_JWT_SECRET` (removed 7 October 2026, audit §2), but check its environment variables anyway: re-linking the Vercel–Supabase integration puts it back, and a malicious build can read whatever is there. So: revoke the Supabase access token in Supabase → Account → Access Tokens, create a new one, update the GitHub Actions secret, and review the repository's Actions run history for runs you didn't start. Roll the JWT secret too | The rollback itself, plus everything the Supabase rotation breaks (row above): every user signed out, site broken until a new anon key is deployed |
+| **GitHub or Vercel account; malicious deploy** | Roll back to a known-good deployment in Vercel (Instant Rollback), revoke tokens/deploy keys, change password, re-check MFA. Then treat it as a **leaked privileged key** (row above), because both accounts hold credentials that reach Supabase. GitHub Actions holds `SUPABASE_ACCESS_TOKEN` (a Supabase management token, used by `.github/workflows/deploy-functions.yml`), which an attacker with write access can exfiltrate by editing and running a workflow. Vercel no longer holds `SUPABASE_JWT_SECRET` (removed 7 October 2026, audit §2), but check its environment variables anyway: re-linking the Vercel–Supabase integration puts it back, and a malicious build can read whatever is there. So: revoke the Supabase access token in Supabase → Account → Access Tokens, create a new one, update the GitHub Actions secret, and review the repository's Actions run history for runs you didn't start. Rotate or revoke the signing key and **end sessions** (the two rows above), because a malicious script could have read users' session tokens | The rollback itself, plus the effects of the two rows above: everyone signed out, and on the legacy key model the site broken until a new anon key is deployed |
 | **Contact relay** (`supabase/functions/contact`) | Supabase → Edge Functions: delete or disable `contact`; rotate `RESEND_API_KEY` with `supabase secrets set` | Contact form fails; users can still email `hallo@moicheck.nl` |
 | **Resend account** | **Secure the account first**: change password, sign out all sessions, re-check MFA, remove unknown team members. Only then rotate the API key and SMTP credentials (rotating first lets an attacker still inside mint new ones), and check sending domains and logs for unknown sends | Magic-link sign-in and the contact form stop until new credentials are in Supabase |
 | **Google mailbox** (`hallo@moicheck.nl`'s destination) | **Secure the account first**: change password, sign out all sessions, re-check MFA. Then review forwarding rules, filters and third-party app access | None |
@@ -117,7 +117,7 @@ Then breathe, and go to section 2.
 | --- | --- | --- | --- | --- |
 | Supabase `auth.users` | Email address; for Google sign-ins, name and avatar URL from the Google profile; `created_at`, `last_sign_in_at`; provider metadata | Every account holder | Auth logs, API Gateway logs | 1 day |
 | Supabase `public.user_progress` | `user_id`, `item_id`, `date` (when the item was ticked off), `note` (free text) | Every account holder who synced anything | API Gateway / PostgREST logs | 1 day |
-| Supabase automated backups | Copies of both tables above | As above | Supabase audit log for restores/downloads | 1 hour (audit log) |
+| Supabase automated backups | Copies of both tables above | As above | None on Free: the platform audit log that would show restores is Team and Enterprise only | — |
 | Contact relay (Edge Function) | Nothing at rest. Caller IP in memory for rate limiting only ([`account-hosting-audit.md`](account-hosting-audit.md) §4) | Contact-form users | Edge Function logs | 1 day |
 | Resend | Recipient address of every magic-link email and contact relay, with a one-time sign-in token; the contact message content | Magic-link users; contact-form users | Resend logs | Resend's own (stated 30 days; unverified, see `privacy.html` §4) |
 | Gmail mailbox behind `hallo@moicheck.nl` | Every contact-form message and direct email: name, address, free text | Anyone who wrote in | Google account activity | Google's |
@@ -182,9 +182,13 @@ A personal data breach is a security incident that leads to accidental or unlawf
   - **untick** (`DELETE`): filtered on `user_id=eq.<id>` and `item_id=eq.<id>`.
 
   A `GET` or `DELETE` with no `user_id` filter, or with one that doesn't match the
-  caller's JWT `sub` (where the logs record it), is out of shape. So is any request from
-  the `anon` role, any other method (`PATCH`, `PUT`), and unusual volume. Out of shape
-  means you treat it as a breach with unknown rows, not as a near miss.
+  caller's JWT `sub`, is out of shape. So is any request from the `anon` role, any other
+  method (`PATCH`, `PUT`), and unusual volume. Out of shape means you treat it as a breach
+  with unknown rows, not as a near miss.
+
+  **If the logs don't record the caller's `sub`,** a filtered request can't be shown to
+  be the caller's own: an attacker can filter on someone else's `user_id`. Treat that as
+  unknown scope, the same as logs that don't cover the whole window.
 
   **What the logs can't show:** request bodies aren't logged, so for a `POST` you can't
   tell whose `user_id` it wrote. If the hole allowed writes, the logs can only bound
@@ -273,9 +277,10 @@ location information.
 
 - **No passwords.** There is nothing to reuse on other sites. Magic-link tokens are
   one-time and short-lived. Signed-in browsers do hold Supabase session tokens (access and
-  refresh), which a malicious deploy or injected script could steal; their reach is the
-  user's own account, and rotating the signing key kills them all (see the token row in
-  the outcomes table).
+  refresh), which a malicious deploy or injected script could steal. Their reach is the
+  user's own account. Key rotation alone does **not** end them: the sessions themselves
+  have to be ended (section 1, step 4, "Stolen user sessions"; and the token row in the
+  outcomes table).
 - **No financial data, government IDs, or special-category fields.**
 - **No raw device location.** The location check for event badges never leaves the
   device. (Progress rows are still location-related history; see below.)
@@ -320,7 +325,7 @@ Starting points under the decision rule above, not conclusions.
 | Progress rows **without** notes, with or without emails | Risk; the location-history reading weighs towards high risk when rows are tied to emails, cover a long period or many places | Notify | Assess on the facts. Lean towards notifying if emails were included and the window is long |
 | Notes (with or without emails) | **Presume high risk unless review establishes otherwise**: free text may contain health information, information about other individuals, intimate information, identifying information or other sensitive material | Notify | Normally notify if high risk can't reasonably be excluded |
 | Contact-form messages (mailbox, Resend) | Depends on content: review the affected messages | Notify | Notify affected senders if the assessment concludes the breach is likely to result in high risk, with particular attention to messages containing sensitive, intimate, identifying or third-party information |
-| Live session tokens or magic-link tokens | **Token exposed, no evidence of use:** assess what the token could have accessed, and invalidate affected tokens and sessions immediately. **Token demonstrably used:** assess on the data actually accessed or actions performed | Notify | Follows the risk of the data or actions the token made accessible, not the mere existence of a compromised token |
+| Live session tokens or magic-link tokens | **Token exposed, no evidence of use:** assess what the token could have accessed, and end the affected sessions immediately (section 1, step 4: delete them from `auth.sessions`; key rotation alone doesn't do it). **Token demonstrably used:** assess on the data actually accessed or actions performed | Notify | Follows the risk of the data or actions the token made accessible, not the mere existence of a compromised token |
 | Data altered or deleted without exposure (for example, a write-open RLS policy abused to vandalise rows) | Risk (integrity/availability) | Notify where required | Assess whether the alteration or deletion is likely to result in high risk, for example loss of personal records, material consequences for users, or inability to recover notes or progress (section 7: no restorable backups on Free). Notify affected users where that threshold is met, or where notification is otherwise appropriate as part of remediation |
 
 ### Exceptions to Article 34 (Art. 34(3))
@@ -446,8 +451,8 @@ Supabase retention by plan, from supabase.com/pricing (checked 4 October 2026):
 
 | Plan | Logs (API, Auth, Postgres, Functions) | Organization audit log | Backups |
 | --- | --- | --- | --- |
-| **Free (current)** | **1 day** | **1 hour** | None you can restore. Supabase quietly keeps up to 7 daily backups, usable only after upgrading; see below |
-| Pro (from $25/month) | 7 days | 7 days | Daily, kept 7 days; point-in-time recovery as a paid add-on |
+| **Free (current)** | **1 day** | **None** (Team and Enterprise only) | None you can restore. Supabase quietly keeps up to 7 daily backups, usable only after upgrading; see below |
+| Pro (from $25/month) | 7 days | None (Team and Enterprise only) | Daily, kept 7 days; point-in-time recovery as a paid add-on |
 | Team | 28 days | 28 days | Daily, kept 14 days |
 | Enterprise | 90 days | Included | Custom |
 
@@ -492,7 +497,8 @@ Free gets none you can use. Two consequences:
 
 1. **Stay on Free and accept it.** Record that a late-discovered breach will be notified
    as maximum scope (all accounts, unknown window, notes assumed read).
-2. **Move to Pro.** Seven days of logs and audit trail, restorable backups. Recurring
+2. **Move to Pro.** Seven days of logs and restorable backups. Still no platform audit
+   log, which needs Team or above. Recurring
    cost, the same objection as #152.
 3. **Reduce the blast radius instead of extending visibility.** Done in part: the
    `SUPABASE_JWT_SECRET` was removed from Vercel on 7 October 2026, which took out the
@@ -599,8 +605,9 @@ select count(*) as progress_rows,
 -- prefer (a), or widen the set from the logs.
 
 -- (a) Everyone: auth.users exposed, signing key leaked, malicious deploy or
---     session theft without logs that narrow it
-select email from auth.users;
+--     session theft without logs that narrow it.
+--     Use EVERY email in export (2). Don't query the live table: an affected user
+--     who deleted their account after the snapshot would be missed.
 
 -- (b) Only accounts whose progress was exposed: distinct user_ids in export (1)
 -- (c) Only accounts whose notes were exposed: user_ids in export (1) with a non-empty note
@@ -612,13 +619,13 @@ select email from auth.users
  where id = any (array['<uuid>', '<uuid>']::uuid[]);
 ```
 
-Restore grants after an RLS containment (step 4), once the policy is confirmed correct.
-These are Supabase's default grants on `public` tables:
-
-```sql
-grant select, insert, update, delete on public.user_progress to authenticated;
-grant select, insert, update, delete on public.user_progress to anon;  -- RLS still applies
-```
+Restore grants after an RLS containment (step 4), once the corrected policy has been
+validated. Restore **exactly** the grants recorded in the RLS state snapshot above (the
+`role_table_grants` output), one `grant <privilege> on public.user_progress to <role>;`
+per row. Don't apply assumed defaults: if the pre-incident grants were narrower, defaults
+would widen access (to `anon` in particular). If the snapshot wasn't taken, restore only
+what the app needs, which is `select, insert, update, delete` to `authenticated`, and add
+nothing for `anon`.
 
 ## Appendix C: user notification email (Art. 34(2))
 
@@ -720,6 +727,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 | Account chain, regions | [`account-hosting-audit.md`](account-hosting-audit.md), 13 September 2026 |
 | `SUPABASE_JWT_SECRET` removed from Vercel, not rotated | Owner, 7 October 2026; recorded in the audit §2 (owner-reported, not independently verified) |
 | Supabase retention and backups per plan | supabase.com/pricing, read 4 October 2026 |
+| Platform (organization) audit logs are Team and Enterprise only | Supabase docs, *Platform Audit Logs*, read 7 October 2026. This overrides the pricing page's audit-log figures for Free and Pro recorded on 4 October |
+| Key rotation vs. ending sessions | Supabase docs, *JWT Signing Keys* and *User sessions*, read 7 October 2026. The refresh-token cascade on `auth.sessions` was checked against this project's schema the same day |
 | Plan is Free; Free projects' backups (up to 7 daily, restorable only after upgrading) | Supabase connector (organisation plan `free`), and Supabase docs *Database Backups* and the troubleshooting note on backups after upgrading, read 7 October 2026 |
 | AP form route, no login, submission, partial and late notifications, contact numbers | AP, [This is how you report a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/this-is-how-you-report-a-data-breach) (last edited 22 July 2026), read 5 October 2026; "no login" also from the form's own configuration (`no-login` plugin) and its browser notice |
 | Form questions | AP, [Questionnaire personal data breach notification form](https://www.autoriteitpersoonsgegevens.nl/en/documents/questionnaire-personal-data-breach-notification-form) (v1.0, September 2022), read 5 October 2026 |
