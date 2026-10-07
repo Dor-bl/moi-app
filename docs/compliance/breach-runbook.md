@@ -363,7 +363,7 @@ Supabase retention by plan, from supabase.com/pricing (checked 4 October 2026):
 
 | Plan | Logs (API, Auth, Postgres, Functions) | Organization audit log | Backups |
 | --- | --- | --- | --- |
-| **Free (current)** | **1 day** | **1 hour** | Listed as "not included" on the pricing page; see note below |
+| **Free (current)** | **1 day** | **1 hour** | None you can restore. Supabase quietly keeps up to 7 daily backups, usable only after upgrading; see below |
 | Pro (from $25/month) | 7 days | 7 days | Daily, kept 7 days; point-in-time recovery as a paid add-on |
 | Team | 28 days | 28 days | Daily, kept 14 days |
 | Enterprise | 90 days | Included | Custom |
@@ -380,16 +380,30 @@ What that means in practice:
   ([#152](https://github.com/Dor-bl/moi-app/issues/152) records the same constraint for
   the mailbox).
 
-**Backups.** `privacy.html` §3 and §5 say Supabase takes automated backups of the
-project. The pricing page lists backups as "not included" on Free. It is possible both are
-true (internal backups the customer can't download versus customer-facing backups), but
-this isn't settled. Check the dashboard (Database → Backups) and correct whichever is
-wrong. The backup and erasure position is owned by
-[#87](https://github.com/Dor-bl/moi-app/issues/87) (the retention policy); a correction to
-the `privacy.html` sentence itself would ride with
-[#86](https://github.com/Dor-bl/moi-app/issues/86). It also
-matters for the availability side of a breach: without a restorable backup, any deletion
-of `user_progress` is permanent.
+**Backups.** Settled on 7 October 2026. The Supabase organisation is confirmed on the
+**Free** plan (via the Supabase connector). Supabase's own documentation says two things
+that together explain the earlier contradiction:
+
+- *Database Backups* guide: daily backups are a feature of Pro, Team and Enterprise only.
+  Free projects are told to take their own exports with `supabase db dump`.
+- Troubleshooting note *"Will backups be accessible from the dashboard immediately after
+  upgrading to a paid plan?"*: Supabase is "currently taking up to 7 daily backups" of
+  free projects, which become available once you upgrade, and "might no longer make
+  daily backups for free projects in the future".
+
+So `privacy.html` is right that backups exist, for now, and the pricing page is right that
+Free gets none you can use. Two consequences:
+
+- **Availability side of a breach:** on Free, a deleted or overwritten `user_progress`
+  can't be restored from the dashboard. The only way back is to upgrade to Pro inside
+  the 7-day window and restore from one of those backups, if they still exist. This
+  belongs in the containment decision: if rows were vandalised, upgrading may be the
+  recovery step, and the clock is 7 days.
+- **Erasure side:** a deleted account can live on in those backups for up to 7 days.
+  That's the backup position [#87](https://github.com/Dor-bl/moi-app/issues/87) has to
+  write down. `privacy.html` already says backups age out on their own schedule, which
+  stays accurate. It doesn't say how long, which is a wording question for
+  [#86](https://github.com/Dor-bl/moi-app/issues/86).
 
 **Options, for the owner to decide:**
 
@@ -600,6 +614,7 @@ language they used in the app if you know it, otherwise both, Dutch first.
 | Data categories, processors, Google profile name | `privacy.html` §1–§4 (last updated 24 September 2026) |
 | Account chain, regions, `SUPABASE_JWT_SECRET` still deployed | [`account-hosting-audit.md`](account-hosting-audit.md), 13 September 2026 |
 | Supabase retention and backups per plan | supabase.com/pricing, read 4 October 2026 |
+| Plan is Free; Free projects' backups (up to 7 daily, restorable only after upgrading) | Supabase connector (organisation plan `free`), and Supabase docs *Database Backups* and the troubleshooting note on backups after upgrading, read 7 October 2026 |
 | AP form route, no login, submission, partial and late notifications, contact numbers | AP, [This is how you report a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/this-is-how-you-report-a-data-breach) (last edited 22 July 2026), read 5 October 2026; "no login" also from the form's own configuration (`no-login` plugin) and its browser notice |
 | Form questions | AP, [Questionnaire personal data breach notification form](https://www.autoriteitpersoonsgegevens.nl/en/documents/questionnaire-personal-data-breach-notification-form) (v1.0, September 2022), read 5 October 2026 |
 | "When in doubt, report"; email and location profiling as risk factors | AP, [Reporting or not reporting a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/reporting-or-not-reporting-a-data-breach) (last edited 9 April 2025) |
@@ -616,7 +631,9 @@ language they used in the app if you know it, otherwise both, Dutch first.
 - [ ] **Decide on log retention** (section 7, options 1–2) and record the decision here.
 - [ ] **Remove `SUPABASE_JWT_SECRET` from Vercel**: already open in the audit; the
       cheapest way to shrink this runbook's worst case.
-- [ ] **Settle the backups question** (section 7) under [#87](https://github.com/Dor-bl/moi-app/issues/87), and correct `privacy.html` or this file.
+- [x] **Settle the backups question**: done 7 October 2026 (section 7). The backup and
+      erasure position itself still needs writing down under
+      [#87](https://github.com/Dor-bl/moi-app/issues/87).
 - [ ] **When #87 lands**, replace section 2's store table with a link to the register.
 - [ ] **Dry run once**: walk the first-60-minutes steps against the real dashboards to
       check every screen named here exists and every export works.
