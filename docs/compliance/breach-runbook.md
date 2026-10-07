@@ -78,10 +78,10 @@ users; that's accepted. Write down what you changed and when.
 | Suspected entry point | Containment | What it breaks |
 | --- | --- | --- |
 | **RLS misconfiguration**: `user_progress` readable or writable beyond the owner | `revoke all on public.user_progress from anon, authenticated;` (the restore statement is in Appendix B) | Cloud sync stops for everyone; guest mode keeps working from `localStorage` |
-| **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see the open item in [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → API / JWT Keys: roll the secret and revoke the leaked key. If the anon key changes, update `config.js` and redeploy | Every session is invalidated, so everyone is signed out. The site errors until the new anon key is deployed |
+| **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → API / JWT Keys: roll the secret and revoke the leaked key. If the anon key changes, update `config.js` and redeploy | Every session is invalidated, so everyone is signed out. The site errors until the new anon key is deployed |
 | **Stolen user sessions** (for example via injected script) | Same rotation as above: rotating the signing key is what invalidates issued tokens | As above |
 | **Supabase dashboard account** | Change password, revoke other sessions, re-check MFA, then treat as "leaked privileged key" | As above |
-| **GitHub or Vercel account; malicious deploy** | Roll back to a known-good deployment in Vercel (Instant Rollback), revoke tokens/deploy keys, change password, re-check MFA. Then treat it as a **leaked privileged key** (row above), because both accounts hold credentials that reach Supabase. GitHub Actions holds `SUPABASE_ACCESS_TOKEN` (a Supabase management token, used by `.github/workflows/deploy-functions.yml`), which an attacker with write access can exfiltrate by editing and running a workflow. Vercel holds `SUPABASE_JWT_SECRET` until it is removed (audit §2), which a malicious build can read. So: revoke the Supabase access token in Supabase → Account → Access Tokens, create a new one, update the GitHub Actions secret, and review the repository's Actions run history for runs you didn't start. Roll the JWT secret too | The rollback itself, plus everything the Supabase rotation breaks (row above): every user signed out, site broken until a new anon key is deployed |
+| **GitHub or Vercel account; malicious deploy** | Roll back to a known-good deployment in Vercel (Instant Rollback), revoke tokens/deploy keys, change password, re-check MFA. Then treat it as a **leaked privileged key** (row above), because both accounts hold credentials that reach Supabase. GitHub Actions holds `SUPABASE_ACCESS_TOKEN` (a Supabase management token, used by `.github/workflows/deploy-functions.yml`), which an attacker with write access can exfiltrate by editing and running a workflow. Vercel no longer holds `SUPABASE_JWT_SECRET` (removed 7 October 2026, audit §2), but check its environment variables anyway: re-linking the Vercel–Supabase integration puts it back, and a malicious build can read whatever is there. So: revoke the Supabase access token in Supabase → Account → Access Tokens, create a new one, update the GitHub Actions secret, and review the repository's Actions run history for runs you didn't start. Roll the JWT secret too | The rollback itself, plus everything the Supabase rotation breaks (row above): every user signed out, site broken until a new anon key is deployed |
 | **Contact relay** (`supabase/functions/contact`) | Supabase → Edge Functions: delete or disable `contact`; rotate `RESEND_API_KEY` with `supabase secrets set` | Contact form fails; users can still email `hallo@moicheck.nl` |
 | **Resend account** | **Secure the account first**: change password, sign out all sessions, re-check MFA, remove unknown team members. Only then rotate the API key and SMTP credentials (rotating first lets an attacker still inside mint new ones), and check sending domains and logs for unknown sends | Magic-link sign-in and the contact form stop until new credentials are in Supabase |
 | **Google mailbox** (`hallo@moicheck.nl`'s destination) | **Secure the account first**: change password, sign out all sessions, re-check MFA. Then review forwarding rules, filters and third-party app access | None |
@@ -136,9 +136,9 @@ section 5. When filling in the AP form's data categories, include it.
 | Entry point | Reaches |
 | --- | --- |
 | RLS policy dropped or mis-edited | `user_progress`: all rows, read and write. Not `auth.users` (anon/authenticated roles can't read it) |
-| `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The JWT secret is **still deployed in Vercel** at the time of writing (open item in the audit). Close it and this row gets much less likely |
+| `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The JWT secret was removed from Vercel on 7 October 2026 (audit §2), which made this row much less likely. It was not rotated, so the value is still valid in Supabase |
 | Supabase dashboard account | Everything in Supabase, including backups and logs |
-| GitHub or Vercel account (malicious deploy) | **Potentially everything in Supabase**, until the credentials these accounts hold are shown to be untouched and have been rotated: `SUPABASE_ACCESS_TOKEN` in GitHub Actions (management access to the project) and `SUPABASE_JWT_SECRET` in Vercel (mints `service_role` tokens). Separately, a malicious deploy reaches anything a signed-in user's browser can see: their session, progress and notes. Vercel's deployment list bounds only that browser-side exposure, to users who loaded the site while the deployment was live |
+| GitHub or Vercel account (malicious deploy) | **Potentially everything in Supabase**, until the credentials these accounts hold are shown to be untouched and have been rotated: `SUPABASE_ACCESS_TOKEN` in GitHub Actions (management access to the project), plus any Supabase key found in Vercel's environment variables. `SUPABASE_JWT_SECRET` was removed on 7 October 2026, but check for it: re-linking the integration restores it. Separately, a malicious deploy reaches anything a signed-in user's browser can see: their session, progress and notes. Vercel's deployment list bounds only that browser-side exposure, to users who loaded the site while the deployment was live |
 | Resend account | Recipient addresses, contact messages, and live magic-link tokens for links not yet used (account takeover while they're valid) |
 | Google mailbox | All contact correspondence, plus password-reset mail for the other accounts, which makes this the top of the chain |
 | Cloudflare | Future mail to `hallo@moicheck.nl` (redirect), not past mail |
@@ -491,9 +491,10 @@ Free gets none you can use. Two consequences:
    as maximum scope (all accounts, unknown window, notes assumed read).
 2. **Move to Pro.** Seven days of logs and audit trail, restorable backups. Recurring
    cost, the same objection as #152.
-3. **Reduce the blast radius instead of extending visibility.** Closing the
-   `SUPABASE_JWT_SECRET` item in the audit removes the most damaging entry point outright.
-   That costs nothing, and it is the best risk reduction available.
+3. **Reduce the blast radius instead of extending visibility.** Done in part: the
+   `SUPABASE_JWT_SECRET` was removed from Vercel on 7 October 2026, which took out the
+   most damaging entry point at no cost. What remains is checking whether legacy HS256
+   verification is still on (audit follow-up).
 4. **Look at the logs routinely.** Review the Supabase API logs for `user_progress`
    requests outside the app's shape as defined in section 3 (per method: a `GET` or
    `DELETE` without the caller's own `user_id` filter, any `anon` request, `PATCH`/`PUT`,
@@ -704,7 +705,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 | --- | --- |
 | Tables, columns, RLS policy, `delete_user()` | `README.md` setup SQL and `js/auth.js` at commit `ffd7995`. The live database may differ; the Appendix B snapshot is the check |
 | Data categories, processors, Google profile name | `privacy.html` §1–§4 (last updated 24 September 2026) |
-| Account chain, regions, `SUPABASE_JWT_SECRET` still deployed | [`account-hosting-audit.md`](account-hosting-audit.md), 13 September 2026 |
+| Account chain, regions | [`account-hosting-audit.md`](account-hosting-audit.md), 13 September 2026 |
+| `SUPABASE_JWT_SECRET` removed from Vercel, not rotated | Owner, 7 October 2026; recorded in the audit §2 (owner-reported, not independently verified) |
 | Supabase retention and backups per plan | supabase.com/pricing, read 4 October 2026 |
 | Plan is Free; Free projects' backups (up to 7 daily, restorable only after upgrading) | Supabase connector (organisation plan `free`), and Supabase docs *Database Backups* and the troubleshooting note on backups after upgrading, read 7 October 2026 |
 | AP form route, no login, submission, partial and late notifications, contact numbers | AP, [This is how you report a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/this-is-how-you-report-a-data-breach) (last edited 22 July 2026), read 5 October 2026; "no login" also from the form's own configuration (`no-login` plugin) and its browser notice |
@@ -722,8 +724,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 - [ ] **Download the AP questionnaire** and fill in the parts that don't depend on an
       incident (organisation, contact person, sector), so they're ready.
 - [ ] **Decide on log retention** (section 7, options 1–2) and record the decision here.
-- [ ] **Remove `SUPABASE_JWT_SECRET` from Vercel**: already open in the audit; the
-      cheapest way to shrink this runbook's worst case.
+- [x] **Remove `SUPABASE_JWT_SECRET` from Vercel**: done by the owner on 7 October 2026;
+      not rotated, by decision (audit §2).
 - [x] **Settle the backups question**: done 7 October 2026 (section 7). The backup and
       erasure position itself still needs writing down under
       [#87](https://github.com/Dor-bl/moi-app/issues/87).

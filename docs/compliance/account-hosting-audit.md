@@ -1,6 +1,6 @@
 # Account and hosting audit: accounts, credentials and regions
 
-**Status:** current — records the results of the [#92](https://github.com/Dor-bl/moi-app/issues/92) audit, 13 September 2026
+**Status:** current — records the results of the [#92](https://github.com/Dor-bl/moi-app/issues/92) audit, 13 September 2026; updated 7 October 2026 (`SUPABASE_JWT_SECRET` removed from Vercel)
 **Date:** 13 September 2026
 **Issue:** [#92](https://github.com/Dor-bl/moi-app/issues/92) (related: [#32](https://github.com/Dor-bl/moi-app/issues/32) international transfers, [#103](https://github.com/Dor-bl/moi-app/pull/103) contact backend, [#121](https://github.com/Dor-bl/moi-app/pull/121) Vercel region)
 
@@ -17,9 +17,10 @@ own terms — it asks for the *Vercel* function region, and `fra1` is now a reco
 actually processed by a Supabase Edge Function. This record documented that function's
 region rather than deciding it; pinning it was left to
 [#32](https://github.com/Dor-bl/moi-app/issues/32), exactly where #92 put it, and #32 has
-since pinned it to `eu-west-1` (section 3 below). The key audit
-is **not** closed: a credential capable of bypassing row-level security — the project's JWT
-signing secret — is still configured in Vercel.
+since pinned it to `eu-west-1` (section 3 below). The last RLS-capable credential the
+audit found in Vercel, the project's JWT signing secret, was removed on 7 October 2026
+(section 2). The key audit is still not fully closed: Preview and Development were never
+confirmed for the nine credentials removed from Production (see the follow-ups).
 
 Section 2 has the detail on the key, section 3 on the regions, and the follow-ups carry both
 actions. Read this file as "here is where things stand", not "everything is settled".
@@ -106,18 +107,26 @@ is `.env.example`, and #92's own scan of git history found placeholders rather t
 credentials. An untracked `.env` sitting on a developer machine is outside what this record
 can establish either way — it is in the follow-ups rather than quietly counted as clean.
 
-### Still present and RLS-capable — open
+### RLS-capable, found later — removed 7 October 2026
 
 | Variable | Environment | Why it matters |
 | --- | --- | --- |
 | `SUPABASE_JWT_SECRET` | Production | The project's HS256 signing secret. Whoever holds it can mint a JWT asserting any `sub` and any role — `service_role` included — and PostgREST will honour it. That is an RLS bypass by a different route than the two keys above. |
 
 This was first written down here as harmless, which was wrong: a signing secret is not a
-public identifier. #92's acceptance criterion — "no key capable of bypassing RLS is
-deployed anywhere" — is therefore **not met yet**, and the remedy is the same as for the
-two removed keys: delete it from every Vercel environment that has it. The three checks
-under "Why removing them was safe" below apply to it unchanged; nothing in this repository
-reads it.
+public identifier. The remedy was the same as for the two removed keys, and it is done:
+**the owner deleted it from Vercel on 7 October 2026.** That is owner-reported; it was
+not independently verified here, because the Vercel connector had no access to the team.
+Before deletion it was re-checked that nothing could depend on it: `JWT_SECRET` appears
+nowhere in the code on `main` outside the docs, there is no `api/` directory, middleware
+or build script, and the three checks under "Why removing them was safe" below still
+apply unchanged.
+
+**Not rotated, deliberately.** Deleting the variable stops Vercel holding the secret; it
+does not invalidate the value, which stays valid in Supabase. Rotating it would sign every
+user out and may change the anon key the site ships. With no sign of exposure, the owner
+chose not to rotate. If exposure is ever suspected, the breach runbook
+([`breach-runbook.md`](breach-runbook.md), section 1 step 4) covers rotation.
 
 One caveat the dashboard can settle and this file cannot: if the project has moved to
 asymmetric JWT signing keys and legacy HS256 verification is switched off, a forged token
@@ -289,7 +298,8 @@ will return hits that do not contradict that:
 | MFA status of all six accounts | Seen in each provider's dashboard during this audit |
 | Supabase org-wide enforcement needs Pro | Supabase dashboard and plan documentation |
 | Environment variables present, and their removal | Seen in the Vercel dashboard, before and after |
-| `SUPABASE_JWT_SECRET` can bypass RLS | Reasoned from how Supabase signs and verifies project JWTs, not from a dashboard reading. Its continued presence is from the dashboard; whether legacy HS256 verification is still enabled is **not** settled here |
+| `SUPABASE_JWT_SECRET` can bypass RLS | Reasoned from how Supabase signs and verifies project JWTs, not from a dashboard reading. Its presence on 13 September was from the dashboard; whether legacy HS256 verification is still enabled is **not** settled here |
+| `SUPABASE_JWT_SECRET` removed from Vercel, 7 October 2026 | Owner-reported. Not verified independently: the Vercel connector was refused access to the team. "Nothing depends on it" re-checked against `main` the same day |
 | Vercel env changes apply only to new deployments | Vercel documentation |
 | Supabase project region `eu-west-1` | Supabase dashboard |
 | Edge Functions run nearest the user; `x-region` and `forceFunctionRegion` pinning | Supabase documentation (regional invocation) |
@@ -303,11 +313,11 @@ rather than trusting this file — account state drifts, and this file does not.
 
 ## Follow-up
 
-- [ ] **Remove `SUPABASE_JWT_SECRET` from Vercel** — owner action, in every environment
-      that carries it. Until then #92's "no key capable of bypassing RLS is deployed
-      anywhere" is not satisfied, whatever the rest of this record says. While checking,
-      confirm in the dashboard whether legacy HS256 JWT verification is still enabled for
-      the project, and note the answer here.
+- [x] **Remove `SUPABASE_JWT_SECRET` from Vercel** — done by the owner on 7 October 2026
+      (section 2). Not rotated, by decision; see section 2.
+- [ ] **Check whether legacy HS256 JWT verification is still enabled** for the project
+      (Supabase dashboard → JWT Keys), and note the answer here. Split out of the item
+      above. It decides whether the secret, which is still valid, matters at all.
 - [ ] **Confirm Preview and Development** for the nine credentials removed from
       Production. The audit established Production only; #92 asks for every environment.
 - [ ] **Confirm no local `.env` holds a privileged key.** The repository side is clean
