@@ -222,13 +222,21 @@ analysis to finish.
 ## 5. Article 34: tell the users? (pre-drafted risk assessment)
 
 Individuals must be notified "without undue delay" when the breach is likely to result in
-a **high** risk to their rights and freedoms (Art. 34(1)). The test is likelihood ×
-severity of harm to the *people*, not harm to MoiCheck.
+a **high** risk to their rights and freedoms (Art. 34(1)). The test is whether the breach
+is likely to result in a **high risk to the rights and freedoms of the affected
+individuals**. Assess both the likelihood and the severity of potential harm to those
+individuals, not the impact of the breach on MoiCheck itself.
 
 This assessment was written in advance for this dataset. On the day, start from it and
 adjust for the facts; don't start from a blank page.
 
-### What lowers the risk (true of this system in general)
+### Factors that generally reduce risk
+
+These characteristics generally reduce the likelihood or severity of harm, but they must
+still be weighed against the actual circumstances and scope of the breach. None of them
+on its own establishes that a breach is low risk. An email address, for example, may be
+low risk by itself but becomes much more significant when combined with behavioural or
+location information.
 
 - **No credentials.** There are no passwords to reuse elsewhere. Magic-link tokens are
   one-time and short-lived; sessions die when the signing key is rotated.
