@@ -50,7 +50,7 @@ and Article 33(5) requires it whether or not you end up notifying.
 | Supabase → organization **audit log** | Screenshot or export | Retained for **1 hour** on Free. Shows dashboard actions such as key rotation and policy changes |
 | Supabase → **Postgres** logs | Export | Errors, DDL (for example a dropped policy) |
 | Supabase → **Edge Functions** → `contact` → logs | Export | Contact relay invocations |
-| Supabase → SQL: RLS state | Run the [snapshot query](#appendix-b-sql-for-scoping) and save the output | Proves which policies existed *before* you changed them |
+| Supabase → SQL: RLS state **and the affected set** | Run the [snapshot queries](#appendix-b-sql-for-scoping) and save the output as CSV in the incident record | Proves which policies existed *before* you changed them, and freezes who had progress and notes at this moment. Users keep unticking items and clearing notes, which deletes the rows, so a later query under-counts |
 | Vercel → Deployments | Screenshot the list with commit SHAs and timestamps | Shows whether unexpected code was ever served |
 | GitHub → repository and account security log | Screenshot | Pushes, new deploy keys, new OAuth apps |
 | Resend → Logs / Emails | Screenshot the window | Who was sent magic links, and when |
@@ -81,7 +81,7 @@ users; that's accepted. Write down what you changed and when.
 | **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see the open item in [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → API / JWT Keys: roll the secret and revoke the leaked key. If the anon key changes, update `config.js` and redeploy | Every session is invalidated, so everyone is signed out. The site errors until the new anon key is deployed |
 | **Stolen user sessions** (for example via injected script) | Same rotation as above: rotating the signing key is what invalidates issued tokens | As above |
 | **Supabase dashboard account** | Change password, revoke other sessions, re-check MFA, then treat as "leaked privileged key" | As above |
-| **GitHub or Vercel account; malicious deploy** | Roll back to a known-good deployment in Vercel (Instant Rollback), revoke tokens/deploy keys, change password, re-check MFA. Then rotate Supabase keys, because a malicious script could have read sessions | The rollback itself, plus everything the Supabase rotation breaks (row above): every user signed out, site broken until a new anon key is deployed |
+| **GitHub or Vercel account; malicious deploy** | Roll back to a known-good deployment in Vercel (Instant Rollback), revoke tokens/deploy keys, change password, re-check MFA. Then treat it as a **leaked privileged key** (row above), because both accounts hold credentials that reach Supabase. GitHub Actions holds `SUPABASE_ACCESS_TOKEN` (a Supabase management token, used by `.github/workflows/deploy-functions.yml`), which an attacker with write access can exfiltrate by editing and running a workflow. Vercel holds `SUPABASE_JWT_SECRET` until it is removed (audit §2), which a malicious build can read. So: revoke the Supabase access token in Supabase → Account → Access Tokens, create a new one, update the GitHub Actions secret, and review the repository's Actions run history for runs you didn't start. Roll the JWT secret too | The rollback itself, plus everything the Supabase rotation breaks (row above): every user signed out, site broken until a new anon key is deployed |
 | **Contact relay** (`supabase/functions/contact`) | Supabase → Edge Functions: delete or disable `contact`; rotate `RESEND_API_KEY` with `supabase secrets set` | Contact form fails; users can still email `hallo@moicheck.nl` |
 | **Resend account** | **Secure the account first**: change password, sign out all sessions, re-check MFA, remove unknown team members. Only then rotate the API key and SMTP credentials (rotating first lets an attacker still inside mint new ones), and check sending domains and logs for unknown sends | Magic-link sign-in and the contact form stop until new credentials are in Supabase |
 | **Google mailbox** (`hallo@moicheck.nl`'s destination) | **Secure the account first**: change password, sign out all sessions, re-check MFA. Then review forwarding rules, filters and third-party app access | None |
@@ -125,8 +125,11 @@ Then breathe, and go to section 2.
 | Vercel Web Analytics | Aggregates only; no per-visitor data reaches us | n/a | n/a | n/a |
 
 Not in the system at all: passwords (sign-in is magic link or Google only), payment data,
-government IDs, any field designed for special-category data, and location (the "I'm here"
-check runs on the device and stores nothing; see `privacy.html` §1).
+government IDs, any field designed for special-category data, and raw device coordinates
+(the "I'm here" check runs on the device and stores nothing; see `privacy.html` §1).
+That is **not** the same as "no location data". `user_progress` rows pair a place (each
+`item_id` maps to a known location) with a date, which is location-related history; see
+section 5. When filling in the AP form's data categories, include it.
 
 ### Entry points, and what each one could reach
 
@@ -135,7 +138,7 @@ check runs on the device and stores nothing; see `privacy.html` §1).
 | RLS policy dropped or mis-edited | `user_progress`: all rows, read and write. Not `auth.users` (anon/authenticated roles can't read it) |
 | `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The JWT secret is **still deployed in Vercel** at the time of writing (open item in the audit). Close it and this row gets much less likely |
 | Supabase dashboard account | Everything in Supabase, including backups and logs |
-| GitHub or Vercel account (malicious deploy) | Anything a signed-in user's browser can see: their session, progress and notes. Only users who loaded the site during the malicious deployment's lifetime; Vercel's deployment list gives that window exactly |
+| GitHub or Vercel account (malicious deploy) | **Potentially everything in Supabase**, until the credentials these accounts hold are shown to be untouched and have been rotated: `SUPABASE_ACCESS_TOKEN` in GitHub Actions (management access to the project) and `SUPABASE_JWT_SECRET` in Vercel (mints `service_role` tokens). Separately, a malicious deploy reaches anything a signed-in user's browser can see: their session, progress and notes. Vercel's deployment list bounds only that browser-side exposure, to users who loaded the site while the deployment was live |
 | Resend account | Recipient addresses, contact messages, and live magic-link tokens for links not yet used (account takeover while they're valid) |
 | Google mailbox | All contact correspondence, plus password-reset mail for the other accounts, which makes this the top of the chain |
 | Cloudflare | Future mail to `hallo@moicheck.nl` (redirect), not past mail |
@@ -171,10 +174,22 @@ A personal data breach is a security incident that leads to accidental or unlawf
   "nobody used it" has to rest on the absence of **requests that could have exploited
   it**, never on a judgement about what a request returned. The bar: logs covering the
   **whole** exposure window show no request to the affected path outside the app's own
-  shape. For `user_progress` that means every request is from the `authenticated` role
-  and filtered on `user_id=eq.<the caller's own sub>`. Any request that doesn't fit
-  (anon role, missing or foreign `user_id` filter, unusual volume) means you treat it as
-  a breach with unknown rows, not as a near miss. If the logs **don't reach back** to the
+  shape. For `user_progress` the app sends exactly three shapes (`js/auth.js`), all from
+  the `authenticated` role:
+  - **read** (`GET`): filtered on `user_id=eq.<id>`;
+  - **tick or note** (`POST`, an upsert): no query filter at all; `user_id` travels in
+    the request body;
+  - **untick** (`DELETE`): filtered on `user_id=eq.<id>` and `item_id=eq.<id>`.
+
+  A `GET` or `DELETE` with no `user_id` filter, or with one that doesn't match the
+  caller's JWT `sub` (where the logs record it), is out of shape. So is any request from
+  the `anon` role, any other method (`PATCH`, `PUT`), and unusual volume. Out of shape
+  means you treat it as a breach with unknown rows, not as a near miss.
+
+  **What the logs can't show:** request bodies aren't logged, so for a `POST` you can't
+  tell whose `user_id` it wrote. If the hole allowed writes, the logs can only bound
+  *how many* writes happened and from which callers, not prove they stayed in their own
+  rows. In that case treat integrity as unknown for the window. If the logs **don't reach back** to the
   start of the exposure, you can't conclude "not used" either: same treatment. Only when
   the bar is met, record it as a security incident in Appendix A and fix it.
 - *Availability counts.* Losing data with no backup to restore it is a breach even if
@@ -423,8 +438,9 @@ Free gets none you can use. Two consequences:
    `SUPABASE_JWT_SECRET` item in the audit removes the most damaging entry point outright.
    That costs nothing, and it is the best risk reduction available.
 4. **Look at the logs routinely.** Review the Supabase API logs for `user_progress`
-   requests outside the app's shape (anon role, missing or foreign `user_id` filter,
-   unusual volume). These are suspicious *requests*, not proven reads: the logs don't
+   requests outside the app's shape as defined in section 3 (per method: a `GET` or
+   `DELETE` without the caller's own `user_id` filter, any `anon` request, `PATCH`/`PUT`,
+   unusual volume; a `POST` upsert has no filter by design). These are suspicious *requests*, not proven reads: the logs don't
    show returned rows. The cadence has to match retention: on Free (1 day) only a
    **daily** look gives continuous coverage; a weekly one samples a single day and
    leaves the other six unseen. On Pro (7 days) weekly is enough. Either way it's only as
@@ -484,6 +500,15 @@ select grantee, privilege_type
   from information_schema.role_table_grants
  where table_schema = 'public' and table_name = 'user_progress';
 
+-- Affected-set snapshot: run during step 2 and save as CSV with the incident record.
+-- Notices are generated from THIS file, not from the live table, because users
+-- delete rows (untick) and clear notes after the fact.
+select user_id,
+       count(*)                                          as progress_rows,
+       count(*) filter (where coalesce(note, '') <> '')  as rows_with_notes
+  from public.user_progress
+ group by user_id;
+
 -- How many people, and how many with each category of data
 select count(*) as accounts from auth.users;
 select count(distinct user_id) as users_with_progress from public.user_progress;
@@ -496,21 +521,23 @@ select count(*) as progress_rows,
 -- Recipient list for an Art. 34 notice (export as CSV; handle as confidential).
 -- Pick the variant matching the scope you established in section 2. Don't
 -- reuse one across incidents: each answers a different question.
+--
+-- Build (b) and (c) from the affected-set snapshot saved in step 2, through
+-- variant (d), not from the live table. The live table has lost every row
+-- deleted since then. The snapshot has a blind spot too: rows deleted between
+-- the start of the exposure and the snapshot are gone on Free (no restorable
+-- backups, section 7). If the exposure started well before the snapshot,
+-- prefer (a), or widen the set from the logs.
 
 -- (a) Everyone: auth.users exposed, signing key leaked, malicious deploy or
 --     session theft without logs that narrow it
 select email from auth.users;
 
--- (b) Only accounts whose progress was exposed
-select email from auth.users
- where id in (select distinct user_id from public.user_progress);
+-- (b) Only accounts whose progress was exposed: the snapshot's user_ids
+-- (c) Only accounts whose notes were exposed: snapshot user_ids with rows_with_notes > 0
+--     For both, paste the ids into (d).
 
--- (c) Only accounts whose notes were exposed
-select email from auth.users
- where id in (select distinct user_id from public.user_progress
-               where coalesce(note, '') <> '');
-
--- (d) An explicit affected set established from logs: paste the user ids
+-- (d) An explicit affected set (from the snapshot, the logs, or both): paste the user ids
 select email from auth.users
  where id = any (array['<uuid>', '<uuid>']::uuid[]);
 ```
