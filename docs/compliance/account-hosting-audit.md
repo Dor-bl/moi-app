@@ -78,9 +78,10 @@ unprotected.
 
 #92 asked for confirmation that no `service_role` key is deployed anywhere. **Two**
 RLS-bypassing keys were, in Production, alongside a full set of direct database
-credentials. A third credential with the same capability by a different route is **still
-there** — see "Still present and RLS-capable" below, which is why this item of #92 is not
-closed.
+credentials. A third credential with the same capability by a different route,
+`SUPABASE_JWT_SECRET`, was found later and removed on 7 October 2026; see "RLS-capable,
+found later" below. This item of #92 still isn't fully closed, because Preview and
+Development were never confirmed for the first nine (see the follow-ups).
 
 ### Found and removed
 

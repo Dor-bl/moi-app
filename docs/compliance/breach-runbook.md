@@ -50,7 +50,7 @@ and Article 33(5) requires it whether or not you end up notifying.
 | Supabase → organization **audit log** | Screenshot or export | Retained for **1 hour** on Free. Shows dashboard actions such as key rotation and policy changes |
 | Supabase → **Postgres** logs | Export | Errors, DDL (for example a dropped policy) |
 | Supabase → **Edge Functions** → `contact` → logs | Export | Contact relay invocations |
-| Supabase → SQL: RLS state **and the affected set** | Run the [snapshot queries](#appendix-b-sql-for-scoping) and save the output as CSV in the incident record | Proves which policies existed *before* you changed them, and freezes who had progress and notes at this moment. Users keep unticking items and clearing notes, which deletes the rows, so a later query under-counts |
+| Supabase → SQL: RLS state **and the affected set** | Run the [snapshot queries](#appendix-b-sql-for-scoping) and save the output as CSV in the incident record | Proves which policies existed *before* you changed them, and freezes the full `user_progress` rows plus the user-id-to-email mapping as they are now. Users keep unticking items, clearing notes and deleting accounts, so a later query loses rows, notes and email addresses. These exports are the most sensitive copy of the data there is: keep them encrypted, outside any account that might be compromised, and delete them when the incident and any AP case are closed |
 | Vercel → Deployments | Screenshot the list with commit SHAs and timestamps | Shows whether unexpected code was ever served |
 | GitHub → repository and account security log | Screenshot | Pushes, new deploy keys, new OAuth apps |
 | Resend → Logs / Emails | Screenshot the window | Who was sent magic links, and when |
@@ -121,7 +121,7 @@ Then breathe, and go to section 2.
 | Contact relay (Edge Function) | Nothing at rest. Caller IP in memory for rate limiting only ([`account-hosting-audit.md`](account-hosting-audit.md) §4) | Contact-form users | Edge Function logs | 1 day |
 | Resend | Recipient address of every magic-link email and contact relay, with a one-time sign-in token; the contact message content | Magic-link users; contact-form users | Resend logs | Resend's own (stated 30 days; unverified, see `privacy.html` §4) |
 | Gmail mailbox behind `hallo@moicheck.nl` | Every contact-form message and direct email: name, address, free text | Anyone who wrote in | Google account activity | Google's |
-| Users' browsers (`localStorage`) | Progress, notes, event badges, preferences | Each user, on their own device | n/a: we hold none of it | n/a |
+| Users' browsers (`localStorage`) | Progress, notes, event badges, preferences; and, for signed-in users, the **Supabase-managed session tokens** (access and refresh token) | Each user, on their own device | n/a for our servers; but a malicious deploy or injected script runs in this context and can read all of it, tokens included | n/a |
 | Vercel Web Analytics | Aggregates only; no per-visitor data reaches us | n/a | n/a | n/a |
 
 Not in the system at all: passwords (sign-in is magic link or Google only), payment data,
@@ -271,8 +271,11 @@ on its own establishes that a breach is low risk. An email address, for example,
 low risk by itself but becomes much more significant when combined with behavioural or
 location information.
 
-- **No credentials.** There are no passwords to reuse elsewhere. Magic-link tokens are
-  one-time and short-lived; sessions die when the signing key is rotated.
+- **No passwords.** There is nothing to reuse on other sites. Magic-link tokens are
+  one-time and short-lived. Signed-in browsers do hold Supabase session tokens (access and
+  refresh), which a malicious deploy or injected script could steal; their reach is the
+  user's own account, and rotating the signing key kills them all (see the token row in
+  the outcomes table).
 - **No financial data, government IDs, or special-category fields.**
 - **No raw device location.** The location check for event badges never leaves the
   device. (Progress rows are still location-related history; see below.)
@@ -558,14 +561,21 @@ select grantee, privilege_type
   from information_schema.role_table_grants
  where table_schema = 'public' and table_name = 'user_progress';
 
--- Affected-set snapshot: run during step 2 and save as CSV with the incident record.
--- Notices are generated from THIS file, not from the live table, because users
--- delete rows (untick) and clear notes after the fact.
-select user_id,
-       count(*)                                          as progress_rows,
-       count(*) filter (where coalesce(note, '') <> '')  as rows_with_notes
-  from public.user_progress
- group by user_id;
+-- Affected-set snapshot: run during step 2 and save BOTH exports as CSV with the
+-- incident record (encrypted; see step 2). Scoping and notices are derived from
+-- these frozen files, not from the live tables, because users untick items,
+-- clear notes and delete accounts after the fact.
+
+-- (1) Full progress rows as they are now
+select user_id, item_id, date, note
+  from public.user_progress;
+
+-- (2) User id to email mapping as it is now (a deleted account loses its email)
+select id as user_id, email, created_at, last_sign_in_at
+  from auth.users;
+
+-- Per-user counts, for the AP form, computed from (1):
+--   progress rows per user_id, and rows where note is non-empty
 
 -- How many people, and how many with each category of data
 select count(*) as accounts from auth.users;
@@ -580,9 +590,10 @@ select count(*) as progress_rows,
 -- Pick the variant matching the scope you established in section 2. Don't
 -- reuse one across incidents: each answers a different question.
 --
--- Build (b) and (c) from the affected-set snapshot saved in step 2, through
--- variant (d), not from the live table. The live table has lost every row
--- deleted since then. The snapshot has a blind spot too: rows deleted between
+-- Build (b), (c) and (d) from the frozen exports saved in step 2: pick the
+-- affected user_ids from export (1) (or from the logs), then take their emails
+-- from export (2). The live tables have lost every row, note and account
+-- deleted since then, and (d) below only works for accounts that still exist. The snapshot has a blind spot too: rows deleted between
 -- the start of the exposure and the snapshot are gone on Free (no restorable
 -- backups, section 7). If the exposure started well before the snapshot,
 -- prefer (a), or widen the set from the logs.
@@ -591,11 +602,12 @@ select count(*) as progress_rows,
 --     session theft without logs that narrow it
 select email from auth.users;
 
--- (b) Only accounts whose progress was exposed: the snapshot's user_ids
--- (c) Only accounts whose notes were exposed: snapshot user_ids with rows_with_notes > 0
---     For both, paste the ids into (d).
+-- (b) Only accounts whose progress was exposed: distinct user_ids in export (1)
+-- (c) Only accounts whose notes were exposed: user_ids in export (1) with a non-empty note
+--     For both, look the emails up in export (2).
 
--- (d) An explicit affected set (from the snapshot, the logs, or both): paste the user ids
+-- (d) Live lookup for an explicit affected set, if export (2) wasn't taken; misses
+--     accounts deleted since the incident
 select email from auth.users
  where id = any (array['<uuid>', '<uuid>']::uuid[]);
 ```
