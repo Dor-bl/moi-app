@@ -236,14 +236,32 @@ analysis to finish.
 
 ## 5. Article 34: tell the users? (pre-drafted risk assessment)
 
+### The legal threshold and the decision rule
+
 Individuals must be notified "without undue delay" when the breach is likely to result in
 a **high** risk to their rights and freedoms (Art. 34(1)). The test is whether the breach
 is likely to result in a **high risk to the rights and freedoms of the affected
 individuals**. Assess both the likelihood and the severity of potential harm to those
-individuals, not the impact of the breach on MoiCheck itself.
+individuals, not the impact of the breach on MoiCheck itself. The primary guidance behind
+this section is the EDPB's
+[Guidelines 9/2022 on personal data breach notification](https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-92022-personal-data-breach-notification-under_en),
+chapter IV in particular. Statements attributed to the AP below cite the specific AP page
+they come from (see the sourcing table).
 
-This assessment was written in advance for this dataset. On the day, start from it and
-adjust for the facts; don't start from a blank page.
+> **Article 34 decision rule.** Notify affected individuals when, after considering the
+> nature and sensitivity of the exposed data, the circumstances and scope of the breach,
+> the likelihood of misuse, and the potential consequences, the breach is likely to
+> result in a high risk to their rights and freedoms.
+>
+> The pre-assessed outcomes below are starting points, not automatic legal conclusions.
+> On the day, update the assessment using the actual facts of the incident.
+>
+> If the available facts don't let you reasonably exclude high risk, escalate: the owner
+> is the incident lead, so that means getting a legal adviser's view if one can be
+> reached in time. Don't treat uncertainty as evidence of low risk.
+
+This assessment was written in advance for this dataset, so that on the day you start
+from it rather than from a blank page.
 
 ### Factors that generally reduce risk
 
@@ -256,61 +274,100 @@ location information.
 - **No credentials.** There are no passwords to reuse elsewhere. Magic-link tokens are
   one-time and short-lived; sessions die when the signing key is rotated.
 - **No financial data, government IDs, or special-category fields.**
-- **No location tracking.** The location check for event badges never leaves the device.
-- **Narrow audience and purpose.** A bucket list for one city. The data says what someone
-  did for fun, not their health, finances or beliefs.
+- **No raw device location.** The location check for event badges never leaves the
+  device. (Progress rows are still location-related history; see below.)
+- **Narrow audience and purpose.** A bucket list for one city. The data is designed to
+  record what someone did for fun, not their health, finances or beliefs.
 - **Data stored in the EU** (Supabase `eu-west-1`), with processor contracts for
   Supabase, Resend, Cloudflare and Vercel.
 
-### What raises it (the honest counterweight)
+### Factors that increase risk
 
 - **Memory notes are free text.** A user can write anything: who they were with, how they
-  were feeling, a health detail, a name. We can't rule out special-category data or
-  third-party data in a note, and we don't know what is there without reading it. If notes
-  were exposed, assume some contain sensitive content.
+  were feeling, a health detail, a name. Special-category data or information about other
+  people can't be ruled out without reviewing the notes.
 - **Progress rows are dated location history.** Every `item_id` maps to a public place
   with coordinates in `BUCKET_LIST`. A row of `item_id` + `date` reads as "this person was
   probably at this place around this date". That is the tick-off time, not proof of
-  presence, but a reader can't tell the difference. Tied to an email address, a set of
-  rows sketches someone's movements and habits around Groningen.
+  presence, but a reader can't tell the difference.
+- **Location data is an important risk factor.** A leaked set of dated places associated
+  with an email address could allow an attacker to infer aspects of a person's
+  movements, habits or activities. This may materially increase the likelihood or
+  severity of harm, particularly where the dataset covers a long period, contains many
+  locations, or can be combined with other information. The fact that the information
+  could be used for behavioural or location profiling should therefore weigh against
+  treating the breach as low risk. The AP lists profiling based on "behaviour and
+  location" among the types of data to treat as high risk ("Reporting or not reporting a
+  data breach"). However, it does not by itself establish that Article 34 notification is
+  mandatory; the overall likelihood and severity of harm still need to be assessed for
+  the particular breach.
 - **Email addresses are identifying.** Joined with the rows above, there is no
-  pseudonymisation to fall back on. The AP names email addresses specifically as data that
-  look harmless but enable targeted phishing.
-- **The AP counts location profiling as high risk.** Its risk guidance says to assume high
-  risk in any case for "information about personal aspects, intended for drawing up or
-  using profiles", including profiling based on "behaviour and location". Nobody here
-  builds profiles, but a leaked set of dated places per email address is exactly that
-  material in someone else's hands. This is the strongest argument against treating a
-  progress leak as low risk.
+  pseudonymisation to fall back on. The AP names email addresses as data that look
+  harmless but enable targeted phishing (same AP page).
 - **Contact-form messages are free text too**, and the mailbox holding them has no
   processor contract (`privacy.html` §3).
 
 ### Pre-assessed outcomes
 
-| What was exposed | Likely risk level | Art. 33 (AP) | Art. 34 (users) |
+Starting points under the decision rule above, not conclusions.
+
+| What was exposed | Starting assessment | Art. 33 (AP) | Art. 34 (users) |
 | --- | --- | --- | --- |
-| Email addresses only (no progress) | Risk (phishing, confirmation of use of the app) | Notify | Usually not required. Consider a short courtesy notice |
-| Progress rows **without** notes, with or without emails | Risk; leans high when tied to emails, because of the location-history reading | Notify | Decide on the facts. Lean towards notifying if emails were included and the window is long |
-| Notes (with or without emails) | **High**: free text, sensitive content can't be excluded | Notify | **Notify** |
-| Contact-form messages (mailbox, Resend) | Depends on content: review the affected messages | Notify | Notify the affected senders if any message holds sensitive content |
-| Live session tokens or magic-link tokens, with access used | Same as whatever the accounts could read: own progress and notes | Notify | Notify affected users |
-| Data altered or deleted without exposure (for example, a write-open RLS policy abused to vandalise rows) | Risk (integrity and availability) | Notify | Notify affected users if progress or notes can't be restored |
+| Email addresses only (no progress) | Risk (phishing, confirmation of use of the app) | Notify | Usually not required. Consider a short transparency/security notice where this would help users protect themselves from phishing or understand what happened |
+| Progress rows **without** notes, with or without emails | Risk; the location-history reading weighs towards high risk when rows are tied to emails, cover a long period or many places | Notify | Assess on the facts. Lean towards notifying if emails were included and the window is long |
+| Notes (with or without emails) | **Presume high risk unless review establishes otherwise**: free text may contain health information, information about other individuals, intimate information, identifying information or other sensitive material | Notify | Normally notify if high risk can't reasonably be excluded |
+| Contact-form messages (mailbox, Resend) | Depends on content: review the affected messages | Notify | Notify affected senders if the assessment concludes the breach is likely to result in high risk, with particular attention to messages containing sensitive, intimate, identifying or third-party information |
+| Live session tokens or magic-link tokens | **Token exposed, no evidence of use:** assess what the token could have accessed, and invalidate affected tokens and sessions immediately. **Token demonstrably used:** assess on the data actually accessed or actions performed | Notify | Follows the risk of the data or actions the token made accessible, not the mere existence of a compromised token |
+| Data altered or deleted without exposure (for example, a write-open RLS policy abused to vandalise rows) | Risk (integrity/availability) | Notify where required | Assess whether the alteration or deletion is likely to result in high risk, for example loss of personal records, material consequences for users, or inability to recover notes or progress (section 7: no restorable backups on Free). Notify affected users where that threshold is met, or where notification is otherwise appropriate as part of remediation |
 
 ### Exceptions to Article 34 (Art. 34(3))
 
 Individual notification is not required if: (a) the data was unintelligible to the
 attacker (for example, encrypted with a key that wasn't compromised; not the case for
-anything here); (b) measures taken since mean the high risk is no longer likely to
-materialise; or (c) it would take disproportionate effort. In case (c), use a public
-communication instead, such as a banner on moicheck.nl. With a few hundred accounts and
-every address on file, (c) won't realistically apply.
+anything here); (b) measures taken subsequently ensure that the high risk to individuals
+is no longer likely to materialise; or (c) it would involve disproportionate effort, in
+which case a public communication (such as a notice on moicheck.nl) is required instead.
+
+**Operational assumption:** don't rely on the disproportionate-effort exception without
+explicit approval from the incident lead and a legal adviser. The service has a
+manageable number of affected users and their contact details are available, so
+individual notification should normally be feasible.
+
+### Document the decision
+
+Whether or not users are notified, document the Article 34 assessment in the incident
+record (Appendix A). Record:
+
+- what personal data was affected;
+- how many individuals were affected or potentially affected;
+- the duration and scope of the exposure;
+- whether the data was accessed, copied, altered or merely potentially accessible;
+- the likely consequences for individuals;
+- the factors increasing or reducing likelihood and severity;
+- the mitigation measures taken;
+- the final Article 34 decision and the reasoning behind it.
+
+If users are not notified, record specifically why the breach was assessed as not likely
+to result in high risk. This is the audit trail for the decision, not just a note that
+an email was or wasn't sent.
 
 ### Sending the notice
 
-There is no mailing tool. Export the affected addresses (Appendix B) and send through the
-existing Resend account in individually addressed messages, or **not** through Resend if
-Resend is the compromised party; use the Gmail account in batches with BCC in that case.
-Never put recipients in To/CC.
+There is no mailing tool.
+
+1. **Build the list** from the affected-set snapshot (Appendix B), not the live table.
+2. **Verify it before sending:** check the list against the incident scope and remove
+   addresses that weren't affected.
+3. **Send individual messages wherever practical.** The default channel is the existing
+   Resend account. If a batch mechanism is unavoidable, use one that doesn't expose
+   recipient addresses to other affected users; never put recipients in To or CC.
+4. **If the normal mail provider is compromised** (Resend, or the domain's mail routing),
+   the incident lead explicitly chooses an alternative trusted channel and records why.
+   Don't default to the Gmail mailbox: it's a personal account under consumer terms with
+   no processor contract (`privacy.html` §3), so it has to be a deliberate choice, not a
+   fallback.
+5. **Keep a record** of the notification date, method and population notified
+   (Appendix A).
 
 ---
 
@@ -475,7 +532,7 @@ Breach under Art. 4(12)?            yes / no, because ____
 Art. 33 notify AP?                  yes / no, because ____
   AP notification number: ____   submitted (UTC): ____   complete / partial (next update by ____)
   Confirmation saved as: ____   (it can't be retrieved online later)
-Art. 34 notify users?               yes / no, because ____
+Art. 34 notify users?               yes / no, because ____  (full reasoning: section 5, "Document the decision")
   sent (UTC): ____   to how many: ____   via: ____
 Containment actions and what they broke:
 -
@@ -652,6 +709,7 @@ language they used in the app if you know it, otherwise both, Dutch first.
 | Plan is Free; Free projects' backups (up to 7 daily, restorable only after upgrading) | Supabase connector (organisation plan `free`), and Supabase docs *Database Backups* and the troubleshooting note on backups after upgrading, read 7 October 2026 |
 | AP form route, no login, submission, partial and late notifications, contact numbers | AP, [This is how you report a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/this-is-how-you-report-a-data-breach) (last edited 22 July 2026), read 5 October 2026; "no login" also from the form's own configuration (`no-login` plugin) and its browser notice |
 | Form questions | AP, [Questionnaire personal data breach notification form](https://www.autoriteitpersoonsgegevens.nl/en/documents/questionnaire-personal-data-breach-notification-form) (v1.0, September 2022), read 5 October 2026 |
+| Art. 34 threshold and risk assessment approach | EDPB [Guidelines 9/2022 on personal data breach notification](https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-92022-personal-data-breach-notification-under_en) (28 March 2023), chapter IV |
 | "When in doubt, report"; email and location profiling as risk factors | AP, [Reporting or not reporting a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/reporting-or-not-reporting-a-data-breach) (last edited 9 April 2025) |
 | Warning-message recommendations | AP, [This is how you inform victims about a data breach](https://www.autoriteitpersoonsgegevens.nl/en/themes/security/data-breaches/this-is-how-you-inform-victims-about-a-data-breach) |
 | Articles 4(12), 33, 34 | GDPR text |
