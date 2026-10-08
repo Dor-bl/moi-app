@@ -163,8 +163,9 @@ function finishMagicLinkSignIn(pending) {
 // OAuth callback, so Google's consent screen names this site and the app
 // rather than "<project>.supabase.co". Google Identity Services hands the
 // browser an ID token; Supabase verifies it in signInWithIdToken. The nonce
-// ties the token to this page load: Google embeds the SHA-256 of the value
-// we give it, Supabase hashes the raw value we send back and compares.
+// ties the token to this page load: we hash it ONCE here and give Google the
+// SHA-256, which Google embeds in the token unchanged; we send Supabase the
+// raw value, and Supabase hashes it to compare. Do not hash it again anywhere.
 // With no client ID configured the redirect-based button stays in place, so
 // this ships safely before the dashboard side is set up.
 let googleNonce = '';
