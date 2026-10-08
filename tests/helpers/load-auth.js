@@ -156,6 +156,8 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
             get supabaseClient() { return supabaseClient; },
             set supabaseClient(value) { supabaseClient = value; },
             get authGeneration() { return authGeneration; },
+            get currentLang() { return currentLang; },
+            set currentLang(value) { currentLang = value; },
             initAuth,
             onUserLoggedIn,
             onUserLoggedOut,

@@ -33,7 +33,9 @@ function createElements() {
 function createBrowser({ googleScript = 'ok' } = {}) {
     const elements = createElements();
     const gis = { inits: [], renders: [], scriptLoads: 0 };
-    const sandbox = { gis, elements };
+    // `sandbox.googleScript` is read at load time, so a test can flip it
+    // between opens: blocked first, available on the retry.
+    const sandbox = { gis, elements, googleScript };
 
     const installGoogle = () => {
         sandbox.window.google = { accounts: { id: {
@@ -58,7 +60,7 @@ function createBrowser({ googleScript = 'ok' } = {}) {
                 assert.equal(script.src, 'https://accounts.google.com/gsi/client', 'the script auth.js appends is the GIS client');
                 // Async like a real network load: the caller is awaiting a promise.
                 setTimeout(() => {
-                    if (googleScript === 'ok') { installGoogle(); script.onload(); } else { script.onerror(); }
+                    if (sandbox.googleScript === 'ok') { installGoogle(); script.onload(); } else { script.onerror(); }
                 }, 0);
             }
         }
@@ -162,6 +164,16 @@ test('a blocked script leaves the fallback in place and allows a retry on the ne
     assert.equal(browser.elements.googleAuthBtn.style.display, '', 'custom button still shown');
     assert.equal(module.googleSignInStarted, false, 'the once-guard is released so the next open can try again');
     assert.ok(warnings.some(w => w.includes('using redirect flow')), 'the fallback is logged, not thrown');
+
+    // The next open, with Google reachable again, must fetch and finish.
+    browser.googleScript = 'ok';
+    await module.initGoogleSignIn();
+
+    assert.equal(browser.gis.scriptLoads, 2, 'a second script request is made');
+    assert.equal(browser.gis.inits.length, 1, 'and this time it initialises');
+    assert.equal(browser.elements.googleAuthBtn.style.display, 'none', 'custom button hidden');
+    assert.equal(browser.elements.googleSignInContainer.style.display, 'flex', 'Google\'s container shown');
+    assert.equal(module.googleSignInStarted, true);
 });
 
 test('renderGoogleButton follows the current language and theme', async () => {
@@ -184,4 +196,12 @@ test('renderGoogleButton follows the current language and theme', async () => {
     browser.window.matchMedia = () => ({ matches: false });
     module.renderGoogleButton();
     assert.equal(last().theme, 'outline');
+
+    module.currentLang = 'nl';
+    module.renderGoogleButton();
+    assert.equal(last().locale, 'nl', 'Dutch UI renders a Dutch button');
+
+    module.currentLang = 'en';
+    module.renderGoogleButton();
+    assert.equal(last().locale, 'en');
 });
