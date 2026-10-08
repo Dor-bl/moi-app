@@ -26,9 +26,15 @@ therefore mostly about processors and the regulator, not an internal escalation 
 
 Do these in order. Steps 2 and 3 are deliberately before step 4: Supabase's logs on the
 Free plan cover only the last day (section 7), so evidence vanishes faster than you can
-investigate it. The one exception: if data is visibly leaking *right now* (for example,
-the table is readable without signing in), do the containment in step 4 first and preserve
-immediately after. Exporting logs takes minutes; an open table loses data every second.
+investigate it. The one exception: if unauthorized access is likely still going on *right
+now* (the table is readable without signing in, a stolen session or account is in active
+use, an attacker is still inside a provider account), contain first, and preserve
+immediately after. Exporting logs takes minutes; an attacker still inside reads or changes
+data every second. Before a containment action that itself destroys evidence, take the
+one-minute snapshot of what it destroys: before ending sessions, save the affected
+`auth.sessions` rows ([Appendix B](#appendix-b-sql-for-scoping)), because deleting them
+removes the session IPs, user agents and timestamps. Logs, policies and dashboard history
+survive containment, so they can wait until after.
 
 ### Step 1: Open an incident record (2 minutes)
 
@@ -66,7 +72,7 @@ You don't need all of these for every incident. Work out which entry point is pl
 ### Step 3: Freeze the evidence you control (5 minutes)
 
 - Don't delete user rows, rotate keys, drop policies or redeploy *before* step 2 is done
-  for the affected source (unless the leak is live, as above).
+  for the affected source (unless access is likely ongoing, as above).
 - If the entry point is the repository or a deployment, note the current `main` SHA and the
   live deployment ID. Don't force-push or delete branches.
 
@@ -79,7 +85,7 @@ users; that's accepted. Write down what you changed and when.
 | --- | --- | --- |
 | **RLS misconfiguration**: `user_progress` readable or writable beyond the owner | `revoke all on public.user_progress from anon, authenticated;` (the restore statement is in Appendix B) | Cloud sync stops for everyone; guest mode keeps working from `localStorage` |
 | **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → JWT Keys / API Keys. Which step depends on the key model (Supabase docs, *JWT Signing Keys*). **Legacy JWT secret:** rolling it invalidates every token signed with it and signs everyone out; if the anon key changes, update `config.js` and redeploy. **New signing keys:** *Rotate keys* alone signs nobody out and leaves the old key trusted; you must then **revoke** the previously used key. Leaked `service_role` / secret API key: revoke it and issue a new one. **Database password:** if any direct database credential could have been exposed (the `POSTGRES_*` variables the Vercel–Supabase integration injects, see the audit §2; or a leaked connection string), reset it in Supabase → Database settings, and update anything that legitimately uses it (nothing in this repo does). Then **end sessions** as in the next row, because neither rotation ends a refresh-token session | Depends on the model: everyone signed out and the site broken until a new anon key is deployed (legacy), or no visible effect until sessions are ended (new keys) |
-| **Stolen user sessions** (for example via injected script) | Key rotation does **not** end a stolen session: the refresh token keeps working and gets new access tokens under the new key. End the sessions themselves: in the SQL editor, `delete from auth.sessions where user_id in (...)` for the affected users, or without a `where` clause for everyone. That is what sign-out does (Supabase docs, *User sessions*), and in this project the refresh tokens are deleted with their session (`refresh_tokens_session_id_fkey ... ON DELETE CASCADE`, checked 7 October 2026). Access tokens already issued stay valid until they expire (default 1 hour) unless the key that signed them is revoked as in the row above | Affected users are signed out and must sign in again |
+| **Stolen user sessions** (for example via injected script) | Key rotation does **not** end a stolen session: the refresh token keeps working and gets new access tokens under the new key. End the sessions themselves, after saving the affected `auth.sessions` rows (Appendix B, *Session snapshot*; the delete destroys them): in the SQL editor, `delete from auth.sessions where user_id in (...)` for the affected users, or without a `where` clause for everyone. That is what sign-out does (Supabase docs, *User sessions*), and in this project the refresh tokens are deleted with their session (`refresh_tokens_session_id_fkey ... ON DELETE CASCADE`, checked 7 October 2026). Access tokens already issued stay valid until they expire (default 1 hour) unless the key that signed them is revoked as in the row above | Affected users are signed out and must sign in again |
 | **Supabase dashboard account** | Change password, revoke other sessions, re-check MFA. Then **remove what an attacker could have left behind**, because rotating keys doesn't touch it: unknown organization members, unknown personal access tokens (Account → Access Tokens), and changes to project settings. Check Auth (providers, redirect URLs, SMTP settings, email templates), the database (RLS policies, functions such as `delete_user()`, roles and grants; compare against the step 2 snapshot and `README.md`), Edge Functions and their secrets, and any new projects or branches. Only then treat it as "leaked privileged key" | As above |
 | **GitHub or Vercel account; malicious deploy** | **Secure both accounts first**, because an attacker still inside can redeploy or read the replacement secrets: change passwords, sign out all sessions, re-check MFA, and remove anything unknown. On GitHub that means collaborators, deploy keys, personal access tokens, authorized OAuth and GitHub Apps, webhooks, and changes to Actions workflows, secrets or branch protection. On Vercel it means team members, tokens, integrations, Git connection and deploy hooks. Then roll back to a known-good deployment in Vercel (Instant Rollback) and treat it as a **leaked privileged key** (row above), because both accounts hold credentials that reach Supabase. GitHub Actions holds `SUPABASE_ACCESS_TOKEN` (a Supabase management token, used by `.github/workflows/deploy-functions.yml`), which an attacker with write access can exfiltrate by editing and running a workflow. Vercel no longer holds `SUPABASE_JWT_SECRET` (removed 7 October 2026, audit §2), but check its environment variables anyway: re-linking the Vercel–Supabase integration puts it back, and a malicious build can read whatever is there. So: revoke the Supabase access token in Supabase → Account → Access Tokens, create a new one, update the GitHub Actions secret, and review the repository's Actions run history for runs you didn't start. Rotate or revoke the signing key and **end sessions** (the two rows above), because a malicious script could have read users' session tokens. If any `POSTGRES_*` variable was in any Vercel environment during the window (Preview and Development were never confirmed clean, audit §2), also reset the database password as in the leaked-key row | The rollback itself, plus the effects of the two rows above: everyone signed out, and on the legacy key model the site broken until a new anon key is deployed |
 | **Contact relay** (`supabase/functions/contact`) | Supabase → Edge Functions: delete or disable `contact`; rotate `RESEND_API_KEY` with `supabase secrets set` | Contact form fails; users can still email `hallo@moicheck.nl` |
@@ -598,6 +604,13 @@ select user_id, item_id, date, note
 select id as user_id, email, created_at, last_sign_in_at,
        raw_user_meta_data   -- Google profile name and avatar URL, where present
   from auth.users;
+
+-- (3) Session snapshot: run BEFORE ending sessions (step 4), because the delete
+--     removes these rows. Add "where user_id in (...)" when only some users are
+--     affected. Shows where and from what each session was used.
+select id, user_id, created_at, updated_at, refreshed_at, not_after,
+       aal, ip, user_agent
+  from auth.sessions;
 
 -- Per-user counts, for the AP form, computed from (1):
 --   progress rows per user_id, and rows where note is non-empty
