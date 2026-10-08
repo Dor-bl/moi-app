@@ -83,7 +83,7 @@ users; that's accepted. Write down what you changed and when.
 
 | Suspected entry point | Containment | What it breaks |
 | --- | --- | --- |
-| **RLS misconfiguration**: `user_progress` readable or writable beyond the owner | `revoke all on public.user_progress from anon, authenticated;` (the restore statement is in Appendix B) | Cloud sync stops for everyone; guest mode keeps working from `localStorage` |
+| **RLS misconfiguration**: `user_progress` readable or writable beyond the owner | `revoke all on public.user_progress from public, anon, authenticated;`, plus every other grantee in the step 2 snapshot's `role_table_grants` output except `postgres` and `service_role` (an unexpected grantee is itself a finding). The restore statement is in Appendix B | Cloud sync stops for everyone; guest mode keeps working from `localStorage` |
 | **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → JWT Keys / API Keys. Which step depends on the key model (Supabase docs, *JWT Signing Keys*). **Legacy JWT secret:** it can no longer be rotated in place (Supabase docs, *Rotating Anon, Service, and JWT Secrets*). Use the migrate → rotate → revoke flow on the JWT Keys page: *Migrate JWT secret* (imports the legacy secret and creates a standby key), then *Rotate keys*, then **revoke** the imported legacy secret under *Previously used* straight away rather than waiting out the token lifetime. Supabase only allows that revoke once the legacy `anon` and `service_role` API keys are deactivated, because both are JWTs signed with that secret. So first, if `config.js` still ships the legacy `anon` key, switch it to the publishable key and redeploy; then deactivate both legacy keys under API Keys. Key state changes are throttled for about 5 minutes each, so allow 15–20 minutes. **New signing keys:** *Rotate keys* alone signs nobody out and leaves the old key trusted; you must then **revoke** the previously used key. **Leaked API key:** deactivate a legacy `service_role` key under API Keys; revoke a leaked secret key (`sb_secret_...`) and issue a new one. **Database password:** if any direct database credential could have been exposed (the `POSTGRES_*` variables the Vercel–Supabase integration injects, see the audit §2; or a leaked connection string), reset it in Supabase → Database settings, and update anything that legitimately uses it (nothing in this repo does). Then **end sessions** as in the next row, because neither rotation ends a refresh-token session | Legacy: users holding a token signed with the legacy secret may be signed out at the revoke, and the site breaks if it still ships the legacy `anon` key when that is deactivated (switch first). New keys: no visible effect until sessions are ended |
 | **Stolen user sessions** (for example via injected script) | Key rotation does **not** end a stolen session: the refresh token keeps working and gets new access tokens under the new key. End the sessions themselves, after saving the affected `auth.sessions` rows (Appendix B, *Session snapshot*; the delete destroys them): in the SQL editor, `delete from auth.sessions where user_id in (...)` for the affected users, or without a `where` clause for everyone. That is what sign-out does (Supabase docs, *User sessions*), and in this project the refresh tokens are deleted with their session (`refresh_tokens_session_id_fkey ... ON DELETE CASCADE`, checked 7 October 2026). Access tokens already issued stay valid until they expire (default 1 hour) unless the key that signed them is revoked as in the row above | Affected users are signed out and must sign in again |
 | **Supabase dashboard account** | Change password, revoke other sessions, re-check MFA. Then **remove what an attacker could have left behind**, because rotating keys doesn't touch it: unknown organization members, unknown personal access tokens (Account → Access Tokens), and changes to project settings. Check Auth (providers, redirect URLs, SMTP settings, email templates), the database (RLS policies, functions such as `delete_user()`, roles and grants; compare against the step 2 snapshot and `README.md`), Edge Functions and their secrets, and any new projects or branches. Only then treat it as "leaked privileged key" | As above |
@@ -218,8 +218,10 @@ A personal data breach is a security incident that leads to accidental or unlawf
 - *A misdirected email* (for example, replying to the wrong contact-form sender) is a
   breach. Usually a small one, but it still goes in the record.
 
-Whatever the answer, **record it** (Art. 33(5)). The record of breaches you decided not to
-notify is the first thing the AP asks for if one later surfaces.
+Whatever the answer, **record it**. Article 33(5) requires a record of every personal data
+breach, including those you decide not to notify; an incident you conclude was *not* a
+breach isn't covered by 33(5), but record it anyway, with the reasoning. That record is the
+first thing the AP asks for if the incident later surfaces.
 
 ---
 
@@ -741,8 +743,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 > **Om welke gegevens het gaat.** [Je e-mailadres] [en] [de onderdelen van de bucketlijst
 > die je hebt afgevinkt, met de datum waarop je ze afvinkte] [en de herinneringen die je
 > erbij hebt geschreven]. MoiCheck vraagt niet om wachtwoorden, betaalgegevens of
-> identiteitsbewijzen. [Alleen als de betrokken herinneringen zijn nagekeken en die niet
-> bevatten: Die zijn dus niet betrokken.]
+> identiteitsbewijzen. [Alleen als de betrokken herinneringen zijn nagekeken en daar geen
+> van deze gegevens in stonden: Zulke gegevens zijn dus niet betrokken.]
 >
 > **Wat dit voor jou kan betekenen.** [Iemand kan te weten komen welke plekken in
 > Groningen je hebt bezocht en ongeveer wanneer.] [Wat je in een herinnering hebt
@@ -788,7 +790,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 
 ## Follow-ups
 
-- [ ] **Owner review** of sections 5 and 6 and the Dutch email. This is a draft, not legal advice.
+- [x] **Owner review of section 5**: done 7 October 2026; the section 5 rework applies it.
+- [ ] **Owner review** of section 6 and the Dutch email. This is a draft, not legal advice.
 - [x] **Verify section 6 on the AP website**: done 5 October 2026. The DigiD claim was
       wrong and is removed; the form has no login.
 - [ ] **Download the AP questionnaire** and fill in the parts that don't depend on an
