@@ -51,10 +51,10 @@ and Article 33(5) requires it whether or not you end up notifying.
 
 | Source | What to save | Why it is urgent |
 | --- | --- | --- |
-| Supabase → Logs Explorer: **API Gateway** and **PostgREST** | Export every request touching `user_progress`, `rpc/delete_user` and `auth/v1` for the full available window | 1-day retention on Free. The closest thing to an access record there is: request paths, query filters, status codes, caller IP and, where logged, the JWT's `sub`/role. These are **request logs, not a row-level audit**: they don't record which rows came back, so they bound scope but never prove a row *wasn't* read |
-| Supabase → **Auth** logs | Export the full window | Sign-ins, magic-link requests, token refreshes |
+| Supabase → Logs Explorer: **API Gateway** and **PostgREST** | Export every request touching `user_progress`, `rpc/delete_user` and `auth/v1` for the full available window | 1-day retention on Free. The closest thing to an access record there is: request paths, query filters, status codes, caller IP and, where logged, the JWT's `sub`/role. These are **request logs, not a row-level audit**: they don't record which rows came back, so they bound scope but never prove a row *wasn't* read. The Logs Explorer returns at most 1,000 rows per query (Supabase docs, *Query logs with SQL*): split the window into time slices and confirm each slice came back under 1,000 rows, or the export is silently truncated |
+| Supabase → **Auth** logs | Export the full window. Also run `select count(*) from auth.audit_log_entries;`: if Auth's "write audit logs to the database" option is on, that table holds older Auth events beyond the 1-day log window, so export it too (it was empty on 8 October 2026, so the option is off here) | Sign-ins, magic-link requests, token refreshes |
 | Supabase → organization audit log | **Not available on Free.** Platform audit logs are Team and Enterprise only (Supabase docs, *Platform Audit Logs*), so there is no record of who did what in the dashboard. Record that gap in the incident record rather than looking for an export | — |
-| Supabase → **Postgres** logs | Export | Errors, DDL (for example a dropped policy) |
+| Supabase → **Postgres** logs | Export, and record `show log_statement;` | Errors, and DDL (for example a dropped policy) only because this project has `log_statement = ddl` (checked 8 October 2026). Other statements need pgAudit configured in advance, which this project doesn't have. If the setting was changed before the incident, a missing DDL entry proves nothing |
 | Supabase → **Edge Functions** → `contact` → logs | Export | Contact relay invocations |
 | Supabase → SQL: RLS state **and the affected set** | Run the [snapshot queries](#appendix-b-sql-for-scoping) and save the output as CSV in the incident record | Proves which policies existed *before* you changed them, and freezes the full `user_progress` rows plus the user-id-to-email mapping as they are now. Users keep unticking items, clearing notes and deleting accounts, so a later query loses rows, notes and email addresses. These exports are the most sensitive copy of the data there is: keep them encrypted, outside any account that might be compromised, and delete them when the incident and any AP case are closed |
 | Vercel → Deployments | Screenshot the list with commit SHAs and timestamps | Shows whether unexpected code was ever served |
@@ -146,13 +146,13 @@ section 5. When filling in the AP form's data categories, include it.
 
 | Entry point | Reaches |
 | --- | --- |
-| RLS policy dropped or mis-edited | `user_progress`: all rows, read and write. Not `auth.users` (anon/authenticated roles can't read it) |
+| RLS policy dropped or mis-edited | Depends on the effective state, read from the step 2 snapshot: **RLS disabled**, or a permissive policy such as `using (true)`, exposes all `user_progress` rows to the roles that hold grants. A **dropped policy with RLS still enabled** denies everything (an outage, not exposure). A mis-edit may widen only one operation (`select`, `insert`, `update`, `delete`) or a subset of rows. Scope to what the policies and grants actually allowed. Not `auth.users` (anon/authenticated roles can't read it) |
 | `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The JWT secret was removed from Vercel on 7 October 2026 (audit §2), which made this row much less likely. It was not rotated, so the value is still valid in Supabase |
 | Supabase dashboard account | Everything in Supabase, including backups and logs |
 | GitHub or Vercel account (malicious deploy) | **Potentially everything in Supabase**, until the credentials these accounts hold are shown to be untouched and have been rotated: `SUPABASE_ACCESS_TOKEN` in GitHub Actions (management access to the project), plus any Supabase key found in Vercel's environment variables. `SUPABASE_JWT_SECRET` was removed on 7 October 2026, but check for it: re-linking the integration restores it. Separately, a malicious deploy reaches anything a signed-in user's browser can see: their session, progress and notes. Vercel's deployment list bounds only that browser-side exposure, to users who loaded the site while the deployment was live |
 | Resend account | Recipient addresses, contact messages, and live magic-link tokens for links not yet used (account takeover while they're valid) |
 | Google mailbox | All contact correspondence, plus password-reset mail for the other accounts, which makes this the top of the chain |
-| Cloudflare | Future mail to `hallo@moicheck.nl` (redirect), not past mail. Email Routing needs the domain's DNS on Cloudflare, so this account can also repoint `moicheck.nl` itself: an attacker could serve their own site, including a fake sign-in page, under the real domain. Not past data, but a phishing risk for every visitor |
+| Cloudflare | Future mail to `hallo@moicheck.nl` (redirect), not past mail. Email Routing needs the domain's DNS on Cloudflare, so this account can also repoint `moicheck.nl` itself: an attacker could serve their own site under the real domain. Treat that like a **malicious deploy**: a page on the same origin can read what visitors' browsers already hold (progress, notes and Supabase session tokens in `localStorage`), as well as phish new sign-ins. Bound the window from Cloudflare's audit log and DNS history, presume every visitor in it exposed, and end sessions as in step 4 |
 
 ### Answering the AP form's scoping questions
 
@@ -611,6 +611,10 @@ select id as user_id, email, created_at, last_sign_in_at,
 select id, user_id, created_at, updated_at, refreshed_at, not_after,
        aal, ip, user_agent
   from auth.sessions;
+-- ...and the refresh-token metadata that the delete cascades away. Leave out
+-- the token and parent columns: those are live credentials.
+select id, session_id, user_id, created_at, updated_at, revoked
+  from auth.refresh_tokens;
 
 -- Per-user counts, for the AP form, computed from (1):
 --   progress rows per user_id, and rows where note is non-empty
@@ -657,12 +661,13 @@ select email from auth.users
 ```
 
 Restore grants after an RLS containment (step 4), once the corrected policy has been
-validated. Restore **exactly** the grants recorded in the RLS state snapshot above (the
-`role_table_grants` output), one `grant <privilege> on public.user_progress to <role>;`
-per row. Don't apply assumed defaults: if the pre-incident grants were narrower, defaults
-would widen access (to `anon` in particular). If the snapshot wasn't taken, restore only
-what the app needs, which is `select, insert, update, delete` to `authenticated`, and add
-nothing for `anon`.
+validated. Don't restore the snapshot as it stands: it was taken *during* the incident, so
+it is evidence, not a trusted baseline, and an attacker-added grant would be in it. Nor is
+there a written baseline to copy: the setup SQL in `README.md` adds no grants of its own.
+Restore only what the app needs, `grant select, insert, update, delete on
+public.user_progress to authenticated;`, and nothing for `anon`. Then compare with the
+snapshot: anything else in it (a grant to `anon`, another role, another privilege) is a
+finding to investigate, not something to restore.
 
 ## Appendix C: user notification email (Art. 34(2))
 
