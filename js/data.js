@@ -817,6 +817,132 @@ const EVENTS = [
         location: { en: 'Molen Wilhelmina, Noorderhogebrug', nl: 'Molen Wilhelmina, Noorderhogebrug' },
         tip: { en: 'Once a year, the Netherlands celebrates darkness with night walks, stargazing and lights switched off. Just outside the city, a walk leaves from the windmill at Noorderhogebrug into the old Reitdiep landscape: across meadows and ditches under the stars, past the Groninger Landschap visitor centre and back to the mill, which opens its doors for you. Adults pay €6 and children walk free. Sign up in advance.', nl: 'Eén keer per jaar viert Nederland het donker, met nachtwandelingen, sterrenkijken en lampen die uitgaan. Net buiten de stad vertrekt een wandeling vanaf de molen in Noorderhogebrug het oude Reitdieplandschap in: onder de sterren door weilanden en over sloten, langs het bezoekerscentrum van Het Groninger Landschap en terug naar de molen, die zijn deuren voor je openzet. Volwassenen betalen €6, kinderen lopen gratis mee. Meld je vooraf aan.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2449763556/wandeling-nacht-van-de-nacht-7'
+    },
+    {
+        id: 'de-boer-op-midden-groningen-2026',
+        date: '2026-10-10',
+        startTime: '11:00',
+        endTime: '15:30',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'De Boer Op! (open farm day in Midden-Groningen)', nl: 'De boer op! in Midden-Groningen' },
+        location: { en: 'Farms across Midden-Groningen, including Boerderij Arkema in Noordbroek', nl: 'Boerderijen in heel Midden-Groningen, waaronder Boerderij Arkema in Noordbroek' },
+        tip: { en: 'Farmers, growers and farm shops across Midden-Groningen open their doors for one day, as part of the national Week van ons Eten. Look at cows, sheep and alpacas, pick your own apples in Noordbroek, taste cheese and stock up at the stalls along the road. Two routes take you past the farms by bike or car, or you plan your own. Most activities are free, some workshops cost a little, and you pay for what you buy. Hours can differ per farm.', nl: 'Boeren, tuinders en streekwinkels in heel Midden-Groningen zetten één dag hun deuren open, als onderdeel van de landelijke Week van ons Eten. Kijk bij de koeien, schapen en alpaca\'s, pluk zelf appels in Noordbroek, proef kaas en sla je boodschappen in bij de kraampjes langs de weg. Twee routes brengen je per fiets of auto langs de bedrijven, of je stippelt zelf een route uit. De meeste activiteiten zijn gratis, aan sommige workshops zijn kosten verbonden en je betaalt voor wat je koopt. Openingstijden kunnen per deelnemer verschillen.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/533848868/de-boer-op'
+    },
+    {
+        id: 'star-kindermaand-2026-10-11',
+        date: '2026-10-11',
+        startTime: '10:00',
+        endTime: '16:00',
+        kidFriendly: true,
+        title: { en: 'Steam train adventure on Museumspoorlijn STAR', nl: 'Op avontuur met de stoomtrein van Museumspoorlijn STAR' },
+        location: { en: 'Museumspoorlijn STAR, Stadskanaal–Veendam', nl: 'Museumspoorlijn STAR, Stadskanaal–Veendam' },
+        tip: { en: 'The STAR heritage steam train runs between Stadskanaal and Veendam on the Sundays and the Wednesday of the autumn holiday. For Oktober Kindermaand, children up to 12 ride free; anyone 13 and older pays €16. On board there is a railway quiz and a teddy-bear hunt, and the museum at Stadskanaal station shows how trains used to run in the region. Buy tickets online or at the stations.', nl: 'De stoomtrein van Museumspoorlijn STAR rijdt op de zondagen en de woensdag van de herfstvakantie tussen Stadskanaal en Veendam. Omdat het Oktober Kindermaand is, rijden kinderen tot en met 12 jaar gratis mee; vanaf 13 jaar betaal je €16. In de trein is er een spoorquiz en een berenjacht, en in het museum bij station Stadskanaal leer je hoe de treinen hier vroeger reden. Kaartjes koop je online of op de stations.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2140334573/oktober-kindermaand-stadskanaal-rail'
+    },
+    {
+        id: 'cinekid-forum-2026',
+        date: '2026-10-12',
+        endDate: '2026-10-16',
+        kidFriendly: true,
+        title: { en: 'Cinekid films at Forum', nl: 'Cinekid-films in Forum' },
+        location: { en: 'Forum Groningen, Nieuwe Markt', nl: 'Forum Groningen, Nieuwe Markt' },
+        tip: { en: 'Cinekid is the biggest film and media festival for children, and during the autumn holiday Forum screens a week of its films, each with an age label so you can pick one that fits. Screening times differ per film and day, and a ticket is about €12. Check the programme and book ahead.', nl: 'Cinekid is het grootste film- en mediafestival voor kinderen, en in de herfstvakantie draait Forum een week lang films uit het festival, elk met een leeftijdsaanduiding zodat je makkelijk iets passends kiest. De aanvangstijden verschillen per film en per dag, en een kaartje kost ongeveer €12. Bekijk het programma en reserveer vooraf.' },
+        url: 'https://forum.nl/nl/film/cinekid'
+    },
+    {
+        id: 'kwelderexcursie-pieterburen-2026-10-13',
+        date: '2026-10-13',
+        startTime: '13:30',
+        endTime: '16:00',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Covered-wagon trip to the salt marsh', nl: 'Huifkartocht en kwelderexcursie' },
+        location: { en: 'Bezoekerscentrum Waddenkust, Pieterburen', nl: 'Bezoekerscentrum Waddenkust, Pieterburen' },
+        tip: { en: 'Het Groninger Landschap takes children aged 8 to 12 by covered wagon to the muddy salt marsh behind the dike, hunting for plants and creepy-crawlies, with guides who explain what they find. It leaves at 13:30 from the visitor centre and is back around 16:00. It is free as part of Oktober Kindermaand, but there are only 20 places in the wagon, so sign up early. Wear shoes that can get wet and dirty; boots can get stuck in the mud.', nl: 'Het Groninger Landschap neemt kinderen van 8 t/m 12 jaar met de huifkar mee naar de modderige kwelder achter de dijk, op zoek naar plantjes en kriebelbeestjes, met gidsen die alles over je vondsten vertellen. Vertrek om 13:30 vanaf het bezoekerscentrum, terug rond 16:00. Het is gratis als onderdeel van Oktober Kindermaand, maar er zijn maar 20 plekken in de huifkar, dus meld je snel aan. Trek schoenen aan die nat en vies mogen worden; laarzen kunnen vastzuigen in de modder.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3026866992/kwelderexcusie'
+    },
+    {
+        id: 'springkussen-festival-martiniplaza-2026',
+        date: '2026-10-13',
+        endDate: '2026-10-16',
+        startTime: '10:00',
+        endTime: '17:00',
+        kidFriendly: true,
+        title: { en: 'Mega Indoor Bouncy Castle Festival', nl: 'Mega Indoor Springkussen Festival' },
+        location: { en: 'Martiniplaza, Leonard Springerlaan', nl: 'Martiniplaza, Leonard Springerlaan' },
+        tip: { en: 'For four days of the autumn holiday Martiniplaza turns into one big indoor playground of bouncy castles, slides, climbing towers and a rodeo bull. Open 10:00 to 17:00. Children pay to get in; parents and children up to 2 go free. Buy tickets online.', nl: 'Vier dagen lang in de herfstvakantie verandert Martiniplaza in één grote overdekte speeltuin met springkussens, glijbanen, klimtorens en een rodeostier. Open van 10:00 tot 17:00. Kinderen betalen entree; ouders en kinderen t/m 2 jaar mogen gratis naar binnen. Kaartjes koop je online.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3935609718/mega-indoor-springkussen-festival-3'
+    },
+    {
+        id: 'star-kindermaand-2026-10-14',
+        date: '2026-10-14',
+        startTime: '10:00',
+        endTime: '16:00',
+        kidFriendly: true,
+        title: { en: 'Steam train adventure on Museumspoorlijn STAR', nl: 'Op avontuur met de stoomtrein van Museumspoorlijn STAR' },
+        location: { en: 'Museumspoorlijn STAR, Stadskanaal–Veendam', nl: 'Museumspoorlijn STAR, Stadskanaal–Veendam' },
+        tip: { en: 'The STAR heritage steam train runs between Stadskanaal and Veendam on the Sundays and the Wednesday of the autumn holiday. For Oktober Kindermaand, children up to 12 ride free; anyone 13 and older pays €16. On board there is a railway quiz and a teddy-bear hunt, and the museum at Stadskanaal station shows how trains used to run in the region. Buy tickets online or at the stations.', nl: 'De stoomtrein van Museumspoorlijn STAR rijdt op de zondagen en de woensdag van de herfstvakantie tussen Stadskanaal en Veendam. Omdat het Oktober Kindermaand is, rijden kinderen tot en met 12 jaar gratis mee; vanaf 13 jaar betaal je €16. In de trein is er een spoorquiz en een berenjacht, en in het museum bij station Stadskanaal leer je hoe de treinen hier vroeger reden. Kaartjes koop je online of op de stations.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2140334573/oktober-kindermaand-stadskanaal-rail'
+    },
+    {
+        // The only source is Visit Groningen's own Instagram post; no listing or
+        // organiser page was reachable, so there is no time to narrow to.
+        id: 'paddenstoelenexpeditie-metbroekbos-2026',
+        date: '2026-10-14',
+        kidFriendly: true,
+        title: { en: 'Mushroom expedition in the Metbroekbos', nl: 'Paddenstoelenexpeditie in het Metbroekbos' },
+        location: { en: 'Metbroekbos, Dal van de Ruiten Aa', nl: 'Metbroekbos, Dal van de Ruiten Aa' },
+        tip: { en: 'An autumn expedition through the woods of the Ruiten Aa valley in Westerwolde: look, feel, smell and listen to what the forest tells you, with mushrooms as the star of the show. Check the start time and whether you need to sign up before you go.', nl: 'Een herfstexpeditie door het bos in het dal van de Ruiten Aa in Westerwolde: kijk, voel, ruik en luister naar wat het bos je vertelt, met de paddenstoelen in de hoofdrol. Check vooraf de begintijd en of je je moet aanmelden.' },
+        url: 'https://www.instagram.com/p/DeMPipZjTz1/'
+    },
+    {
+        id: 'natuur-knutselmiddag-coendersborg-2026',
+        date: '2026-10-14',
+        startTime: '14:00',
+        endTime: '15:30',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Nature craft afternoon for kids', nl: 'Natuur knutselmiddag voor kinderen' },
+        location: { en: 'Coendersborg, Nuis', nl: 'Coendersborg, Nuis' },
+        tip: { en: 'Children aged 6 to 12 collect what the trees have dropped around the Coendersborg estate and turn it into autumn decorations and other creations, with Het Groninger Landschap. It is free for children and adults, from 14:00 to 15:30. Sign up in advance.', nl: 'Kinderen van 6 tot 12 jaar verzamelen wat de bomen rond landgoed Coendersborg hebben laten vallen en maken er herfstige bloemstukjes en andere creaties van, met Het Groninger Landschap. Gratis voor kinderen en volwassenen, van 14:00 tot 15:30. Meld je vooraf aan.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/213522102/natuur-knutselmiddag-voor-kinderen-van-6-tot-12-jaar'
+    },
+    {
+        id: 'kwelderexcursie-pieterburen-2026-10-16',
+        date: '2026-10-16',
+        startTime: '13:30',
+        endTime: '16:00',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Covered-wagon trip to the salt marsh', nl: 'Huifkartocht en kwelderexcursie' },
+        location: { en: 'Bezoekerscentrum Waddenkust, Pieterburen', nl: 'Bezoekerscentrum Waddenkust, Pieterburen' },
+        tip: { en: 'Het Groninger Landschap takes children aged 8 to 12 by covered wagon to the muddy salt marsh behind the dike, hunting for plants and creepy-crawlies, with guides who explain what they find. It leaves at 13:30 from the visitor centre and is back around 16:00. It is free as part of Oktober Kindermaand, but there are only 20 places in the wagon, so sign up early. Wear shoes that can get wet and dirty; boots can get stuck in the mud.', nl: 'Het Groninger Landschap neemt kinderen van 8 t/m 12 jaar met de huifkar mee naar de modderige kwelder achter de dijk, op zoek naar plantjes en kriebelbeestjes, met gidsen die alles over je vondsten vertellen. Vertrek om 13:30 vanaf het bezoekerscentrum, terug rond 16:00. Het is gratis als onderdeel van Oktober Kindermaand, maar er zijn maar 20 plekken in de huifkar, dus meld je snel aan. Trek schoenen aan die nat en vies mogen worden; laarzen kunnen vastzuigen in de modder.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3026866992/kwelderexcusie'
+    },
+    {
+        id: 'star-teddyberendag-2026',
+        date: '2026-10-18',
+        startTime: '10:00',
+        endTime: '16:00',
+        kidFriendly: true,
+        title: { en: 'Teddy Bear Day on Museumspoorlijn STAR', nl: 'Teddyberendag bij Museumspoorlijn STAR' },
+        location: { en: 'Museumspoorlijn STAR, Stadskanaal–Veendam', nl: 'Museumspoorlijn STAR, Stadskanaal–Veendam' },
+        tip: { en: 'On the last Sunday of the autumn holiday the STAR steam railway is all about its youngest visitors: every child rides free if they bring their own cuddly toy, and there is a teddy-bear doctor. At Stadskanaal station there is face painting, a train quiz and old Dutch games like stilt walking, plus rides on the pump trolley and a shunting locomotive. The museum is open and the train makes two return trips to Veendam. Anyone 13 and older pays €16.', nl: 'De laatste zondag van de herfstvakantie staat Museumspoorlijn STAR helemaal in het teken van de jongste bezoekers: alle kinderen mogen gratis mee als ze hun eigen knuffel meenemen, en de berendokter is er ook. Op het station in Stadskanaal kun je je laten schminken, meedoen aan de treinquiz en oudhollandse spelletjes spelen zoals stelten lopen, en meerijden op de pomplorrie of een rangeerlocomotief. Het museum is open en de trein rijdt twee keer op en neer naar Veendam. Vanaf 13 jaar betaal je €16.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2140334573/oktober-kindermaand-stadskanaal-rail'
+    },
+    {
+        id: 'paddenstoelenfestival-ennemaborg-2026',
+        date: '2026-10-18',
+        startTime: '11:00',
+        endTime: '17:00',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Mushroom Festival at Ennemaborg', nl: 'Paddenstoelenfestival bij de Ennemaborg' },
+        location: { en: 'Landgoed Ennemaborg, Midwolda', nl: 'Landgoed Ennemaborg, Midwolda' },
+        tip: { en: 'More than 250 kinds of mushroom are spotted on the Ennemaborg estate every year, and for one day Het Groninger Landschap turns it into a festival for families with children aged 4 to 12. Explore the woods on your own and join activities like dissecting owl pellets or baking your own bread. Entry is free; a €3.50 stamp card covers the bread, a lemonade and a spin on the prize wheel. Sign up in advance.', nl: 'Op landgoed Ennemaborg worden elk jaar meer dan 250 soorten paddenstoelen gespot, en één dag lang maakt Het Groninger Landschap er een festival van voor gezinnen met kinderen van 4 t/m 12 jaar. Verken zelf het bos en doe mee aan activiteiten zoals braakballen uitpluizen of je eigen brood bakken. De toegang is gratis; met een stempelkaart van €3,50 bak je een broodje, haal je limonade en draai je aan het Rad van Fortuin. Meld je vooraf aan.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2394352863/paddenstoelenfestival-2'
     }
 ];
 
