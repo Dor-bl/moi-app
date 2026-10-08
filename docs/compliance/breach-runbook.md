@@ -91,7 +91,7 @@ users; that's accepted. Write down what you changed and when.
 | **Contact relay** (`supabase/functions/contact`) | Supabase → Edge Functions: delete or disable `contact`; rotate `RESEND_API_KEY` with `supabase secrets set` | Contact form fails; users can still email `hallo@moicheck.nl` |
 | **Resend account** | **Secure the account first**: change password, sign out all sessions, re-check MFA, remove unknown team members. Only then rotate the API key and SMTP credentials (rotating first lets an attacker still inside mint new ones), and check sending domains and logs for unknown sends | Magic-link sign-in and the contact form stop until new credentials are in Supabase |
 | **Google mailbox** (`hallo@moicheck.nl`'s destination) | **Secure the account first**: change password, sign out all sessions, re-check MFA. Then remove persistence: forwarding rules, filters, delegates, app passwords, third-party app access, and the account's recovery email and phone | None |
-| **Cloudflare** | **Secure the account first**: change password, revoke sessions and API tokens, remove unknown members, re-check MFA. Then restore Email Routing rules and the `moicheck.nl` DNS records to their known state | None |
+| **Cloudflare** | **Secure the account first**: change password, revoke sessions and API tokens, remove unknown members, re-check MFA. Then restore Email Routing rules and the `moicheck.nl` DNS records to their known state. **If the DNS was repointed** at any point in the window, attacker content may have run on `moicheck.nl` and read visitors' session tokens, and restoring DNS doesn't revoke them: also rotate or revoke the signing key and **end sessions** (the leaked-key and stolen-sessions rows), as for a malicious deploy | None, unless the DNS was repointed: then everyone is signed out, plus the leaked-key row's effects |
 | **Processor-side breach** (a provider tells you) | Follow their instructions; you're still the controller and the 72 hours run from *your* awareness (Art. 33(2) obliges them to tell you without undue delay) | Depends |
 
 To stop all sign-ins while investigating: Supabase → Authentication → Providers, disable
@@ -135,9 +135,12 @@ Then breathe, and go to section 2.
 | unpkg (map scripts) and OpenStreetMap (map tiles) | Each map visitor's IP address and request details, fetched directly by the browser; no agreement with either (`privacy.html` §2–§3) | Visitors who open Map view | None on our side; ask the provider | Theirs |
 | Vercel Web Analytics | What reaches us is aggregates only. Vercel builds them from the request data in the row above, so a Vercel-side breach is scoped by that row, not this one | n/a | n/a | n/a |
 
-Not in the system at all: passwords (sign-in is magic link or Google only), payment data,
-government IDs, any field designed for special-category data, and raw device coordinates
-(the "I'm here" check runs on the device and stores nothing; see `privacy.html` §1).
+No dedicated field for: passwords (sign-in is magic link or Google only), payment data,
+government IDs or special-category data; and no raw device coordinates (the "I'm here"
+check runs on the device and stores nothing; see `privacy.html` §1). Memory notes and
+contact messages are free text, though, so a user may have written any of these into them.
+When notes or messages are in scope, review the affected text (from the frozen export)
+before ruling a category out.
 That is **not** the same as "no location data". `user_progress` rows pair a place (each
 `item_id` maps to a known location) with a date, which is location-related history; see
 section 5. When filling in the AP form's data categories, include it.
@@ -295,7 +298,9 @@ location information.
   user's own account. Key rotation alone does **not** end them: the sessions themselves
   have to be ended (section 1, step 4, "Stolen user sessions"; and the token row in the
   outcomes table).
-- **No financial data, government IDs, or special-category fields.**
+- **No dedicated fields for financial data, government IDs or special-category data.**
+  Counts only once the affected notes and contact messages have been reviewed: free text
+  can contain any of these.
 - **No raw device location.** The location check for event badges never leaves the
   device. (Progress rows are still location-related history; see below.)
 - **Narrow audience and purpose.** A bucket list for one city. The data is designed to
@@ -696,8 +701,9 @@ language they used in the app if you know it, otherwise both, Dutch first.
 > database"]. We discovered this on [date] and closed it on [date].
 >
 > **What data was involved.** [Your email address] [and] [the bucket-list items you ticked
-> off, with the dates you ticked them off] [and the memory notes you wrote]. MoiCheck has
-> no passwords, payment details or ID documents, so none of those were involved.
+> off, with the dates you ticked them off] [and the memory notes you wrote]. MoiCheck
+> doesn't ask for passwords, payment details or ID documents. [Only if the affected notes
+> were reviewed and contain none: So none of those were involved.]
 >
 > **What this could mean for you.** [Someone could learn which places in Groningen you
 > visited and roughly when.] [Anything you wrote in a memory note may have been read.]
@@ -734,8 +740,9 @@ language they used in the app if you know it, otherwise both, Dutch first.
 >
 > **Om welke gegevens het gaat.** [Je e-mailadres] [en] [de onderdelen van de bucketlijst
 > die je hebt afgevinkt, met de datum waarop je ze afvinkte] [en de herinneringen die je
-> erbij hebt geschreven]. MoiCheck heeft geen wachtwoorden, betaalgegevens of
-> identiteitsbewijzen, dus die zijn niet betrokken.
+> erbij hebt geschreven]. MoiCheck vraagt niet om wachtwoorden, betaalgegevens of
+> identiteitsbewijzen. [Alleen als de betrokken herinneringen zijn nagekeken en die niet
+> bevatten: Die zijn dus niet betrokken.]
 >
 > **Wat dit voor jou kan betekenen.** [Iemand kan te weten komen welke plekken in
 > Groningen je hebt bezocht en ongeveer wanneer.] [Wat je in een herinnering hebt
