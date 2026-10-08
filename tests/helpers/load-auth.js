@@ -90,7 +90,11 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
 // Returns handles onto the module's internal `let` bindings. They live in the
 // context's lexical scope rather than on its global object, so the only way to
 // reach them is from code evaluated in that same context.
-export function loadAuthModule({ storage = createLocalStorage(), supabaseClient = null } = {}) {
+// `overrides` are merged onto the sandbox before the scripts run, so a test can
+// supply the browser globals a particular path needs (a richer `document`,
+// `crypto`, `TextEncoder`, a `window.GOOGLE_CLIENT_ID`) without every other
+// test having to carry them.
+export function loadAuthModule({ storage = createLocalStorage(), supabaseClient = null, overrides = {} } = {}) {
     const renders = { list: 0, progress: 0 };
 
     const sandbox = {
@@ -110,6 +114,20 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
             history: { replaceState: () => {} }
         }
     };
+    for (const [key, value] of Object.entries(overrides)) {
+        if (key === 'window' && value && typeof value === 'object') {
+            // Adopt the caller's object as the page's window, by reference, so
+            // a test can change it after load (install `window.google`, swap
+            // `matchMedia`) and auth.js sees the change. Fill in the defaults
+            // it does not set.
+            for (const [name, fallback] of Object.entries(sandbox.window)) {
+                if (!(name in value)) value[name] = fallback;
+            }
+            sandbox.window = value;
+        } else {
+            sandbox[key] = value;
+        }
+    }
     sandbox.window.localStorage = storage;
 
     const context = vm.createContext(sandbox);
@@ -142,7 +160,14 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
             onUserLoggedIn,
             onUserLoggedOut,
             syncCloudProgress,
-            syncItemToCloud
+            syncItemToCloud,
+            // Google sign-in on the app's origin (js/auth.js). The two getters
+            // expose internal state the tests assert on.
+            initGoogleSignIn,
+            renderGoogleButton,
+            onGoogleCredential,
+            get googleNonce() { return googleNonce; },
+            get googleSignInStarted() { return googleSignInStarted; }
         };
     `, context, { filename: 'test-hooks.js' });
 
