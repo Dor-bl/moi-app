@@ -122,7 +122,8 @@ Then breathe, and go to section 2.
 | Resend | Recipient address of every magic-link email and contact relay, with a one-time sign-in token; the contact message content | Magic-link users; contact-form users | Resend logs | Resend's own (stated 30 days; unverified, see `privacy.html` §4) |
 | Gmail mailbox behind `hallo@moicheck.nl` | Every contact-form message and direct email: name, address, free text | Anyone who wrote in | Google account activity | Google's |
 | Users' browsers (`localStorage`) | Progress, notes, event badges, preferences; and, for signed-in users, the **Supabase-managed session tokens** (access and refresh token) | Each user, on their own device | n/a for our servers; but a malicious deploy or injected script runs in this context and can read all of it, tokens included | n/a |
-| Vercel Web Analytics | Aggregates only; no per-visitor data reaches us | n/a | n/a | n/a |
+| Vercel hosting (request handling) | For every visitor, signed in or not: IP address, browser details, the page requested and the referring site (`privacy.html` §1–§2) | Every visitor | Vercel's own logs; ask Vercel, as processor | Vercel's |
+| Vercel Web Analytics | What reaches us is aggregates only. Vercel builds them from the request data in the row above, so a Vercel-side breach is scoped by that row, not this one | n/a | n/a | n/a |
 
 Not in the system at all: passwords (sign-in is magic link or Google only), payment data,
 government IDs, any field designed for special-category data, and raw device coordinates
@@ -286,8 +287,11 @@ location information.
   device. (Progress rows are still location-related history; see below.)
 - **Narrow audience and purpose.** A bucket list for one city. The data is designed to
   record what someone did for fun, not their health, finances or beliefs.
-- **Data stored in the EU** (Supabase `eu-west-1`), with processor contracts for
-  Supabase, Resend, Cloudflare and Vercel.
+- **Account and progress data stored in the EU** (Supabase `eu-west-1`, under a
+  processor contract). This applies to the Supabase-hosted dataset only. Mail is
+  different: magic-link emails and contact messages pass through Resend and Cloudflare
+  in the US and rest in a US Gmail mailbox with no processor contract (`privacy.html`
+  §3). Don't count this factor for a mail-side incident.
 
 ### Factors that increase risk
 
@@ -326,7 +330,7 @@ Starting points under the decision rule above, not conclusions.
 | Notes (with or without emails) | **Presume high risk unless review establishes otherwise**: free text may contain health information, information about other individuals, intimate information, identifying information or other sensitive material | Notify | Normally notify if high risk can't reasonably be excluded |
 | Contact-form messages (mailbox, Resend) | Depends on content: review the affected messages | Notify | Notify affected senders if the assessment concludes the breach is likely to result in high risk, with particular attention to messages containing sensitive, intimate, identifying or third-party information |
 | Live session tokens or magic-link tokens | **Token exposed, no evidence of use:** assess what the token could have accessed, and end the affected sessions immediately (section 1, step 4: delete them from `auth.sessions`; key rotation alone doesn't do it). **Token demonstrably used:** assess on the data actually accessed or actions performed | Notify | Follows the risk of the data or actions the token made accessible, not the mere existence of a compromised token |
-| Data altered or deleted without exposure (for example, a write-open RLS policy abused to vandalise rows) | Risk (integrity/availability) | Notify where required | Assess whether the alteration or deletion is likely to result in high risk, for example loss of personal records, material consequences for users, or inability to recover notes or progress (section 7: no restorable backups on Free). Notify affected users where that threshold is met, or where notification is otherwise appropriate as part of remediation |
+| Data altered or deleted without exposure (for example, a write-open RLS policy abused to vandalise rows) | Risk (integrity/availability) | Notify where required | Assess whether the alteration or deletion is likely to result in high risk, for example loss of personal records, material consequences for users, or inability to recover notes or progress (section 7: no restorable backups on Free, and never an in-place restore). Notify affected users where that threshold is met, or where notification is otherwise appropriate as part of remediation |
 
 ### Exceptions to Article 34 (Art. 34(3))
 
@@ -484,9 +488,15 @@ Free gets none you can use. Two consequences:
 
 - **Availability side of a breach:** on Free, a deleted or overwritten `user_progress`
   can't be restored from the dashboard. The only way back is to upgrade to Pro inside
-  the 7-day window and restore from one of those backups, if they still exist. This
-  belongs in the containment decision: if rows were vandalised, upgrading may be the
-  recovery step, and the clock is 7 days.
+  the 7-day window and use one of those backups, if they still exist, and the clock is
+  7 days. **Never restore in place.** A dashboard restore rolls back the *whole*
+  database: it would bring back accounts deleted since the backup, which `privacy.html`
+  §5 promises never happens, and overwrite every legitimate change made since. Restore
+  the backup into a **new, separate project** instead (Supabase docs, *Database Backups*
+  → "Restore to a new project"), and copy back only the affected users' vandalised
+  `user_progress` rows. Skip any user whose account no longer exists in the live
+  project. Delete the temporary project afterwards, since it holds a full copy of the
+  data.
 - **Erasure side:** a deleted account can live on in those backups for up to 7 days.
   That's the backup position [#87](https://github.com/Dor-bl/moi-app/issues/87) has to
   write down. `privacy.html` already says backups age out on their own schedule, which
@@ -577,7 +587,8 @@ select user_id, item_id, date, note
   from public.user_progress;
 
 -- (2) User id to email mapping as it is now (a deleted account loses its email)
-select id as user_id, email, created_at, last_sign_in_at
+select id as user_id, email, created_at, last_sign_in_at,
+       raw_user_meta_data   -- Google profile name and avatar URL, where present
   from auth.users;
 
 -- Per-user counts, for the AP form, computed from (1):
