@@ -887,24 +887,13 @@ const EVENTS = [
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2140334573/oktober-kindermaand-stadskanaal-rail'
     },
     {
-        // The only source is Visit Groningen's own Instagram post; no listing or
-        // organiser page was reachable, so there is no time to narrow to.
-        id: 'paddenstoelenexpeditie-metbroekbos-2026',
-        date: '2026-10-14',
-        kidFriendly: true,
-        title: { en: 'Mushroom expedition in the Metbroekbos', nl: 'Paddenstoelenexpeditie in het Metbroekbos' },
-        location: { en: 'Metbroekbos, Dal van de Ruiten Aa', nl: 'Metbroekbos, Dal van de Ruiten Aa' },
-        tip: { en: 'An autumn expedition through the woods of the Ruiten Aa valley in Westerwolde: look, feel, smell and listen to what the forest tells you, with mushrooms as the star of the show. Check the start time and whether you need to sign up before you go.', nl: 'Een herfstexpeditie door het bos in het dal van de Ruiten Aa in Westerwolde: kijk, voel, ruik en luister naar wat het bos je vertelt, met de paddenstoelen in de hoofdrol. Check vooraf de begintijd en of je je moet aanmelden.' },
-        url: 'https://www.instagram.com/p/DeMPipZjTz1/'
-    },
-    {
         id: 'natuur-knutselmiddag-coendersborg-2026',
         date: '2026-10-14',
         startTime: '14:00',
         endTime: '15:30',
         kidFriendly: true,
         free: true,
-        title: { en: 'Nature craft afternoon for kids', nl: 'Natuur knutselmiddag voor kinderen' },
+        title: { en: 'Nature craft afternoon for kids', nl: 'Natuurknutselmiddag voor kinderen' },
         location: { en: 'Coendersborg, Nuis', nl: 'Coendersborg, Nuis' },
         tip: { en: 'Children aged 6 to 12 collect what the trees have dropped around the Coendersborg estate and turn it into autumn decorations and other creations, with Het Groninger Landschap. It is free for children and adults, from 14:00 to 15:30. Sign up in advance.', nl: 'Kinderen van 6 tot 12 jaar verzamelen wat de bomen rond landgoed Coendersborg hebben laten vallen en maken er herfstige bloemstukjes en andere creaties van, met Het Groninger Landschap. Gratis voor kinderen en volwassenen, van 14:00 tot 15:30. Meld je vooraf aan.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/213522102/natuur-knutselmiddag-voor-kinderen-van-6-tot-12-jaar'
