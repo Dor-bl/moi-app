@@ -124,10 +124,13 @@ or build script, and the three checks under "Why removing them was safe" below s
 apply unchanged.
 
 **Not rotated, deliberately.** Deleting the variable stops Vercel holding the secret; it
-does not invalidate the value, which stays valid in Supabase. Rotating it would sign every
-user out and may change the anon key the site ships. With no sign of exposure, the owner
-chose not to rotate. If exposure is ever suspected, the breach runbook
-([`breach-runbook.md`](breach-runbook.md), section 1 step 4) covers rotation.
+does not invalidate the value, which stays valid in Supabase. Retiring it is not a
+one-click rotation: Supabase no longer rotates the legacy secret in place, and the supported
+route (migrate to signing keys, rotate, revoke the imported legacy secret) first requires
+deactivating the legacy `anon` and `service_role` keys, and switching the site to the
+publishable key if it still ships the legacy `anon` key. With no sign of exposure, the owner
+chose not to do that now. If exposure is ever suspected, the breach runbook
+([`breach-runbook.md`](breach-runbook.md), section 1 step 4) covers that flow.
 
 One caveat the dashboard can settle and this file cannot: if the project has moved to
 asymmetric JWT signing keys and legacy HS256 verification is switched off, a forged token
