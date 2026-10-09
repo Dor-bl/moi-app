@@ -407,15 +407,19 @@ There is no mailing tool; step 3 is the procedure. For Dutch-language recipients
        '{from: "MoiCheck <hallo@moicheck.nl>", to: [$to],
          subject: "Important: data breach involving your MoiCheck data",
          text: $text}' |
-     curl -sS https://api.resend.com/emails \
+     curl -sS --fail-with-body https://api.resend.com/emails \
        -H "Authorization: Bearer $RESEND_API_KEY" -H "Content-Type: application/json" \
-       -d @- && echo " $to" >> sent.log
+       -d @- > response.json \
+       && echo "$to $(jq -r .id response.json)" >> sent.log \
+       || { echo "$to $(cat response.json)" >> failed.log; }
      sleep 1
    done < recipients.txt
    ```
 
-   Send it to yourself first and check the result. `sent.log` is the delivery record for
-   Appendix A. Keep `recipients.txt` with the other encrypted exports and delete it with
+   Send it to yourself first and check the result. `--fail-with-body` makes any HTTP error
+   (`401`, `429`, `500`) count as a failure, so `sent.log` only lists addresses Resend
+   accepted, with Resend's message ID. Anything in `failed.log` gets resent once the cause
+   is fixed. `sent.log` is the delivery record for Appendix A. Keep `recipients.txt` with the other encrypted exports and delete it with
    them.
 4. **If the normal mail provider is compromised** (Resend, or the domain's mail routing),
    the incident lead explicitly chooses an alternative trusted channel and records why.
