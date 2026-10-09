@@ -150,7 +150,7 @@ section 5. When filling in the AP form's data categories, include it.
 | Entry point | Reaches |
 | --- | --- |
 | RLS policy dropped or mis-edited | Depends on the effective state, read from the step 2 snapshot: **RLS disabled**, or a permissive policy such as `using (true)`, exposes all `user_progress` rows to the roles that hold grants. A **dropped policy with RLS still enabled** denies everything (an outage, not exposure). A mis-edit may widen only one operation (`select`, `insert`, `update`, `delete`) or a subset of rows. Scope to what the policies and grants actually allowed. Not `auth.users` (anon/authenticated roles can't read it) |
-| `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The JWT secret was removed from Vercel on 7 October 2026 (audit §2), which made this row much less likely. It was not rotated, so the value is still valid in Supabase |
+| `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The JWT secret was removed from Vercel on 7 October 2026 (audit §2), which made this row much less likely. It was not rotated, so it is unrevoked. Whether Supabase still accepts tokens signed with it depends on the legacy HS256 verification setting, which is unconfirmed (audit §2), so treat it as live until the dashboard shows otherwise |
 | Supabase dashboard account | Everything in Supabase, including backups and logs |
 | GitHub or Vercel account (malicious deploy) | **Potentially everything in Supabase**, until the credentials these accounts hold are shown to be untouched and have been rotated: `SUPABASE_ACCESS_TOKEN` in GitHub Actions (management access to the project), plus any Supabase key found in Vercel's environment variables. `SUPABASE_JWT_SECRET` was removed on 7 October 2026, but check for it: re-linking the integration restores it. Separately, a malicious deploy reaches anything a signed-in user's browser can see: their session, progress and notes. Vercel's deployment list bounds only that browser-side exposure, to users who loaded the site while the deployment was live |
 | Resend account | Recipient addresses, contact messages, and live magic-link tokens for links not yet used (account takeover while they're valid) |
@@ -720,7 +720,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 > edit or delete them in the app, or delete your account and all its data from your
 > profile.] Be wary of unexpected emails mentioning MoiCheck.
 >
-> **Questions.** Reply to this email or write to hallo@moicheck.nl. You also have the
+> **Questions.** Write to [hallo@moicheck.nl, or, if Resend, Cloudflare or the mailbox is
+> affected, the trusted address you're sending this from]. You also have the
 > right to complain to the Autoriteit Persoonsgegevens.
 >
 > We're sorry this happened.
@@ -760,7 +761,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 > verwijderen via je profiel.] Wees alert op onverwachte e-mails waarin MoiCheck wordt
 > genoemd.
 >
-> **Vragen?** Beantwoord deze e-mail of schrijf naar hallo@moicheck.nl. Je hebt ook het
+> **Vragen?** Schrijf naar [hallo@moicheck.nl, of, als Resend, Cloudflare of de mailbox
+> getroffen is, het vertrouwde adres waarvandaan je dit verstuurt]. Je hebt ook het
 > recht een klacht in te dienen bij de Autoriteit Persoonsgegevens.
 >
 > Het spijt ons dat dit is gebeurd.

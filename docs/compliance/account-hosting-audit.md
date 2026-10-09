@@ -124,7 +124,8 @@ or build script, and the three checks under "Why removing them was safe" below s
 apply unchanged.
 
 **Not rotated, deliberately.** Deleting the variable stops Vercel holding the secret; it
-does not invalidate the value, which stays valid in Supabase. Retiring it is not a
+does not revoke the value, which stays unrevoked in Supabase; whether tokens signed with it
+are still accepted depends on the legacy verification setting below. Retiring it is not a
 one-click rotation: Supabase no longer rotates the legacy secret in place, and the supported
 route (migrate to signing keys, rotate, revoke the imported legacy secret) first requires
 deactivating the legacy `anon` and `service_role` keys, and switching the site to the
@@ -321,7 +322,7 @@ rather than trusting this file — account state drifts, and this file does not.
       (section 2). Not rotated, by decision; see section 2.
 - [ ] **Check whether legacy HS256 JWT verification is still enabled** for the project
       (Supabase dashboard → JWT Keys), and note the answer here. Split out of the item
-      above. It decides whether the secret, which is still valid, matters at all.
+      above. It decides whether the secret, which is unrevoked, matters at all.
 - [ ] **Confirm Preview and Development** for the nine credentials removed from
       Production. The audit established Production only; #92 asks for every environment.
 - [ ] **Confirm no local `.env` holds a privileged key.** The repository side is clean
