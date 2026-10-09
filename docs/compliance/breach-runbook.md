@@ -60,7 +60,7 @@ and Article 33(5) requires it whether or not you end up notifying.
 | Vercel → Deployments | Screenshot the list with commit SHAs and timestamps | Shows whether unexpected code was ever served |
 | GitHub → repository and account security log | Screenshot | Pushes, new deploy keys, new OAuth apps |
 | Resend → Logs / Emails | Screenshot the window | Who was sent magic links, and when |
-| Google account → Security → Recent activity, Your devices | Screenshot | Mailbox access (contact-form messages) |
+| Google account → Security → Recent activity, Your devices; the affected messages | Screenshot the activity. Export the affected contact messages with full headers (Gmail → Show original → Download original), hash them and keep them with the Supabase exports | Mailbox access (contact-form messages). Messages and headers can be edited or deleted after discovery, and section 5 needs their content and senders, including people with no app account |
 | Cloudflare → Audit log; Email Routing rules | Screenshot | A changed routing rule silently redirects `hallo@moicheck.nl` |
 
 Save exports with the export time in the filename. Don't edit them. Hash them
@@ -151,6 +151,7 @@ section 5. When filling in the AP form's data categories, include it.
 | --- | --- |
 | RLS policy dropped or mis-edited | Depends on the effective state, read from the step 2 snapshot: **RLS disabled**, or a permissive policy such as `using (true)`, exposes all `user_progress` rows to the roles that hold grants. A **dropped policy with RLS still enabled** denies everything (an outage, not exposure). A mis-edit may widen only one operation (`select`, `insert`, `update`, `delete`) or a subset of rows. Scope to what the policies and grants actually allowed. Not `auth.users` (anon/authenticated roles can't read it) |
 | `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The JWT secret was removed from Vercel on 7 October 2026 (audit §2), which made this row much less likely. It was not rotated, so it is unrevoked. Whether Supabase still accepts tokens signed with it depends on the legacy HS256 verification setting, which is unconfirmed (audit §2), so treat it as live until the dashboard shows otherwise |
+| Direct database credential (database password, a connection string, any `POSTGRES_*` variable) | Everything in the database, including the `auth` schema: a direct connection bypasses the Data API and RLS |
 | Supabase dashboard account | Everything in Supabase, including backups and logs |
 | GitHub or Vercel account (malicious deploy) | **Potentially everything in Supabase**, until the credentials these accounts hold are shown to be untouched and have been rotated: `SUPABASE_ACCESS_TOKEN` in GitHub Actions (management access to the project), plus any Supabase key found in Vercel's environment variables. `SUPABASE_JWT_SECRET` was removed on 7 October 2026, but check for it: re-linking the integration restores it. Separately, a malicious deploy reaches anything a signed-in user's browser can see: their session, progress and notes. Vercel's deployment list bounds only that browser-side exposure, to users who loaded the site while the deployment was live |
 | Resend account | Recipient addresses, contact messages, and live magic-link tokens for links not yet used (account takeover while they're valid) |
@@ -200,8 +201,11 @@ A personal data breach is a security incident that leads to accidental or unlawf
 
   A `GET` or `DELETE` with no `user_id` filter, or with one that doesn't match the
   caller's JWT `sub`, is out of shape. So is any request from the `anon` role, any other
-  method (`PATCH`, `PUT`), and unusual volume. Out of shape means you treat it as a breach
-  with unknown rows, not as a near miss.
+  method (`PATCH`, `PUT`), and unusual volume. An out-of-shape request that **could have
+  succeeded** (a `2xx` status) means you treat it as a breach with unknown rows, not as a
+  near miss. One the logs show was **rejected** (`401`, `403`, or a PostgREST permission
+  error) didn't reach data: record it in Appendix A as a security incident and find out
+  who was probing, but it isn't a breach on its own.
 
   **If the logs don't record the caller's `sub`,** a filtered request can't be shown to
   be the caller's own: an attacker can filter on someone else's `user_id`. Treat that as
@@ -385,14 +389,34 @@ an email was or wasn't sent.
 
 ### Sending the notice
 
-There is no mailing tool.
+There is no mailing tool; step 3 is the procedure. For Dutch-language recipients, run it again with the Dutch subject and text.
 
 1. **Build the list** from the affected-set snapshot (Appendix B), not the live table.
 2. **Verify it before sending:** check the list against the incident scope and remove
    addresses that weren't affected.
-3. **Send individual messages wherever practical.** The default channel is the existing
-   Resend account. If a batch mechanism is unavoidable, use one that doesn't expose
-   recipient addresses to other affected users; never put recipients in To or CC.
+3. **Send one message per recipient through the Resend API.** The default channel is the
+   existing Resend account, which has no compose screen, so send from a local shell with a
+   Resend API key that has sending access only. One recipient per call means no address is
+   exposed to anyone else:
+
+   ```sh
+   # recipients.txt: one address per line, from the verified list in step 2
+   # notice.txt: the filled-in Appendix C text
+   while read -r to; do
+     jq -n --arg to "$to" --rawfile text notice.txt \
+       '{from: "MoiCheck <hallo@moicheck.nl>", to: [$to],
+         subject: "Important: data breach involving your MoiCheck data",
+         text: $text}' |
+     curl -sS https://api.resend.com/emails \
+       -H "Authorization: Bearer $RESEND_API_KEY" -H "Content-Type: application/json" \
+       -d @- && echo " $to" >> sent.log
+     sleep 1
+   done < recipients.txt
+   ```
+
+   Send it to yourself first and check the result. `sent.log` is the delivery record for
+   Appendix A. Keep `recipients.txt` with the other encrypted exports and delete it with
+   them.
 4. **If the normal mail provider is compromised** (Resend, or the domain's mail routing),
    the incident lead explicitly chooses an alternative trusted channel and records why.
    Don't default to the Gmail mailbox: it's a personal account under consumer terms with
@@ -796,6 +820,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 - [ ] **Owner review** of section 6 and the Dutch email. This is a draft, not legal advice.
 - [x] **Verify section 6 on the AP website**: done 5 October 2026. The DigiD claim was
       wrong and is removed; the form has no login.
+- [ ] **Dry-run the notice send** (section 5, "Sending the notice") to your own address,
+      so the loop and the Resend key are known to work before an incident needs them.
 - [ ] **Download the AP questionnaire** and fill in the parts that don't depend on an
       incident (organisation, contact person, sector), so they're ready.
 - [ ] **Decide on log retention** (section 7, options 1–2) and record the decision here.
