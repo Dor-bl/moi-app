@@ -13,6 +13,7 @@ export default [
         ...globals.es2021,
         L: "readonly",
         supabase: "readonly",
+        google: "readonly",
         // Readonly shared exports across script modules
         BUCKET_LIST: "readonly",
         EVENTS: "readonly",
@@ -33,6 +34,8 @@ export default [
         syncItemToCloud: "readonly",
         deleteUserAccountAndData: "readonly",
         describeMagicLinkError: "readonly",
+        initGoogleSignIn: "readonly",
+        renderGoogleButton: "readonly",
         getMilestoneObj: "readonly",
         showBadgeToast: "readonly",
         saveState: "readonly",
@@ -61,6 +64,7 @@ export default [
         // Shared state variables
         SUPABASE_URL: "writable",
         SUPABASE_ANON_KEY: "writable",
+        GOOGLE_CLIENT_ID: "writable",
         supabaseClient: "writable",
         currentUser: "writable",
         completedItems: "writable",

@@ -13,6 +13,9 @@ function applyTheme(themeOption) {
         document.documentElement.removeAttribute('data-theme');
     }
     updateThemeButtonsUI(validTheme);
+    // Google renders its sign-in button in a fixed colour scheme; redraw it
+    // to match. Guarded because not every page loads the auth module.
+    if (typeof renderGoogleButton === 'function') renderGoogleButton();
 }
 
 function updateThemeButtonsUI(currentOption) {
@@ -36,6 +39,16 @@ function initTheme() {
         savedTheme = 'system';
     }
     applyTheme(savedTheme);
+
+    // Under the "system" option the page's CSS follows the OS theme live, but
+    // Google's sign-in button is an iframe drawn in a fixed colour scheme.
+    // Redraw it when the OS switches, only while no explicit theme is set.
+    if (typeof window.matchMedia === 'function') {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (document.documentElement.hasAttribute('data-theme')) return;
+            if (typeof renderGoogleButton === 'function') renderGoogleButton();
+        });
+    }
 }
 
 function setTheme(themeOption) {

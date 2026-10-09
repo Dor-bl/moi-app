@@ -291,6 +291,7 @@ function updateLanguageUI() {
     document.getElementById('authModalSubtitle').textContent = t.authSubtitle;
     document.getElementById('authPrivacyNote').innerHTML = t.authPrivacyNote;
     document.getElementById('txtGoogleBtn').textContent = t.continueGoogle;
+    renderGoogleButton();
     document.getElementById('txtAuthOr').textContent = t.orText;
     document.getElementById('lblMagicEmail').textContent = t.contactEmail;
     document.getElementById('magicLinkSubmitBtn').textContent = t.sendMagicLink;
@@ -1551,6 +1552,10 @@ function setupEventListeners() {
         magicLinkSuccess.style.display = 'none';
         document.getElementById('magicFinish').style.display = 'none';
         authModal.classList.add('active');
+        // Google's button is fetched from Google only now, when someone has
+        // chosen to sign in. Not awaited: the custom button stays usable
+        // until Google's replaces it.
+        initGoogleSignIn();
     });
 
     // Sign-out confirmation modal controls
