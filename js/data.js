@@ -422,6 +422,15 @@ const BUCKET_LIST = [
         tip: { en: "Those little brown shrimp in your broodje garnaal usually start their journey from fishing boats like the ones still sailing out of Zoutkamp, the old fishing village on the Lauwersmeer. The museum sits right on the inner harbour in a former buoy shed, and it is run by locals who can tell you how the shrimp get caught, peeled and sold. Come between April and October, pair it with the seal trip or the WEC in Lauwersoog, and you will never look at a bakje garnalen the same way again.", nl: "Die kleine bruine garnaaltjes op je broodje garnaal beginnen hun reis vaak op kotters zoals die nog steeds uitvaren vanuit Zoutkamp, het oude vissersdorp aan het Lauwersmeer. Het museum zit pal aan de binnenhaven in een oude betonningsloods en wordt gerund door mensen uit het dorp, die je vertellen hoe garnalen gevangen, gepeld en verkocht worden. Ga tussen april en oktober, combineer het met de zeehondentocht of het WEC in Lauwersoog, en je kijkt nooit meer hetzelfde naar een bakje garnalen." },
         url: 'https://www.visserijmuseum.com/',
         urlLabel: { en: 'Visserijmuseum Zoutkamp 🦐', nl: 'Visserijmuseum Zoutkamp 🦐' }
+    },
+    {
+        id: '52',
+        coords: [53.3847, 6.2356],
+        category: { en: 'Nature & Wildlife', nl: 'Natuur & Dieren' },
+        title: { en: 'Hunt for the hidden nest boxes on the Vogelbeleefpad', nl: 'Speur naar de verstopte nestkasten op het Vogelbeleefpad' },
+        tip: { en: "Nationaal Park Lauwersmeer is one of the best places in the country for birds, and this short trail lets children see it through a bird's eyes. Pick up the booklet at Activiteitencentrum Lauwersnest, follow the yellow route of about 1.5 km and track down the eight numbered nest boxes along the way, each with an assignment from the booklet. It is made for kids aged 6 to 12 and open every day, but the booklet comes from the centre, so check its opening hours first. The little ones can walk the Kabouterpad from the same spot.", nl: "Nationaal Park Lauwersmeer is een van de beste vogelgebieden van het land, en op dit korte pad bekijken kinderen het door de ogen van een vogel. Haal het boekje bij Activiteitencentrum Lauwersnest, volg de gele route van zo'n 1,5 km en spoor onderweg de acht genummerde nestkasten op, elk met een opdracht uit het boekje. Het is gemaakt voor kinderen van 6 tot 12 jaar en elke dag te lopen, maar het boekje haal je in het centrum, dus check eerst de openingstijden. De allerkleinsten lopen vanaf dezelfde plek het Kabouterpad." },
+        url: 'https://www.visitgroningen.nl/nl/plekken/nationaal-park-lauwersmeer/met-kinderen-naar-np-lauwersmeer',
+        urlLabel: { en: 'Lauwersmeer with Kids 🐦', nl: 'Lauwersmeer met Kinderen 🐦' }
     }
 ];
 
