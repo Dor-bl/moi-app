@@ -257,37 +257,39 @@
         <div class="modal-content">
             <button class="close-btn" id="closeContactModal">&times;</button>
             <h2 id="contactModalTitle">Contact Us</h2>
-            <p id="contactModalSubtitle" style="color: var(--text-light); margin-bottom: 0.5rem;">Have a tip for a Groningen bucket list item, feedback, or just want to say Moi?</p>
-            <p id="contactPrivacyNote" class="privacy-note" style="margin-bottom: 1.5rem;"></p>
+            <div id="contactFormView">
+                <p id="contactModalSubtitle" style="color: var(--text-light); margin-bottom: 0.5rem;">Have a tip for a Groningen bucket list item, feedback, or just want to say Moi?</p>
+                <p id="contactPrivacyNote" class="privacy-note" style="margin-bottom: 1.5rem;"></p>
 
-            <form id="contactForm">
-                <div class="form-group">
-                    <label for="contactName" id="lblContactName">Name</label>
-                    <input type="text" id="contactName" required placeholder="Your name">
-                </div>
-                <div class="form-group">
-                    <label for="contactEmail" id="lblContactEmail">Email</label>
-                    <input type="email" id="contactEmail" required placeholder="your.email@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="contactSubject" id="lblContactSubject">Subject</label>
-                    <select id="contactSubject">
-                        <option value="Suggest Item">Suggest a Groningen Item 💡</option>
-                        <option value="General Feedback">General Feedback 💬</option>
-                        <option value="Report Bug">Report an Issue 🐛</option>
-                        <option value="Say Moi">Just saying Moi! 👋</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="contactMessage" id="lblContactMessage">Message</label>
-                    <textarea id="contactMessage" required placeholder="Tell us more..."></textarea>
-                </div>
-                <div class="honeypot-field" aria-hidden="true" inert>
-                    <label for="contactWebsite">Website</label>
-                    <input type="text" id="contactWebsite" name="website" tabindex="-1" autocomplete="off">
-                </div>
-                <button type="submit" class="btn primary-btn" id="contactSubmitBtn">Send Message</button>
-            </form>
+                <form id="contactForm">
+                    <div class="form-group">
+                        <label for="contactName" id="lblContactName">Name</label>
+                        <input type="text" id="contactName" required placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactEmail" id="lblContactEmail">Email</label>
+                        <input type="email" id="contactEmail" required placeholder="your.email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactSubject" id="lblContactSubject">Subject</label>
+                        <select id="contactSubject">
+                            <option value="Suggest Item">Suggest a Groningen Item 💡</option>
+                            <option value="General Feedback">General Feedback 💬</option>
+                            <option value="Report Bug">Report an Issue 🐛</option>
+                            <option value="Say Moi">Just saying Moi! 👋</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactMessage" id="lblContactMessage">Message</label>
+                        <textarea id="contactMessage" required placeholder="Tell us more..."></textarea>
+                    </div>
+                    <div class="honeypot-field" aria-hidden="true" inert>
+                        <label for="contactWebsite">Website</label>
+                        <input type="text" id="contactWebsite" name="website" tabindex="-1" autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn primary-btn" id="contactSubmitBtn">Send Message</button>
+                </form>
+            </div>
 
             <div id="contactSuccess" class="contact-success" style="display: none;">
                 <div class="success-icon">🎉</div>
