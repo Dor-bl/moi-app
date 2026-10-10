@@ -83,7 +83,7 @@ users; that's accepted. Write down what you changed and when.
 
 | Suspected entry point | Containment | What it breaks |
 | --- | --- | --- |
-| **RLS misconfiguration**: `user_progress` readable or writable beyond the owner | `revoke all on public.user_progress from public, anon, authenticated;`, plus every other grantee in the step 2 snapshot's `role_table_grants` output except `postgres` and `service_role` (an unexpected grantee is itself a finding). The restore statement is in Appendix B | Cloud sync stops for everyone; guest mode keeps working from `localStorage` |
+| **RLS misconfiguration**: `user_progress` readable or writable beyond the owner | `revoke all on public.user_progress from public, anon, authenticated;`, plus every other grantee in the step 2 snapshot's `table_privileges` output except `postgres` and `service_role` (an unexpected grantee is itself a finding). The restore statement is in Appendix B | Cloud sync stops for everyone; guest mode keeps working from `localStorage` |
 | **Leaked signing secret or privileged key** (`SUPABASE_JWT_SECRET`, a `service_role` / secret key; see [`account-hosting-audit.md`](account-hosting-audit.md) §2) | Supabase → Project Settings → JWT Keys / API Keys. Which step depends on the key model (Supabase docs, *JWT Signing Keys*). **Legacy JWT secret:** it can no longer be rotated in place (Supabase docs, *Rotating Anon, Service, and JWT Secrets*). Use the migrate → rotate → revoke flow on the JWT Keys page: *Migrate JWT secret* (imports the legacy secret and creates a standby key), then *Rotate keys*, then **revoke** the imported legacy secret under *Previously used* straight away rather than waiting out the token lifetime. Supabase only allows that revoke once the legacy `anon` and `service_role` API keys are deactivated, because both are JWTs signed with that secret. So first, if `config.js` still ships the legacy `anon` key, switch it to the publishable key and redeploy; then deactivate both legacy keys under API Keys. Key state changes are throttled for about 5 minutes each, so allow 15–20 minutes. **New signing keys:** *Rotate keys* alone signs nobody out and leaves the old key trusted; you must then **revoke** the previously used key. **Leaked API key:** deactivate a legacy `service_role` key under API Keys; revoke a leaked secret key (`sb_secret_...`) and issue a new one. **Database password:** if any direct database credential could have been exposed (the `POSTGRES_*` variables the Vercel–Supabase integration injects, see the audit §2; or a leaked connection string), reset it in Supabase → Database settings, and update anything that legitimately uses it (nothing in this repo does). A reset only blocks new logins; connections already open stay alive. So in the SQL editor, save `select pid, usename, application_name, client_addr, backend_start, state from pg_stat_activity;` with the incident record, then end every connection you can't account for: `select pg_terminate_backend(pid) from pg_stat_activity where pid <> pg_backend_pid() and usename = 'postgres';` (add any other role that shouldn't be connected; leave Supabase's own service roles alone). Then **end sessions** as in the next row, because neither rotation ends a refresh-token session | Legacy: users holding a token signed with the legacy secret may be signed out at the revoke, and the site breaks if it still ships the legacy `anon` key when that is deactivated (switch first). New keys: no visible effect until sessions are ended |
 | **Stolen user sessions** (for example via injected script) | Key rotation does **not** end a stolen session: the refresh token keeps working and gets new access tokens under the new key. End the sessions themselves, after saving the affected `auth.sessions` rows (Appendix B, *Session snapshot*; the delete destroys them): in the SQL editor, `delete from auth.sessions where user_id in (...)` for the affected users, or without a `where` clause for everyone. That is what sign-out does (Supabase docs, *User sessions*), and in this project the refresh tokens are deleted with their session (`refresh_tokens_session_id_fkey ... ON DELETE CASCADE`, checked 7 October 2026). Access tokens already issued stay valid until they expire (default 1 hour) unless the key that signed them is revoked as in the row above | Affected users are signed out and must sign in again |
 | **Supabase dashboard account** | Change password, revoke other sessions, re-check MFA. Then **remove what an attacker could have left behind**, because rotating keys doesn't touch it: unknown organization members, unknown personal access tokens (Account → Access Tokens), and changes to project settings. Check Auth (providers, redirect URLs, SMTP settings, email templates), the database (RLS policies, functions such as `delete_user()`, roles and grants; compare against the step 2 snapshot and `README.md`), Edge Functions and their secrets, and any new projects or branches. Only then treat it as "leaked privileged key" | As above |
@@ -628,8 +628,10 @@ Run in the Supabase SQL editor (it runs as a privileged role, so RLS doesn't app
 select schemaname, tablename, rowsecurity
   from pg_tables where schemaname = 'public';
 select * from pg_policies where schemaname = 'public';
-select grantee, privilege_type
-  from information_schema.role_table_grants
+-- table_privileges, not role_table_grants: the latter leaves out grants to
+-- PUBLIC made by a role other than the one running the query
+select grantor, grantee, privilege_type
+  from information_schema.table_privileges
  where table_schema = 'public' and table_name = 'user_progress';
 
 -- Affected-set snapshot: run during step 2 and save BOTH exports as CSV with the
@@ -645,6 +647,16 @@ select user_id, item_id, date, note
 select id as user_id, email, created_at, last_sign_in_at,
        raw_user_meta_data   -- Google profile name and avatar URL, where present
   from auth.users;
+
+-- (2b) Linked identities and MFA factors, for a dashboard, direct-database or
+--      backup incident. Leave out the credential columns (secret,
+--      web_authn_credential, last_webauthn_challenge_data).
+select id, user_id, provider, provider_id, email, identity_data,
+       created_at, updated_at, last_sign_in_at
+  from auth.identities;
+select id, user_id, factor_type, friendly_name, status, phone,
+       created_at, updated_at, last_challenged_at
+  from auth.mfa_factors;
 
 -- (3) Session snapshot: run BEFORE ending sessions (step 4), because the delete
 --     removes these rows. Add "where user_id in (...)" when only some users are
@@ -738,8 +750,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 >
 > Hi,
 >
-> We're writing because a security incident at MoiCheck affected data linked to your
-> account, and you have a right to know what happened.
+> We're writing because a security incident at MoiCheck affected data about you, and you
+> have a right to know what happened.
 >
 > **What happened.** On [date], [plain description, e.g. "a configuration error made it
 > possible for someone outside MoiCheck to read the bucket-list progress stored in our
@@ -778,7 +790,7 @@ language they used in the app if you know it, otherwise both, Dutch first.
 > Hoi,
 >
 > We mailen je omdat er bij MoiCheck een beveiligingsincident is geweest waarbij gegevens
-> van jouw account betrokken waren. Je hebt het recht te weten wat er is gebeurd.
+> over jou betrokken waren. Je hebt het recht te weten wat er is gebeurd.
 >
 > **Wat er is gebeurd.** Op [datum] [beschrijving in gewone taal, bijv. "kon door een
 > configuratiefout iemand buiten MoiCheck de voortgang van bucketlijsten in onze database
