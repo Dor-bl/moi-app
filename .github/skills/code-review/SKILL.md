@@ -20,7 +20,10 @@ step" is not a useful review finding here.
 ## How to run the review
 
 ```bash
-git fetch origin main && git diff origin/main...HEAD
+git fetch origin main
+git diff origin/main...HEAD                    # branch: committed work only
+git diff $(git merge-base origin/main HEAD)    # working tree: commits + staged + unstaged
+git ls-files --others --exclude-standard       # working tree: untracked files to read in full
 ```
 
 Then, always:

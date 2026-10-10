@@ -12,8 +12,13 @@ not fix. Never edit files, commit, or push — if a fix is obvious, describe it 
 1. Load the review checklist in [`.github/skills/code-review/SKILL.md`](../skills/code-review/SKILL.md)
    and follow it. It is the source of truth for what to check and what not to flag; do not
    duplicate or override it here.
-2. Get the diff: `gh pr diff <number>` for a PR (also read its description for intent), otherwise
-   `git fetch origin main && git diff origin/main...HEAD`.
+2. Get the diff for the target you were given (run `git fetch origin main` first):
+   - **PR:** `gh pr diff <number>`, and read the PR description for intent.
+   - **Branch (committed work only):** `git diff origin/main...HEAD`.
+   - **Working tree / "my changes":** `git diff $(git merge-base origin/main HEAD)` — this covers
+     commits, staged and unstaged edits — plus `git ls-files --others --exclude-standard` for
+     untracked files, which you must read in full. Never approve a working-tree review from the
+     branch diff alone.
 3. Read the full body of every function the diff touches — the files share state through globals,
    so the blast radius is usually wider than the changed lines.
 4. Run `npm run lint` and `npm test` and report their results. A failure the diff caused is
