@@ -8,13 +8,14 @@ description: "Review a MoiCheck change (working diff, branch, or PR) against thi
 ## What this codebase is
 
 A no-build static web app: `index.html` loads classic (non-module) scripts in a **fixed order** —
-`config.js` → `js/data.js` → `js/theme.js` → `js/auth.js` → `js/utils.js` → `app.js` — and they
-share state through **global variables**, not imports. Supabase (auth + `user_progress` table) is
-loaded from a CDN. There is no bundler, no framework, and **no test suite**. CI runs one thing:
-`npm run lint` (ESLint).
+`js/analytics.js` → `config.js` → `js/data.js` → `js/events.js` → `js/theme.js` → `js/auth.js` →
+`js/utils.js` → `js/checkin.js` → `app.js` — and they share state through **global variables**, not
+imports. Supabase (auth + `user_progress` table) is a vendored script in `assets/vendor/`. There is
+no bundler and no framework. CI runs `npm run lint` (ESLint) and `npm test` (Node's built-in test
+runner plus Playwright visual checks in `tests/`).
 
-Review accordingly: correctness has to be argued from reading the code, and "add a build step" or
-"add tests for this" are not useful review findings here.
+Review accordingly: most correctness still has to be argued from reading the code, and "add a build
+step" is not a useful review finding here.
 
 ## How to run the review
 
@@ -26,6 +27,7 @@ Then, always:
 
 ```bash
 npm run lint
+npm test
 ```
 
 For a PR target, use `gh pr diff <number>` and read the PR description for intent. Read the full
@@ -145,7 +147,8 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
 
 ## Do not flag
 
-- Missing tests or test framework — the repo has none by design.
+- Missing tests for pure UI/content changes (new events, copy, styling). Do ask for a test when a
+  diff changes logic that `tests/` already covers (auth sync, check-ins, events, contrast).
 - Absence of a bundler, TypeScript, or a framework.
 - `innerHTML` with static repo-authored strings.
 - `var`-free global function declarations, or the shared-globals architecture itself.
