@@ -431,6 +431,15 @@ const BUCKET_LIST = [
         tip: { en: "Nationaal Park Lauwersmeer is one of the best places in the country for birds, and this short trail lets children see it through a bird's eyes. Pick up the booklet at Activiteitencentrum Lauwersnest, follow the yellow route of about 1.5 km and track down the eight numbered nest boxes along the way, each with an assignment from the booklet. It is made for kids aged 6 to 12 and open every day, but the booklet comes from the centre, so check its opening hours first. The little ones can walk the Kabouterpad from the same spot.", nl: "Nationaal Park Lauwersmeer is een van de beste vogelgebieden van het land, en op dit korte pad bekijken kinderen het door de ogen van een vogel. Haal het boekje bij Activiteitencentrum Lauwersnest, volg de gele route van zo'n 1,5 km en spoor onderweg de acht genummerde nestkasten op, elk met een opdracht uit het boekje. Het is gemaakt voor kinderen van 6 tot 12 jaar en elke dag te lopen, maar het boekje haal je in het centrum, dus check eerst de openingstijden. De allerkleinsten lopen vanaf dezelfde plek het Kabouterpad." },
         url: 'https://www.visitgroningen.nl/nl/plekken/nationaal-park-lauwersmeer/met-kinderen-naar-np-lauwersmeer',
         urlLabel: { en: 'Lauwersmeer with Kids 🐦', nl: 'Lauwersmeer met Kinderen 🐦' }
+    },
+    {
+        id: '53',
+        coords: [53.1784, 6.5503],
+        category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
+        title: { en: 'Take an after-work swim at the Hoornseplas', nl: 'Neem na het werk een duik in de Hoornseplas' },
+        tip: { en: "On the first properly warm evening, half of Groningen swaps the fietspad for the Hoornseplas, a shallow lake just south of the city, on the bike or the number 9 bus from the Zernike side. There are two sandy beaches, kiosks, toilets, showers and free parking, so you can show up with a towel and nothing else. Check the water quality before you go: the season runs from May to 1 October, and in warm spells the lake sometimes gets a negative swim advisory for blue-green algae or zwemmersjeuk (swimmer's itch).", nl: "Op de eerste echt warme avond verruilt half Groningen het fietspad voor de Hoornseplas, een ondiepe plas net ten zuiden van de stad, op de fiets of met buslijn 9 vanaf de Zernike-kant. Er zijn twee zandstranden, kiosken, toiletten, douches en gratis parkeerplaatsen, dus je kunt met alleen een handdoek komen. Check wel even de waterkwaliteit voor je gaat: het zwemseizoen loopt van mei tot 1 oktober, en bij warm weer geldt er soms een negatief zwemadvies vanwege blauwalg of zwemmersjeuk." },
+        url: 'https://www.visitgroningen.nl/nl/plekken/stad/hoornseplas',
+        urlLabel: { en: 'Hoornseplas & Paterswoldsemeer 🏊', nl: 'Hoornseplas & Paterswoldsemeer 🏊' }
     }
 ];
 
