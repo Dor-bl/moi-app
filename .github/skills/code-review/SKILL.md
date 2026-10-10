@@ -26,9 +26,12 @@ git diff $(git merge-base origin/main HEAD)    # working tree: commits + staged 
 git ls-files --others --exclude-standard       # working tree: untracked files to read in full
 ```
 
-Then, always:
+Then, always (the first two lines bootstrap a fresh checkout the same way CI does — `npm test`
+launches Playwright's Chromium, which `npm ci` alone does not install):
 
 ```bash
+npm ci
+npx playwright install --with-deps chromium
 npm run lint
 npm test
 ```

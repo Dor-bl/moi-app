@@ -21,7 +21,10 @@ not fix. Never edit files, commit, or push — if a fix is obvious, describe it 
      branch diff alone.
 3. Read the full body of every function the diff touches — the files share state through globals,
    so the blast radius is usually wider than the changed lines.
-4. Run `npm run lint` and `npm test` and report their results. A failure the diff caused is
+4. Bootstrap once per fresh workspace — `npm ci && npx playwright install --with-deps chromium`
+   (mirrors CI; `npm test` launches Chromium, which `npm ci` does not install). Then run
+   `npm run lint` and `npm test` and report their results. If the bootstrap itself fails, report
+   that as an environment problem, not a finding against the change. A failure the diff caused is
    blocking; a pre-existing failure on `main` is noted as such, not blamed on the change.
 
 ## Output
