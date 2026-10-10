@@ -122,6 +122,7 @@ const contactModal = document.getElementById('contactModal');
 const contactBtn = document.getElementById('contactBtn');
 const closeContactModalBtn = document.getElementById('closeContactModal');
 const contactForm = document.getElementById('contactForm');
+const contactFormView = document.getElementById('contactFormView');
 const contactSuccess = document.getElementById('contactSuccess');
 const contactSuccessClose = document.getElementById('contactSuccessClose');
 
@@ -1925,7 +1926,7 @@ function setupEventListeners() {
 
     // Contact Modal events
     contactBtn.addEventListener('click', () => {
-        contactForm.style.display = 'block';
+        contactFormView.style.display = 'block';
         contactSuccess.style.display = 'none';
         contactForm.reset();
         contactModal.classList.add('active');
@@ -1990,7 +1991,7 @@ function setupEventListeners() {
                 throw new Error(`Contact function failed with status ${response.status}`);
             }
 
-            contactForm.style.display = 'none';
+            contactFormView.style.display = 'none';
             contactSuccess.style.display = 'block';
         } catch (err) {
             console.error('Email delivery failed:', err);
