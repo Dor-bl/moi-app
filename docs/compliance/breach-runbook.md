@@ -696,14 +696,20 @@ select email from auth.users
  where id = any (array['<uuid>', '<uuid>']::uuid[]);
 ```
 
-Restore grants after an RLS containment (step 4), once the corrected policy has been
-validated. Don't restore the snapshot as it stands: it was taken *during* the incident, so
+Restore grants after an RLS containment (step 4), and only once the fix is checked. Re-run
+the RLS state snapshot queries above and confirm both: `rowsecurity` is `true` for
+`user_progress`, and `pg_policies` shows only the owner policy (`using (auth.uid() =
+user_id)`, applying to all commands, as in `README.md`), with nothing permissive alongside
+it.
+Don't restore the snapshot as it stands: it was taken *during* the incident, so
 it is evidence, not a trusted baseline, and an attacker-added grant would be in it. Nor is
 there a written baseline to copy: the setup SQL in `README.md` adds no grants of its own.
 Restore only what the app needs, `grant select, insert, update, delete on
 public.user_progress to authenticated;`, and nothing for `anon`. Then compare with the
 snapshot: anything else in it (a grant to `anon`, another role, another privilege) is a
-finding to investigate, not something to restore.
+finding to investigate, not something to restore. The SQL editor bypasses RLS, so it
+can't test the policy itself: after the grant, sign in to the app with a test account and
+check it sees only its own progress.
 
 ## Appendix C: user notification email (Art. 34(2))
 
