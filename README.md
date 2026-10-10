@@ -250,8 +250,7 @@ Verify end to end after deploying:
 
 ```bash
 curl -X POST "https://<project-ref>.supabase.co/functions/v1/contact" \
-  -H "Authorization: Bearer <anon-key>" \
-  -H "apikey: <anon-key>" \
+  -H "apikey: <publishable-key>" \
   -H "Content-Type: application/json" \
   -H "Origin: https://moicheck.nl" \
   -d '{"name":"Test","email":"you@example.com","subject":"Say Moi","message":"Test"}'
@@ -260,7 +259,7 @@ curl -X POST "https://<project-ref>.supabase.co/functions/v1/contact" \
 A `{"ok":true}` and a message in the inbox means the function itself works.
 
 That is only half the check, and the weaker half. The browser sends a CORS preflight
-before the real POST, because the client sets `Authorization`, `apikey` and a JSON
+before the real POST, because the client sets `apikey` and a JSON
 content type — none of which are on the fetch safelist. The curl above sends no
 preflight, so it passes even when the preflight would fail, and the form would then be
 broken for every visitor while this check still looked green. Ask for the preflight
@@ -270,7 +269,7 @@ explicitly:
 curl -i -X OPTIONS "https://<project-ref>.supabase.co/functions/v1/contact" \
   -H "Origin: https://moicheck.nl" \
   -H "Access-Control-Request-Method: POST" \
-  -H "Access-Control-Request-Headers: authorization, apikey, content-type"
+  -H "Access-Control-Request-Headers: apikey, content-type"
 ```
 
 Expect a 200 carrying `access-control-allow-origin: https://moicheck.nl`. A **401 here
@@ -426,7 +425,7 @@ up. One-time setup:
    `delivered@resend.dev`, any password, and *Auto Confirm User* ticked. Without this user
    the check fails with a 422.
 2. Add a repository secret `SUPABASE_ANON_KEY` with the publishable key (`sb_publishable_...`) from
-   *Project Settings -> API*. The check also reads the existing `SUPABASE_PROJECT_REF`.
+   *Project Settings -> API Keys*. The check also reads the existing `SUPABASE_PROJECT_REF`.
 
 A failure names the HTTP status. A 500 means the email could not be sent: read the cause in
 the Auth Logs as described under "Troubleshooting: magic links fail with a 500" above.
