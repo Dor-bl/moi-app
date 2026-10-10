@@ -420,8 +420,9 @@ There is no mailing tool; step 3 is the procedure. For Dutch-language recipients
    Send it to yourself first and check the result. `--fail-with-body` makes any HTTP error
    (`401`, `429`, `500`) count as a failure, so `sent.log` only lists addresses Resend
    accepted, with Resend's message ID. Anything in `failed.log` gets resent once the cause
-   is fixed. `sent.log` is the delivery record for Appendix A. Keep `recipients.txt` with the other encrypted exports and delete it with
-   them.
+   is fixed. `sent.log` is the delivery record for Appendix A. `recipients.txt`, `sent.log`, `failed.log` and `response.json` all hold
+   recipient addresses or provider responses: keep them with the other encrypted exports
+   and delete them with them.
 4. **If the normal mail provider is compromised** (Resend, or the domain's mail routing),
    the incident lead explicitly chooses an alternative trusted channel and records why.
    Don't default to the Gmail mailbox: it's a personal account under consumer terms with
@@ -543,9 +544,13 @@ Free gets none you can use. Two consequences:
   database: it would bring back accounts deleted since the backup, which `privacy.html`
   §5 promises never happens, and overwrite every legitimate change made since. Restore
   the backup into a **new, separate project** instead (Supabase docs, *Database Backups*
-  → "Restore to a new project"), and copy back only the affected users' vandalised
-  `user_progress` rows. Skip any user whose account no longer exists in the live
-  project. Delete the temporary project afterwards, since it holds a full copy of the
+  → "Restore to a new project"), and use it as a **comparison source**, not something to
+  copy wholesale. `user_progress` has no `updated_at` column and the request logs aren't a
+  row-level audit, so a difference between backup and live can be vandalism or the user's
+  own later change (a tick, an edited note, an item they unticked on purpose). For each
+  affected user, restore only values you can attribute to the incident; where you can't
+  tell, ask the user or leave the live value, and record each decision in Appendix A. Skip
+  any user whose account no longer exists in the live project. Delete the temporary project afterwards, since it holds a full copy of the
   data.
 - **Erasure side:** a deleted account can live on in those backups for up to 7 days.
   That's the backup position [#87](https://github.com/Dor-bl/moi-app/issues/87) has to
@@ -676,10 +681,13 @@ select count(*) as progress_rows,
 -- Build (b), (c) and (d) from the frozen exports saved in step 2: pick the
 -- affected user_ids from export (1) (or from the logs), then take their emails
 -- from export (2). The live tables have lost every row, note and account
--- deleted since then, and (d) below only works for accounts that still exist. The snapshot has a blind spot too: rows deleted between
--- the start of the exposure and the snapshot are gone on Free (no restorable
--- backups, section 7). If the exposure started well before the snapshot,
--- prefer (a), or widen the set from the logs.
+-- deleted since then, and (d) below only works for accounts that still exist. The snapshot has a blind spot too: rows and
+-- accounts deleted between the start of the exposure and the snapshot are in
+-- neither export. Deleting an account removes it from export (2) as well, so
+-- (a) doesn't cover them. Recover their ids and emails from the logs (Auth
+-- logs record the email on sign-in) or from a backup restored to a separate
+-- project (section 7; possible after upgrading). If you can't, record in
+-- Appendix A that the affected count and the recipient list are incomplete.
 
 -- (a) Everyone: auth.users exposed, signing key leaked, malicious deploy or
 --     session theft without logs that narrow it.
@@ -721,7 +729,7 @@ than a general "be alert to phishing", and a separate message per group if diffe
 people lost different data. If you don't know everything yet, send a preliminary message
 now and a follow-up later; the AP recommends that over waiting.
 
-Fill the brackets; delete the bracketed alternatives that don't apply. Send each user the
+Fill the brackets; delete the bracketed alternatives that don't apply. The alternatives cover email, progress and notes; for any other category in scope (contact messages, Google profile name and avatar, session tokens, IP address and browser details), name it and its consequence the same way, in both languages. Send each user the
 language they used in the app if you know it, otherwise both, Dutch first.
 
 ### English
