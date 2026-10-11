@@ -134,7 +134,7 @@ jobs:
               --connect-timeout 10 --max-time 30 \
               -H "Origin: $1" \
               -H 'Access-Control-Request-Method: POST' \
-              -H 'Access-Control-Request-Headers: authorization, apikey, content-type'
+              -H 'Access-Control-Request-Headers: apikey, content-type'
           }
 
           header_value() {
@@ -176,7 +176,7 @@ jobs:
           esac
 
           allow_headers=$(header_value 'access-control-allow-headers' "$headers" | tr 'A-Z' 'a-z' | tr -d ' ')
-          for required in authorization apikey content-type; do
+          for required in apikey content-type; do
             case ",$allow_headers," in
               *,"$required",*) ;;
               *) echo "::error::Preflight did not allow the '$required' header (got '$allow_headers'). The client sends it on every submission."; exit 1 ;;
