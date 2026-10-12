@@ -116,6 +116,14 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
    ```
 3. Copy your project **URL** and **publishable key** from `Project Settings -> API Keys`.
 4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`. Use the **publishable** key (`sb_publishable_...`, under *Project Settings -> API Keys*) as `SUPABASE_ANON_KEY`; the legacy JWT `anon` key still works but blocks revoking the legacy JWT secret.
+
+   On Vercel, `config.js` is not committed; the project's **Build Command** (*Settings -> Build and Deployment*) writes it at build time:
+
+   ```sh
+   echo "window.SUPABASE_URL='${NEXT_PUBLIC_SUPABASE_URL:-$SUPABASE_URL}'; window.SUPABASE_ANON_KEY='${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-$SUPABASE_PUBLISHABLE_KEY}'; window.GOOGLE_CLIENT_ID='${GOOGLE_CLIENT_ID}';" > config.js
+   ```
+
+   The key comes from the Vercel environment variable `SUPABASE_PUBLISHABLE_KEY` (set by the Supabase integration, or by hand); keep it set for Production and Preview. The browser global keeps the name `SUPABASE_ANON_KEY` because the app reads that name. Do not add a fallback to `SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY`: the Supabase integration fills those with the legacy JWT key, so a missing publishable key would silently ship the legacy one. After a deploy, `https://moicheck.nl/config.js` should show `sb_publishable_...`.
 5. Under **Authentication -> URL Configuration**, set **Site URL** to your production origin (`https://moicheck.nl`) and add it to **Redirect URLs** as well. Add any other origin you sign in from too, such as `http://localhost:8000` and your Vercel previews — a glob covers all of them at once, e.g. `https://moi-app-*-blayzer.vercel.app/**`. The app passes the origin (`window.location.origin`) as the magic-link redirect target and the current page URL without its query or fragment (`window.location.origin + window.location.pathname`) for Google sign-in, so list each origin with a trailing `/**` (`https://moicheck.nl/**`) so that any page under it is accepted; an origin that is not listed will bounce users back without a session, and magic links requested from it will open on the Site URL instead (see step 7).
 6. Set up **custom SMTP** before letting anyone else sign in — see the troubleshooting note below.
 7. Under **Authentication -> Emails**, change the link in **both** the *Confirm signup* and *Magic Link* templates from `{{ .ConfirmationURL }}` to:
