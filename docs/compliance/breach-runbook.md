@@ -150,7 +150,7 @@ section 5. When filling in the AP form's data categories, include it.
 | Entry point | Reaches |
 | --- | --- |
 | RLS policy dropped or mis-edited | Depends on the effective state, read from the step 2 snapshot: **RLS disabled**, or a permissive policy such as `using (true)`, exposes all `user_progress` rows to the roles that hold grants. A **dropped policy with RLS still enabled** denies everything (an outage, not exposure). A mis-edit may widen only one operation (`select`, `insert`, `update`, `delete`) or a subset of rows. Scope to what the policies and grants actually allowed. Not `auth.users` (anon/authenticated roles can't read it) |
-| `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The JWT secret was removed from Vercel on 7 October 2026 (audit §2), which made this row much less likely. It was not rotated, so it is unrevoked. Whether Supabase still accepts tokens signed with it depends on the legacy HS256 verification setting, which is unconfirmed (audit §2), so treat it as live until the dashboard shows otherwise |
+| `SUPABASE_JWT_SECRET` / `service_role` / secret key | Everything in the database, including `auth.users`. The legacy JWT secret was removed from Vercel on 7 October 2026 and revoked on 12 October 2026 (audit §2), so tokens forged with it no longer verify; the legacy `anon` and `service_role` keys are disabled too. What remains in this row is a current `sb_secret_` key, or a newly imported signing key |
 | Direct database credential (database password, a connection string, any `POSTGRES_*` variable) | Everything in the database, including the `auth` schema: a direct connection bypasses the Data API and RLS |
 | Supabase dashboard account | Everything in Supabase, including backups and logs |
 | GitHub or Vercel account (malicious deploy) | **Potentially everything in Supabase**, until the credentials these accounts hold are shown to be untouched and have been rotated: `SUPABASE_ACCESS_TOKEN` in GitHub Actions (management access to the project), plus any Supabase key found in Vercel's environment variables. `SUPABASE_JWT_SECRET` was removed on 7 October 2026, but check for it: re-linking the integration restores it. Separately, a malicious deploy reaches anything a signed-in user's browser can see: their session, progress and notes. Vercel's deployment list bounds only that browser-side exposure, to users who loaded the site while the deployment was live |
@@ -833,7 +833,7 @@ language they used in the app if you know it, otherwise both, Dutch first.
 | Tables, columns, RLS policy, `delete_user()` | `README.md` setup SQL and `js/auth.js` at commit `ffd7995`. The live database may differ; the Appendix B snapshot is the check |
 | Data categories, processors, Google profile name | `privacy.html` §1–§4 (last updated 24 September 2026) |
 | Account chain, regions | [`account-hosting-audit.md`](account-hosting-audit.md), 13 September 2026 |
-| `SUPABASE_JWT_SECRET` removed from Vercel, not rotated | Owner, 7 October 2026; recorded in the audit §2 (owner-reported, not independently verified) |
+| `SUPABASE_JWT_SECRET` removed from Vercel (7 October 2026), then revoked (12 October 2026) | Removal owner-reported; revocation from the owner's dashboard screenshot and the project's JWKS. Recorded in the audit §2 |
 | Supabase retention and backups per plan | supabase.com/pricing, read 4 October 2026 |
 | Platform (organization) audit logs are Team and Enterprise only | Supabase docs, *Platform Audit Logs*, read 7 October 2026. This overrides the pricing page's audit-log figures for Free and Pro recorded on 4 October |
 | Key rotation vs. ending sessions | Supabase docs, *JWT Signing Keys* and *User sessions*, read 7 October 2026; the legacy secret can no longer be rotated in place (*Rotating Anon, Service, and JWT Secrets*, read 8 October 2026). The refresh-token cascade on `auth.sessions` was checked against this project's schema the same day |
@@ -856,8 +856,8 @@ language they used in the app if you know it, otherwise both, Dutch first.
 - [ ] **Download the AP questionnaire** and fill in the parts that don't depend on an
       incident (organisation, contact person, sector), so they're ready.
 - [ ] **Decide on log retention** (section 7, options 1–2) and record the decision here.
-- [x] **Remove `SUPABASE_JWT_SECRET` from Vercel**: done by the owner on 7 October 2026;
-      not rotated, by decision (audit §2).
+- [x] **Remove `SUPABASE_JWT_SECRET` from Vercel**: done by the owner on 7 October 2026,
+      and the secret was revoked on 12 October 2026 (audit §2).
 - [x] **Settle the backups question**: done 7 October 2026 (section 7). The backup and
       erasure position itself still needs writing down under
       [#87](https://github.com/Dor-bl/moi-app/issues/87).
