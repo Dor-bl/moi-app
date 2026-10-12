@@ -1,6 +1,6 @@
 # Account and hosting audit: accounts, credentials and regions
 
-**Status:** current — records the results of the [#92](https://github.com/Dor-bl/moi-app/issues/92) audit, 13 September 2026; updated 7 October 2026 (`SUPABASE_JWT_SECRET` removed from Vercel)
+**Status:** current — records the results of the [#92](https://github.com/Dor-bl/moi-app/issues/92) audit, 13 September 2026; updated 7 October 2026 (`SUPABASE_JWT_SECRET` removed from Vercel) and 12 October 2026 (legacy JWT secret revoked, legacy API keys disabled)
 **Date:** 13 September 2026
 **Issue:** [#92](https://github.com/Dor-bl/moi-app/issues/92) (related: [#32](https://github.com/Dor-bl/moi-app/issues/32) international transfers, [#103](https://github.com/Dor-bl/moi-app/pull/103) contact backend, [#121](https://github.com/Dor-bl/moi-app/pull/121) Vercel region)
 
@@ -19,7 +19,8 @@ region rather than deciding it; pinning it was left to
 [#32](https://github.com/Dor-bl/moi-app/issues/32), exactly where #92 put it, and #32 has
 since pinned it to `eu-west-1` (section 3 below). The last RLS-capable credential the
 audit found in Vercel, the project's JWT signing secret, was removed on 7 October 2026
-(section 2). The key audit is still not fully closed: Preview and Development were never
+and revoked in Supabase on 12 October 2026, so the copy that sat in Vercel can no longer
+mint a token the project accepts (section 2). The key audit is still not fully closed: Preview and Development were never
 confirmed for the nine credentials removed from Production (see the follow-ups).
 
 Section 2 has the detail on the key, section 3 on the regions, and the follow-ups carry both
@@ -79,8 +80,8 @@ unprotected.
 #92 asked for confirmation that no `service_role` key is deployed anywhere. **Two**
 RLS-bypassing keys were, in Production, alongside a full set of direct database
 credentials. A third credential with the same capability by a different route,
-`SUPABASE_JWT_SECRET`, was found later and removed on 7 October 2026; see "RLS-capable,
-found later" below. This item of #92 still isn't fully closed, because Preview and
+`SUPABASE_JWT_SECRET`, was found later, removed on 7 October 2026 and revoked on
+12 October 2026; see "RLS-capable, found later" below. This item of #92 still isn't fully closed, because Preview and
 Development were never confirmed for the first nine (see the follow-ups).
 
 ### Found and removed
@@ -108,7 +109,7 @@ is `.env.example`, and #92's own scan of git history found placeholders rather t
 credentials. An untracked `.env` sitting on a developer machine is outside what this record
 can establish either way — it is in the follow-ups rather than quietly counted as clean.
 
-### RLS-capable, found later — removed 7 October 2026
+### RLS-capable, found later — removed 7 October, revoked 12 October 2026
 
 | Variable | Environment | Why it matters |
 | --- | --- | --- |
@@ -123,22 +124,28 @@ nowhere in the code on `main` outside the docs, there is no `api/` directory, mi
 or build script, and the three checks under "Why removing them was safe" below still
 apply unchanged.
 
-**Not rotated, deliberately.** Deleting the variable stops Vercel holding the secret; it
-does not revoke the value, which stays unrevoked in Supabase; whether tokens signed with it
-are still accepted depends on the legacy verification setting below. Retiring it is not a
-one-click rotation: Supabase no longer rotates the legacy secret in place, and the supported
-route (migrate to signing keys, rotate, revoke the imported legacy secret) first requires
-deactivating the legacy `anon` and `service_role` keys, and switching the site to the
-publishable key if it still ships the legacy `anon` key. With no sign of exposure, the owner
-chose not to do that now. If exposure is ever suspected, the breach runbook
-([`breach-runbook.md`](breach-runbook.md), section 1 step 4) covers that flow.
+**Revoked, 12 October 2026.** Deleting the variable stopped Vercel holding the secret but
+did not revoke the value. On 7 October the owner chose not to retire it yet, because the
+supported route (migrate to signing keys, rotate, revoke the legacy secret) first required
+taking the site off the legacy `anon` key. On 12 October it was done:
 
-One caveat the dashboard can settle and this file cannot: if the project has moved to
-asymmetric JWT signing keys and legacy HS256 verification is switched off, a forged token
-would no longer verify. The presence of both `SUPABASE_JWT_SECRET` and
-`SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_SECRET_KEY` suggests both key models exist here.
-Treat the secret as live until someone confirms otherwise in the dashboard — that is the
-cheaper assumption to be wrong about.
+1. The site was switched to the publishable key
+   ([#194](https://github.com/Dor-bl/moi-app/pull/194); Vercel's build command now writes
+   `config.js` from `SUPABASE_PUBLISHABLE_KEY`), and the daily magic-link check's GitHub
+   secret was switched to match. Contact form, sign-in and sync were tested on the new key.
+2. The legacy `anon` and `service_role` API keys were disabled. A request with the old
+   `anon` key now gets `401 Legacy API keys are disabled`.
+3. The JWT Keys page showed that migration and rotation had already happened about two
+   months earlier: the current signing key is ECC P-256 (`c8bb7dc5-…`, the only key in the
+   project's JWKS), and the legacy HS256 secret (`4c9910f3-…`) was listed under *Previously
+   used*. So Supabase had already stopped **signing** with the legacy secret, but still
+   **accepted** tokens signed with it. That acceptance is what made the Vercel copy matter.
+4. The legacy secret was revoked. Since access tokens last an hour and the rotation was two
+   months old, no legitimate token depended on it and nobody was signed out.
+
+A token forged with the secret that sat in Vercel no longer verifies. The revocation is
+reversible from the same dashboard page (move to standby, then rotate), which is the escape
+hatch if anything turns out to have depended on it; nothing in this repository does.
 
 ### Retained, none able to bypass RLS
 
@@ -152,7 +159,9 @@ cheaper assumption to be wrong about.
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Production |
 
 The anon and publishable keys are public by design and safe to ship; the browser only ever
-needs those. The `NEXT_PUBLIC_*` names are vestigial — this is not a Next.js app.
+needs those. Since 12 October 2026 the `*_ANON_KEY` variables hold the disabled legacy `anon`
+key and nothing reads them; the build command uses the publishable key (README, setup step
+4). The `NEXT_PUBLIC_*` names are vestigial — this is not a Next.js app.
 
 ### Where they came from
 
@@ -166,9 +175,11 @@ knowing, because re-linking the integration would presumably put them back.
 Three things had to be true, and each was checked rather than reasoned about. They hold for
 `SUPABASE_JWT_SECRET` too, which is why removing it costs nothing:
 
-1. **Nothing on Vercel can read them.** The project has no Vercel Function and no build
-   step. Vercel environment variables are readable only by build processes and functions,
-   and this deployment has neither — it is static files served as they sit in the repo.
+1. **Nothing on Vercel can read them.** The project has no Vercel Function. Vercel
+   environment variables are readable only by build processes and functions, and the only
+   build step is the one-line command that writes `config.js` from the Supabase URL, the
+   publishable key and the Google client ID (README, setup step 4). It reads none of the
+   removed variables. Everything else is static files served as they sit in the repo.
 2. **The contact function does not use them.** `supabase/functions/contact/index.ts` reads
    exactly one secret, `Deno.env.get('RESEND_API_KEY')`, and that value comes from
    Supabase's own secret store (`supabase secrets set`), not from Vercel.
@@ -303,7 +314,8 @@ will return hits that do not contradict that:
 | MFA status of all six accounts | Seen in each provider's dashboard during this audit |
 | Supabase org-wide enforcement needs Pro | Supabase dashboard and plan documentation |
 | Environment variables present, and their removal | Seen in the Vercel dashboard, before and after |
-| `SUPABASE_JWT_SECRET` can bypass RLS | Reasoned from how Supabase signs and verifies project JWTs, not from a dashboard reading. Its presence on 13 September was from the dashboard; whether legacy HS256 verification is still enabled is **not** settled here |
+| `SUPABASE_JWT_SECRET` could bypass RLS | Reasoned from how Supabase signs and verifies project JWTs. Its presence on 13 September was from the dashboard. That HS256 verification was still on until 12 October is from the JWT Keys page, which listed the legacy secret as *Previously used* (still accepted) before revocation |
+| Legacy secret revoked; legacy API keys disabled, 12 October 2026 | Revocation: owner's dashboard screenshot (legacy HS256 key under *Revoked keys*). Current key: the project's public JWKS endpoint, which lists only the ES256 key. Disabled keys: Supabase connector reports the `anon` key disabled, and the API rejects it with 401 |
 | `SUPABASE_JWT_SECRET` removed from Vercel, 7 October 2026 | Owner-reported. Not verified independently: the Vercel connector was refused access to the team. "Nothing depends on it" re-checked against `main` the same day |
 | Vercel env changes apply only to new deployments | Vercel documentation |
 | Supabase project region `eu-west-1` | Supabase dashboard |
@@ -319,10 +331,10 @@ rather than trusting this file — account state drifts, and this file does not.
 ## Follow-up
 
 - [x] **Remove `SUPABASE_JWT_SECRET` from Vercel** — done by the owner on 7 October 2026
-      (section 2). Not rotated, by decision; see section 2.
-- [ ] **Check whether legacy HS256 JWT verification is still enabled** for the project
-      (Supabase dashboard → JWT Keys), and note the answer here. Split out of the item
-      above. It decides whether the secret, which is unrevoked, matters at all.
+      (section 2).
+- [x] **Retire the legacy JWT secret** — it was still accepted for verification (listed
+      under *Previously used*). Revoked on 12 October 2026, after switching the site to the
+      publishable key and disabling the legacy `anon` and `service_role` keys (section 2).
 - [ ] **Confirm Preview and Development** for the nine credentials removed from
       Production. The audit established Production only; #92 asks for every environment.
 - [ ] **Confirm no local `.env` holds a privileged key.** The repository side is clean
