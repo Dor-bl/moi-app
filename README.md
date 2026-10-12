@@ -114,8 +114,8 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
      add constraint user_progress_user_id_fkey
        foreign key (user_id) references auth.users (id) on delete cascade;
    ```
-3. Copy your project **URL** and **anon Key** from `Project Settings -> API`.
-4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`.
+3. Copy your project **URL** and **publishable key** from `Project Settings -> API Keys`.
+4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`. Use the **publishable** key (`sb_publishable_...`, under *Project Settings -> API Keys*) as `SUPABASE_ANON_KEY`; the legacy JWT `anon` key still works but blocks revoking the legacy JWT secret.
 5. Under **Authentication -> URL Configuration**, set **Site URL** to your production origin (`https://moicheck.nl`) and add it to **Redirect URLs** as well. Add any other origin you sign in from too, such as `http://localhost:8000` and your Vercel previews — a glob covers all of them at once, e.g. `https://moi-app-*-blayzer.vercel.app/**`. The app passes the origin (`window.location.origin`) as the magic-link redirect target and the current page URL without its query or fragment (`window.location.origin + window.location.pathname`) for Google sign-in, so list each origin with a trailing `/**` (`https://moicheck.nl/**`) so that any page under it is accepted; an origin that is not listed will bounce users back without a session, and magic links requested from it will open on the Site URL instead (see step 7).
 6. Set up **custom SMTP** before letting anyone else sign in — see the troubleshooting note below.
 7. Under **Authentication -> Emails**, change the link in **both** the *Confirm signup* and *Magic Link* templates from `{{ .ConfirmationURL }}` to:
@@ -250,8 +250,7 @@ Verify end to end after deploying:
 
 ```bash
 curl -X POST "https://<project-ref>.supabase.co/functions/v1/contact" \
-  -H "Authorization: Bearer <anon-key>" \
-  -H "apikey: <anon-key>" \
+  -H "apikey: <publishable-key>" \
   -H "Content-Type: application/json" \
   -H "Origin: https://moicheck.nl" \
   -d '{"name":"Test","email":"you@example.com","subject":"Say Moi","message":"Test"}'
@@ -260,7 +259,7 @@ curl -X POST "https://<project-ref>.supabase.co/functions/v1/contact" \
 A `{"ok":true}` and a message in the inbox means the function itself works.
 
 That is only half the check, and the weaker half. The browser sends a CORS preflight
-before the real POST, because the client sets `Authorization`, `apikey` and a JSON
+before the real POST, because the client sets `apikey` and a JSON
 content type — none of which are on the fetch safelist. The curl above sends no
 preflight, so it passes even when the preflight would fail, and the form would then be
 broken for every visitor while this check still looked green. Ask for the preflight
@@ -270,7 +269,7 @@ explicitly:
 curl -i -X OPTIONS "https://<project-ref>.supabase.co/functions/v1/contact" \
   -H "Origin: https://moicheck.nl" \
   -H "Access-Control-Request-Method: POST" \
-  -H "Access-Control-Request-Headers: authorization, apikey, content-type"
+  -H "Access-Control-Request-Headers: apikey, content-type"
 ```
 
 Expect a 200 carrying `access-control-allow-origin: https://moicheck.nl`. A **401 here
@@ -425,8 +424,8 @@ up. One-time setup:
 1. In *Authentication -> Users*, choose *Add user -> Create new user* with the email
    `delivered@resend.dev`, any password, and *Auto Confirm User* ticked. Without this user
    the check fails with a 422.
-2. Add a repository secret `SUPABASE_ANON_KEY` with the anon key from
-   *Project Settings -> API*. The check also reads the existing `SUPABASE_PROJECT_REF`.
+2. Add a repository secret `SUPABASE_ANON_KEY` with the publishable key (`sb_publishable_...`) from
+   *Project Settings -> API Keys*. The check also reads the existing `SUPABASE_PROJECT_REF`.
 
 A failure names the HTTP status. A 500 means the email could not be sent: read the cause in
 the Auth Logs as described under "Troubleshooting: magic links fail with a 500" above.

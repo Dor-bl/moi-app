@@ -66,7 +66,8 @@ test('preflight is answered with CORS headers', async () => {
     const res = await handler(new Request('https://x/', { method: 'OPTIONS', headers: { origin: ORIGIN } }));
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('access-control-allow-origin'), ORIGIN);
-    assert.match(res.headers.get('access-control-allow-headers'), /authorization/);
+    assert.match(res.headers.get('access-control-allow-headers'), /apikey/);
+    assert.match(res.headers.get('access-control-allow-headers'), /content-type/);
 });
 
 test('a Vercel preview in our own scope is allowed', async () => {

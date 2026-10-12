@@ -43,7 +43,6 @@ jobs:
           status=$(curl -sS --max-time 60 -o body.json -w '%{http_code}' \
             -X POST "https://${PROJECT_REF}.supabase.co/auth/v1/otp" \
             -H "apikey: ${ANON_KEY}" \
-            -H "Authorization: Bearer ${ANON_KEY}" \
             -H 'Content-Type: application/json' \
             -d '{"email":"delivered@resend.dev","create_user":false}') || status=000
           body=$(cat body.json 2>/dev/null || true)

@@ -1976,7 +1976,10 @@ function setupEventListeners() {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    // apikey only, no `Authorization: Bearer`: the key may be a
+                    // publishable key (sb_publishable_...), which is not a JWT, and
+                    // the platform rejects a non-JWT bearer. The function is
+                    // deployed with --no-verify-jwt, so it never needed one.
                     'apikey': SUPABASE_ANON_KEY
                 },
                 body: JSON.stringify({
