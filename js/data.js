@@ -440,6 +440,15 @@ const BUCKET_LIST = [
         tip: { en: "On the first properly warm evening, half of Groningen swaps the fietspad for the Hoornseplas, a shallow lake just south of the city, on the bike or the number 9 bus from the Zernike side. There are two sandy beaches, a paddling pond for small kids, beach cafés and a big car and bike park on the Groningerweg, so you can show up with a towel and nothing else. Check the water quality before you go: the season runs from May to 1 October, and in warm spells the lake sometimes gets a negative swim advisory for blue-green algae or zwemmersjeuk (swimmer's itch).", nl: "Op de eerste echt warme avond verruilt half Groningen het fietspad voor de Hoornseplas, een ondiepe plas net ten zuiden van de stad, op de fiets of met buslijn 9 vanaf de Zernike-kant. Er zijn twee zandstranden, een spartelvijver voor de kleintjes, strandtenten en een grote parkeerplaats voor auto's en fietsen aan de Groningerweg, dus je kunt met alleen een handdoek komen. Check wel even de waterkwaliteit voor je gaat: het zwemseizoen loopt van mei tot 1 oktober, en bij warm weer geldt er soms een negatief zwemadvies vanwege blauwalg of zwemmersjeuk." },
         url: 'https://www.visitgroningen.nl/nl/plekken/stad/hoornseplas',
         urlLabel: { en: 'Hoornseplas & Paterswoldsemeer 🏊', nl: 'Hoornseplas & Paterswoldsemeer 🏊' }
+    },
+    {
+        id: '54',
+        coords: [53.2162, 6.5732],
+        category: { en: 'Food & Drink', nl: 'Eten & Drinken' },
+        title: { en: 'Take a brewery tour at Brouwerij Martinus', nl: 'Volg een rondleiding bij Brouwerij Martinus' },
+        tip: { en: "Groningen's own city brewery sits in a side street on the Kostersgang, a few minutes' walk from the Grote Markt, and it is where local beer stops being a supermarket label. The guided tour (Thursday to Sunday at 16:30, with more slots on Saturday) walks you through the brewhouse and ends with three tasting beers; afterwards you can stay for a drink at the brew pub upstairs, which has a roof terrace. Book ahead for Saturday, and check the site for current hours since they shift with the season.", nl: "Groningens eigen stadsbrouwerij zit aan de Kostersgang, op loopafstand van de Grote Markt, en hier proef je waar het Groningse bier uit de supermarkt echt vandaan komt. De rondleiding (donderdag tot en met zondag om 16.30 uur, op zaterdag vaker) loopt door de brouwerij en eindigt met drie proefbiertjes; daarna kun je blijven hangen in de brouwpub boven, met een dakterras. Reserveer voor zaterdag vooraf en check de site voor actuele tijden, want die schuiven mee met het seizoen." },
+        url: 'https://www.visitgroningen.nl/en/locations/1205592845/brewery-martinus',
+        urlLabel: { en: 'Brouwerij Martinus 🍺', nl: 'Brouwerij Martinus 🍺' }
     }
 ];
 
