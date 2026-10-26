@@ -971,6 +971,76 @@ const EVENTS = [
         location: { en: 'Landgoed Ennemaborg, Midwolda', nl: 'Landgoed Ennemaborg, Midwolda' },
         tip: { en: 'More than 250 kinds of mushroom are spotted on the Ennemaborg estate every year, and for one day Het Groninger Landschap turns it into a festival for families with children aged 4 to 12. Explore the woods on your own and join activities like dissecting owl pellets or baking your own bread. Entry is free; a €3.50 stamp card covers the bread, a lemonade and a spin on the prize wheel. Sign up in advance.', nl: 'Op landgoed Ennemaborg worden elk jaar meer dan 250 soorten paddenstoelen gespot, en één dag lang maakt Het Groninger Landschap er een festival van voor gezinnen met kinderen van 4 t/m 12 jaar. Verken zelf het bos en doe mee aan activiteiten zoals braakballen uitpluizen of je eigen brood bakken. De toegang is gratis; met een stempelkaart van €3,50 bak je een broodje, haal je limonade en draai je aan het Rad van Fortuin. Meld je vooraf aan.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2394352863/paddenstoelenfestival-2'
+    },
+    {
+        id: 'celtic-folk-halloween-2026',
+        date: '2026-10-31',
+        // Visit Groningen lists 19:00-23:30; Festivalinfo says 18:00-23:45. The
+        // organiser's site is blocked from here, so the listing's hours are used.
+        startTime: '19:00',
+        endTime: '23:30',
+        title: { en: 'Celtic Folk Festival: Halloween Edition', nl: 'Celtic Folk Festival: Halloween Edition' },
+        location: { en: 'EM2, Suikerlaan 6', nl: 'EM2, Suikerlaan 6' },
+        tip: { en: 'For one night EM2 turns into a spooky venue with live shows, a well-stocked bar and pizza, and costumes are encouraged but not required. The organisers call it the cosiest Halloween event of the year. Tickets are listed at €27.50.', nl: 'EM2 verandert voor één avond in een betoverende plek met griezelige deco, energieke liveshows, een goed gevulde bar en pizza\'s. Verkleden hoeft niet, maar wordt altijd aangemoedigd. De organisatie noemt het het gezelligste Halloween-event van het jaar. Kaarten staan op €27,50.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3825942468/celtic-folk-festival-halloween-edition-2026'
+    },
+    {
+        id: 'halloween-horror-marathon-2026',
+        date: '2026-10-31',
+        endDate: '2026-11-01',
+        // An overnight run: 18:30 on the 31st until 02:05 on the 1st. 23:59 keeps
+        // the first night's last minute inside its own day.
+        hours: {
+            '2026-10-31': ['18:30', '23:59'],
+            '2026-11-01': ['00:00', '02:05']
+        },
+        title: { en: 'Halloween Horror Marathon', nl: 'Halloween Horror Marathon' },
+        location: { en: 'Forum Groningen', nl: 'Forum Groningen' },
+        tip: { en: 'An all-night horror marathon at Forum, running from 18:30 until 02:05 with two breaks and hot dogs, meat and vegetarian, to go with the beer. The programme is Victorian Psycho, The Texas Chain Saw Massacre (50th anniversary), Colony and The Cycle, which the page bills as three previews of brand-new horror films plus the mother of all horror classics. The whole marathon is English friendly, so no Dutch is needed. Tickets are listed at €40.', nl: 'Een horrormarathon van 18:30 tot 02:05 in Forum, met twee pauzes en hotdogs (vlees en vega) bij het bier. Op het programma staan Victorian Psycho, The Texas Chain Saw Massacre (50e verjaardag), Colony en The Cycle: volgens de pagina drie voorpremières van gloednieuwe horrorfilms plus de moeder aller horrorklassiekers. De hele marathon is English friendly, dus ook te volgen zonder Nederlands. Kaarten staan op €40.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3427971568/halloween-horror-marathon'
+    },
+    {
+        id: 'ghostbusters-halloween-experience-2026',
+        date: '2026-10-31',
+        // Only the start is published; the film at 20:15 has no end time.
+        startTime: '15:00',
+        title: { en: 'Ghostbusters Halloween Experience', nl: 'Ghostbusters Halloween Experience' },
+        location: { en: 'Stadsschouwburg (SPOT) and the Grote Markt', nl: 'Stadsschouwburg (SPOT) en de Grote Markt' },
+        tip: { en: 'A Halloween flashmob built around the original Ghostbusters. There is a dance workshop with professional dancers in the Stadsschouwburg from 15:00, then at 18:00 you dance on the Grote Markt and through the centre alongside ghosts, witches, zombies and Ghostbusters, and at 20:15 everyone watches the film together. No dance experience is needed: after signing up you get a practice video. The break from 17:00 to 18:00 is bring-your-own dinner. You can also come for the film only, with a separate ticket. The listing shows €7.50 but does not say whether that covers the dance or only the film, so check the ticket page.', nl: 'Een Halloween-flashmob rond de originele Ghostbusters. Vanaf 15:00 is er een dansworkshop met professionele dansers in de Stadsschouwburg, om 18:00 dans je op de Grote Markt en door de binnenstad tussen spoken, heksen, zombies en Ghostbusters, en om 20:15 kijkt iedereen samen de film. Danservaring is niet nodig: na je aanmelding krijg je een instructievideo om thuis te oefenen. De pauze van 17:00 tot 18:00 is bring your own diner. Alleen voor de film komen kan ook, met een los ticket. De pagina noemt €7,50 maar zegt niet of dat de dans of alleen de film dekt, dus kijk op de ticketpagina.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3761510009/ghostbusters-halloween-experience-spot-x-yusuf-boss-de-wijk-de-wereld'
+    },
+    {
+        id: 'halloweenfeest-wonderwereld-2026',
+        date: '2026-10-31',
+        startTime: '13:00',
+        endTime: '16:00',
+        // Not `free`: children get in free, the other ticket is €11.
+        kidFriendly: true,
+        title: { en: 'Halloween Party at Wonderwereld', nl: 'Halloweenfeest in Wonderwereld' },
+        location: { en: 'Wonderwereld, Ter Apel', nl: 'Wonderwereld, Ter Apel' },
+        tip: { en: 'For one afternoon Wonderwereld in Ter Apel goes fully Halloween, with a scavenger hunt, Halloween crafts and a contest for the biggest and funniest creep, which the listing puts at 15:30. Children get in free; the other ticket is listed at €11, and adults who come dressed as a creepy figure get in free too. It is part of Oktober Kindermaand, when children can join in on activities across the province for free.', nl: 'Een middag lang staat Wonderwereld in Ter Apel helemaal in het teken van Halloween, met een speurtocht, Halloween knutselen en de verkiezing van de grootste en leukste griezel (om 15:30, volgens de pagina). Kinderen mogen gratis naar binnen; het andere ticket staat op €11, en volwassenen die verkleed als griezelfiguur komen mogen ook gratis naar binnen. Het is onderdeel van Oktober Kindermaand, de maand waarin kinderen gratis kunnen meedoen aan activiteiten in de hele provincie.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2909889137/halloweenfeest'
+    },
+    {
+        id: 'google-family-stem-day-2026',
+        date: '2026-10-31',
+        startTime: '10:30',
+        endTime: '16:00',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Google Family STEM Day (Halloween edition)', nl: 'Google Family STEM Day (Halloween-editie)' },
+        location: { en: 'Academiegebouw (University of Groningen), Broerstraat 5', nl: 'Academiegebouw (Rijksuniversiteit Groningen), Broerstraat 5' },
+        tip: { en: 'Google runs a free hands-on STEM day at the Academiegebouw for children aged 8 to 12 (groups 5 to 8) and their families, together with NEMO Science Museum, Mad Science and Young Engineers Groningen. Children learn to program robots and try science experiments, there is a costume contest for the best Halloween outfit, and lunch is included. Registration is required and places are limited, so sign up through the link on the listing before you plan around it.', nl: 'Google organiseert samen met NEMO Science Museum, Mad Science en Young Engineers Groningen een gratis, interactieve STEM-dag in het Academiegebouw voor kinderen van 8 tot 12 jaar (groep 5 tot en met 8) en hun gezinnen. Kinderen leren programmeren met robots en doen wetenschappelijke proefjes, er is een kostuumwedstrijd voor de best verklede deelnemer en de lunch is inbegrepen. Aanmelden is verplicht en het aantal plekken is beperkt, dus meld je aan via de link op de pagina voordat je er plannen omheen maakt.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2147472604/google-family-stem-day-halloween-edition'
+    },
+    {
+        id: 'spooktocht-zeerijp-2026',
+        date: '2026-11-13',
+        endDate: '2026-11-14',
+        title: { en: 'Ghost walks in Zeerijp (Spooktocht Zeerijp)', nl: 'Spooktocht Zeerijp' },
+        location: { en: 'Zeerijp', nl: 'Zeerijp' },
+        tip: { en: 'The ghost walks of Zeerijp have grown into an institution in the north, with more than 1,100 people from far and wide taking part. They have been fully booked for years in a row, so if you want in, sign up as soon as you can, or join as a volunteer, which is also possible. The listing gives no times or prices; the details are on the organisers\' website.', nl: 'De spooktochten van Zeerijp zijn een begrip geworden in het noorden, met ruim 1100 deelnemers die van heinde en ver komen. Ze zijn al jaren op rij volgeboekt, dus wil je erbij zijn, geef je dan zo snel mogelijk op. Meedoen als vrijwilliger kan ook. Tijden en prijzen staan niet op de pagina; die vind je op de website van de organisatie.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/305255791/spooktocht-zeerijp'
     }
 ];
 
