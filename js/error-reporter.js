@@ -32,8 +32,8 @@
         return String(value)
             // The domain allows hostname characters only, so Firefox/Safari stack
             // frames (renderList@https://moicheck.nl/app.js:1:2) are not mistaken
-            // for addresses.
-            .replace(/[^\s@"'<>()/:]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/gi, '[email]')
+            // for addresses. %40 is an @ encoded inside a URL.
+            .replace(/[^\s@"'<>()/:=&?#]+(?:@|%40)[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/gi, '[email]')
             // Any parameter whose name contains one of these words, so token_hash
             // (magic links), provider_token and client_secret are caught too.
             .replace(/\b([\w-]*(?:token|key|secret|password|code)[\w-]*)=[^&#\s]+/gi, '$1=[redacted]')

@@ -86,6 +86,15 @@ test('scrubs any token-like URL parameter, including the magic-link token_hash',
     assert.match(body.message, /page=2/);
 });
 
+test('scrubs percent-encoded email addresses in URLs', () => {
+    const { listeners, requests } = load();
+    const url = 'https://moicheck.nl/?email=jan%40example.nl&page=2';
+    listeners.error({ message: `Failed ${url}`, filename: '', error: { stack: `at ${url}` } });
+    const { body } = requests[0];
+    assert.doesNotMatch(JSON.stringify(body), /jan|example\.nl/);
+    assert.match(body.message, /page=2/);
+});
+
 test('keeps Firefox/Safari stack frames, which use name@url, intact', () => {
     const { listeners, requests } = load();
     const stack = 'renderList@https://moicheck.nl/app.js:100:4\n@https://moicheck.nl/js/auth.js:12:3';
