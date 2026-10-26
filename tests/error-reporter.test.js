@@ -112,6 +112,18 @@ test('reports unhandled promise rejections', () => {
     ]);
 });
 
+test('keeps the message of a plain-object rejection, so distinct ones are not deduped', () => {
+    const { listeners, requests } = load();
+    listeners.unhandledrejection({ reason: { message: 'permission denied' } });
+    listeners.unhandledrejection({ reason: { message: 'network unavailable' } });
+    listeners.unhandledrejection({ reason: null });
+    assert.deepEqual(requests.map(r => r.body.message), [
+        'Unhandled rejection: permission denied',
+        'Unhandled rejection: network unavailable',
+        'Unhandled rejection: null',
+    ]);
+});
+
 test('sends each message once and at most five per page load', () => {
     const { listeners, requests } = load();
     for (let i = 0; i < 3; i++) listeners.error({ message: 'same', filename: 'https://moicheck.nl/app.js' });

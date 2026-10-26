@@ -85,7 +85,9 @@
 
     window.addEventListener('unhandledrejection', event => {
         const reason = event.reason;
-        const message = reason instanceof Error ? reason.message : String(reason);
+        // Plain objects with a message (not only Error instances) keep it, or
+        // every one would read "[object Object]" and dedupe into one report.
+        const message = (reason && typeof reason.message === 'string') ? reason.message : String(reason);
         report(`Unhandled rejection: ${message}`, null, null, null, reason && reason.stack);
     });
 })();
