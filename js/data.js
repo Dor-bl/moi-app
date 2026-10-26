@@ -453,7 +453,8 @@ const BUCKET_LIST = [
     {
         id: '55',
         // The start/finish at Sporthal Winschoten, Mr. D.U. Stikkerlaan 6, which
-        // sits directly across the road from the Rosarium (item 49).
+        // sits directly across the road from the Rosarium (id '49'), whose
+        // coordinate this reuses until the hall's exact point is known.
         coords: [53.1425, 7.0368],
         category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
         title: { en: 'Cheer on the 100 km runners at RUN Winschoten', nl: 'Moedig de 100 km-lopers aan bij de RUN Winschoten' },
