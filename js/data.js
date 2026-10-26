@@ -449,6 +449,17 @@ const BUCKET_LIST = [
         tip: { en: "Groningen's own city brewery sits in a side street on the Kostersgang, a few minutes' walk from the Grote Markt, and it is where local beer stops being a supermarket label. The guided tour (Thursday to Sunday at 16:30, with more slots on Saturday) walks you through the brewhouse and ends with three tasting beers; afterwards you can stay for a drink at the brew pub upstairs, which has a roof terrace. Book ahead for Saturday, and check the site for current hours since they shift with the season.", nl: "Groningens eigen stadsbrouwerij zit aan de Kostersgang, op loopafstand van de Grote Markt, en hier proef je waar het Groningse bier uit de supermarkt echt vandaan komt. De rondleiding (donderdag tot en met zondag om 16.30 uur, op zaterdag vaker) loopt door de brouwerij en eindigt met drie proefbiertjes; daarna kun je blijven hangen in de brouwpub boven, met een dakterras. Reserveer voor zaterdag vooraf en check de site voor actuele tijden, want die schuiven mee met het seizoen." },
         url: 'https://www.visitgroningen.nl/en/locations/1205592845/brewery-martinus',
         urlLabel: { en: 'Brouwerij Martinus 🍺', nl: 'Brouwerij Martinus 🍺' }
+    },
+    {
+        id: '55',
+        // The start/finish at Sporthal Winschoten, Mr. D.U. Stikkerlaan 6, which
+        // sits directly across the road from the Rosarium (item 49).
+        coords: [53.1425, 7.0368],
+        category: { en: 'Groningen Classics', nl: 'Groningse Klassiekers' },
+        title: { en: 'Cheer on the 100 km runners at RUN Winschoten', nl: 'Moedig de 100 km-lopers aan bij de RUN Winschoten' },
+        tip: { en: "Every year since 1976, on the second Saturday of September, Winschoten closes its streets for one of the country's best-known ultra runs. The 100 km is ten laps of a traffic-free, paved 10 km loop through Winschoten and Heiligerlee, so you can pick a spot on the course and see the same runners come past again and again over the day. The race regularly doubles as the Dutch 100 km championship. There is also a 50 km, a marathon and a relay, and the children run the LutjeRUN on the Friday. The start and finish are at the sports hall across from the Rosarium. Check the official site for that year's date and times.", nl: "Sinds 1976 gaan in Winschoten elk jaar op de tweede zaterdag van september de straten dicht voor een van de bekendste ultralopen van het land. De 100 km bestaat uit tien rondes over een verkeersvrij, verhard parcours van 10 km door Winschoten en Heiligerlee, dus zoek een plek langs de route en je ziet dezelfde lopers de hele dag steeds weer voorbijkomen. De loop is regelmatig ook het NK 100 km. Er is ook een 50 km, een marathon en een estafette, en op vrijdag lopen de kinderen de LutjeRUN. Start en finish liggen bij de sporthal tegenover het Rosarium. Check de officiële site voor de datum en tijden van dat jaar." },
+        url: 'https://www.runwinschoten.nl/en/',
+        urlLabel: { en: 'RUN Winschoten 🏃', nl: 'RUN Winschoten 🏃' }
     }
 ];
 
