@@ -86,6 +86,13 @@ test('scrubs any token-like URL parameter, including the magic-link token_hash',
     assert.match(body.message, /page=2/);
 });
 
+test('keeps Firefox/Safari stack frames, which use name@url, intact', () => {
+    const { listeners, requests } = load();
+    const stack = 'renderList@https://moicheck.nl/app.js:100:4\n@https://moicheck.nl/js/auth.js:12:3';
+    listeners.unhandledrejection({ reason: { message: 'x', stack } });
+    assert.equal(requests[0].body.stack, stack);
+});
+
 test('sends only the page path, never the query or fragment', () => {
     const { listeners, requests, window } = load();
     window.location.pathname = '/privacy.html';
