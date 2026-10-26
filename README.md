@@ -1,5 +1,8 @@
 # MoiCheck <img src="./assets/groningen-flag.svg" width="30" height="20" alt="Groningen Flag" valign="middle" />
 
+[![CI](https://github.com/Dor-bl/moi-app/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Dor-bl/moi-app/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+[![Daily magic-link check](https://github.com/Dor-bl/moi-app/actions/workflows/magic-link-check.yml/badge.svg)](https://github.com/Dor-bl/moi-app/actions/workflows/magic-link-check.yml)
+
 **MoiCheck** is a lightweight, interactive bucket list app tailored specifically for expats moving to the Netherlands, with a starting focus on the **Groningen** area ("Stad").
 
 As someone who moved to Groningen, this app is built to help new expats settle in, explore local culture, try traditional Groninger food, and track their journey toward becoming a true "Stadjer"!
