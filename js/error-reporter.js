@@ -31,7 +31,9 @@
         if (value === null || value === undefined || value === '') return null;
         return String(value)
             .replace(/[^\s@"'<>()]+@[^\s@"'<>()]+\.[a-z]{2,}/gi, '[email]')
-            .replace(/\b(access_token|refresh_token|id_token|token|code|apikey|key)=[^&#\s]+/gi, '$1=[redacted]')
+            // Any parameter whose name contains one of these words, so token_hash
+            // (magic links), provider_token and client_secret are caught too.
+            .replace(/\b([\w-]*(?:token|key|secret|password|code)[\w-]*)=[^&#\s]+/gi, '$1=[redacted]')
             .replace(/\beyJ[\w-]+\.[\w-]+\.[\w-]+/g, '[jwt]')
             .replace(/\bsb_(publishable|secret)_[\w-]+/g, '[key]')
             .slice(0, max);

@@ -72,6 +72,20 @@ test('scrubs email addresses and tokens from every text field', () => {
     assert.match(body.message, /access_token=\[redacted\]/);
 });
 
+test('scrubs any token-like URL parameter, including the magic-link token_hash', () => {
+    const { listeners, requests } = load();
+    const url = 'https://moicheck.nl/?token_hash=TH1&type=magiclink#provider_token=PT1&provider_refresh_token=PR1&client_secret=CS1&page=2';
+    listeners.error({ message: `Failed to load ${url}`, filename: '', error: { stack: `at ${url}` } });
+
+    const { body } = requests[0];
+    for (const secret of ['TH1', 'PT1', 'PR1', 'CS1']) {
+        assert.doesNotMatch(JSON.stringify(body), new RegExp(secret), `${secret} leaked`);
+    }
+    // Control: ordinary parameters survive, so the scrubber is not just eating everything.
+    assert.match(body.message, /type=magiclink/);
+    assert.match(body.message, /page=2/);
+});
+
 test('sends only the page path, never the query or fragment', () => {
     const { listeners, requests, window } = load();
     window.location.pathname = '/privacy.html';
