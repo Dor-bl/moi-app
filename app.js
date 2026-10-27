@@ -103,6 +103,7 @@ const completedList = document.getElementById('completedList');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 const exportDataBtn = document.getElementById('exportDataBtn');
+const exportDataError = document.getElementById('exportDataError');
 const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
@@ -1842,33 +1843,44 @@ function setupEventListeners() {
         deleteModalReturnFocus = null;
     };
 
-    // Art. 20 export: everything held about the signed-in user, built from the
-    // in-memory state that sync already loaded, downloaded client-side.
+    // Art. 20 export: reads the account's rows from the cloud when clicked, so it
+    // never depends on whether the background sync has finished (or failed).
     if (exportDataBtn) {
-        exportDataBtn.addEventListener('click', () => {
-            if (!currentUser) return;
-            const items = Object.keys(completedItems).map(id => {
-                const item = BUCKET_LIST.find(i => String(i.id) === String(id));
-                return {
-                    item_id: id,
-                    title: item ? item.title : null,
-                    date: completedItems[id].date,
-                    note: completedItems[id].note || ''
+        exportDataBtn.addEventListener('click', async () => {
+            if (!currentUser || !supabaseClient) return;
+            const generation = authGeneration;
+            const user = currentUser;
+            exportDataError.textContent = '';
+            exportDataBtn.disabled = true;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_progress')
+                    .select('item_id, date, note')
+                    .eq('user_id', user.id);
+                if (generation !== authGeneration) return;
+                if (error) throw error;
+                const items = data.map(row => {
+                    const item = BUCKET_LIST.find(i => String(i.id) === String(row.item_id));
+                    return { item_id: row.item_id, title: item ? item.title : null, date: row.date, note: row.note || '' };
+                });
+                const out = {
+                    exported_at: new Date().toISOString(),
+                    account: { id: user.id, email: user.email },
+                    completed_items: items
                 };
-            });
-            const data = {
-                exported_at: new Date().toISOString(),
-                account: { id: currentUser.id, email: currentUser.email },
-                completed_items: items
-            };
-            const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'moicheck-my-data.json';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
+                const url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'moicheck-my-data.json';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch {
+                if (generation === authGeneration) exportDataError.textContent = UI_TRANSLATIONS[currentLang].exportDataError;
+            } finally {
+                exportDataBtn.disabled = false;
+            }
         });
     }
 
