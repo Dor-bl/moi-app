@@ -1861,7 +1861,7 @@ function setupEventListeners() {
                 if (error) throw error;
                 const items = data.map(row => {
                     const item = BUCKET_LIST.find(i => String(i.id) === String(row.item_id));
-                    return { item_id: row.item_id, title: item ? item.title : null, date: row.date, note: row.note || '' };
+                    return { item_id: row.item_id, title: item ? item.title[currentLang] : null, date: row.date, note: row.note || '' };
                 });
                 const out = {
                     exported_at: new Date().toISOString(),
