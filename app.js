@@ -102,6 +102,7 @@ const profileProgressText = document.getElementById('profileProgressText');
 const completedList = document.getElementById('completedList');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const exportDataBtn = document.getElementById('exportDataBtn');
 const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
@@ -232,6 +233,7 @@ function updateLanguageUI() {
     const txtDeleteAccountNotice = document.getElementById('txtDeleteAccountNotice');
     if (txtDeleteAccountNotice) txtDeleteAccountNotice.textContent = t.deleteAccountNotice;
     if (deleteAccountBtn) deleteAccountBtn.textContent = t.deleteAccountBtn;
+    if (exportDataBtn) exportDataBtn.textContent = t.exportDataBtn;
 
     const deleteModalTitle = document.getElementById('deleteModalTitle');
     if (deleteModalTitle) deleteModalTitle.textContent = t.deleteModalTitle;
@@ -1839,6 +1841,36 @@ function setupEventListeners() {
         if (target) target.focus();
         deleteModalReturnFocus = null;
     };
+
+    // Art. 20 export: everything held about the signed-in user, built from the
+    // in-memory state that sync already loaded, downloaded client-side.
+    if (exportDataBtn) {
+        exportDataBtn.addEventListener('click', () => {
+            if (!currentUser) return;
+            const items = Object.keys(completedItems).map(id => {
+                const item = BUCKET_LIST.find(i => String(i.id) === String(id));
+                return {
+                    item_id: id,
+                    title: item ? item.title : null,
+                    date: completedItems[id].date,
+                    note: completedItems[id].note || ''
+                };
+            });
+            const data = {
+                exported_at: new Date().toISOString(),
+                account: { id: currentUser.id, email: currentUser.email },
+                completed_items: items
+            };
+            const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'moicheck-my-data.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        });
+    }
 
     if (deleteAccountBtn) {
         deleteAccountBtn.addEventListener('click', () => {
