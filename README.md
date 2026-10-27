@@ -438,6 +438,62 @@ up. One-time setup:
 A failure names the HTTP status. A 500 means the email could not be sent: read the cause in
 the Auth Logs as described under "Troubleshooting: magic links fail with a 500" above.
 
+### Browser error reports
+
+MoiCheck is a static site, so an error that happens only in a visitor's browser never
+reaches a server log. `js/error-reporter.js` catches uncaught errors and unhandled promise
+rejections and inserts them into a `client_errors` table: up to five distinct messages per
+page load, nothing from `localhost`. Reports are anonymous. They carry no user id and no
+session, only the page path (no query or fragment), and email addresses and tokens are
+scrubbed from the text. `privacy.html` sections 1 and 4 describe exactly this, so change
+them together. `tests/error-reporter.test.js` covers the scrubbing and the limits.
+
+Visitors can insert rows but cannot read them, and `pg_cron` deletes rows older than 30
+days. Run this once in the Supabase SQL Editor, **before** the client change reaches
+production. Until the table exists, every report fails with a 404 in the visitor's console:
+
+```sql
+create table public.client_errors (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  message text not null check (char_length(message) <= 500),
+  source text check (char_length(source) <= 300),
+  line integer,
+  col integer,
+  stack text check (char_length(stack) <= 2000),
+  page text check (char_length(page) <= 200),
+  user_agent text check (char_length(user_agent) <= 300)
+);
+
+alter table public.client_errors enable row level security;
+revoke all on public.client_errors from anon, authenticated;
+grant insert (message, source, line, col, stack, page, user_agent)
+  on public.client_errors to anon;
+create policy "Anyone can report a browser error" on public.client_errors
+  for insert to anon with check (true);
+
+create extension if not exists pg_cron with schema pg_catalog;
+select cron.schedule(
+  'delete-old-client-errors',
+  '17 3 * * *',
+  $$delete from public.client_errors where created_at < now() - interval '30 days'$$
+);
+```
+
+Only `anon` is granted. The reporter sends just the publishable key and never the
+signed-in user's session, so every report arrives as `anon`. The Supabase security advisor
+flags the `with check (true)` policy, which is intended: the table is insert-only, and the
+length checks cap what a single row can hold.
+
+To see what is breaking, most frequent first:
+
+```sql
+select message, page, count(*) as reports, max(created_at) as last_seen
+from public.client_errors
+group by message, page
+order by reports desc;
+```
+
 ### Security headers
 
 `vercel.json` sends a Content-Security-Policy and supporting headers (`X-Content-Type-Options`,
