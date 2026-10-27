@@ -103,6 +103,10 @@
                 <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                 <span id="txtEventsView">Events</span>
             </button>
+            <button class="view-btn" id="memoriesViewBtn" aria-pressed="false" data-view="memories">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                <span id="txtMemoriesView">Memories</span>
+            </button>
         </div>
         <div class="filters-container">
             <button class="filter-pill active" data-filter="All">All</button>
@@ -137,6 +141,13 @@
 
         <div class="events-container" id="eventsContainer">
             <!-- Event cards will be injected here -->
+        </div>
+
+        <div class="memories-container" id="memoriesContainer">
+            <h2 id="txtMemoriesHeading" class="memories-heading">Completed Memories</h2>
+            <div class="completed-list" id="memoriesList">
+                <!-- Every completed item, newest first, injected by renderMemories() -->
+            </div>
         </div>
     </main>
 
@@ -183,10 +194,11 @@
                 <!-- Badges will be injected here -->
             </div>
 
-            <h3 id="txtCompletedMemories" style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Completed Memories</h3>
+            <h3 id="txtCompletedMemories" style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Recent Memories</h3>
             <div class="completed-list" id="completedList">
-                <!-- Completed items will be injected here -->
+                <!-- The few newest memories; the full list lives in the Memories tab -->
             </div>
+            <button class="btn secondary-btn see-all-memories-btn" id="seeAllMemoriesBtn">See all memories</button>
 
             <!-- Only shown while signed in (toggled by updateAuthBtnState). -->
             <div class="account-danger-zone" id="accountDangerZone" style="display: none;">
