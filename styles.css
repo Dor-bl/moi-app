@@ -521,14 +521,67 @@ h1 {
 body[data-active-view="list"] .map-wrapper,
 body[data-active-view="list"] .events-container,
 body[data-active-view="list"] .event-filters-container,
+body[data-active-view="list"] .memories-container,
 body[data-active-view="map"] .list-container,
 body[data-active-view="map"] .events-container,
 body[data-active-view="map"] .event-filters-container,
+body[data-active-view="map"] .memories-container,
 body[data-active-view="events"] .list-container,
 body[data-active-view="events"] .map-wrapper,
+body[data-active-view="events"] .memories-container,
 body[data-active-view="events"] .progress-container,
-body[data-active-view="events"] .filters-container {
+body[data-active-view="events"] .filters-container,
+body[data-active-view="memories"] .list-container,
+body[data-active-view="memories"] .map-wrapper,
+body[data-active-view="memories"] .events-container,
+body[data-active-view="memories"] .event-filters-container,
+body[data-active-view="memories"] .filters-container {
     display: none;
+}
+
+/* Same column as the events view. The cards sit on the page background here
+   rather than inside a modal, so they take the card colour instead. */
+.memories-container {
+    padding: 1.5rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.memories-heading {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.memories-container .completed-item {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.memories-empty {
+    color: var(--text-light);
+    text-align: center;
+    padding: 2rem;
+}
+
+/* Four tabs on a narrow phone: tighten the pills so they stay on one row
+   (Dutch "Herinneringen" is the longest label). */
+@media (max-width: 420px) {
+    .view-toggle-container {
+        gap: 0.25rem;
+        padding: 0 0.5rem;
+    }
+    .view-btn {
+        padding: 0.4rem 0.5rem;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Smallest phones (iPhone SE and the like): the labels say enough on their own. */
+@media (max-width: 359px) {
+    .view-btn svg {
+        display: none;
+    }
 }
 
 .events-container {

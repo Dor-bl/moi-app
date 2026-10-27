@@ -77,6 +77,8 @@ const listViewBtn = document.getElementById('listViewBtn');
 const mapViewBtn = document.getElementById('mapViewBtn');
 const eventsViewBtn = document.getElementById('eventsViewBtn');
 const eventsContainer = document.getElementById('eventsContainer');
+const memoriesViewBtn = document.getElementById('memoriesViewBtn');
+const memoriesList = document.getElementById('memoriesList');
 const eventFilterPills = document.querySelectorAll('.event-filter-pill');
 const eventFilterKidsBtn = document.getElementById('eventFilterKidsBtn');
 const eventFilterFreeBtn = document.getElementById('eventFilterFreeBtn');
@@ -100,6 +102,7 @@ const shareBtn = document.getElementById('shareBtn');
 const profileMilestone = document.getElementById('profileMilestone');
 const profileProgressText = document.getElementById('profileProgressText');
 const completedList = document.getElementById('completedList');
+const seeAllMemoriesBtn = document.getElementById('seeAllMemoriesBtn');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 const signOutBtn = document.getElementById('signOutBtn');
@@ -214,6 +217,8 @@ function updateLanguageUI() {
     document.getElementById('txtListView').textContent = t.viewList;
     document.getElementById('txtMapView').textContent = t.viewMap;
     document.getElementById('txtEventsView').textContent = t.viewEvents;
+    document.getElementById('txtMemoriesView').textContent = t.viewMemories;
+    document.getElementById('txtMemoriesHeading').textContent = t.completedMemories;
     eventFilterKidsBtn.textContent = t.eventsFilterKids;
     eventFilterFreeBtn.textContent = t.eventsFilterFree;
     eventFilterHolidayBtn.textContent = t.eventsFilterHoliday;
@@ -222,7 +227,7 @@ function updateLanguageUI() {
     memoryNote.placeholder = t.memoryPlaceholder;
     modalUncheckBtn.textContent = t.markNotDone;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
-    document.getElementById('txtCompletedMemories').textContent = t.completedMemories;
+    document.getElementById('txtCompletedMemories').textContent = t.recentMemories;
     const txtCatBadges = document.getElementById('txtCategoryBadges');
     if (txtCatBadges) txtCatBadges.textContent = t.achievementBadges;
     shareBtn.textContent = t.shareMilestone;
@@ -342,7 +347,7 @@ function switchView(view) {
     // adding a view means adding a selector rather than another display toggle
     // in here. The buttons still carry .active themselves.
     document.body.dataset.activeView = view;
-    [listViewBtn, mapViewBtn, eventsViewBtn].forEach(btn => {
+    [listViewBtn, mapViewBtn, eventsViewBtn, memoriesViewBtn].forEach(btn => {
         const isCurrent = btn.dataset.view === view;
         btn.classList.toggle('active', isCurrent);
         // .active is a colour change and nothing more, so which view is showing
@@ -384,6 +389,10 @@ function switchView(view) {
 
     if (view === 'events') {
         renderEvents();
+    }
+
+    if (view === 'memories') {
+        renderMemories();
     }
 }
 
@@ -1149,6 +1158,10 @@ function updateProgress() {
     profileProgressText.textContent = t.completedText.replace('{completed}', completedCount).replace('{total}', totalCount);
 
     renderFilterPills();
+
+    // Runs after every change to completedItems (toggle, cloud sync, sign-out)
+    // and on a language switch, so this one call keeps an open Memories tab current.
+    if (currentView === 'memories') renderMemories();
 }
 
 // The checked card stays put while the confetti plays, then re-sorts into (or out
@@ -1363,6 +1376,9 @@ function persistOpenNote() {
 
 function closeDetailModal() {
     persistOpenNote();
+    // A note edited from the List tab never reaches updateProgress, so an
+    // open Memories tab behind the modal would otherwise show the old text.
+    if (currentView === 'memories') renderMemories();
     detailModal.classList.remove('active');
     selectedItemId = null;
     memoryNote.value = '';
@@ -1419,19 +1435,13 @@ function formatMemoryDate(value) {
     return formatter.format(parsed);
 }
 
-function openProfileModal() {
-    // ⚡ Bolt Performance Optimization:
-    // Use replaceChildren() instead of completedList.innerHTML = ''
-    // Impact: More efficient DOM clearing and appending, bypassing HTML parser.
-    const t = UI_TRANSLATIONS[currentLang];
-    
-    renderBadges();
-    
+// Completed items merged with their bucket-list entry, newest first.
+function getSortedMemories() {
     // ⚡ Bolt Performance Optimization:
     // Pre-compute parsed date timestamps during .map() (Schwartzian transform)
     // instead of calling memoryTimestamp() repeatedly within the .sort() comparator.
     // Impact: Reduces new Date() allocations and O(N log N) date parsings, speeding up sort.
-    const completedArr = Object.entries(completedItems).map(([id, data]) => {
+    return Object.entries(completedItems).map(([id, data]) => {
         const item = itemsById[id];
         if (!item) return null;
         const merged = { ...item, ...data };
@@ -1440,43 +1450,68 @@ function openProfileModal() {
     .filter(Boolean)
     .sort((a, b) => b._parsedTimestamp - a._parsedTimestamp)
     .map(wrapper => wrapper.merged);
-    
-    if (completedArr.length === 0) {
+}
+
+// Fills a .completed-list with memory cards. Shared by the Memories tab (all of
+// them) and the profile modal (just the newest few). Notes are user text, so
+// everything goes through textContent.
+function renderMemoryList(container, memories) {
+    const t = UI_TRANSLATIONS[currentLang];
+
+    if (memories.length === 0) {
         const p = document.createElement('p');
-        p.style.color = 'var(--text-light)';
-        p.style.textAlign = 'center';
-        p.style.padding = '2rem';
+        p.className = 'memories-empty';
         p.textContent = t.noMemories;
-        completedList.replaceChildren(p);
-    } else {
-        const fragment = document.createDocumentFragment();
-        completedArr.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'completed-item';
-
-            const title = document.createElement('h4');
-            title.textContent = item.title[currentLang];
-            div.appendChild(title);
-
-            const dateLabel = formatMemoryDate(item.date);
-            if (dateLabel) {
-                const dateEl = document.createElement('span');
-                dateEl.className = 'completed-date';
-                dateEl.textContent = dateLabel;
-                div.appendChild(dateEl);
-            }
-
-            if (item.note) {
-                const noteEl = document.createElement('p');
-                noteEl.textContent = `"${item.note}"`;
-                div.appendChild(noteEl);
-            }
-
-            fragment.appendChild(div);
-        });
-        completedList.replaceChildren(fragment);
+        container.replaceChildren(p);
+        return;
     }
-    
+
+    const fragment = document.createDocumentFragment();
+    memories.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'completed-item';
+
+        const title = document.createElement('h4');
+        title.textContent = item.title[currentLang];
+        div.appendChild(title);
+
+        const dateLabel = formatMemoryDate(item.date);
+        if (dateLabel) {
+            const dateEl = document.createElement('span');
+            dateEl.className = 'completed-date';
+            dateEl.textContent = dateLabel;
+            div.appendChild(dateEl);
+        }
+
+        if (item.note) {
+            const noteEl = document.createElement('p');
+            noteEl.textContent = `"${item.note}"`;
+            div.appendChild(noteEl);
+        }
+
+        fragment.appendChild(div);
+    });
+    container.replaceChildren(fragment);
+}
+
+function renderMemories() {
+    renderMemoryList(memoriesList, getSortedMemories());
+}
+
+// How many memories the profile modal previews before pointing at the tab.
+const PROFILE_MEMORY_PREVIEW = 3;
+
+function openProfileModal() {
+    const t = UI_TRANSLATIONS[currentLang];
+
+    renderBadges();
+
+    const memories = getSortedMemories();
+    renderMemoryList(completedList, memories.slice(0, PROFILE_MEMORY_PREVIEW));
+    // Only worth offering when the preview is hiding something.
+    seeAllMemoriesBtn.hidden = memories.length <= PROFILE_MEMORY_PREVIEW;
+    seeAllMemoriesBtn.textContent = t.seeAllMemories.replace('{count}', memories.length);
+
     if (accountDangerZone) {
         accountDangerZone.style.display = (currentUser && supabaseClient) ? 'block' : 'none';
     }
@@ -1734,6 +1769,13 @@ function setupEventListeners() {
     listViewBtn.addEventListener('click', () => switchView('list'));
     mapViewBtn.addEventListener('click', () => switchView('map'));
     eventsViewBtn.addEventListener('click', () => switchView('events'));
+    memoriesViewBtn.addEventListener('click', () => switchView('memories'));
+    seeAllMemoriesBtn.addEventListener('click', () => {
+        closeProfileModal();
+        switchView('memories');
+        window.scrollTo({ top: 0 });
+        memoriesViewBtn.focus();
+    });
 
     // Delegated from the container, like the bucket list's checkboxes above:
     // renderEvents runs on a minute tick, so a listener bound inside the card
