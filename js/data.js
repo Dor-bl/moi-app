@@ -998,7 +998,7 @@ const EVENTS = [
         title: { en: 'Halloween Horror Marathon', nl: 'Halloween Horror Marathon' },
         location: { en: 'Forum Groningen', nl: 'Forum Groningen' },
         tip: { en: 'An all-night horror marathon at Forum, running from 18:30 until 02:05 with two breaks and hot dogs, meat and vegetarian, to go with the beer. The programme is Victorian Psycho, The Texas Chain Saw Massacre (50th anniversary), Colony and The Cycle, which the page bills as three previews of brand-new horror films plus the mother of all horror classics. The whole marathon is English friendly, so no Dutch is needed. Tickets are listed at €40.', nl: 'Een horrormarathon van 18:30 tot 02:05 in Forum, met twee pauzes en hotdogs (vlees en vega) bij het bier. Op het programma staan Victorian Psycho, The Texas Chain Saw Massacre (50e verjaardag), Colony en The Cycle: volgens de pagina drie voorpremières van gloednieuwe horrorfilms plus de moeder aller horrorklassiekers. De hele marathon is English friendly, dus ook te volgen zonder Nederlands. Kaarten staan op €40.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3427971568/halloween-horror-marathon'
+        url: 'https://forum.nl/nl/agenda/film/halloween-horror-marathon'
     },
     {
         id: 'ghostbusters-halloween-experience-2026',
@@ -1008,7 +1008,7 @@ const EVENTS = [
         title: { en: 'Ghostbusters Halloween Experience', nl: 'Ghostbusters Halloween Experience' },
         location: { en: 'Stadsschouwburg (SPOT) and the Grote Markt', nl: 'Stadsschouwburg (SPOT) en de Grote Markt' },
         tip: { en: 'A Halloween flashmob built around the original Ghostbusters. There is a dance workshop with professional dancers in the Stadsschouwburg from 15:00, then at 18:00 you dance on the Grote Markt and through the centre alongside ghosts, witches, zombies and Ghostbusters, and at 20:15 everyone watches the film together. No dance experience is needed: after signing up you get a practice video. The break from 17:00 to 18:00 is bring-your-own dinner. You can also come for the film only, with a separate ticket. The listing shows €7.50 but does not say whether that covers the dance or only the film, so check the ticket page.', nl: 'Een Halloween-flashmob rond de originele Ghostbusters. Vanaf 15:00 is er een dansworkshop met professionele dansers in de Stadsschouwburg, om 18:00 dans je op de Grote Markt en door de binnenstad tussen spoken, heksen, zombies en Ghostbusters, en om 20:15 kijkt iedereen samen de film. Danservaring is niet nodig: na je aanmelding krijg je een instructievideo om thuis te oefenen. De pauze van 17:00 tot 18:00 is bring your own diner. Alleen voor de film komen kan ook, met een los ticket. De pagina noemt €7,50 maar zegt niet of dat de dans of alleen de film dekt, dus kijk op de ticketpagina.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3761510009/ghostbusters-halloween-experience-spot-x-yusuf-boss-de-wijk-de-wereld'
+        url: 'https://tickets.spotgroningen.nl/mtTicket/performance?id=110038'
     },
     {
         id: 'halloweenfeest-wonderwereld-2026',
@@ -1031,8 +1031,8 @@ const EVENTS = [
         free: true,
         title: { en: 'Google Family STEM Day (Halloween edition)', nl: 'Google Family STEM Day (Halloween-editie)' },
         location: { en: 'Academiegebouw (University of Groningen), Broerstraat 5', nl: 'Academiegebouw (Rijksuniversiteit Groningen), Broerstraat 5' },
-        tip: { en: 'Google runs a free hands-on STEM day at the Academiegebouw for children aged 8 to 12 (groups 5 to 8) and their families, together with NEMO Science Museum, Mad Science and Young Engineers Groningen. Children learn to program robots and try science experiments, there is a costume contest for the best Halloween outfit, and lunch is included. Registration is required and places are limited, so sign up through the link on the listing before you plan around it.', nl: 'Google organiseert samen met NEMO Science Museum, Mad Science en Young Engineers Groningen een gratis, interactieve STEM-dag in het Academiegebouw voor kinderen van 8 tot 12 jaar (groep 5 tot en met 8) en hun gezinnen. Kinderen leren programmeren met robots en doen wetenschappelijke proefjes, er is een kostuumwedstrijd voor de best verklede deelnemer en de lunch is inbegrepen. Aanmelden is verplicht en het aantal plekken is beperkt, dus meld je aan via de link op de pagina voordat je er plannen omheen maakt.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2147472604/google-family-stem-day-halloween-edition'
+        tip: { en: 'Google runs a free hands-on STEM day at the Academiegebouw for children aged 8 to 12 (groups 5 to 8) and their families, together with NEMO Science Museum, Mad Science and Young Engineers Groningen. Children learn to program robots and try science experiments, there is a costume contest for the best Halloween outfit, and lunch is included. Registration is required and places are limited, so sign up through the registration page before you plan around it.', nl: 'Google organiseert samen met NEMO Science Museum, Mad Science en Young Engineers Groningen een gratis, interactieve STEM-dag in het Academiegebouw voor kinderen van 8 tot 12 jaar (groep 5 tot en met 8) en hun gezinnen. Kinderen leren programmeren met robots en doen wetenschappelijke proefjes, er is een kostuumwedstrijd voor de best verklede deelnemer en de lunch is inbegrepen. Aanmelden is verplicht en het aantal plekken is beperkt, dus meld je aan via de aanmeldpagina voordat je er plannen omheen maakt.' },
+        url: 'https://rsvp.withgoogle.com/events/google-family-stem-day_2b81c7'
     },
     {
         id: 'spooktocht-zeerijp-2026',
@@ -1041,7 +1041,7 @@ const EVENTS = [
         title: { en: 'Ghost walks in Zeerijp (Spooktocht Zeerijp)', nl: 'Spooktocht Zeerijp' },
         location: { en: 'Zeerijp', nl: 'Zeerijp' },
         tip: { en: 'The ghost walks of Zeerijp have grown into an institution in the north, with more than 1,100 people from far and wide taking part. They have been fully booked for years in a row, so if you want in, sign up as soon as you can, or join as a volunteer, which is also possible. The listing gives no times or prices; the details are on the organisers\' website.', nl: 'De spooktochten van Zeerijp zijn een begrip geworden in het noorden, met ruim 1100 deelnemers die van heinde en ver komen. Ze zijn al jaren op rij volgeboekt, dus wil je erbij zijn, geef je dan zo snel mogelijk op. Meedoen als vrijwilliger kan ook. Tijden en prijzen staan niet op de pagina; die vind je op de website van de organisatie.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/305255791/spooktocht-zeerijp'
+        url: 'https://spooktochtzeerijp.nl/'
     }
 ];
 
