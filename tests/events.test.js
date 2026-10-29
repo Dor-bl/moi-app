@@ -162,20 +162,6 @@ test('per-day hours override the flat times, day by day', () => {
     assert.equal(getUpcomingEvents([wine], '2026-09-25', new Date('2026-09-25T22:00:00Z')).length, 1, 'first-day closing does not end the run');
 });
 
-test('a closed day and a closing-time-only day inside a run', () => {
-    const market = {
-        id: 'market', date: '2026-12-20', endDate: '2027-01-03',
-        hours: { '2026-12-24': [null, '18:00'], '2026-12-25': null },
-        title: { en: 'M', nl: 'M' }
-    };
-
-    assert.equal(isHappeningNow(market, '2026-12-24', new Date('2026-12-24T09:00:00Z')), true, 'Christmas Eve, 10:00 Amsterdam');
-    assert.equal(isHappeningNow(market, '2026-12-24', new Date('2026-12-24T17:30:00Z')), false, 'Christmas Eve, 18:30 Amsterdam, after closing');
-    assert.equal(isHappeningNow(market, '2026-12-25', new Date('2026-12-25T12:00:00Z')), false, 'closed on Christmas Day');
-    assert.equal(getUpcomingEvents([market], '2026-12-25', new Date('2026-12-25T12:00:00Z')).length, 1, 'still listed on its closed day');
-    assert.equal(isHappeningNow(market, '2026-12-26', new Date('2026-12-26T12:00:00Z')), true, 'back to all day after');
-});
-
 test('a timed event with no endTime stays happening for the rest of its day', () => {
     const openEnded = { ...singleDay, startTime: '18:00' };
 
@@ -263,16 +249,11 @@ test('every shipped event is well formed', () => {
         // annual entry rolls into another year.
         if (event.hours) {
             assert.ok(!event.annual, `${event.id} hours are for non-annual entries only`);
-            for (const [day, hours] of Object.entries(event.hours)) {
+            for (const [day, [start, end]] of Object.entries(event.hours)) {
                 assert.ok(isRealDate(day) && day >= event.date && day <= (event.endDate || event.date), `${event.id} hours day ${day} is inside its run`);
-                // null marks a closed day.
-                if (hours === null) continue;
-
-                const [start, end] = hours;
-                assert.ok(start || end, `${event.id} ${day} has at least one known time`);
-                if (start) assert.match(start, /^\d\d:\d\d$/, `${event.id} ${day} start is HH:MM`);
-                if (end) assert.match(end, /^\d\d:\d\d$/, `${event.id} ${day} end is HH:MM`);
-                if (start && end) assert.ok(start < end, `${event.id} ${day} opens before it closes`);
+                assert.match(start, /^\d\d:\d\d$/, `${event.id} ${day} start is HH:MM`);
+                assert.match(end, /^\d\d:\d\d$/, `${event.id} ${day} end is HH:MM`);
+                assert.ok(start < end, `${event.id} ${day} opens before it closes`);
             }
         }
 
