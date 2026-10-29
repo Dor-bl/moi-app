@@ -25,10 +25,12 @@ function externalLoads(html) {
     const found = [];
     for (const tag of html.match(/<(?:script|img|iframe|source|video|audio|embed|link)\b[^>]*>/gi) || []) {
         const name = tag.match(/^<(\w+)/)[1].toLowerCase();
-        const url = (tag.match(/\s(?:src|href)\s*=\s*["']([^"']+)["']/i) || [])[1];
-        if (!url || !EXTERNAL.test(url)) continue;
         if (name === 'link' && NON_FETCHING_REL.test((tag.match(/\srel\s*=\s*["']([^"']+)["']/i) || [])[1] || '')) continue;
-        found.push(`${name}: ${url}`);
+        for (const [, attr, value] of tag.matchAll(/\s(src|href|poster|srcset)\s*=\s*["']([^"']+)["']/gi)) {
+            // srcset is a comma-separated list of "url [descriptor]" candidates.
+            const urls = attr.toLowerCase() === 'srcset' ? value.split(',').map((c) => c.trim().split(/\s+/)[0]) : [value];
+            for (const url of urls) if (EXTERNAL.test(url)) found.push(`${name}: ${url}`);
+        }
     }
     return found;
 }
@@ -43,6 +45,11 @@ test('styles.css does not import or reference remote resources', () => {
     const css = read('styles.css');
     assert.doesNotMatch(css, /@import\s+(?:url\()?\s*["']?(?:https?:)?\/\//i);
     assert.doesNotMatch(css, /url\(\s*["']?(?:https?:)?\/\//i);
+});
+
+test('the guard flags remote srcset and poster candidates', () => {
+    const html = '<img src="a.png" srcset="b.png 1x, https://unpkg.com/c.png 2x"><video poster="//cdn.example/p.jpg"></video>';
+    assert.deepEqual(externalLoads(html), ['img: https://unpkg.com/c.png', 'video: //cdn.example/p.jpg']);
 });
 
 test('the guard flags a CDN script and stylesheet but not a canonical link', () => {
