@@ -980,6 +980,76 @@ const EVENTS = [
         location: { en: 'Landgoed Ennemaborg, Midwolda', nl: 'Landgoed Ennemaborg, Midwolda' },
         tip: { en: 'More than 250 kinds of mushroom are spotted on the Ennemaborg estate every year, and for one day Het Groninger Landschap turns it into a festival for families with children aged 4 to 12. Explore the woods on your own and join activities like dissecting owl pellets or baking your own bread. Entry is free; a €3.50 stamp card covers the bread, a lemonade and a spin on the prize wheel. Sign up in advance.', nl: 'Op landgoed Ennemaborg worden elk jaar meer dan 250 soorten paddenstoelen gespot, en één dag lang maakt Het Groninger Landschap er een festival van voor gezinnen met kinderen van 4 t/m 12 jaar. Verken zelf het bos en doe mee aan activiteiten zoals braakballen uitpluizen of je eigen brood bakken. De toegang is gratis; met een stempelkaart van €3,50 bak je een broodje, haal je limonade en draai je aan het Rad van Fortuin. Meld je vooraf aan.' },
         url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2394352863/paddenstoelenfestival-2'
+    },
+    {
+        id: 'celtic-folk-halloween-2026',
+        date: '2026-10-31',
+        // The organiser's page: 17:00 doors and dinner, Baked Beans 19:00, Rapalje
+        // 20:30, Scrum 22:15. It gives no end time, so 23:30 is Visit Groningen's.
+        startTime: '17:00',
+        endTime: '23:30',
+        title: { en: 'Celtic Folk Festival: Halloween Edition', nl: 'Celtic Folk Festival: Halloween Edition' },
+        location: { en: 'EM2, Suikerlaan 6', nl: 'EM2, Suikerlaan 6' },
+        tip: { en: 'For one night EM2 turns into a spooky venue: you walk through a spook tunnel to get in, then find a well-stocked bar, pizza, creepy decorations and live music from Baked Beans, Rapalje and Scrum. Doors open at 17:00 with dinner together (not included), Baked Beans start at 19:00, Rapalje play at 20:30 and Scrum at 22:15. Costumes are encouraged but not required. Tickets are €27.50, and when it is full, it is full.', nl: 'EM2 verandert voor één avond in een griezelige plek: je loopt eerst door een spooktunnel naar binnen, en daar wachten een goed gevulde bar, pizza\'s, griezelige decoraties en livemuziek van Baked Beans, Rapalje en Scrum. De deuren gaan om 17:00 open met een gezamenlijk diner (niet inbegrepen), Baked Beans beginnen om 19:00, Rapalje speelt om 20:30 en Scrum om 22:15. Verkleden hoeft niet, maar wordt aangemoedigd. Kaarten kosten €27,50, en vol = vol.' },
+        url: 'https://celticfolkfestival.com/'
+    },
+    {
+        id: 'halloween-horror-marathon-2026',
+        date: '2026-10-31',
+        endDate: '2026-11-01',
+        // An overnight run: 18:30 on the 31st until 02:05 on the 1st. 23:59 keeps
+        // the first night's last minute inside its own day.
+        hours: {
+            '2026-10-31': ['18:30', '23:59'],
+            '2026-11-01': ['00:00', '02:05']
+        },
+        title: { en: 'Halloween Horror Marathon', nl: 'Halloween Horror Marathon' },
+        location: { en: 'Forum Groningen', nl: 'Forum Groningen' },
+        tip: { en: 'An all-night horror marathon at Forum, running from 18:30 until 02:05 with two breaks and hot dogs, meat and vegetarian, to go with the beer. The programme is Victorian Psycho, The Texas Chain Saw Massacre (50th anniversary), Colony and The Cycle, which the page bills as three previews of brand-new horror films plus the mother of all horror classics. The whole marathon is English friendly, so no Dutch is needed. Tickets are listed at €40.', nl: 'Een horrormarathon van 18:30 tot 02:05 in Forum, met twee pauzes en hotdogs (vlees en vega) bij het bier. Op het programma staan Victorian Psycho, The Texas Chain Saw Massacre (50e verjaardag), Colony en The Cycle: volgens de pagina drie voorpremières van gloednieuwe horrorfilms plus de moeder aller horrorklassiekers. De hele marathon is English friendly, dus ook te volgen zonder Nederlands. Kaarten staan op €40.' },
+        url: 'https://forum.nl/nl/agenda/film/halloween-horror-marathon'
+    },
+    {
+        id: 'ghostbusters-halloween-experience-2026',
+        date: '2026-10-31',
+        // Only the start is published; the film at 20:15 has no end time.
+        startTime: '15:00',
+        title: { en: 'Ghostbusters Halloween Experience', nl: 'Ghostbusters Halloween Experience' },
+        location: { en: 'Stadsschouwburg (SPOT) and the Grote Markt', nl: 'Stadsschouwburg (SPOT) en de Grote Markt' },
+        tip: { en: 'A Halloween flashmob built around the original Ghostbusters. There is a dance workshop with professional dancers in the Stadsschouwburg from 15:00, then at 18:00 you dance on the Grote Markt and through the centre alongside ghosts, witches, zombies and Ghostbusters, and at 20:15 everyone watches the film together. No dance experience is needed: after signing up you get a practice video. The break from 17:00 to 18:00 is bring-your-own dinner. A ticket for the dance and the film is €7.50, and you can come for the film only for €6.', nl: 'Een Halloween-flashmob rond de originele Ghostbusters. Vanaf 15:00 is er een dansworkshop met professionele dansers in de Stadsschouwburg, om 18:00 dans je op de Grote Markt en door de binnenstad tussen spoken, heksen, zombies en Ghostbusters, en om 20:15 kijkt iedereen samen de film. Danservaring is niet nodig: na je aanmelding krijg je een instructievideo om thuis te oefenen. De pauze van 17:00 tot 18:00 is bring your own diner. Een ticket voor dans en film kost €7,50; alleen voor de film komen kan ook, voor €6.' },
+        url: 'https://tickets.spotgroningen.nl/mtTicket/performance?id=110038'
+    },
+    {
+        id: 'halloweenfeest-wonderwereld-2026',
+        date: '2026-10-31',
+        startTime: '13:00',
+        endTime: '16:00',
+        // Not `free`: children get in free, adults pay €11 unless dressed as a creep.
+        kidFriendly: true,
+        title: { en: 'Halloween Party at Wonderwereld', nl: 'Halloweenfeest in Wonderwereld' },
+        location: { en: 'Wonderwereld, Ruiten A Kanaal Noord 1, Ter Apel', nl: 'Wonderwereld, Ruiten A Kanaal Noord 1, Ter Apel' },
+        tip: { en: 'For one afternoon Wonderwereld in Ter Apel goes fully Halloween, with a scavenger hunt, Halloween crafts and a contest at 15:30 for the biggest and funniest creep. It is meant for children aged 4 to 12 and you do not need to book. Children get in free and adults pay €11, unless they come dressed as a creepy figure, in which case they get in free too. It is part of Oktober Kindermaand, when children can join in on activities across the province for free.', nl: 'Een middag lang staat Wonderwereld in Ter Apel helemaal in het teken van Halloween, met een speurtocht, Halloween knutselen en om 15:30 de verkiezing van de grootste en leukste griezel. Het is bedoeld voor kinderen van 4 tot 12 jaar en reserveren is niet nodig. Kinderen mogen gratis naar binnen en volwassenen betalen €11, behalve als ze verkleed als griezelfiguur komen: dan mogen ze ook gratis naar binnen. Het is onderdeel van Oktober Kindermaand, de maand waarin kinderen gratis kunnen meedoen aan activiteiten in de hele provincie.' },
+        url: 'https://www.kindermaand.nl/activiteiten/halloweenfeest'
+    },
+    {
+        id: 'google-family-stem-day-2026',
+        date: '2026-10-31',
+        startTime: '10:30',
+        endTime: '16:00',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Google Family STEM Day (Halloween edition)', nl: 'Google Family STEM Day (Halloween-editie)' },
+        location: { en: 'Academiegebouw (University of Groningen), Broerstraat 5', nl: 'Academiegebouw (Rijksuniversiteit Groningen), Broerstraat 5' },
+        tip: { en: 'Google runs a free hands-on STEM day at the Academiegebouw for children aged 8 to 12 (groups 5 to 8) and their families, together with NEMO Science Museum, Mad Science and Young Engineers Groningen. Children learn to program robots and try science experiments, there is a costume contest for the best Halloween outfit, and lunch is included. Registration is required and places are limited, so sign up through the registration page before you plan around it.', nl: 'Google organiseert samen met NEMO Science Museum, Mad Science en Young Engineers Groningen een gratis, interactieve STEM-dag in het Academiegebouw voor kinderen van 8 tot 12 jaar (groep 5 tot en met 8) en hun gezinnen. Kinderen leren programmeren met robots en doen wetenschappelijke proefjes, er is een kostuumwedstrijd voor de best verklede deelnemer en de lunch is inbegrepen. Aanmelden is verplicht en het aantal plekken is beperkt, dus meld je aan via de aanmeldpagina voordat je er plannen omheen maakt.' },
+        url: 'https://rsvp.withgoogle.com/events/google-family-stem-day_2b81c7'
+    },
+    {
+        id: 'spooktocht-zeerijp-2026',
+        date: '2026-11-13',
+        endDate: '2026-11-14',
+        title: { en: 'Ghost walks in Zeerijp (Spooktocht Zeerijp)', nl: 'Spooktocht Zeerijp' },
+        location: { en: 'Zeerijp village hall (Dorpshuis), Borgweg 9', nl: 'Dorpshuis Zeerijp, Borgweg 9' },
+        tip: { en: 'The ghost walks of Zeerijp have grown into an institution in the north, with more than 1,100 people from far and wide taking part. You walk an evening route through and around the village in groups of about ten that are put together for you, with actors along the way to give you a fright. They have been fully booked for years in a row, so if you want in, sign up through the form on the organisers\' website as soon as you can, or join as a volunteer, which is also possible. You choose a start slot when you sign up. Tickets are €12.50 (€10 up to age 12), paid at the village hall when you arrive, and you should be there 15 minutes before your start. Everyone must be 12 or older, or come with someone aged 18 or over.', nl: 'De spooktochten van Zeerijp zijn een begrip geworden in het noorden, met ruim 1100 deelnemers die van heinde en verre komen. Je loopt in de avond in vooraf ingedeelde groepen van ongeveer tien personen een route door en rond het dorp, met onderweg acts die zorgen voor spanning en schrikeffecten. Ze zijn al jaren op rij volgeboekt, dus wil je erbij zijn, meld je dan zo snel mogelijk aan via het inschrijfformulier op de website van de organisatie. Meedoen als vrijwilliger kan ook. Je kiest bij het inschrijven een starttijd. Een kaartje kost €12,50 (€10 t/m 12 jaar), te betalen bij binnenkomst in het dorpshuis, en je moet er 15 minuten voor je start zijn. Deelnemers zijn 12 jaar of ouder, of komen met iemand van 18 jaar of ouder.' },
+        url: 'https://spooktochtzeerijp.nl/'
     }
 ];
 
