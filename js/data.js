@@ -975,15 +975,14 @@ const EVENTS = [
     {
         id: 'celtic-folk-halloween-2026',
         date: '2026-10-31',
-        // The owner-provided organiser screenshot confirms doors open at 17:00.
-        // Visit Groningen lists 19:00-23:30; Festivalinfo says 18:00-23:45.
-        // The programme hours remain unclear, so use doors-open and listing end.
+        // The organiser's page: 17:00 doors and dinner, Baked Beans 19:00, Rapalje
+        // 20:30, Scrum 22:15. It gives no end time, so 23:30 is Visit Groningen's.
         startTime: '17:00',
         endTime: '23:30',
         title: { en: 'Celtic Folk Festival: Halloween Edition', nl: 'Celtic Folk Festival: Halloween Edition' },
         location: { en: 'EM2, Suikerlaan 6', nl: 'EM2, Suikerlaan 6' },
-        tip: { en: 'For one night EM2 turns into a spooky venue with live shows, a well-stocked bar and pizza, and costumes are encouraged but not required. Doors open at 17:00. The organisers call it the cosiest Halloween event of the year. Tickets are €27.50.', nl: 'EM2 verandert voor één avond in een betoverende plek met griezelige deco, energieke liveshows, een goed gevulde bar en pizza\'s. De deuren gaan om 17:00 open. Verkleden hoeft niet, maar wordt altijd aangemoedigd. De organisatie noemt het het gezelligste Halloween-event van het jaar. Kaarten kosten €27,50.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/3825942468/celtic-folk-festival-halloween-edition-2026'
+        tip: { en: 'For one night EM2 turns into a spooky venue: you walk through a spook tunnel to get in, then find a well-stocked bar, pizza, creepy decorations and live music from Baked Beans, Rapalje and Scrum. Doors open at 17:00 with dinner together (not included), Baked Beans start at 19:00, Rapalje play at 20:30 and Scrum at 22:15. Costumes are encouraged but not required. Tickets are €27.50, and when it is full, it is full.', nl: 'EM2 verandert voor één avond in een griezelige plek: je loopt eerst door een spooktunnel naar binnen, en daar wachten een goed gevulde bar, pizza\'s, griezelige decoraties en livemuziek van Baked Beans, Rapalje en Scrum. De deuren gaan om 17:00 open met een gezamenlijk diner (niet inbegrepen), Baked Beans beginnen om 19:00, Rapalje speelt om 20:30 en Scrum om 22:15. Verkleden hoeft niet, maar wordt aangemoedigd. Kaarten kosten €27,50, en vol = vol.' },
+        url: 'https://celticfolkfestival.com/'
     },
     {
         id: 'halloween-horror-marathon-2026',
