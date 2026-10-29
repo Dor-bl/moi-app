@@ -11,7 +11,7 @@ That is a small sample from one feature and one reviewer, not a base rate. The r
 
 ## 1. Find the review
 
-A review's arrival is not reliably delivered to you as an event. On 145 two reviews produced none and were found only by looking; on 166 one did arrive. Timing is unpredictable too: one landed nine minutes after CI went green, another about six hours after a push. So do not read silence as "no review", and do not wait out a guessed window. After a push, end the turn and rely on a scheduled check-in if you have one.
+Do not count on an event announcing a review. Of the six reviews seen on 145, 166 and 173, every one with an inline comment arrived as an event and none without one did. That is a correlation in a small sample, with no established cause. It still points at the worst case: a review with no inline comment is the least likely to announce itself, and on 145 one such review held a real finding in its summary alone. Timing is unpredictable too: one landed nine minutes after CI went green, another about six hours after a push. So treat silence as no information, do not wait out a guessed window, and after a push end the turn and rely on a scheduled check-in if you have one.
 
 To look: list the PR's reviews and **read the newest body**, and list the review threads and note which are resolved. Reviews list oldest first, so the newest is on the last page. Each review records the commit it reviewed, so compare it with the last review you handled rather than with the clock. A `copilot-pull-request-reviewer` check run is only a hint that a review is running or has just finished: check runs belong to a head commit, so once you push, the run for the earlier head drops out of the listing while its review stays. A missing run proves nothing.
 
