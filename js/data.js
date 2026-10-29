@@ -1015,12 +1015,12 @@ const EVENTS = [
         date: '2026-10-31',
         startTime: '13:00',
         endTime: '16:00',
-        // Not `free`: children get in free, the other ticket is €11.
+        // Not `free`: children get in free, adults pay €11 unless dressed as a creep.
         kidFriendly: true,
         title: { en: 'Halloween Party at Wonderwereld', nl: 'Halloweenfeest in Wonderwereld' },
-        location: { en: 'Wonderwereld, Ter Apel', nl: 'Wonderwereld, Ter Apel' },
-        tip: { en: 'For one afternoon Wonderwereld in Ter Apel goes fully Halloween, with a scavenger hunt, Halloween crafts and a contest for the biggest and funniest creep, which the listing puts at 15:30. Children get in free; the other ticket is listed at €11, and adults who come dressed as a creepy figure get in free too. It is part of Oktober Kindermaand, when children can join in on activities across the province for free.', nl: 'Een middag lang staat Wonderwereld in Ter Apel helemaal in het teken van Halloween, met een speurtocht, Halloween knutselen en de verkiezing van de grootste en leukste griezel (om 15:30, volgens de pagina). Kinderen mogen gratis naar binnen; het andere ticket staat op €11, en volwassenen die verkleed als griezelfiguur komen mogen ook gratis naar binnen. Het is onderdeel van Oktober Kindermaand, de maand waarin kinderen gratis kunnen meedoen aan activiteiten in de hele provincie.' },
-        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2909889137/halloweenfeest'
+        location: { en: 'Wonderwereld, Ruiten A Kanaal Noord 1, Ter Apel', nl: 'Wonderwereld, Ruiten A Kanaal Noord 1, Ter Apel' },
+        tip: { en: 'For one afternoon Wonderwereld in Ter Apel goes fully Halloween, with a scavenger hunt, Halloween crafts and a contest at 15:30 for the biggest and funniest creep. It is meant for children aged 4 to 12 and you do not need to book. Children get in free and adults pay €11, unless they come dressed as a creepy figure, in which case they get in free too. It is part of Oktober Kindermaand, when children can join in on activities across the province for free.', nl: 'Een middag lang staat Wonderwereld in Ter Apel helemaal in het teken van Halloween, met een speurtocht, Halloween knutselen en om 15:30 de verkiezing van de grootste en leukste griezel. Het is bedoeld voor kinderen van 4 tot 12 jaar en reserveren is niet nodig. Kinderen mogen gratis naar binnen en volwassenen betalen €11, behalve als ze verkleed als griezelfiguur komen: dan mogen ze ook gratis naar binnen. Het is onderdeel van Oktober Kindermaand, de maand waarin kinderen gratis kunnen meedoen aan activiteiten in de hele provincie.' },
+        url: 'https://www.kindermaand.nl/activiteiten/halloweenfeest'
     },
     {
         id: 'google-family-stem-day-2026',
