@@ -19,16 +19,24 @@ const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
 const EXTERNAL = /^(?:https?:)?\/\//i;
 // <link rel> values that do not make the browser fetch the target on load.
-const NON_FETCHING_REL = /\b(canonical|alternate|author|license|help|next|prev|me)\b/i;
+const NON_FETCHING_REL = new Set(['canonical', 'alternate', 'author', 'license', 'help', 'next', 'prev', 'me']);
+// Attribute value: double-quoted, single-quoted or unquoted.
+const attr = (tag, name) => {
+    const m = tag.match(new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i'));
+    return m ? (m[1] ?? m[2] ?? m[3]).trim() : undefined;
+};
 
 function externalLoads(html) {
     const found = [];
     for (const tag of html.match(/<(?:script|img|iframe|source|video|audio|embed|link)\b[^>]*>/gi) || []) {
         const name = tag.match(/^<(\w+)/)[1].toLowerCase();
-        if (name === 'link' && NON_FETCHING_REL.test((tag.match(/\srel\s*=\s*["']([^"']+)["']/i) || [])[1] || '')) continue;
-        for (const [, attr, value] of tag.matchAll(/\s(src|href|poster|srcset)\s*=\s*["']([^"']+)["']/gi)) {
+        // A link is exempt only if every rel token is non-fetching ("canonical stylesheet" still loads).
+        if (name === 'link' && (attr(tag, 'rel') || '').toLowerCase().split(/\s+/).every((t) => NON_FETCHING_REL.has(t))) continue;
+        for (const a of ['src', 'href', 'poster', 'srcset']) {
+            const value = attr(tag, a);
+            if (!value) continue;
             // srcset is a comma-separated list of "url [descriptor]" candidates.
-            const urls = attr.toLowerCase() === 'srcset' ? value.split(',').map((c) => c.trim().split(/\s+/)[0]) : [value];
+            const urls = a === 'srcset' ? value.split(',').map((c) => c.trim().split(/\s+/)[0]) : [value];
             for (const url of urls) if (EXTERNAL.test(url)) found.push(`${name}: ${url}`);
         }
     }
@@ -50,6 +58,12 @@ test('styles.css does not import or reference remote resources', () => {
 test('the guard flags remote srcset and poster candidates', () => {
     const html = '<img src="a.png" srcset="b.png 1x, https://unpkg.com/c.png 2x"><video poster="//cdn.example/p.jpg"></video>';
     assert.deepEqual(externalLoads(html), ['img: https://unpkg.com/c.png', 'video: //cdn.example/p.jpg']);
+});
+
+test('the guard flags unquoted and padded URLs and mixed link relations', () => {
+    const html = '<script src=https://unpkg.com/a.js></script><script src=" https://unpkg.com/b.js "></script>' +
+        '<link rel="canonical stylesheet" href="https://cdn.example/a.css">';
+    assert.deepEqual(externalLoads(html), ['script: https://unpkg.com/a.js', 'script: https://unpkg.com/b.js', 'link: https://cdn.example/a.css']);
 });
 
 test('the guard flags a CDN script and stylesheet but not a canonical link', () => {
