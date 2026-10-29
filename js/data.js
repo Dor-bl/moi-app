@@ -489,7 +489,9 @@ const BUCKET_LIST = [
 //
 //   `hours` is for a multi-day run whose hours differ by day: it maps each ISO
 //   day to [start, end] and overrides startTime/endTime on the days it lists.
-//   The keys are full dates, so it is for non-annual entries only.
+//   The keys are full dates, so it is for non-annual entries only. A day set to
+//   null is closed, and either end of a pair can be null when only that one is
+//   known — same rule as above, no guessing.
 const EVENTS = [
     {
         id: 'koningsdag',
@@ -606,7 +608,15 @@ const EVENTS = [
         title: { en: 'Winterstad Groningen', nl: 'Winterstad Groningen' },
         location: { en: 'Grote Markt, city centre', nl: 'Grote Markt, binnenstad' },
         tip: { en: 'For five weeks the Grote Markt turns into a winter fair: a big covered ice rink, a Ferris wheel, a Christmas train, market stalls and a winter café. Wandering around is free; skating and the rides are paid. Weekend afternoons get busy, so go early or on a weekday evening.', nl: 'Vijf weken lang verandert de Grote Markt in een winterplein: een grote overdekte ijsbaan, een reuzenrad, een kersttrein, marktkraampjes en een wintercafé. Rondlopen is gratis; schaatsen en de attracties kosten geld. In het weekend is het \'s middags druk, dus ga vroeg of op een doordeweekse avond.' },
-        url: 'https://winterstadgroningen.nl/'
+        url: 'https://winterstadgroningen.nl/',
+        // Christmas exceptions only; regular daily hours are not published yet.
+        // From regiokrantgroningen.nl, not yet confirmed on the official site:
+        // closes at 18:00 on Christmas Eve (opening time unknown), closed on
+        // Christmas Day.
+        hours: {
+            '2026-12-24': [null, '18:00'],
+            '2026-12-25': null
+        }
     },
     {
         id: 'winterwelvaart-2026',

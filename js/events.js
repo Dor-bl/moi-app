@@ -44,11 +44,13 @@ function spanEnd(event) {
     return event.endDate || event.date;
 }
 
-// A day's opening hours as [start, end]. `hours` lists them per day for events
-// whose hours change across the run; any day it leaves out falls back to the
-// flat startTime/endTime, and to all day when those are missing too.
+// A day's opening hours as [start, end], or null on a day the event is closed.
+// `hours` lists them per day for events whose hours change across the run; any
+// day it leaves out falls back to the flat startTime/endTime, and to all day
+// when those are missing too. Either end may be null when only one is known.
 function hoursOn(event, day) {
-    return event.hours?.[day] || [event.startTime, event.endTime];
+    if (event.hours && day in event.hours) return event.hours[day];
+    return [event.startTime, event.endTime];
 }
 
 // Day-granularity by default, but a timed event's endTime cuts its last day
@@ -58,7 +60,7 @@ function hasEnded(event, today, now = new Date()) {
     const end = spanEnd(event);
     if (end < today) return true;
     if (end > today) return false;
-    const [, endTime] = hoursOn(event, today);
+    const [, endTime] = hoursOn(event, today) || [];
     return Boolean(endTime) && timeInGroningen(now) > endTime;
 }
 
@@ -134,7 +136,10 @@ function getUpcomingEvents(events, today = todayInGroningen(), now = new Date())
 function isHappeningNow(event, today, now = new Date()) {
     if (!(event.date <= today && !hasEnded(event, today, now))) return false;
 
-    const [startTime, endTime] = hoursOn(event, today);
+    const hours = hoursOn(event, today);
+    if (!hours) return false;
+
+    const [startTime, endTime] = hours;
     const clock = timeInGroningen(now);
     if (startTime && clock < startTime) return false;
     if (endTime && clock > endTime) return false;
@@ -161,7 +166,7 @@ function isOngoing(event, today, now = new Date()) {
     if (event.date > today || hasEnded(event, today, now)) return false;
     if (daysInSpan(event) < ONGOING_MIN_DAYS) return false;
 
-    const [startTime] = hoursOn(event, today);
+    const [startTime] = hoursOn(event, today) || [];
     return event.date < today || !startTime || timeInGroningen(now) >= startTime;
 }
 
