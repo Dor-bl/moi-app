@@ -76,6 +76,7 @@ that work is editing rather than thinking. Treat those lines as proposed and unc
 | **Purpose** | Identify a returning user and keep their bucket-list progress and memory notes in step across their devices |
 | **Basis** *(proposed)* | Art. 6(1)(b), performance of a contract — syncing is the service the user asked for. Not consent: refusing would mean the feature cannot work at all |
 | **Data subjects** | Account holders (people who chose to sign in) |
+| **Where the rows come from** | Ticks and notes made while signed in, **plus anything made while signed out in the same browser**, which `syncCloudProgress()` merges in on sign-in (activity 9) |
 | **Data categories** | Email address; display name and avatar URL where Google supplied them; `user_id`; per ticked item an `item_id`, a `date`, and a free-text `note`; `created_at` and `last_sign_in_at`; provider metadata. Also, in Supabase's auth internals, live sessions and refresh tokens, linked identities, and the IP address and user agent recorded against a session |
 | **Recipients** | Supabase (processor, DPA). Nobody else: the app copies this into no other store |
 | **Transfers** | Stored in the EU — AWS `eu-west-1`, Ireland. Supabase is a US company whose staff can reach that infrastructure to operate it, covered by its DPA and SCCs. See [`account-hosting-audit.md`](account-hosting-audit.md) §3 |
@@ -206,11 +207,14 @@ entirely. Tiles cannot be vendored, so OpenStreetMap stays either way.
 
 ### 9. On the device only — not processing by us
 
-Recorded to mark the boundary, because these are what people assume we collect.
+Recorded to mark the boundary, because these are what people assume we collect. The boundary
+is not quite clean, and the first row is where it leaks: guest progress crosses into activity 1
+the moment its owner signs in.
 
 | What | Where it lives | What reaches us |
 | --- | --- | --- |
-| Progress and notes for signed-out users, theme, language, completed-list layout, event badges (`moiCheckState`, `moiCheckTheme`, `moiCheckLang`, `moiCheckCompletedCollapsed`, `moiCheckEvents`) | `localStorage`, that browser only | **Nothing.** Signed-out progress is never uploaded; event badges we never receive at all, so there is nothing on our side to keep, delete, or restore |
+| Progress and notes made while signed out (`moiCheckState`) | `localStorage`, that browser | **Nothing while signed out.** But on sign-in `syncCloudProgress()` merges them into `user_progress`, at which point they are account data under activity 1 and follow its retention and erasure rules. Answering a subject access request has to include them |
+| Theme, language, completed-list layout, event badges (`moiCheckTheme`, `moiCheckLang`, `moiCheckCompletedCollapsed`, `moiCheckEvents`) | `localStorage`, that browser only | **Nothing.** Event badges we never receive at all, so there is nothing on our side to keep, delete, or restore |
 | The Supabase session token and the account marker (`moiCheckSyncedUser`) | `localStorage`, managed by the SDK | Nothing beyond the token being presented back to Supabase, which is what signing in means |
 | **Location, for an event check-in** | Read inside the tap, compared to the event's coordinates on the device, then discarded | **Nothing. No coordinate is sent, stored, or logged.** We never learn where the user was, or whether they were anywhere at all. The only result is their own device's note that they earned a badge |
 
@@ -257,9 +261,14 @@ and this is the register entry that issue's last item asked for. In summary:
 - Nothing secret is committed: `config.js` and `.env*` are git-ignored, and a history scan
   found only placeholders.
 
-**Data protection by design.** No password is ever stored, so there is none to leak. Third-party
-scripts are either vendored and served from our own origin or pinned with an SRI hash. A CSP
-bounds what any script can do or reach. The sign-in link cannot be consumed by a mail scanner.
+**Data protection by design.** No password is ever stored, so there is none to leak. The
+Supabase client is vendored and served from our own origin; Leaflet is pinned to an exact
+version with an SRI hash. **One third-party script is neither:** Google's sign-in client
+(`accounts.google.com/gsi/client`, activity 4) is fetched directly from Google with no
+integrity hash, and cannot carry one — Google serves a rolling build, so any hash we pinned
+would break the button on their next release. What bounds it instead is that it loads only
+when the sign-in dialog is opened, plus the CSP. A CSP bounds what any script can do or
+reach. The sign-in link cannot be consumed by a mail scanner.
 Error reports are scrubbed and anonymous by construction. The event check-in computes on the
 device so that no coordinate exists to protect.
 

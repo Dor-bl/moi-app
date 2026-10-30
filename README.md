@@ -321,7 +321,8 @@ from the code:
 - [`processing-register.md`](docs/compliance/processing-register.md) — the GDPR Article 30
   record. Ten processing activities with their purposes, data categories, processors,
   transfers, retention and safeguards. Activities 9 and 10 exist to mark the boundary: what
-  stays on the device and never reaches us, and the fact that there is no profiling or
+  stays on the device — and the one thing that doesn't, since progress made while signed out
+  is merged into the account on sign-in — and the fact that there is no profiling or
   automated decision-making.
 - [`retention.md`](docs/compliance/retention.md) — how long each category lives, which
   provider holds what for how long, and the written position on backups versus erasure.

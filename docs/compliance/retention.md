@@ -35,7 +35,10 @@ something is held at all.
 | Supabase platform logs (auth, API gateway) | **1 day** on the current Free plan | Supabase |
 | Aggregate usage statistics | Indefinitely — not personal data | n/a |
 | Vercel request logs | Vercel's own | Vercel |
-| On-device storage (progress, preferences, event badges, session token) | Until the user clears their site data | The user, entirely |
+| On-device guest progress and notes | Until site data is cleared — but on sign-in they become account data, above | The user, then the account rules |
+| On-device account progress and the account marker | Cleared on sign-out and on account deletion | The app (`onUserLoggedOut()`) |
+| On-device preferences and event badges | Until the user clears their site data | The user |
+| On-device session token | The SDK's own lifetime; removed on sign-out | The Supabase SDK |
 | Automated database backups | Supabase's schedule for the plan | Supabase. See §4 |
 
 Two of these deserve more than a row.
@@ -57,16 +60,28 @@ Two things make this worth fixing rather than living with:
 - It is also the cheapest reduction in breach exposure available. Every dormant account is
   blast radius with no user behind it.
 
-**The fix is [#90](https://github.com/Dor-bl/moi-app/issues/90)**, and the mechanism is already
-proven in this codebase: `client_errors` is purged nightly by `pg_cron`, so the extension is
-installed and scheduling works. A dormant-account job would reuse the same machinery and the
-existing `delete_user()` erasure path rather than introducing a second way to delete a user.
+**The fix is [#90](https://github.com/Dor-bl/moi-app/issues/90)**, and half the mechanism is
+already proven in this codebase: `client_errors` is purged nightly by `pg_cron`, so the
+extension is installed and scheduling works.
+
+The other half is not reusable, and it is worth being exact about why. `delete_user()` **cannot
+be called by a scheduled job.** It takes no argument and acts only on `auth.uid()`, raising
+`not authenticated` when there is no signed-in caller — which is precisely the case inside
+`pg_cron`. That self-only check is a security property worth keeping, not an oversight to
+route around, so #90 needs a *separately authorized* way to delete a selected account while
+leaving `delete_user()` exactly as it is.
 
 Two details that issue needs to get right, recorded here so they are not rediscovered:
 
-- Dormancy must key off `auth.users.last_sign_in_at`, **not** off progress rows. Someone can
-  use the app for a year without ticking anything new, and deleting them would be a bug with a
-  compliance justification attached.
+- **Dormancy needs a measure of actual use, and neither obvious candidate is one.** Progress
+  rows are not: someone can use the app for a year without ticking anything new.
+  `auth.users.last_sign_in_at` is not either, and this is the trap — the SDK refreshes a
+  session automatically, so a user can keep using the app for years without ever signing in
+  again, leaving that timestamp frozen at their first visit.
+  [`breach-runbook.md`](breach-runbook.md) §2 already says the same thing from the other
+  direction, where the timestamp misses users whose sessions kept refreshing through an
+  incident window. Deleting an active user would be a bug with a compliance justification
+  attached, so #90 has to decide what counts as use before it sets a threshold.
 - The `on delete cascade` on `user_progress.user_id` should make this a single delete against
   `auth.users`. Verify that against a test account rather than trusting it.
 
