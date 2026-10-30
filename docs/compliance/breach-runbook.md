@@ -2,7 +2,7 @@
 
 **Status:** draft for owner review. Written in advance, while nothing is on fire.
 **Date:** 4 October 2026
-**Issue:** [#88](https://github.com/Dor-bl/moi-app/issues/88) (depends on [#87](https://github.com/Dor-bl/moi-app/issues/87) processing register; builds on [`account-hosting-audit.md`](account-hosting-audit.md))
+**Issue:** [#88](https://github.com/Dor-bl/moi-app/issues/88) (companions: [`processing-register.md`](processing-register.md) Art. 30 record, [`retention.md`](retention.md), [`account-hosting-audit.md`](account-hosting-audit.md))
 
 ## How to use this file
 
@@ -112,10 +112,16 @@ Then breathe, and go to section 2.
 
 ## 2. Scoping checklist: what could be involved
 
-> **Interim.** This table is derived from the code at commit `ffd7995` because the
-> Article 30 register ([#87](https://github.com/Dor-bl/moi-app/issues/87),
-> `docs/compliance/processing-register.md`) isn't written yet. When it lands, the register
-> wins and this section should link to it rather than restate it.
+> **The register is authoritative for *what* each store holds.**
+> [`processing-register.md`](processing-register.md) (Art. 30) landed on 30 October 2026 and is
+> the record; this table is the incident view of the same system, and keeps two columns the
+> register deliberately does not carry: **where evidence of access lives, and how long that
+> evidence survives**. Those are what make the table worth reading at 2am.
+>
+> It was not replaced by a bare link, as this file's follow-up originally proposed, because
+> during an incident you should not have to open a second file to learn what a store contains.
+> The cost is two descriptions that can drift: **if they disagree, the register wins**, and the
+> contents below should be corrected to match it.
 
 ### Data stores
 
@@ -476,7 +482,7 @@ There is no mailing tool; step 3 is the procedure. For Dutch-language recipients
     at rest, but that doesn't make data unintelligible to someone reading through the API.
   - **Informing the people affected (10):** whether, when, how and with what content;
     paste the Appendix C text.
-  - Have the Article 30 record (#87) and the Appendix A record to hand: the questionnaire
+  - Have the Article 30 record ([`processing-register.md`](processing-register.md)) and the Appendix A record to hand: the questionnaire
     lists both as information you'll need.
 - **Submitting:** a confirmation with a **notification number** appears on screen. Save or
   print it **straight away**, because the notification can't be opened online after you
@@ -859,8 +865,12 @@ language they used in the app if you know it, otherwise both, Dutch first.
 - [x] **Remove `SUPABASE_JWT_SECRET` from Vercel**: done by the owner on 7 October 2026,
       and the secret was revoked on 12 October 2026 (audit §2).
 - [x] **Settle the backups question**: done 7 October 2026 (section 7). The backup and
-      erasure position itself still needs writing down under
-      [#87](https://github.com/Dor-bl/moi-app/issues/87).
-- [ ] **When #87 lands**, replace section 2's store table with a link to the register.
+      erasure position is now written down in
+      [`retention.md`](retention.md) §4, including what happens to erasures when a backup
+      is restored.
+- [x] **When #87 lands**, revisit section 2's store table: done 30 October 2026. The table
+      was kept rather than replaced by a link — the register carries no evidence-of-access
+      or evidence-retention columns, and those are the reason to read it during an incident.
+      Authority for contents moved to the register instead; see the note under section 2.
 - [ ] **Dry run once**: walk the first-60-minutes steps against the real dashboards to
       check every screen named here exists and every export works.
