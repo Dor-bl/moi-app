@@ -313,6 +313,29 @@ is written up in
 `privacy.html` section 6 states the same thing in plain language for visitors. Add a new
 storage key that fits none of those three grounds and that analysis needs revisiting.
 
+### What personal data MoiCheck holds, and for how long
+
+Two documents under `docs/compliance/` answer this, so it does not have to be reconstructed
+from the code:
+
+- [`processing-register.md`](docs/compliance/processing-register.md) — the GDPR Article 30
+  record. Ten entries — eight processing activities with their purposes, data categories,
+  processors, transfers, retention and safeguards, plus two boundary records. Activities 9 and 10 exist to mark the boundary: what
+  stays on the device — and the one thing that doesn't, since progress made while signed out
+  is merged into the account on sign-in — and the fact that there is no profiling or
+  automated decision-making.
+- [`retention.md`](docs/compliance/retention.md) — how long each category lives, which
+  provider holds what for how long, and the written position on backups versus erasure.
+
+Two more sit beside them: [`breach-runbook.md`](docs/compliance/breach-runbook.md) for when
+something has leaked, and
+[`account-hosting-audit.md`](docs/compliance/account-hosting-audit.md) for which account holds
+which credential and which region each service runs in.
+
+`privacy.html` is the public statement of the same facts. **Change the code, check both**: a
+new table, column or `localStorage` key changes the register, and a new storage key also means
+revisiting the consent-exemption analysis above.
+
 ### Account deletion (GDPR right to erasure)
 
 Signed-in users can delete their account and data from the profile modal (*Delete my account & data*).

@@ -2,7 +2,7 @@
 
 **Status:** draft for owner review. Written in advance, while nothing is on fire.
 **Date:** 4 October 2026
-**Issue:** [#88](https://github.com/Dor-bl/moi-app/issues/88) (depends on [#87](https://github.com/Dor-bl/moi-app/issues/87) processing register; builds on [`account-hosting-audit.md`](account-hosting-audit.md))
+**Issue:** [#88](https://github.com/Dor-bl/moi-app/issues/88) (companions: [`processing-register.md`](processing-register.md) Art. 30 record, [`retention.md`](retention.md), [`account-hosting-audit.md`](account-hosting-audit.md))
 
 ## How to use this file
 
@@ -112,10 +112,16 @@ Then breathe, and go to section 2.
 
 ## 2. Scoping checklist: what could be involved
 
-> **Interim.** This table is derived from the code at commit `ffd7995` because the
-> Article 30 register ([#87](https://github.com/Dor-bl/moi-app/issues/87),
-> `docs/compliance/processing-register.md`) isn't written yet. When it lands, the register
-> wins and this section should link to it rather than restate it.
+> **The register is authoritative for *what* each store holds.**
+> [`processing-register.md`](processing-register.md) (Art. 30) landed on 30 October 2026 and is
+> the record; this table is the incident view of the same system, and keeps two columns the
+> register deliberately does not carry: **where evidence of access lives, and how long that
+> evidence survives**. Those are what make the table worth reading at 2am.
+>
+> It was not replaced by a bare link, as this file's follow-up originally proposed, because
+> during an incident you should not have to open a second file to learn what a store contains.
+> The cost is two descriptions that can drift: **if they disagree, the register wins**, and the
+> contents below should be corrected to match it.
 
 ### Data stores
 
@@ -123,6 +129,7 @@ Then breathe, and go to section 2.
 | --- | --- | --- | --- | --- |
 | Supabase `auth.users` | Email address; for Google sign-ins, name and avatar URL from the Google profile; `created_at`, `last_sign_in_at`; provider metadata | Every account holder | Auth logs, API Gateway logs | 1 day |
 | Supabase `public.user_progress` | `user_id`, `item_id`, `date` (when the item was ticked off), `note` (free text) | Every account holder who synced anything | API Gateway / PostgREST logs | 1 day |
+| Supabase `public.client_errors` | Browser error reports: message, source, line, col, stack, page path with query and fragment stripped, user agent. **No** user id, session or IP by design — designed to be anonymous, not guaranteed: a browser-controlled value (path, message, stack, user agent) that survives scrubbing can still identify someone (register activity 5). The scrubber strips emails and tokens from the text, but it is a filter and can miss an unusual form, so when this table is in scope **read the affected rows** before ruling a category out. Not readable with a stolen publishable key: `anon` holds `insert` on named columns only, no `select`. Reached instead by the secret-key / JWT-secret row below, a direct database credential, or the dashboard. The cutoff is 30 days but the sweep runs once nightly at 03:17, so a report can still be there at **almost 31 days** old — scope from that, not from 30. | Visitors whose browser errored, not identifiable to us | API Gateway / PostgREST logs | 1 day |
 | Supabase Auth internals (`auth.sessions`, `auth.refresh_tokens`, `auth.identities`, MFA factors) | Live sessions and refresh tokens (usable to sign in as the user until ended), linked Google identities with their profile data, session IP and user agent | Every account holder with a session or identity | Auth logs | 1 day |
 | Supabase logs themselves (Auth, API Gateway) | Per request: IP address, user agent, path, and for Auth events the email address. These are personal data too (#86 tracks disclosing them) | Everyone who used the API or signed in during the retention window | — | 1 day on Free |
 | Supabase automated backups | A full copy of the whole database, including every table above and the Auth internals, not just `user_progress` and `auth.users` | As above | None on Free: the platform audit log that would show restores is Team and Enterprise only. After a dashboard compromise, look for new projects or branches that a backup could have been restored into | — |
@@ -134,6 +141,17 @@ Then breathe, and go to section 2.
 | Cloudflare Email Routing | Every email to `hallo@moicheck.nl` in transit (contact messages, direct mail), forwarded rather than stored (`privacy.html` §2) | Anyone who writes in | Cloudflare audit log, Email Routing settings | Cloudflare's |
 | unpkg (map scripts) and OpenStreetMap (map tiles) | Each map visitor's IP address and request details, fetched directly by the browser; no agreement with either (`privacy.html` §2–§3) | Visitors who open Map view | None on our side; ask the provider | Theirs |
 | Vercel Web Analytics | What reaches us is aggregates only. Vercel builds them from the request data in the row above, so a Vercel-side breach is scoped by that row, not this one | n/a | n/a | n/a |
+
+**The evidence column above covers the API path only.** Every Supabase table in it is also
+reachable through a direct database connection and from the dashboard, and both bypass the API
+Gateway, so nothing about them appears in its logs. For a direct connection, Supabase's
+**Postgres logs** (1 day on the current Free plan) record only errors and schema changes:
+this project runs `log_statement = ddl` without pgAudit (step 2), so **ordinary reads and
+writes leave no trace there**. A dropped policy would show; someone quietly selecting every
+row would not. For dashboard actions there is **no source on Free**: the organization audit
+log is Team and Enterprise only (section 7). So when the entry point is a database credential
+or the dashboard, treat every table it could reach as read, unless something else proves
+otherwise. A quiet Postgres log is not evidence that a table was untouched.
 
 No dedicated field for: passwords (sign-in is magic link or Google only), payment data,
 government IDs or special-category data; and no raw device coordinates (the "I'm here"
@@ -476,7 +494,7 @@ There is no mailing tool; step 3 is the procedure. For Dutch-language recipients
     at rest, but that doesn't make data unintelligible to someone reading through the API.
   - **Informing the people affected (10):** whether, when, how and with what content;
     paste the Appendix C text.
-  - Have the Article 30 record (#87) and the Appendix A record to hand: the questionnaire
+  - Have the Article 30 record ([`processing-register.md`](processing-register.md)) and the Appendix A record to hand: the questionnaire
     lists both as information you'll need.
 - **Submitting:** a confirmation with a **notification number** appears on screen. Save or
   print it **straight away**, because the notification can't be opened online after you
@@ -859,8 +877,12 @@ language they used in the app if you know it, otherwise both, Dutch first.
 - [x] **Remove `SUPABASE_JWT_SECRET` from Vercel**: done by the owner on 7 October 2026,
       and the secret was revoked on 12 October 2026 (audit §2).
 - [x] **Settle the backups question**: done 7 October 2026 (section 7). The backup and
-      erasure position itself still needs writing down under
-      [#87](https://github.com/Dor-bl/moi-app/issues/87).
-- [ ] **When #87 lands**, replace section 2's store table with a link to the register.
+      erasure position is now written down in
+      [`retention.md`](retention.md) §4, including what happens to erasures when a backup
+      is restored.
+- [x] **When #87 lands**, revisit section 2's store table: done 30 October 2026. The table
+      was kept rather than replaced by a link — the register carries no evidence-of-access
+      or evidence-retention columns, and those are the reason to read it during an incident.
+      Authority for contents moved to the register instead; see the note under section 2.
 - [ ] **Dry run once**: walk the first-60-minutes steps against the real dashboards to
       check every screen named here exists and every export works.

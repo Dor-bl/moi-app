@@ -36,8 +36,10 @@ the app. That document is tracked separately in
 **On the filename:** #87 designates `docs/compliance/processing-register.md` for that
 Article 30 record. This file deliberately does not take that name, so nobody later mistakes
 a narrow account-and-region audit for the register itself. If you came here looking for
-"what personal data do we hold, why, and for how long" — that is #87, and it is still
-unwritten.
+"what personal data do we hold, why, and for how long" — that is
+[`processing-register.md`](processing-register.md), written on 30 October 2026, with the
+periods in [`retention.md`](retention.md). This file remains the detail behind that
+register's credentials-and-regions paragraph, and is not a substitute for it.
 
 What follows is narrow: the state of the accounts, the credentials and the regions, as
 verified on 13 September 2026, with the provenance of each claim noted so a later reviewer
@@ -356,10 +358,12 @@ rather than trusting this file — account state drifts, and this file does not.
       is a recurring cost this project has no income for
       ([#152](https://github.com/Dor-bl/moi-app/issues/152), which lists what should reopen
       it).
-- [ ] **Article 30 record of processing** — still unwritten, tracked in
-      [#87](https://github.com/Dor-bl/moi-app/issues/87), which designates
-      `docs/compliance/processing-register.md`. This file is not a substitute and should not
-      be cited as one.
+- [x] **Article 30 record of processing** — written 30 October 2026,
+      [`processing-register.md`](processing-register.md). This closes #92's fourth item: its
+      "Technical and organisational measures" section records this audit's results — the
+      six-account MFA chain, the two RLS-capable credentials removed on 7 October, and the
+      legacy JWT secret revoked on 12 October. This file stays the detail behind that
+      summary and is still not a substitute for the register.
 - [ ] **If the Vercel–Supabase integration is ever re-linked** — re-check the environment
       variables. It injects the full credential set, including a `service_role` key, without
       being asked.
