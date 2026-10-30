@@ -8,11 +8,13 @@ description: "Review a MoiCheck change (working diff, branch, or PR) against thi
 ## What this codebase is
 
 A no-build static web app: `index.html` loads classic (non-module) scripts in a **fixed order** —
-`js/analytics.js` → `config.js` → `js/data.js` → `js/events.js` → `js/theme.js` → `js/auth.js` →
-`js/utils.js` → `js/checkin.js` → `app.js` — and they share state through **global variables**, not
-imports. Supabase (auth + `user_progress` table) is a vendored script in `assets/vendor/`. There is
-no bundler and no framework. CI runs `npm run lint` (ESLint) and `npm test` (Node's built-in test
-runner plus Playwright visual checks in `tests/`).
+`js/analytics.js` → `config.js` → `js/error-reporter.js` → `js/data.js` → `js/events.js` →
+`js/theme.js` → `js/auth.js` → `js/utils.js` → `js/checkin.js` → `app.js` (the `<script>`
+tags at the bottom of `index.html` are the source of truth; check them when a diff adds a
+script) — and they share state through **global variables**, not imports. Supabase (auth +
+`user_progress` table) is a vendored script in `assets/vendor/`. There is no bundler and no
+framework. CI runs `npm run lint` (ESLint) and `npm test` (Node's built-in test runner plus
+Playwright visual checks in `tests/`).
 
 Review accordingly: most correctness still has to be argued from reading the code, and "add a build
 step" is not a useful review finding here.
@@ -98,7 +100,7 @@ interpolates into `innerHTML` any of:
 - `currentUser.email` or other profile data;
 - URL/query/hash values.
 
-Those must go through `textContent` (or `createElement` + `textContent`, as `openProfileModal` does
+Those must go through `textContent` (or `createElement` + `textContent`, as `renderMemoryList` does
 for notes). For `href` interpolation, keep `target="_blank" rel="noopener noreferrer"` and check the
 value is a repo-authored `item.url`, not user input.
 
@@ -124,8 +126,8 @@ value is a repo-authored `item.url`, not user input.
 ### 7. Rendering cost and listeners
 
 Per [`.jules/bolt.md`](../../../.jules/bolt.md): do not attach event listeners inside per-item render
-loops — delegate from the container. But do not flag a linear scan over the ~31-item `BUCKET_LIST`
-as a performance problem; at this size it is a readability question at most.
+loops — delegate from the container. But do not flag a linear scan over the static `BUCKET_LIST`
+(tens of items) as a performance problem; at this size it is a readability question at most.
 
 ### 8. Accessibility
 

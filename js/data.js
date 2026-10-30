@@ -600,6 +600,20 @@ const EVENTS = [
         url: 'https://www.aigrunn.org/'
     },
     {
+        id: 'winterstad-2026',
+        date: '2026-11-27',
+        endDate: '2027-01-03',
+        title: { en: 'Winterstad Groningen', nl: 'Winterstad Groningen' },
+        location: { en: 'Grote Markt, city centre', nl: 'Grote Markt, binnenstad' },
+        tip: { en: 'For five weeks the Grote Markt turns into a winter fair: a big covered ice rink, a Ferris wheel, a Christmas train, market stalls and a winter café. Wandering around is free; skating and the rides are paid. Weekend afternoons get busy, so go early or on a weekday evening.', nl: 'Vijf weken lang verandert de Grote Markt in een winterplein: een grote overdekte ijsbaan, een reuzenrad, een kersttrein, marktkraampjes en een wintercafé. Rondlopen is gratis; schaatsen en de attracties kosten geld. In het weekend is het \'s middags druk, dus ga vroeg of op een doordeweekse avond.' },
+        url: 'https://winterstadgroningen.nl/',
+        // Open daily per winterstadgroningen.nl/openingstijden: everything opens
+        // at 11:00, and the café and Ferris wheel run until midnight; 23:59
+        // keeps the last minute inside the same day.
+        startTime: '11:00',
+        endTime: '23:59'
+    },
+    {
         id: 'winterwelvaart-2026',
         date: '2026-12-11',
         endDate: '2026-12-13',
@@ -1118,7 +1132,7 @@ const UI_TRANSLATIONS = {
         completedText: '{completed} of {total} completed',
         tipLabel: 'Local tip:',
         addMemory: 'Add a Memory',
-        memoryPlaceholder: 'How was it? Who were you with?',
+        memoryPlaceholder: 'How was it? What do you want to remember?',
         markComplete: 'Mark as Complete',
         completedSection: 'Completed',
         remainingCount: '{count} left',
@@ -1128,6 +1142,8 @@ const UI_TRANSLATIONS = {
         yourJourney: 'Your Journey',
         shareMilestone: 'Share Milestone',
         completedMemories: 'Completed Memories',
+        recentMemories: 'Recent Memories',
+        seeAllMemories: 'See all memories ({count})',
         noMemories: 'No memories yet. Go explore Groningen!',
         copied: 'Copied to Clipboard!',
         shareText: "I just unlocked '{milestone}' status on MoiCheck! I've completed {completed}/{total} classic Groningen experiences.",
@@ -1151,6 +1167,7 @@ const UI_TRANSLATIONS = {
         viewList: 'List',
         viewMap: 'Map',
         viewEvents: 'Events',
+        viewMemories: 'Memories',
         viewDetails: 'View Details',
         eventsHappeningNow: 'Happening now',
         eventsKidFriendly: 'Kid-friendly',
@@ -1234,7 +1251,7 @@ const UI_TRANSLATIONS = {
         completedText: '{completed} van de {total} voltooid',
         tipLabel: 'Tip van locals:',
         addMemory: 'Herinnering toevoegen',
-        memoryPlaceholder: 'Hoe was het? Met wie was je?',
+        memoryPlaceholder: 'Hoe was het? Wat wil je onthouden?',
         markComplete: 'Markeer als voltooid',
         completedSection: 'Voltooid',
         remainingCount: 'nog {count}',
@@ -1244,6 +1261,8 @@ const UI_TRANSLATIONS = {
         yourJourney: 'Jouw Reis',
         shareMilestone: 'Mijlpaal Delen',
         completedMemories: 'Voltooide Herinneringen',
+        recentMemories: 'Recente Herinneringen',
+        seeAllMemories: 'Alle herinneringen bekijken ({count})',
         noMemories: 'Nog geen herinneringen. Ga Groningen ontdekken!',
         copied: 'Gekopieerd naar klembord!',
         shareText: "Ik heb net de status '{milestone}' ontgrendeld op MoiCheck! Ik heb {completed}/{total} klassieke Groningse ervaringen voltooid.",
@@ -1267,6 +1286,7 @@ const UI_TRANSLATIONS = {
         viewList: 'Lijst',
         viewMap: 'Kaart',
         viewEvents: 'Agenda',
+        viewMemories: 'Herinneringen',
         viewDetails: 'Bekijk Details',
         eventsHappeningNow: 'Nu bezig',
         eventsKidFriendly: 'Kindvriendelijk',
