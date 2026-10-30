@@ -143,7 +143,7 @@ visitor reaches Google by opening a dialog, before deciding anything.
 | | |
 | --- | --- |
 | **Purpose** | Find bugs that happen only in a visitor's browser and would otherwise never surface, since the site is static and has no server log |
-| **Basis** *(proposed)* | Art. 6(1)(f), legitimate interest in a working app. The balancing rests on the reports being anonymous by construction, not on a promise |
+| **Basis** *(proposed)* | Art. 6(1)(f), legitimate interest in a working app. The balancing rests on the reports carrying no user id, session or IP by design, and on their 30-day expiry for anything the scrubber misses — not on a promise of perfect anonymity |
 | **Data subjects** | Visitors whose browser hit an error — **not identifiable to us**, by design |
 | **Data categories** | Error message, source location, line and column, stack, page path with query and fragment stripped, user-agent string. **No** user id, **no** session, **no** IP address |
 | **Recipients** | Supabase (processor, DPA) |
@@ -272,7 +272,7 @@ scripts and which destinations a page may connect to; it does **not** sandbox a 
 allowed to run, which can still read the DOM and `localStorage`, session token included. So the
 on-demand loading is a mitigation in its own right, not a backstop to the CSP. The sign-in link
 cannot be consumed by a mail scanner.
-Error reports are scrubbed and anonymous by construction. The event check-in computes on the
+Error reports carry no user id, session or IP, are scrubbed, and expire. The event check-in computes on the
 device so that no coordinate exists to protect.
 
 **Data minimisation.** No payment data, no government identifiers, no special-category field,
