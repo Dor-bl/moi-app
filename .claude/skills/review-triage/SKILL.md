@@ -11,9 +11,25 @@ That is a small sample from one feature and one reviewer, not a base rate. The r
 
 ## 1. Find the review
 
-Do not count on an event announcing a review. Of the six reviews seen on 145, 166 and 173, every one with an inline comment arrived as an event and none without one did. That is a correlation in a small sample, with no established cause. It still points at the worst case: a review with no inline comment is the least likely to announce itself, and on 145 one such review held a real finding in its summary alone. Timing is unpredictable too: one landed nine minutes after CI went green, another about six hours after a push. So treat silence as no information, do not wait out a guessed window, and after a push end the turn and rely on a scheduled check-in if you have one.
+Do not count on an event announcing a review. Of the eight reviews seen on 145, 166, 173, 206 and 208, every one with an inline comment arrived as an event and none without one did. That is a correlation in a small sample, with no established cause. It still points at the worst case: a review with no inline comment is the least likely to announce itself, and on 145 one such review held a real finding in its summary alone. Timing is unpredictable too: one landed nine minutes after CI went green, another about six hours after a push. So treat silence as no information, do not wait out a guessed window, and after a push end the turn and rely on a scheduled check-in if you have one.
 
 To look: list the PR's reviews and **read the newest body**, and list the review threads and note which are resolved. Reviews list oldest first, so the newest is on the last page. Each review records the commit it reviewed, so compare it with the last review you handled rather than with the clock. A `copilot-pull-request-reviewer` check run is only a hint that a review is running or has just finished: check runs belong to a head commit, so once you push, the run for the earlier head drops out of the listing while its review stays. A missing run proves nothing.
+
+Greptile does not report through those listings. On 199, 203, 206 and 208 its verdict was written
+into the PR description, in a block at the end that starts at `<!-- greptile_comment -->` and holds
+a confidence score, a summary and the last commit it reviewed. On 199, 206 and 208 it left no
+review, comment or thread. So fetch the PR itself and read that block, and compare its last
+reviewed commit with the head, because the block shows only its latest review. All four scored
+5/5, so how it reports a real finding has not been seen: read the block every time, and do not
+take a passing Greptile check run as its verdict.
+
+The block sits in the description you write, and Greptile rewrites it. On 209 the first review
+appended its block to a body that quoted that marker in prose, and left the prose alone. The
+re-review after a push cut the body at the quoted marker and replaced everything after it, which
+fits it matching from the first marker, though that is not confirmed. So never write the marker
+out in your own PR text (call it the `greptile_comment` marker), and when you edit the
+description, send the block back as it is. Whether an edit that leaves the block out drops it has
+not been tested.
 
 ## 2. Read the summary, not only the threads
 
