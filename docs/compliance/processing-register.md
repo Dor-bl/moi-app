@@ -267,8 +267,11 @@ version with an SRI hash. **One third-party script is neither:** Google's sign-i
 (`accounts.google.com/gsi/client`, activity 4) is fetched directly from Google with no
 integrity hash, and cannot carry one — Google serves a rolling build, so any hash we pinned
 would break the button on their next release. What bounds it instead is that it loads only
-when the sign-in dialog is opened, plus the CSP. A CSP bounds what any script can do or
-reach. The sign-in link cannot be consumed by a mail scanner.
+when the sign-in dialog is opened, plus the CSP. The CSP limits which sources may serve
+scripts and which destinations a page may connect to; it does **not** sandbox a script that is
+allowed to run, which can still read the DOM and `localStorage`, session token included. So the
+on-demand loading is a mitigation in its own right, not a backstop to the CSP. The sign-in link
+cannot be consumed by a mail scanner.
 Error reports are scrubbed and anonymous by construction. The event check-in computes on the
 device so that no coordinate exists to protect.
 

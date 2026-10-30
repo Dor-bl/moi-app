@@ -142,6 +142,14 @@ Then breathe, and go to section 2.
 | unpkg (map scripts) and OpenStreetMap (map tiles) | Each map visitor's IP address and request details, fetched directly by the browser; no agreement with either (`privacy.html` §2–§3) | Visitors who open Map view | None on our side; ask the provider | Theirs |
 | Vercel Web Analytics | What reaches us is aggregates only. Vercel builds them from the request data in the row above, so a Vercel-side breach is scoped by that row, not this one | n/a | n/a | n/a |
 
+**The evidence column above covers the API path only.** Every Supabase table in it is also
+reachable through a direct database connection and from the dashboard, and both bypass the API
+Gateway, so nothing about them appears in its logs. For a direct connection the evidence is in
+Supabase's **Postgres logs**, kept 1 day on the current Free plan. For dashboard actions there
+is **no source on Free**: the organization audit log is Team and Enterprise only (section 7).
+When the entry point is a database credential or the dashboard, read those rows' evidence
+column as "Postgres logs, 1 day" and "none", respectively, not as the API logs listed.
+
 No dedicated field for: passwords (sign-in is magic link or Google only), payment data,
 government IDs or special-category data; and no raw device coordinates (the "I'm here"
 check runs on the device and stores nothing; see `privacy.html` §1). Memory notes and
