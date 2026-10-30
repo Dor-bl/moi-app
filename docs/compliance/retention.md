@@ -28,7 +28,7 @@ something is held at all.
 | Account record (email, name, provider metadata) | **Until the user deletes it — indefinite** | Nothing. See §2 |
 | Progress and memory notes | Same as the account | `on delete cascade` on erasure |
 | Live sessions and refresh tokens | Supabase's own session lifetime; ended immediately on sign-out or deletion | Supabase |
-| Browser error reports | **30 days** | `pg_cron`, nightly at 03:17 |
+| Browser error reports | **30-day cutoff, swept nightly at 03:17** — so up to ~31 days in practice | `pg_cron` |
 | Contact messages (our mailbox) | As long as needed to answer | Judgement, applied by hand |
 | Contact messages (Resend) | 30 days, *their stated figure* | Resend. Unverified — §3 |
 | Sign-in emails (Resend) | As above | As above |

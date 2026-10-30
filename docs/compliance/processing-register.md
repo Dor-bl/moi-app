@@ -148,7 +148,7 @@ visitor reaches Google by opening a dialog, before deciding anything.
 | **Data categories** | Error message, source location, line and column, stack, page path with query and fragment stripped, user-agent string. **No** user id, **no** session, **no** IP address |
 | **Recipients** | Supabase (processor, DPA) |
 | **Transfers** | Stored in the EU, `eu-west-1`. No transfer beyond activity 1's |
-| **Retention** | 30 days, enforced by a `pg_cron` job, not by intention |
+| **Retention** | A 30-day cutoff, enforced by a nightly `pg_cron` sweep rather than by intention. The sweep deletes rows already older than 30 days, so a report can persist for almost 31 days before its turn comes — the ceiling to use when scoping, not 30 |
 | **Measures** | Email addresses and tokens scrubbed from the text before sending; per-column length caps; at most five distinct messages per page load; nothing sent from `localhost`; `anon` holds `insert` only on named columns, so a visitor can report but cannot read anyone's reports — including their own |
 
 Honest limit, and the reason the 30 days matters: a scrubber is a filter, and a filter can
