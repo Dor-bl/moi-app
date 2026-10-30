@@ -23,6 +23,14 @@ reviewed commit with the head, because the block shows only its latest review. A
 5/5, so how it reports a real finding has not been seen: read the block every time, and do not
 take a passing Greptile check run as its verdict.
 
+The block sits in the description you write, and Greptile rewrites it. On 209 the first review
+appended its block to a body that quoted that marker in prose, and left the prose alone. The
+re-review after a push cut the body at the quoted marker and replaced everything after it, which
+fits it matching from the first marker, though that is not confirmed. So never write the marker
+out in your own PR text (call it the `greptile_comment` marker), and when you edit the
+description, send the block back as it is. Whether an edit that leaves the block out drops it has
+not been tested.
+
 ## 2. Read the summary, not only the threads
 
 A review body can carry findings that have no thread: a per-file table, a "previously missed" section, plain prose. Read all of it. The headline count and the prose can disagree, so trust neither alone.
