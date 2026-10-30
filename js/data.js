@@ -606,7 +606,12 @@ const EVENTS = [
         title: { en: 'Winterstad Groningen', nl: 'Winterstad Groningen' },
         location: { en: 'Grote Markt, city centre', nl: 'Grote Markt, binnenstad' },
         tip: { en: 'For five weeks the Grote Markt turns into a winter fair: a big covered ice rink, a Ferris wheel, a Christmas train, market stalls and a winter café. Wandering around is free; skating and the rides are paid. Weekend afternoons get busy, so go early or on a weekday evening.', nl: 'Vijf weken lang verandert de Grote Markt in een winterplein: een grote overdekte ijsbaan, een reuzenrad, een kersttrein, marktkraampjes en een wintercafé. Rondlopen is gratis; schaatsen en de attracties kosten geld. In het weekend is het \'s middags druk, dus ga vroeg of op een doordeweekse avond.' },
-        url: 'https://winterstadgroningen.nl/'
+        url: 'https://winterstadgroningen.nl/',
+        // Open daily per winterstadgroningen.nl/openingstijden: everything opens
+        // at 11:00, and the café and Ferris wheel run until midnight; 23:59
+        // keeps the last minute inside the same day.
+        startTime: '11:00',
+        endTime: '23:59'
     },
     {
         id: 'winterwelvaart-2026',
