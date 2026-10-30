@@ -319,8 +319,8 @@ Two documents under `docs/compliance/` answer this, so it does not have to be re
 from the code:
 
 - [`processing-register.md`](docs/compliance/processing-register.md) — the GDPR Article 30
-  record. Ten processing activities with their purposes, data categories, processors,
-  transfers, retention and safeguards. Activities 9 and 10 exist to mark the boundary: what
+  record. Ten entries — eight processing activities with their purposes, data categories,
+  processors, transfers, retention and safeguards, plus two boundary records. Activities 9 and 10 exist to mark the boundary: what
   stays on the device — and the one thing that doesn't, since progress made while signed out
   is merged into the account on sign-in — and the fact that there is no profiling or
   automated decision-making.

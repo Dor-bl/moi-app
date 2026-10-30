@@ -119,10 +119,18 @@ building any.
 This is the question an auditor asks and an undocumented project cannot answer.
 
 Supabase takes automated backups of the whole project database. A row deleted today persists in
-backups taken before the deletion until they age out on their own schedule. That is **normal
-and lawful**: the GDPR does not require editing backups, and regulators accept that erasure
-applies to live systems while backups age out, provided the position is deliberate and written
-down. What is not acceptable is having never thought about it.
+backups taken before the deletion until they age out on their own schedule.
+
+Backups are **within** the scope of the erasure right — the comfortable reading, that Article 17
+simply stops at the live database, is wrong. What is accepted is narrower: a controller is not
+expected to surgically rewrite backup sets, **provided** it keeps a record of what must be
+erased and applies those erasures to anything restored from one. Ageing out covers the first
+half of that; the record covers the second.
+
+So the position below is the normal one, and it is **not yet complete**: we do the ageing out,
+and we do not yet keep the record (point 5, and §5). Until that record exists, point 4 is an
+intention rather than a capability, and this section should not be read as saying the backup
+question is settled. Half of what makes the standard position lawful is missing.
 
 **The position:**
 
