@@ -15,6 +15,14 @@ Do not count on an event announcing a review. Of the six reviews seen on 145, 16
 
 To look: list the PR's reviews and **read the newest body**, and list the review threads and note which are resolved. Reviews list oldest first, so the newest is on the last page. Each review records the commit it reviewed, so compare it with the last review you handled rather than with the clock. A `copilot-pull-request-reviewer` check run is only a hint that a review is running or has just finished: check runs belong to a head commit, so once you push, the run for the earlier head drops out of the listing while its review stays. A missing run proves nothing.
 
+Greptile does not report through those listings. On 199, 203, 206 and 208 its verdict was written
+into the PR description, in a block at the end that starts at `<!-- greptile_comment -->` and holds
+a confidence score, a summary and the last commit it reviewed. On 199, 206 and 208 it left no
+review, comment or thread. So fetch the PR itself and read that block, and compare its last
+reviewed commit with the head, because the block shows only its latest review. All four scored
+5/5, so how it reports a real finding has not been seen: read the block every time, and do not
+take a passing Greptile check run as its verdict.
+
 ## 2. Read the summary, not only the threads
 
 A review body can carry findings that have no thread: a per-file table, a "previously missed" section, plain prose. Read all of it. The headline count and the prose can disagree, so trust neither alone.
