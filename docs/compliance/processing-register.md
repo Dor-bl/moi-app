@@ -45,7 +45,7 @@ is flagged inline.
 
 | Field | Value |
 | --- | --- |
-| Name | MoiCheck, a personal side project of a single individual — **name not yet recorded, see [Open points](#open-points)** |
+| Name | D. Blayzer, an individual, who runs MoiCheck as a personal side project. Published in `privacy.html` as initial plus surname, which identifies the controller; no postal address is published or required (Art. 13(1)(a) asks for contact details, below). That changes if MoiCheck becomes paid or ad-supported: Dutch e-commerce law (BW 3:15d) then requires a geographic address |
 | Contact | `hallo@moicheck.nl` |
 | Representative (Art. 27) | Not applicable — the controller is established in the EU (Netherlands) |
 | DPO (Art. 37) | **None, and none required.** No public-authority processing, no large-scale monitoring, no large-scale special-category data |
@@ -315,21 +315,13 @@ otherwise, so the region claim in this register is enforced rather than asserted
 Each of these is a thing this record cannot state because nobody has decided or supplied it
 yet. None is a blocker for the rest of the file.
 
-1. **The controller's name.** Only the owner can supply this, and Article 13(1)(a) needs it
-   in `privacy.html` as well as here: a surname with a first name or initials, since a first
-   name alone identifies no one. A postal address is **not** required — the GDPR asks for
-   contact details, and `hallo@moicheck.nl` is one. That changes only if MoiCheck becomes a
-   paid or ad-supported service, which brings in the Dutch e-commerce rule (BW 3:15d)
-   requiring a geographic address. It is the one field in this
-   register that is blank rather than drafted — see
-   [#86](https://github.com/Dor-bl/moi-app/issues/86).
-2. **Account-data retention is indefinite** (activity 1). The register can only record what is
+1. **Account-data retention is indefinite** (activity 1). The register can only record what is
    true; [#90](https://github.com/Dor-bl/moi-app/issues/90) is the fix, and `client_errors`
    already proves `pg_cron` works for this.
-3. **Resend's 30-day retention is their stated figure**, unverified against live
+2. **Resend's 30-day retention is their stated figure**, unverified against live
    documentation. Carried as such in `privacy.html` §4 and in [`retention.md`](retention.md).
-4. **At-rest encryption is asserted by the providers**, not verified by us.
-5. **The pre-choice Google fetch could be removed** (activity 4). Drawing our own button and
+3. **At-rest encryption is asserted by the providers**, not verified by us.
+4. **The pre-choice Google fetch could be removed** (activity 4). Drawing our own button and
    loading Google's script only after the visitor picks it would take that request out of
    the dialog entirely, at the cost of a code change to the sign-in flow. Until the owner
    decides, it is documented and justified rather than eliminated.
