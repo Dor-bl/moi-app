@@ -98,3 +98,15 @@ test('a result that arrives after sign-out is discarded', async () => {
 
     assert.equal(await pending, null);
 });
+
+test('signing out clears a failed export\'s message, so the next account does not see it', () => {
+    const exportDataError = { textContent: 'Could not load your data.' };
+    const { module } = loadAuthModule({
+        overrides: { document: { getElementById: id => (id === 'exportDataError' ? exportDataError : null) } }
+    });
+    module.currentUser = GOOGLE_USER;
+
+    module.onUserLoggedOut();
+
+    assert.equal(exportDataError.textContent, '');
+});

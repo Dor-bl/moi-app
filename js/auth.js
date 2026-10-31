@@ -39,6 +39,12 @@ function updateAuthBtnState(isLoggedIn) {
     if (accountDangerZone) {
         accountDangerZone.style.display = (isLoggedIn && currentUser) ? 'block' : 'none';
     }
+    // A failed export's message belongs to the session that saw it; don't let
+    // it greet whoever signs in next.
+    if (!(isLoggedIn && currentUser)) {
+        const exportDataError = document.getElementById('exportDataError');
+        if (exportDataError) exportDataError.textContent = '';
+    }
     if (signOutBtn) signOutBtn.textContent = t.signOut;
 
     if (!authBtn) return;
