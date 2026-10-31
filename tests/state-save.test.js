@@ -99,19 +99,40 @@ test('an unreadable store falls back to this tab’s copy instead of failing', (
     assert.deepEqual(Object.keys(stored(storage)), ['item-1']);
 });
 
-test('syncing cloud rows in a stale tab keeps a tick made in another tab', async () => {
+// The cloud sync ends in a full upload of completedItems under the signed-in user's id,
+// so it must not adopt whatever another tab has put in the shared store while its query
+// was in flight. After an account switch elsewhere that is a different account's private
+// progress, and uploading it would hand it to the wrong user. That is why this path
+// still overwrites with saveState() rather than merging with saveItems().
+test('a sync does not upload another account’s progress that landed in the store mid-query', async () => {
     const storage = createLocalStorage();
     const supabase = createFakeSupabase({
-        rows: [{ user_id: 'user-b', item_id: 'item-7', date: '2026-10-30T08:00:00.000Z', note: '' }]
+        rows: [{ user_id: 'user-a', item_id: 'a-item', date: '2026-10-30T08:00:00.000Z', note: '' }]
     });
-    const stale = openTab(storage, { supabaseClient: supabase });
-    const other = openTab(storage);
 
-    other.completedItems['item-5'] = entry();
-    other.saveItems(['item-5']);
+    // Hold the cloud query open so the other tab can act while it is in flight.
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    const realFrom = supabase.from;
+    supabase.from = table => {
+        const api = realFrom(table);
+        return { ...api, select: () => ({ eq: async (column, value) => {
+            await gate;
+            return api.select().eq(column, value);
+        } }) };
+    };
 
-    stale.currentUser = { id: 'user-b', email: 'b@example.test' };
-    await stale.syncCloudProgress();
+    const tabA = openTab(storage, { supabaseClient: supabase });
+    tabA.currentUser = { id: 'user-a', email: 'a@example.test' };
+    const sync = tabA.syncCloudProgress();
 
-    assert.deepEqual(Object.keys(stored(storage)).sort(), ['item-5', 'item-7']);
+    // Meanwhile another tab switches the browser to account B: B's marker and B's
+    // private progress are now what the shared store holds.
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({ 'b-private': entry('B’s note') }));
+
+    release();
+    await sync;
+
+    assert.deepEqual(supabase.upserts.map(u => u.row.item_id), [], 'nothing of B’s is uploaded under A');
 });

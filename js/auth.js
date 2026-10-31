@@ -1,5 +1,5 @@
 // Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData
-// Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState, saveItems.
+// Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
@@ -412,7 +412,13 @@ async function syncCloudProgress() {
                     note: row.note || ''
                 };
             });
-            saveItems(data.map(row => row.item_id));
+            // saveState(), not saveItems(), on purpose. This path ends in a full upload of
+            // completedItems under currentUser.id, so it must hold only this tab's own
+            // view. saveItems() would first adopt whatever another tab has put in the
+            // shared store while the query above was in flight: after an account switch
+            // there, that is a different account's private progress, and the upload below
+            // would hand it to this one. Overwriting is the safe direction here.
+            saveState();
 
             // ⚡ Bolt Performance Optimization:
             // Batching API Calls & O(1) Set Lookup
