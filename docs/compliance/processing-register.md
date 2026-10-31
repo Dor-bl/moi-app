@@ -84,6 +84,15 @@ the other.
 | **Retention** | For as long as the account exists. **This is indefinite and should not be** — [#90](https://github.com/Dor-bl/moi-app/issues/90), and [`retention.md`](retention.md) §2 |
 | **Measures** | Row-level security on `user_progress` scoped to `auth.uid() = user_id`; no password exists to steal (magic link and Google only); `on delete cascade` so erasing a user erases their rows; erasure via a `security definer` `delete_user()` that can only delete its own caller; TLS throughout |
 
+**Access and portability (Arts. 15, 20).** A signed-in user can download this activity's
+data themselves from the profile: `buildAccountExport()` in `js/auth.js` reads their
+`user_progress` rows at click time, under the same row-level security, and adds the account
+fields the client already holds (email, id, Google name and avatar URL, provider,
+`created_at`, `last_sign_in_at`). It leaves out Supabase's server-side auth records (the
+sessions and refresh-token tables, and Auth's audit log), which the browser cannot read; those are answered by email,
+as `privacy.html` §5 says. If a column is added to `user_progress` or a field to the account,
+add it to the export too, or the file stops being complete.
+
 Two notes a reader will otherwise trip over. **Memory notes are free text**, so a user may
 have typed anything into them, including the categories we say we don't collect; the field no
 longer invites them to name other people ([#204](https://github.com/Dor-bl/moi-app/pull/204))

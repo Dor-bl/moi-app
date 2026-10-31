@@ -33,6 +33,7 @@ export default [
         syncCloudProgress: "readonly",
         syncItemToCloud: "readonly",
         deleteUserAccountAndData: "readonly",
+        buildAccountExport: "readonly",
         describeMagicLinkError: "readonly",
         initGoogleSignIn: "readonly",
         renderGoogleButton: "readonly",

@@ -1891,25 +1891,11 @@ function setupEventListeners() {
         exportDataBtn.addEventListener('click', async () => {
             if (!currentUser || !supabaseClient) return;
             const generation = authGeneration;
-            const user = currentUser;
             exportDataError.textContent = '';
             exportDataBtn.disabled = true;
             try {
-                const { data, error } = await supabaseClient
-                    .from('user_progress')
-                    .select('item_id, date, note')
-                    .eq('user_id', user.id);
-                if (generation !== authGeneration) return;
-                if (error) throw error;
-                const items = data.map(row => {
-                    const item = BUCKET_LIST.find(i => String(i.id) === String(row.item_id));
-                    return { item_id: row.item_id, title: item ? item.title[currentLang] : null, date: row.date, note: row.note || '' };
-                });
-                const out = {
-                    exported_at: new Date().toISOString(),
-                    account: { id: user.id, email: user.email },
-                    completed_items: items
-                };
+                const out = await buildAccountExport();
+                if (!out) return;
                 const url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
                 const a = document.createElement('a');
                 a.href = url;
@@ -1917,7 +1903,9 @@ function setupEventListeners() {
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-                URL.revokeObjectURL(url);
+                // Revoked on the next tick: revoking synchronously can cancel
+                // the download in some browsers before it has started.
+                setTimeout(() => URL.revokeObjectURL(url), 0);
             } catch {
                 if (generation === authGeneration) exportDataError.textContent = UI_TRANSLATIONS[currentLang].exportDataError;
             } finally {
