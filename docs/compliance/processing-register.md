@@ -45,7 +45,7 @@ is flagged inline.
 
 | Field | Value |
 | --- | --- |
-| Name | MoiCheck, a personal side project of a single individual — **legal name and postal address not yet recorded, see [Open points](#open-points)** |
+| Name | MoiCheck, a personal side project of a single individual — **name not yet recorded, see [Open points](#open-points)** |
 | Contact | `hallo@moicheck.nl` |
 | Representative (Art. 27) | Not applicable — the controller is established in the EU (Netherlands) |
 | DPO (Art. 37) | **None, and none required.** No public-authority processing, no large-scale monitoring, no large-scale special-category data |
@@ -315,8 +315,12 @@ otherwise, so the region claim in this register is enforced rather than asserted
 Each of these is a thing this record cannot state because nobody has decided or supplied it
 yet. None is a blocker for the rest of the file.
 
-1. **The controller's legal name and postal address.** Only the owner can supply this, and
-   Article 13(1)(a) needs it in `privacy.html` as well as here. It is the one field in this
+1. **The controller's name.** Only the owner can supply this, and Article 13(1)(a) needs it
+   in `privacy.html` as well as here: a surname with a first name or initials, since a first
+   name alone identifies no one. A postal address is **not** required — the GDPR asks for
+   contact details, and `hallo@moicheck.nl` is one. That changes only if MoiCheck becomes a
+   paid or ad-supported service, which brings in the Dutch e-commerce rule (BW 3:15d)
+   requiring a geographic address. It is the one field in this
    register that is blank rather than drafted — see
    [#86](https://github.com/Dor-bl/moi-app/issues/86).
 2. **Account-data retention is indefinite** (activity 1). The register can only record what is
