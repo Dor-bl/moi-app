@@ -91,7 +91,9 @@ fields the client already holds (email, id, Google name and avatar URL, provider
 `created_at`, `last_sign_in_at`). It exports what is stored, not what is pending: a tick or note
 whose `syncItemToCloud()` write failed lives only in that browser and is not in the file;
 `privacy.html` §5 tells users so. It also omits Supabase's server-side auth records (the
-sessions and refresh-token tables, and Auth's audit log), which the browser cannot read; those are answered by email,
+sessions and refresh-token tables with their IP and user agent, Auth's audit log, and the
+identities row linking a Google account; the browser cannot reach the first three at all), and anything held
+outside this activity, such as contact correspondence (activity 2); those are answered by email,
 as `privacy.html` §5 says. If a column is added to `user_progress` or a field to the account,
 add it to the export too, or the file stops being complete.
 
