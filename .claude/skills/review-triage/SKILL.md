@@ -42,7 +42,10 @@ threads every time, and treat its description block as you would Greptile's. It 
 says so in that same comment, and its check run then reads skipped. Its comment and its review hold
 tick boxes (a manual review, committing to the branch, "Autofix", "Fix comments"). Do not tick them:
 Autofix lets it push to the branch, and on 212 and 214 it was seen switched on though the agent
-working on the PR had not touched it.
+working on the PR had not touched it. If Autofix is already on, leave it as it is and tell the
+owner: it may be their setting, and the agent cannot tell who switched it on. Read any commit it
+pushes against the diff before treating it as part of the PR; if the branch must move, merge its
+commit in and never force-push over it.
 
 ## 2. Read the summary, not only the threads
 
