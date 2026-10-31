@@ -203,6 +203,27 @@ test('a refused write is rolled back rather than left in memory', async () => {
     assert.equal(hasCheckedIn(festival), false, 'nothing is left claiming to be earned');
 });
 
+// Two tabs open before either check-in each hold the store as it was at page load.
+// localStorage is shared between them and the in-memory copy is not, so a write that
+// serialises only this tab's copy replaces what the other tab just earned.
+// loadCheckInModule gives every module its own storage, so the shared store is
+// emulated the way the browser does it: tab A's stored value appears in tab B's
+// storage while tab B's in-memory copy stays as it was.
+test('a check-in does not overwrite a badge another tab just earned', () => {
+    const tabA = loadCheckInModule();
+    const tabB = loadCheckInModule();
+    const other = { ...festival, id: 'other-fest' };
+
+    tabA.recordCheckIn(festival);
+    tabB.localStorage.setItem('moiCheckEvents', tabA.localStorage.getItem('moiCheckEvents'));
+
+    tabB.recordCheckIn(other);
+
+    const stored = Object.keys(JSON.parse(tabB.localStorage.getItem('moiCheckEvents'))).sort();
+    assert.deepEqual(stored, ['other-fest@2026-05-05', 'test-fest@2026-05-05']);
+    assert.equal(tabB.hasCheckedIn(festival), true, 'this tab now knows about the other badge');
+});
+
 // The position was fine and the badge was not saved. Reporting that as a
 // geolocation failure is a false diagnosis of a real problem.
 test('a save failure is its own reason, not a location one', async () => {

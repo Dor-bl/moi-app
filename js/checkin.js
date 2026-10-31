@@ -107,18 +107,28 @@ function earnedEventBadges(events) {
 
 function recordCheckIn(event) {
     const key = checkInKeyFor(event);
-    eventCheckIns[key] = { date: new Date().toISOString() };
+    const before = eventCheckIns;
+
+    // Merged into what is stored now, not just this tab's copy of it. localStorage
+    // is shared between tabs and eventCheckIns is not: it was read once at page
+    // load, so a tab opened before another tab's check-in still holds the store as
+    // it was, and serialising only that copy would replace the badge the other tab
+    // just earned. Reading again here is not a lock — two writes in the same
+    // instant can still race — but it closes the realistic case of one tab having
+    // sat open while the user checked in from another. A spread rather than
+    // Object.assign, so a stored "__proto__" key stays an own property instead of
+    // reaching the setter.
+    eventCheckIns = { ...readCheckIns(), ...before, [key]: { date: new Date().toISOString() } };
 
     try {
         saveCheckIns();
     } catch (err) {
         // Storage refused the write — a full quota, or Safari's private mode,
-        // where setItem throws. Undo the in-memory mutation before rethrowing:
-        // left in place it would render as an earned badge that vanishes on
-        // reload, and it would ride along on the next successful save of some
-        // *other* check-in. Deleting rather than restoring a previous value is
-        // right because the button is only rendered for a key not already stored.
-        delete eventCheckIns[key];
+        // where setItem throws. Put the previous object back before rethrowing:
+        // left in place the new key would render as an earned badge that vanishes
+        // on reload, and it would ride along on the next successful save of some
+        // *other* check-in.
+        eventCheckIns = before;
         throw err;
     }
 }
