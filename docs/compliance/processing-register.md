@@ -233,10 +233,22 @@ Article 22 is not engaged and the Article 13(2)(f) disclosure is a short negativ
 which `privacy.html` §5 carries. It is scoped to Article 22 deliberately: the app *does*
 decide two things automatically, and a flat "no automated decisions" would be false.
 
-Milestone badges are deterministic consequences of the user's own ticks, and an event badge
-follows from the on-device location check in activity 9; both are computed and displayed to
-the user and have no effect outside the app. They are not profiling: nothing is inferred, nothing is predicted, and
-nothing about the user changes as a result.
+Why neither is profiling (Art. 4(4)) — the two badges rest on different reasons, and the
+weaker-sounding one is the event badge, because it evaluates the user's location:
+
+- **Event badge: not our processing at all.** The location is read, compared and discarded on
+  the user's device, and the resulting badge stays in `moiCheckEvents` in that browser
+  (activity 9). Neither the coordinates nor the badge is ever sent to us, so there is no
+  evaluation by the controller to be profiling, and nothing on our side for Article 22 to
+  attach to. The code shows this: `js/checkin.js` writes only to `localStorage`, and the only
+  table the app writes to is `user_progress`. If event badges ever sync to the account, this
+  reasoning stops holding and the row needs redoing.
+- **Milestone badges: no evaluation of a personal aspect.** They are a count of items the user
+  ticked themselves, computed in the browser from progress we do hold (activity 1). Nothing
+  about the user is assessed, inferred or predicted beyond what they recorded.
+
+The Article 22 conclusion is separate and holds for both: neither has any legal or similarly
+significant effect, since a badge changes nothing outside the app.
 
 ---
 
