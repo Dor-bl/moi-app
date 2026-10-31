@@ -240,6 +240,9 @@ function updateLanguageUI() {
     if (txtDeleteAccountNotice) txtDeleteAccountNotice.textContent = t.deleteAccountNotice;
     if (deleteAccountBtn) deleteAccountBtn.textContent = t.deleteAccountBtn;
     if (exportDataBtn) exportDataBtn.textContent = t.exportDataBtn;
+    // A failed export leaves its message on screen; keep it in step with the
+    // language switch, as the magic-link error below does.
+    if (exportDataError && exportDataError.textContent) exportDataError.textContent = t.exportDataError;
 
     const deleteModalTitle = document.getElementById('deleteModalTitle');
     if (deleteModalTitle) deleteModalTitle.textContent = t.deleteModalTitle;
