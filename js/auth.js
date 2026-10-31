@@ -1,5 +1,5 @@
 // Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData
-// Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
+// Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState, saveItems.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
@@ -412,7 +412,7 @@ async function syncCloudProgress() {
                     note: row.note || ''
                 };
             });
-            saveState();
+            saveItems(data.map(row => row.item_id));
 
             // ⚡ Bolt Performance Optimization:
             // Batching API Calls & O(1) Set Lookup

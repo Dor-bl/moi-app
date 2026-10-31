@@ -1196,7 +1196,7 @@ function toggleComplete(id, event = null) {
         checkBadgeUnlocks(id, false);
     }
     
-    saveState();
+    saveItems([id]);
 
     const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
     if (card) {
@@ -1370,7 +1370,7 @@ function persistOpenNote() {
     if (note === (entry.note || '')) return;
 
     entry.note = note;
-    saveState();
+    saveItems([selectedItemId]);
     syncItemToCloud(selectedItemId, true, note);
 }
 

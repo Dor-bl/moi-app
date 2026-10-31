@@ -39,6 +39,7 @@ export default [
         getMilestoneObj: "readonly",
         showBadgeToast: "readonly",
         saveState: "readonly",
+        saveItems: "readonly",
         createConfetti: "readonly",
         renderList: "readonly",
         updateProgress: "readonly",
