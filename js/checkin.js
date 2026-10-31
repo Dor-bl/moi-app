@@ -115,10 +115,16 @@ function recordCheckIn(event) {
     // it was, and serialising only that copy would replace the badge the other tab
     // just earned. Reading again here is not a lock — two writes in the same
     // instant can still race — but it closes the realistic case of one tab having
-    // sat open while the user checked in from another. A spread rather than
-    // Object.assign, so a stored "__proto__" key stays an own property instead of
-    // reaching the setter.
-    eventCheckIns = { ...readCheckIns(), ...before, [key]: { date: new Date().toISOString() } };
+    // sat open while the user checked in from another.
+    //
+    // This tab's copy goes first and the stored value over it, so for a key this tab
+    // is not recording the store stands: an occurrence earned again from another tab
+    // keeps its newer date instead of being rolled back to this tab's older one. The
+    // same rule as saveItems() in js/utils.js. Keys only this tab holds (written
+    // while storage was refusing) are still kept, and the key being recorded goes
+    // last. A spread rather than Object.assign, so a stored "__proto__" key stays an
+    // own property instead of reaching the setter.
+    eventCheckIns = { ...before, ...readCheckIns(), [key]: { date: new Date().toISOString() } };
 
     try {
         saveCheckIns();
