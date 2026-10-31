@@ -128,7 +128,7 @@ Choosing Google sign-in instead avoids this activity entirely.
 | | |
 | --- | --- |
 | **Purpose** | Let a user sign in with an existing Google account instead of waiting for an email |
-| **Basis** | Art. 6(1)(b) for our side. Google's own processing is Google's to justify — it acts as a separate controller there, not our processor |
+| **Basis** | Two parts. **The pre-choice fetch** — the visitor's request to Google when the dialog opens, which happens whether or not they go on to choose Google — is Art. 6(1)(f), legitimate interest in offering Google sign-in; 6(1)(b) cannot cover it, since a visitor who signs in by email never needed it. The balancing rests on it happening only for visitors who opened the sign-in dialog, never on an ordinary visit, and on its being disclosed in `privacy.html` §2. **Once the visitor chooses Google**, receiving their email, name and avatar is Art. 6(1)(b). Google's own processing is Google's to justify — it acts as a separate controller there, not our processor |
 | **Data subjects** | Users who open the sign-in dialog — note: **opening it is enough**, choosing Google is not required |
 | **Data categories** | From Google to us, via Supabase: email address, name, avatar URL. From the visitor to Google, before any choice is made: IP address, request metadata, and whatever Google's own cookies let it read |
 | **Recipients** | Google; Supabase as the broker |
@@ -229,11 +229,13 @@ revisiting at the same time.
 ### 10. Automated decision-making and profiling
 
 **None.** No profiling, no automated decision with legal or similarly significant effect, so
-Article 22 is not engaged and the Article 13(2)(f) disclosure is a single negative sentence,
-which `privacy.html` §5 carries.
+Article 22 is not engaged and the Article 13(2)(f) disclosure is a short negative statement,
+which `privacy.html` §5 carries. It is scoped to Article 22 deliberately: the app *does*
+decide two things automatically, and a flat "no automated decisions" would be false.
 
-Badges and milestones are deterministic consequences of the user's own ticks, computed and
-displayed to them. They are not profiling: nothing is inferred, nothing is predicted, and
+Milestone badges are deterministic consequences of the user's own ticks, and an event badge
+follows from the on-device location check in activity 9; both are computed and displayed to
+the user and have no effect outside the app. They are not profiling: nothing is inferred, nothing is predicted, and
 nothing about the user changes as a result.
 
 ---
@@ -311,6 +313,10 @@ yet. None is a blocker for the rest of the file.
 3. **Resend's 30-day retention is their stated figure**, unverified against live
    documentation. Carried as such in `privacy.html` §4 and in [`retention.md`](retention.md).
 4. **At-rest encryption is asserted by the providers**, not verified by us.
+5. **The pre-choice Google fetch could be removed** (activity 4). Drawing our own button and
+   loading Google's script only after the visitor picks it would take that request out of
+   the dialog entirely, at the cost of a code change to the sign-in flow. Until the owner
+   decides, it is documented and justified rather than eliminated.
 
 ## Keeping this current
 
