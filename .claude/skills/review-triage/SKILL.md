@@ -31,6 +31,19 @@ out in your own PR text (call it the `greptile_comment` marker), and when you ed
 description, send the block back as it is. Whether an edit that leaves the block out drops it has
 not been tested.
 
+CodeRabbit reports in more than one place. It posts one comment on the PR and edits it in place,
+from "review in progress" to its result, and it adds a "Summary by CodeRabbit" block to the
+description beside Greptile's. On 209 and 212 the result was "No actionable comments" and the
+reviews listing and threads stayed empty. On 214 it found one thing and posted a review with one
+inline thread, labelled Minor; the thread, the review and an edit of its comment each arrived as an
+event within seconds. Do not stop at the first event: the first to arrive was the comment edit, and
+the review followed after it. So read the comment, the description, the reviews listing and the
+threads every time, and treat its description block as you would Greptile's. It skips drafts and
+says so in that same comment, and its check run then reads skipped. Its comment and its review hold
+tick boxes (a manual review, committing to the branch, "Autofix", "Fix comments"). Do not tick them:
+Autofix lets it push to the branch, and on 212 and 214 it was seen switched on though the agent
+working on the PR had not touched it.
+
 ## 2. Read the summary, not only the threads
 
 A review body can carry findings that have no thread: a per-file table, a "previously missed" section, plain prose. Read all of it. The headline count and the prose can disagree, so trust neither alone.
