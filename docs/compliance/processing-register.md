@@ -65,16 +65,17 @@ recorded deliberately to mark the boundary — they are the things people most o
 do, and we don't.
 
 Each is given in Article 30(1) order: purpose, data subjects, data categories, recipients,
-transfers, retention, measures. The **basis** line is *not* an Article 30 field; it is the
-analysis #86 needs in order to state a basis per purpose in `privacy.html`, drafted here so
-that work is editing rather than thinking. Treat those lines as proposed and unconfirmed.
+transfers, retention, measures. The **basis** line is *not* an Article 30 field. It records
+the legal basis per purpose, which `privacy.html` §1 has stated publicly since 31 October 2026
+([#86](https://github.com/Dor-bl/moi-app/issues/86)). The two must agree: change one, change
+the other.
 
 ### 1. Accounts and cross-device sync
 
 | | |
 | --- | --- |
 | **Purpose** | Identify a returning user and keep their bucket-list progress and memory notes in step across their devices |
-| **Basis** *(proposed)* | Art. 6(1)(b), performance of a contract — syncing is the service the user asked for. Not consent: refusing would mean the feature cannot work at all |
+| **Basis** | Art. 6(1)(b), performance of a contract — syncing is the service the user asked for. Not consent: refusing would mean the feature cannot work at all |
 | **Data subjects** | Account holders (people who chose to sign in) |
 | **Where the rows come from** | Ticks and notes made while signed in, **plus anything made while signed out in the same browser**, which `syncCloudProgress()` merges in on sign-in (activity 9) |
 | **Data categories** | Email address; display name and avatar URL where Google supplied them; `user_id`; per ticked item an `item_id`, a `date`, and a free-text `note`; `created_at` and `last_sign_in_at`; provider metadata. Also, in Supabase's auth internals, live sessions and refresh tokens, linked identities, and the IP address and user agent recorded against a session |
@@ -96,7 +97,7 @@ to declare it on the AP form.
 | | |
 | --- | --- |
 | **Purpose** | Receive and answer feedback, bug reports and item suggestions |
-| **Basis** *(proposed)* | Art. 6(1)(f), legitimate interest — answering someone who wrote to us asking for an answer. Rate-limiting on IP rests on the same basis: the interest is keeping the inbox usable |
+| **Basis** | Art. 6(1)(f), legitimate interest — answering someone who wrote to us asking for an answer. Rate-limiting on IP rests on the same basis: the interest is keeping the inbox usable |
 | **Data subjects** | Anyone who writes in, whether through the form or directly by email |
 | **Data categories** | Name, email address, subject (one of four fixed values), message body — free text. Separately and transiently, the sender's IP address |
 | **Recipients** | Supabase (processor, DPA) runs the relay function; Resend (processor, DPA) delivers; Cloudflare Email Routing (processor, DPA) forwards; Google holds the resting copy in a **personal Gmail account under consumer terms, with no processor contract** — a known and disclosed gap, [#152](https://github.com/Dor-bl/moi-app/issues/152) |
@@ -112,7 +113,7 @@ piece of account data that leaves the EU as a matter of course rather than incid
 | | |
 | --- | --- |
 | **Purpose** | Deliver the one-time link that signs a user in without a password |
-| **Basis** *(proposed)* | Art. 6(1)(b) — the user asked to sign in this way |
+| **Basis** | Art. 6(1)(b) — the user asked to sign in this way |
 | **Data subjects** | Users choosing magic-link sign-in |
 | **Data categories** | Email address, plus a one-time sign-in token |
 | **Recipients** | Supabase (issues the token), Resend (delivers) — both processors under DPA |
@@ -127,7 +128,7 @@ Choosing Google sign-in instead avoids this activity entirely.
 | | |
 | --- | --- |
 | **Purpose** | Let a user sign in with an existing Google account instead of waiting for an email |
-| **Basis** *(proposed)* | Art. 6(1)(b) for our side. Google's own processing is Google's to justify — it acts as a separate controller there, not our processor |
+| **Basis** | Art. 6(1)(b) for our side. Google's own processing is Google's to justify — it acts as a separate controller there, not our processor |
 | **Data subjects** | Users who open the sign-in dialog — note: **opening it is enough**, choosing Google is not required |
 | **Data categories** | From Google to us, via Supabase: email address, name, avatar URL. From the visitor to Google, before any choice is made: IP address, request metadata, and whatever Google's own cookies let it read |
 | **Recipients** | Google; Supabase as the broker |
@@ -143,7 +144,7 @@ visitor reaches Google by opening a dialog, before deciding anything.
 | | |
 | --- | --- |
 | **Purpose** | Find bugs that happen only in a visitor's browser and would otherwise never surface, since the site is static and has no server log |
-| **Basis** *(proposed)* | Art. 6(1)(f), legitimate interest in a working app. The balancing rests on the reports carrying no user id, session or IP by design, and on their 30-day expiry for anything the scrubber misses — not on a promise of perfect anonymity |
+| **Basis** | Art. 6(1)(f), legitimate interest in a working app. The balancing rests on the reports carrying no user id, session or IP by design, and on their 30-day expiry for anything the scrubber misses — not on a promise of perfect anonymity |
 | **Data subjects** | Visitors whose browser hit an error — **not identifiable to us**, by design |
 | **Data categories** | Error message, source location, line and column, stack, page path with query and fragment stripped, user-agent string. **No** user id, **no** session, **no** IP address |
 | **Recipients** | Supabase (processor, DPA) |
@@ -162,7 +163,7 @@ in the same terms.
 | | |
 | --- | --- |
 | **Purpose** | Count visits, referring sites, and how often each view (list, map, events) is opened, to tell whether the app is useful and which parts get used |
-| **Basis** *(proposed)* | Art. 6(1)(f). Note this is Art. 6 only: no ePrivacy consent is engaged because nothing is stored on or read from the device — see [`consent-exemption-analysis.md`](../decisions/consent-exemption-analysis.md) |
+| **Basis** | Art. 6(1)(f). Note this is Art. 6 only: no ePrivacy consent is engaged because nothing is stored on or read from the device — see [`consent-exemption-analysis.md`](../decisions/consent-exemption-analysis.md) |
 | **Data subjects** | Visitors to the main page |
 | **Data categories** | What reaches us: counts, with no record of who opened what. What Vercel processes to build them: the request metadata in activity 7 |
 | **Recipients** | Vercel (processor, DPA, DPF-certified) |
@@ -178,7 +179,7 @@ breach.
 | | |
 | --- | --- |
 | **Purpose** | Serve the site at all |
-| **Basis** *(proposed)* | Art. 6(1)(f) — unavoidable in serving a web page to someone who requested it |
+| **Basis** | Art. 6(1)(f) — unavoidable in serving a web page to someone who requested it |
 | **Data subjects** | Every visitor, signed in or not |
 | **Data categories** | IP address, browser details, page requested, referring site |
 | **Recipients** | Vercel (processor, DPA, DPF-certified) |
@@ -194,7 +195,7 @@ contract with**, which makes it categorically different from 1–7.
 | | |
 | --- | --- |
 | **Purpose** | Draw the map |
-| **Basis** *(proposed)* | Art. 6(1)(f), and weaker than the others precisely because no safeguards back it. Mitigated by it being opt-in in practice: nothing is fetched unless the visitor switches to Map view |
+| **Basis** | Art. 6(1)(f), and weaker than the others precisely because no safeguards back it. Mitigated by it being opt-in in practice: nothing is fetched unless the visitor switches to Map view |
 | **Data subjects** | Visitors who open Map view |
 | **Data categories** | IP address and request metadata, fetched by the browser directly |
 | **Recipients** | unpkg and the OpenStreetMap Foundation — **not processors.** No DPA, no instructions from us |
@@ -228,8 +229,8 @@ revisiting at the same time.
 ### 10. Automated decision-making and profiling
 
 **None.** No profiling, no automated decision with legal or similarly significant effect, so
-Article 22 is not engaged and the Article 13(2)(f) disclosure is a single negative sentence —
-which `privacy.html` does not yet carry, and which is a #86 task.
+Article 22 is not engaged and the Article 13(2)(f) disclosure is a single negative sentence,
+which `privacy.html` §5 carries.
 
 Badges and milestones are deterministic consequences of the user's own ticks, computed and
 displayed to them. They are not profiling: nothing is inferred, nothing is predicted, and
@@ -307,12 +308,9 @@ yet. None is a blocker for the rest of the file.
 2. **Account-data retention is indefinite** (activity 1). The register can only record what is
    true; [#90](https://github.com/Dor-bl/moi-app/issues/90) is the fix, and `client_errors`
    already proves `pg_cron` works for this.
-3. **The legal bases above are proposed, not confirmed.** They were drafted here so #86 is an
-   editing job. A reader should not treat them as settled until that issue lands them in
-   `privacy.html`.
-4. **Resend's 30-day retention is their stated figure**, unverified against live
+3. **Resend's 30-day retention is their stated figure**, unverified against live
    documentation. Carried as such in `privacy.html` §4 and in [`retention.md`](retention.md).
-5. **At-rest encryption is asserted by the providers**, not verified by us.
+4. **At-rest encryption is asserted by the providers**, not verified by us.
 
 ## Keeping this current
 

@@ -64,6 +64,10 @@
             vertical-align: top;
         }
         .legal-page th { color: var(--text-light); font-weight: 700; }
+        /* Legal basis per purpose (GDPR Art. 13(1)(c)). Inside the "Why" cell
+           rather than a fourth column, which would undo the narrow-screen
+           sizing below. */
+        .legal-page .basis { display: block; margin-top: 0.4rem; color: var(--text-light); font-size: 0.85em; }
         .legal-page a { color: var(--primary-color); }
         /* The storage table's first column holds long key names; give it enough
            room that they don't break mid-word on a normal screen. */
@@ -119,10 +123,10 @@
     <main class="legal-page">
         <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
         <h1>Privacy Policy</h1>
-        <p class="updated">Last updated: 26 October 2026</p>
+        <p class="updated">Last updated: 31 October 2026</p>
 
         <section>
-            <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen. This policy explains what personal data we collect, why, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
+            <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen, run by one person as a side project. That person decides what happens to your personal data and is responsible for it &mdash; the "controller", in GDPR terms &mdash; and you can reach them at <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>. This policy explains what personal data we collect, why, on what legal basis, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
         </section>
 
         <section>
@@ -135,46 +139,48 @@
                     <tr>
                         <td>Email address</td>
                         <td>When you sign in with a magic link or with Google</td>
-                        <td>To identify your account and sync your progress across devices</td>
+                        <td>To identify your account and sync your progress across devices. <span class="basis">Legal basis: contract &mdash; it is what makes the account you asked for work.</span></td>
                     </tr>
                     <tr>
                         <td>Name (from your Google profile)</td>
                         <td>When you sign in with Google</td>
-                        <td>Displayed back to you in the app; not used for anything else</td>
+                        <td>Displayed back to you in the app; not used for anything else. <span class="basis">Legal basis: contract.</span></td>
                     </tr>
                     <tr>
                         <td>Bucket-list progress &amp; memory notes</td>
                         <td>When you tick off an item or add a free-text note</td>
-                        <td>To show your progress, badges, and memories, synced to your account</td>
+                        <td>To show your progress, badges, and memories, synced to your account. Progress you made before signing in, in the same browser, is added to your account when you sign in. <span class="basis">Legal basis: contract.</span></td>
                     </tr>
                     <tr>
                         <td>Name, email, subject &amp; message</td>
                         <td>When you submit the contact form</td>
-                        <td>To read and reply to your feedback, bug report, or suggestion. The function that relays the message also reads your IP address to limit how many messages one sender can submit in a minute; it is held in memory for that minute and never written down or sent on with your message.</td>
+                        <td>To read and reply to your feedback, bug report, or suggestion. The function that relays the message also reads your IP address to limit how many messages one sender can submit in a minute; it is held in memory for that minute and never written down or sent on with your message. <span class="basis">Legal basis: legitimate interest &mdash; answering people who write to us, and keeping the form from being flooded.</span></td>
                     </tr>
                     <tr>
                         <td>Theme, language, and (if not signed in) progress</td>
                         <td>Always, stored only in your browser</td>
-                        <td>To remember your preferences and let you use the app without an account</td>
+                        <td>To remember your preferences and let you use the app without an account. <span class="basis">Legal basis: none needed &mdash; this stays on your device and never reaches us (section 6).</span></td>
                     </tr>
                     <tr>
                         <td>Your location &mdash; checked, never collected</td>
                         <td>Only when you tap "I'm here" on an event that is happening right now, and only for that one tap</td>
-                        <td>To confirm you are actually at the event before awarding its badge. The check happens entirely on your device: your browser compares your coordinates to the event's location and then discards them. They are never sent to us, never written down, and we never learn where you were or whether you were anywhere at all &mdash; the only thing saved is your own device's note that you earned the badge. We never read your location in the background, and if you decline the permission nothing happens except that you don't get that badge.</td>
+                        <td>To confirm you are actually at the event before awarding its badge. The check happens entirely on your device: your browser compares your coordinates to the event's location and then discards them. They are never sent to us, never written down, and we never learn where you were or whether you were anywhere at all &mdash; the only thing saved is your own device's note that you earned the badge. We never read your location in the background, and if you decline the permission nothing happens except that you don't get that badge. <span class="basis">Legal basis: none needed &mdash; your coordinates never leave your device.</span></td>
                     </tr>
                     <tr>
                         <td>Aggregate usage statistics</td>
                         <td>When you open the main MoiCheck page, and when you switch between the list, map and events views</td>
-                        <td>To count visits, see which sites link here, and count how often each view (list, map, events) is opened, so we can tell whether MoiCheck is useful and which parts of it people actually use. These are counts only — no record of who opened what. No cookies are set. Like any web request, the request itself carries your IP address, your browser details, and which page you are on and which site you came from; Vercel uses these only to build the aggregates, and we only ever see those aggregates — nothing that identifies you or follows you to other websites.</td>
+                        <td>To count visits, see which sites link here, and count how often each view (list, map, events) is opened, so we can tell whether MoiCheck is useful and which parts of it people actually use. These are counts only — no record of who opened what. No cookies are set. Like any web request, the request itself carries your IP address, your browser details, and which page you are on and which site you came from; Vercel uses these only to build the aggregates, and we only ever see those aggregates — nothing that identifies you or follows you to other websites. <span class="basis">Legal basis: legitimate interest &mdash; knowing whether MoiCheck is useful.</span></td>
                     </tr>
                     <tr>
                         <td>Error reports</td>
                         <td>Only when something on the page breaks, at most five per visit</td>
-                        <td>To find and fix bugs that happen in your browser and would otherwise go unnoticed. A report holds the error message, where in our code it happened, the page path (without anything after it in the address), and your browser's name and version. It holds no account or sign-in details, and the reporter strips email addresses and sign-in tokens out of the error text before sending it &mdash; though, like any automatic filter, it can miss an unusual form, which is one reason reports are deleted after 30 days. We don't store your IP address with it, and nothing is saved on your device. Reports are kept in our database for 30 days (section 4).</td>
+                        <td>To find and fix bugs that happen in your browser and would otherwise go unnoticed. A report holds the error message, where in our code it happened, the page path (without anything after it in the address), and your browser's name and version. It holds no account or sign-in details, and the reporter strips email addresses and sign-in tokens out of the error text before sending it &mdash; though, like any automatic filter, it can miss an unusual form, which is one reason reports are deleted after 30 days. We don't store your IP address with it, and nothing is saved on your device. Reports are kept in our database for 30 days (section 4). <span class="basis">Legal basis: legitimate interest &mdash; keeping the app working.</span></td>
                     </tr>
                 </tbody>
             </table>
-            <p>We do not collect payment information, government IDs, or any special-category data. If you never sign in or use the contact form, we hold no personal data about you (error reports, above, are anonymous) — though, as with any website, simply loading the page or the map sends standard request metadata (your IP address, browser details, and the page requested and referring site) to the providers described in section 2.</p>
+            <p>We do not collect payment information, government IDs, or any special-category data. If you never sign in or use the contact form, we hold no personal data about you (error reports, above, are designed to be anonymous) — though, as with any website, simply loading the page or the map sends standard request metadata (your IP address, browser details, and the page requested and referring site) to the providers described in section 2. Serving the page, and loading the map when you open Map view, rest on our legitimate interest in running the site.</p>
+            <p><strong>What the legal bases mean.</strong> <em>Contract</em> means we need the data to give you the account you asked for. <em>Legitimate interest</em> means we have a reason of our own &mdash; the one named in each row &mdash; that we have weighed against your privacy and judged not to outweigh it; you can object to it (section 5). We do not rely on your consent for anything.</p>
+            <p><strong>Do you have to give us anything?</strong> No. No law requires it, and the app works fully without an account. An email address is needed only if you want one: without it your progress stays in that one browser. Likewise, we need a name and email address only to reply to a message you send.</p>
         </section>
 
         <section>
@@ -220,12 +226,16 @@
                 <li>tell you what data we hold about you;</li>
                 <li>correct inaccurate data;</li>
                 <li>delete your account and associated data ("right to be forgotten");</li>
+                <li>restrict what we do with your data while a question about it is being sorted out;</li>
                 <li>export your data in a portable format;</li>
-                <li>object to how we process it.</li>
+                <li>object to processing based on our legitimate interests.</li>
             </ul>
+            <p>There is no consent for you to withdraw, because none of our processing relies on consent (section 1).</p>
+            <p><strong>No automated decisions.</strong> MoiCheck makes no automated decisions about you and does no profiling. Badges and milestones are simply counted from the items you tick off.</p>
             <p><strong>Deleting your account yourself:</strong> when signed in, open your profile (the person icon) and choose <em>Delete my account &amp; data</em>. After you confirm, we permanently delete your completed items and notes from Supabase, remove your sign-in record, sign you out, and clear the progress saved in that browser. This cannot be undone. Two kinds of copy outlive that deletion, and neither is a way back into your account: copies of your progress on other devices you signed in from remain in those browsers' local storage until you clear their site data, and Supabase's automated backups of the database, taken before you deleted, are not edited &mdash; they age out on their own schedule, and we do not restore from one to bring an account back. If automatic deletion is not available on this installation, the app informs you; email us and we will delete your account manually.</p>
             <p>To exercise any of the other rights, or if you cannot sign in to use the in-app deletion, email us at <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>. We'll respond within a reasonable time and, for deletion requests, remove your account data from Supabase.</p>
             <p>Signing out clears the progress saved in that browser, so the next person to sign in on a shared device does not inherit it. You can also clear your locally-stored data at any time by clearing your browser's site data for MoiCheck.</p>
+            <p><strong>Complaints.</strong> If you think we have mishandled your data, you have the right to complain to a data protection authority. In the Netherlands that is the <a href="https://www.autoriteitpersoonsgegevens.nl" target="_blank" rel="noopener noreferrer">Autoriteit Persoonsgegevens</a>. We would rather hear from you first, at <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>, but you don't have to.</p>
         </section>
 
         <section>
