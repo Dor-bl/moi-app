@@ -105,6 +105,8 @@ const completedList = document.getElementById('completedList');
 const seeAllMemoriesBtn = document.getElementById('seeAllMemoriesBtn');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const exportDataBtn = document.getElementById('exportDataBtn');
+const exportDataError = document.getElementById('exportDataError');
 const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
@@ -237,6 +239,7 @@ function updateLanguageUI() {
     const txtDeleteAccountNotice = document.getElementById('txtDeleteAccountNotice');
     if (txtDeleteAccountNotice) txtDeleteAccountNotice.textContent = t.deleteAccountNotice;
     if (deleteAccountBtn) deleteAccountBtn.textContent = t.deleteAccountBtn;
+    if (exportDataBtn) exportDataBtn.textContent = t.exportDataBtn;
 
     const deleteModalTitle = document.getElementById('deleteModalTitle');
     if (deleteModalTitle) deleteModalTitle.textContent = t.deleteModalTitle;
@@ -1881,6 +1884,47 @@ function setupEventListeners() {
         if (target) target.focus();
         deleteModalReturnFocus = null;
     };
+
+    // Art. 20 export: reads the account's rows from the cloud when clicked, so it
+    // never depends on whether the background sync has finished (or failed).
+    if (exportDataBtn) {
+        exportDataBtn.addEventListener('click', async () => {
+            if (!currentUser || !supabaseClient) return;
+            const generation = authGeneration;
+            const user = currentUser;
+            exportDataError.textContent = '';
+            exportDataBtn.disabled = true;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_progress')
+                    .select('item_id, date, note')
+                    .eq('user_id', user.id);
+                if (generation !== authGeneration) return;
+                if (error) throw error;
+                const items = data.map(row => {
+                    const item = BUCKET_LIST.find(i => String(i.id) === String(row.item_id));
+                    return { item_id: row.item_id, title: item ? item.title[currentLang] : null, date: row.date, note: row.note || '' };
+                });
+                const out = {
+                    exported_at: new Date().toISOString(),
+                    account: { id: user.id, email: user.email },
+                    completed_items: items
+                };
+                const url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'moicheck-my-data.json';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch {
+                if (generation === authGeneration) exportDataError.textContent = UI_TRANSLATIONS[currentLang].exportDataError;
+            } finally {
+                exportDataBtn.disabled = false;
+            }
+        });
+    }
 
     if (deleteAccountBtn) {
         deleteAccountBtn.addEventListener('click', () => {
