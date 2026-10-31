@@ -35,13 +35,14 @@ CodeRabbit reports in more than one place. It posts one comment on the PR and ed
 from "review in progress" to its result, and it adds a "Summary by CodeRabbit" block to the
 description beside Greptile's. On 209 and 212 the result was "No actionable comments" and the
 reviews listing and threads stayed empty. On 214 it found one thing and posted a review with one
-inline thread, labelled Minor; the in-place edit of its comment was the only event that reached the
-agent, with none of its own for the review or the thread. So read the comment, the description, the
-reviews listing and the threads every time, and treat its description block as you would Greptile's.
-It skips drafts and says so in that same comment, and its check run then reads skipped. Its comment
-and its review hold tick boxes (a manual review, committing to the branch, "Autofix", "Fix
-comments"). Do not tick them: Autofix lets it push to the branch, and on 212 and 214 it was seen
-switched on though the agent working on the PR had not touched it.
+inline thread, labelled Minor; the thread, the review and an edit of its comment each arrived as an
+event within seconds. Do not stop at the first event: the first to arrive was the comment edit, and
+the review followed after it. So read the comment, the description, the reviews listing and the
+threads every time, and treat its description block as you would Greptile's. It skips drafts and
+says so in that same comment, and its check run then reads skipped. Its comment and its review hold
+tick boxes (a manual review, committing to the branch, "Autofix", "Fix comments"). Do not tick them:
+Autofix lets it push to the branch, and on 212 and 214 it was seen switched on though the agent
+working on the PR had not touched it.
 
 ## 2. Read the summary, not only the threads
 
