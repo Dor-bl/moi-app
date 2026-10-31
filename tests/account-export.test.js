@@ -12,14 +12,17 @@ const GOOGLE_USER = {
     email: 'g@example.test',
     created_at: '2026-09-01T08:00:00.000Z',
     last_sign_in_at: '2026-09-01T08:00:00.000Z',
-    app_metadata: { provider: 'google' },
+    // Signed up by magic link, later used Google: provider keeps the first
+    // method, providers lists both.
+    app_metadata: { provider: 'email', providers: ['email', 'google'] },
     user_metadata: { full_name: 'Test Person', avatar_url: 'https://example.test/a.png' }
 };
-const MAGIC_LINK_USER = { id: 'user-m', email: 'm@example.test', app_metadata: { provider: 'email' }, user_metadata: {} };
+const MAGIC_LINK_USER = { id: 'user-m', email: 'm@example.test', app_metadata: { provider: 'email', providers: ['email'] }, user_metadata: {} };
 
+// Returned newest first, as a database may: the export must reorder them.
 const ROWS = [
+    { user_id: 'user-g', item_id: '2', date: '2026-10-02T10:00:00+00:00', note: null },
     { user_id: 'user-g', item_id: '1', date: '2026-10-01T10:00:00.000Z', note: 'with friends' },
-    { user_id: 'user-g', item_id: '2', date: '2026-10-02T10:00:00.000Z', note: null },
     // Another account's row: must never appear in user-g's export.
     { user_id: 'someone-else', item_id: '1', date: '2026-10-03T10:00:00.000Z', note: 'not yours' }
 ];
@@ -40,13 +43,13 @@ test('the export holds the account, and every completed item with a readable tit
         email: 'g@example.test',
         name: 'Test Person',
         avatar_url: 'https://example.test/a.png',
-        sign_in_provider: 'google',
+        sign_in_providers: ['email', 'google'],
         created_at: '2026-09-01T08:00:00.000Z',
         last_sign_in_at: '2026-09-01T08:00:00.000Z'
     });
     assert.deepEqual(out.completed_items, [
         { item_id: '1', title: 'Eat your first Groninger Eierbal', date: '2026-10-01T10:00:00.000Z', note: 'with friends' },
-        { item_id: '2', title: 'Climb the Martinitoren', date: '2026-10-02T10:00:00.000Z', note: '' }
+        { item_id: '2', title: 'Climb the Martinitoren', date: '2026-10-02T10:00:00+00:00', note: '' }
     ]);
     assert.ok(!Number.isNaN(Date.parse(out.exported_at)), 'exported_at is a timestamp');
 });
@@ -67,7 +70,7 @@ test('an account without a Google profile exports nulls rather than inventing a 
 
     assert.equal(out.account.name, null);
     assert.equal(out.account.avatar_url, null);
-    assert.equal(out.account.sign_in_provider, 'email');
+    assert.deepEqual(out.account.sign_in_providers, ['email']);
     assert.deepEqual(out.completed_items, []);
 });
 

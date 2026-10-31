@@ -87,7 +87,8 @@ the other.
 **Access and portability (Arts. 15, 20).** A signed-in user can download this activity's
 data themselves from the profile: `buildAccountExport()` in `js/auth.js` reads their
 `user_progress` rows at click time, under the same row-level security, and adds the account
-fields the client already holds (email, id, Google name and avatar URL, provider,
+fields the client already holds (email, id, Google name and avatar URL, every linked sign-in
+provider,
 `created_at`, `last_sign_in_at`). It exports what is stored, not what is pending: a tick or note
 whose `syncItemToCloud()` write failed lives only in that browser and is not in the file;
 `privacy.html` §5 tells users so. It also omits Supabase's server-side auth records (the
