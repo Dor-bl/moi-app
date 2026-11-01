@@ -1,5 +1,5 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData
-// Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport
+// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
@@ -38,6 +38,12 @@ function updateAuthBtnState(isLoggedIn) {
 
     if (accountDangerZone) {
         accountDangerZone.style.display = (isLoggedIn && currentUser) ? 'block' : 'none';
+    }
+    // A failed export's message belongs to the session that saw it; don't let
+    // it greet whoever signs in next.
+    if (!(isLoggedIn && currentUser)) {
+        const exportDataError = document.getElementById('exportDataError');
+        if (exportDataError) exportDataError.textContent = '';
     }
     if (signOutBtn) signOutBtn.textContent = t.signOut;
 
@@ -459,6 +465,55 @@ function isMissingRpcError(error) {
         return true;
     }
     return false;
+}
+
+// GDPR Art. 20 (#89): everything we hold about the signed-in account, as a plain
+// object ready to download. Reads user_progress at call time rather than using
+// completedItems, so the file never depends on whether background sync finished.
+// Returns null if the account changed while the request was in flight (the
+// generation counter), and throws if the read fails, so the caller can show an
+// error rather than hand over an incomplete file.
+async function buildAccountExport() {
+    if (!supabaseClient || !currentUser) throw new Error('Not signed in');
+    const generation = authGeneration;
+    const user = currentUser;
+    const { data, error } = await supabaseClient
+        .from('user_progress')
+        .select('item_id, date, note')
+        .eq('user_id', user.id);
+    if (generation !== authGeneration) return null;
+    if (error) throw error;
+    // Google sign-in stores the profile name and picture here; magic-link
+    // accounts have neither, and get nulls rather than invented values.
+    const meta = user.user_metadata || {};
+    // app_metadata.provider is only the method the account was created with;
+    // providers lists every method linked since (an email sign-up that later
+    // used Google has both), so that is what the file reports.
+    const appMeta = user.app_metadata || {};
+    const providers = Array.isArray(appMeta.providers) && appMeta.providers.length
+        ? appMeta.providers
+        : (appMeta.provider ? [appMeta.provider] : []);
+    return {
+        exported_at: new Date().toISOString(),
+        account: {
+            id: user.id,
+            email: user.email,
+            name: meta.full_name || meta.name || null,
+            avatar_url: meta.avatar_url || null,
+            sign_in_providers: providers,
+            created_at: user.created_at || null,
+            last_sign_in_at: user.last_sign_in_at || null
+        },
+        // Oldest first, so the file reads as a timeline rather than in
+        // whatever order the database returned the rows.
+        completed_items: (data || [])
+            .slice()
+            .sort((a, b) => (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0))
+            .map(row => {
+                const item = BUCKET_LIST.find(i => String(i.id) === String(row.item_id));
+                return { item_id: row.item_id, title: item ? item.title[currentLang] : null, date: row.date, note: row.note || '' };
+            })
+    };
 }
 
 // GDPR Art. 17: Delete account and cloud data for the signed-in user.

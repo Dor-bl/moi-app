@@ -105,6 +105,8 @@ const completedList = document.getElementById('completedList');
 const seeAllMemoriesBtn = document.getElementById('seeAllMemoriesBtn');
 const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const exportDataBtn = document.getElementById('exportDataBtn');
+const exportDataError = document.getElementById('exportDataError');
 const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
@@ -237,6 +239,10 @@ function updateLanguageUI() {
     const txtDeleteAccountNotice = document.getElementById('txtDeleteAccountNotice');
     if (txtDeleteAccountNotice) txtDeleteAccountNotice.textContent = t.deleteAccountNotice;
     if (deleteAccountBtn) deleteAccountBtn.textContent = t.deleteAccountBtn;
+    if (exportDataBtn) exportDataBtn.textContent = t.exportDataBtn;
+    // A failed export leaves its message on screen; keep it in step with the
+    // language switch, as the magic-link error below does.
+    if (exportDataError && exportDataError.textContent) exportDataError.textContent = t.exportDataError;
 
     const deleteModalTitle = document.getElementById('deleteModalTitle');
     if (deleteModalTitle) deleteModalTitle.textContent = t.deleteModalTitle;
@@ -1881,6 +1887,35 @@ function setupEventListeners() {
         if (target) target.focus();
         deleteModalReturnFocus = null;
     };
+
+    // Art. 20 export: reads the account's rows from the cloud when clicked, so it
+    // never depends on whether the background sync has finished (or failed).
+    if (exportDataBtn) {
+        exportDataBtn.addEventListener('click', async () => {
+            if (!currentUser || !supabaseClient) return;
+            const generation = authGeneration;
+            exportDataError.textContent = '';
+            exportDataBtn.disabled = true;
+            try {
+                const out = await buildAccountExport();
+                if (!out) return;
+                const url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'moicheck-my-data.json';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                // Revoked on the next tick: revoking synchronously can cancel
+                // the download in some browsers before it has started.
+                setTimeout(() => URL.revokeObjectURL(url), 0);
+            } catch {
+                if (generation === authGeneration) exportDataError.textContent = UI_TRANSLATIONS[currentLang].exportDataError;
+            } finally {
+                exportDataBtn.disabled = false;
+            }
+        });
+    }
 
     if (deleteAccountBtn) {
         deleteAccountBtn.addEventListener('click', () => {
