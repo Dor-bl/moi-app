@@ -75,11 +75,17 @@ untouched since that first sign-in, and be deleted that night. So a job every ho
 live session's latest timestamp into `account_last_seen` (one row per account: `user_id`,
 `seen_at`, no other data; row-level security on, no grants to `anon` or `authenticated`), and
 the deletion at 03:23 reads that. A sign-out only loses the refreshes since the last hourly
-copy. That leaves one case: an account due for deletion that is used for the first time in 24
-months between the 02:20 copy and the 03:23 deletion, and signed out of in that hour. Closing
-it would mean a trigger on Supabase's own `auth.sessions` table, which runs inside every
-sign-in and refresh; a fault there would break sign-in for everyone, which is a worse risk
-than this hour. Refresh tokens are not a separate signal: they move with their session, and
+copy, and that is a real gap, not just a timing detail. A visit that resumes an existing
+session and ends in a sign-out before the next copy is never recorded. The 24 months then run
+from the use recorded before that visit, so the account can be deleted earlier than 24 months
+after the visit, by however long the gap before it was. Someone who comes back after 20
+months, looks for a few minutes, signs out and never returns would be deleted about 4 months
+later instead of 24. It needs all three: a resumed session rather than a fresh sign-in (which
+`last_sign_in_at` always records), a sign-out within the hour, and no visit afterwards.
+Closing it would mean a trigger on Supabase's own `auth.sessions` table. It would run inside
+every sign-out and inside the cascade when an account is deleted, so a fault in it would break
+both, in a schema Supabase owns. **Accepted for now, as the owner's call**: revisit if it
+matters more than that risk. Refresh tokens are not a separate signal: they move with their session, and
 when this was built none was newer than its session.
 
 `last_sign_in_at` alone would be wrong, and dangerously so. The SDK refreshes a session
