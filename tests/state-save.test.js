@@ -217,6 +217,9 @@ test('a sync does not upload another account’s progress that landed in the sto
     await sync;
 
     assert.deepEqual(supabase.upserts.map(u => u.row.item_id), [], 'nothing of B’s is uploaded under A');
+    // Nor does A's sync write over B's store: the marker names B, so the store is B's.
+    assert.deepEqual(Object.keys(stored(storage)), ['b-private'], 'A’s sync overwrote B’s store');
+    assert.equal(storage.getItem('moiCheckSyncedUser'), 'user-b');
 });
 
 // The same window with one user action in it: the sync ends in a full upload of
