@@ -62,11 +62,21 @@ skipped one. Two years is long enough for that, and short enough that an account
 used for that long can fairly be called abandoned. Change it in `privacy.html` §4 and in the
 job together.
 
-**What counts as use.** The latest of three timestamps:
+**What counts as use.** The latest of:
 
 - `auth.users.last_sign_in_at` (or `created_at`, for an account that never signed in again);
-- the newest `updated_at` or `refreshed_at` on any of the account's `auth.sessions`;
-- the newest `updated_at` on any of its `auth.refresh_tokens`.
+- the newest `updated_at` or `refreshed_at` on any of the account's `auth.sessions`, as
+  recorded each night in `public.account_last_seen`.
+
+The session timestamps cannot be read straight from `auth.sessions` at deletion time, because
+signing out deletes the session row and its refresh tokens with it. Someone who signed in once
+more than two years ago, kept using the app through refreshes, and then signed out would look
+untouched since that first sign-in, and be deleted that night. So a job at 03:20 copies each
+live session's latest timestamp into `account_last_seen` (one row per account: `user_id`,
+`seen_at`, no other data; row-level security on, no grants to `anon` or `authenticated`), and
+the deletion at 03:23 reads that. A sign-out only loses the refreshes since the previous
+night's copy. Refresh tokens are not a separate signal: they move with their session, and
+when this was built none was newer than its session.
 
 `last_sign_in_at` alone would be wrong, and dangerously so. The SDK refreshes a session
 without signing in again, so someone can use the app for years while that timestamp stays at
@@ -77,13 +87,14 @@ so the session timestamps catch real use. Progress rows are not a measure either
 use the app for a year without ticking anything new.
 
 **How it deletes.** The job deletes the `auth.users` row, nothing else. Every table that
-references it cascades: `user_progress` and Supabase's own sessions, refresh tokens,
-identities and MFA tables. That was checked in the database catalogue (`pg_constraint`), not
+references it cascades: `user_progress`, `account_last_seen`, and Supabase's own sessions,
+refresh tokens, identities and MFA tables. That was checked in the database catalogue (`pg_constraint`), not
 assumed. `delete_user()` is unchanged. It still acts only on `auth.uid()`, and the job does
-not call it: the job runs as `postgres` inside `pg_cron`, the same way the `client_errors`
-sweep does, so no new function is exposed through the API.
+not call it: both jobs run as `postgres` inside `pg_cron`, the same way the `client_errors`
+sweep does, so no new function is exposed through the API. The deletion also checks live
+sessions directly, so a night the 03:20 copy fails cannot delete an account in use.
 
-**No warning email, decided.** A warning would need a second scheduled job, an email template,
+**No warning email, decided.** A warning would need another scheduled job, an email template,
 a record of who was warned and when, and a way to undo it when someone comes back. That is a
 feature several times the size of this one, sending mail to addresses we otherwise only use
 for sign-in links. Article 5(1)(e) asks for a limit, not for a reminder. The period is stated

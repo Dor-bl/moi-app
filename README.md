@@ -381,39 +381,62 @@ nightly `pg_cron` job. This is the retention period `privacy.html` §4 states; t
 and why there is no warning email, is in
 [`docs/compliance/retention.md`](docs/compliance/retention.md) §2.
 
-"Used" means the latest of three timestamps, not `last_sign_in_at` alone. The SDK refreshes
-a session without signing in again, so an account can be in daily use while its
-`last_sign_in_at` stays at its first visit. A refresh does update the session and its
-refresh token, so the job keeps any account with one of those touched inside the window.
+"Used" cannot be read from `last_sign_in_at` alone. The SDK refreshes a session without
+signing in again, so an account can be in daily use while that timestamp stays at its first
+visit. A refresh does update the session row (`updated_at`, `refreshed_at`), but signing out
+deletes that row, so the session tables forget the activity at exactly the moment it matters.
+A small table, `account_last_seen`, keeps it: a job at 03:20 copies each live session's latest
+timestamp into it, and the deletion at 03:23 reads it.
 
-The job deletes the `auth.users` row and nothing else. Everything that points at it —
-`user_progress`, sessions, refresh tokens, identities — is `on delete cascade`. It runs as
-`postgres` inside the database, so nothing new is exposed through the API, and
-`delete_user()` keeps its self-only check. Run this once in the Supabase SQL Editor:
+The deletion removes the `auth.users` row and nothing else. Everything that points at it —
+`user_progress`, `account_last_seen`, sessions, refresh tokens, identities — is
+`on delete cascade`. Both jobs run as `postgres` inside the database, so nothing new is
+exposed through the API, and `delete_user()` keeps its self-only check. Run this once in the
+Supabase SQL Editor:
 
 ```sql
+create table public.account_last_seen (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  seen_at timestamptz not null
+);
+alter table public.account_last_seen enable row level security;
+revoke all on public.account_last_seen from anon, authenticated;
+
+select cron.schedule(
+  'record-account-activity',
+  '20 3 * * *',
+  $$
+  insert into public.account_last_seen (user_id, seen_at)
+  select user_id, max(greatest(updated_at, refreshed_at at time zone 'UTC'))
+  from auth.sessions
+  group by user_id
+  on conflict (user_id) do update
+    set seen_at = greatest(account_last_seen.seen_at, excluded.seen_at)
+  $$
+);
+
 select cron.schedule(
   'delete-dormant-accounts',
   '23 3 * * *',
   $$
   delete from auth.users u
-  where greatest(u.created_at, u.last_sign_in_at) < now() - interval '24 months'
+  where greatest(u.created_at, u.last_sign_in_at,
+                 (select l.seen_at from public.account_last_seen l where l.user_id = u.id))
+        < now() - interval '24 months'
     and not exists (
       select 1 from auth.sessions s
       where s.user_id = u.id
         and greatest(s.updated_at, s.refreshed_at at time zone 'UTC') >= now() - interval '24 months')
-    and not exists (
-      select 1 from auth.refresh_tokens r
-      where r.user_id = u.id::text
-        and r.updated_at >= now() - interval '24 months')
   $$
 );
 ```
 
-`refreshed_at` is stored without a time zone (in UTC), and `refresh_tokens.user_id` is text,
-hence the casts. To see who the next run would delete, run the same `where` clause as a
-`select u.id, u.email, u.last_sign_in_at from auth.users u where …`. Change the window in
-both `privacy.html` §4 and this job, never one alone.
+`refreshed_at` is stored without a time zone (in UTC), hence the cast. The live-session check
+in the deletion repeats what the 03:20 job records, so a night that job fails cannot delete an
+account in use. A sign-out between two runs loses only that day's refreshes, and the run
+before it already recorded the account as used. To see who the next run would delete, run
+the same `where` clause as a `select u.id, u.email, u.last_sign_in_at from auth.users u where …`.
+Change the window in both `privacy.html` §4 and this job, never one alone.
 
 ### Troubleshooting: magic links fail with a 500
 

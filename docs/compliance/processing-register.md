@@ -78,10 +78,10 @@ the other.
 | **Basis** | Art. 6(1)(b), performance of a contract — syncing is the service the user asked for. Not consent: refusing would mean the feature cannot work at all |
 | **Data subjects** | Account holders (people who chose to sign in) |
 | **Where the rows come from** | Ticks and notes made while signed in, **plus anything made while signed out in the same browser**, which `syncCloudProgress()` merges in on sign-in (activity 9) |
-| **Data categories** | Email address; display name and avatar URL where Google supplied them; `user_id`; per ticked item an `item_id`, a `date`, and a free-text `note`; `created_at` and `last_sign_in_at`; provider metadata. Also, in Supabase's auth internals, live sessions and refresh tokens, linked identities, and the IP address and user agent recorded against a session |
+| **Data categories** | Email address; display name and avatar URL where Google supplied them; `user_id`; per ticked item an `item_id`, a `date`, and a free-text `note`; `created_at` and `last_sign_in_at`; provider metadata; `account_last_seen.seen_at`, the latest session activity, kept to apply the retention period. Also, in Supabase's auth internals, live sessions and refresh tokens, linked identities, and the IP address and user agent recorded against a session |
 | **Recipients** | Supabase (processor, DPA). Nobody else: the app copies this into no other store |
 | **Transfers** | Stored in the EU — AWS `eu-west-1`, Ireland. Supabase is a US company whose staff can reach that infrastructure to operate it, covered by its DPA and SCCs. See [`account-hosting-audit.md`](account-hosting-audit.md) §3 |
-| **Retention** | Until the user deletes it, or 24 months after the account was last used, measured by sign-ins and session refreshes. A nightly `pg_cron` job deletes the account record and everything cascades from it. No warning email, by decision. See [`retention.md`](retention.md) §2 |
+| **Retention** | Until the user deletes it, or 24 months after the account was last used, measured by sign-ins and session refreshes (copied nightly into `account_last_seen`, since sign-out deletes the session). A nightly `pg_cron` job deletes the account record and everything cascades from it. No warning email, by decision. See [`retention.md`](retention.md) §2 |
 | **Measures** | Row-level security on `user_progress` scoped to `auth.uid() = user_id`; no password exists to steal (magic link and Google only); `on delete cascade` so erasing a user erases their rows; erasure via a `security definer` `delete_user()` that can only delete its own caller; TLS throughout |
 
 **Access and portability (Arts. 15, 20).** A signed-in user can download this activity's
@@ -92,8 +92,8 @@ provider,
 `created_at`, `last_sign_in_at`). It exports what is stored, not what is pending: a tick or note
 whose `syncItemToCloud()` write failed lives only in that browser and is not in the file;
 `privacy.html` §5 tells users so. It also omits Supabase's server-side auth records (the
-sessions and refresh-token tables with their IP and user agent, Auth's audit log, and the
-identities row linking a Google account; the browser cannot reach the first three at all), and anything held
+sessions and refresh-token tables with their IP and user agent, Auth's audit log, the
+identities row linking a Google account, and `account_last_seen`; the browser can reach none of them except the identities row), and anything held
 outside this activity, such as contact correspondence (activity 2); those are answered by email,
 as `privacy.html` §5 says. If a column is added to `user_progress` or a field to the account,
 add it to the export too, or the file stops being complete.
