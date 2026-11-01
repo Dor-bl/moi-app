@@ -77,3 +77,49 @@ test('progress made as a guest after a sign-out still merges into the next accou
     assert.deepEqual(Object.keys(plain(tab.completedItems)).sort(), ['b-item', 'guest-item']);
     assert.deepEqual(supabase.upserts.map(u => [u.row.user_id, u.row.item_id]), [['user-b', 'guest-item']]);
 });
+
+// The marker already names the new user, so the store is that user's own saved progress,
+// possibly including ticks and notes that never reached the cloud. Resetting must replace
+// this tab's copy with that store, not wipe it: if the cloud read then fails, wiping it
+// would lose them for good.
+test('the new user’s unsynced progress in the store survives the switch when the cloud read fails', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [row('user-a', 'a-item', 'A private')] });
+    const tab = await tabSignedInAsA(storage, supabase);
+
+    // Another tab switched to B and holds an unsynced tick; the store and marker are B's.
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({ 'b-local': entry('B unsynced') }));
+
+    // From here on the cloud read fails.
+    supabase.upserts.length = 0;
+    const realFrom = supabase.from;
+    supabase.from = table => ({
+        ...realFrom(table),
+        select: () => ({ eq: async () => ({ data: null, error: { message: 'offline' } }) })
+    });
+
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+
+    assert.deepEqual(Object.keys(stored(storage)), ['b-local'], 'B’s unsynced progress was wiped from the store');
+    assert.deepEqual(Object.keys(plain(tab.completedItems)), ['b-local'], 'this tab did not take B’s copy');
+    assert.ok(!('a-item' in plain(tab.completedItems)), 'A’s progress is still held');
+    assert.deepEqual(supabase.upserts, []);
+});
+
+test('the new user’s unsynced progress is uploaded under them once the cloud read works', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [row('user-a', 'a-item'), row('user-b', 'b-cloud')] });
+    const tab = await tabSignedInAsA(storage, supabase);
+    supabase.upserts.length = 0;
+
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({ 'b-local': entry('B unsynced') }));
+
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+
+    assert.deepEqual(Object.keys(plain(tab.completedItems)).sort(), ['b-cloud', 'b-local']);
+    assert.deepEqual(supabase.upserts.map(u => [u.row.user_id, u.row.item_id]), [['user-b', 'b-local']]);
+});

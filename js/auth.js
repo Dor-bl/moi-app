@@ -397,12 +397,23 @@ async function syncCloudProgress() {
     // Sign-out already clears both, so this only catches the paths where it
     // never ran - a crashed tab, a session that expired, storage half-cleared.
     const lastSyncedUser = localStorage.getItem(SYNCED_USER_KEY);
-    // The same applies to progress this tab itself holds for a different user: another
-    // tab switched the browser's account without a sign-out here (see heldUserId).
-    const switchedHere = heldUserId !== null && heldUserId !== currentUser.id;
-    if (switchedHere || (lastSyncedUser && lastSyncedUser !== currentUser.id)) {
+    if (lastSyncedUser && lastSyncedUser !== currentUser.id) {
         completedItems = {};
         saveState();
+    } else if (heldUserId !== null && heldUserId !== currentUser.id) {
+        // This tab itself holds another user's progress: another tab switched the
+        // browser's account without a sign-out here (see heldUserId). That tab has already
+        // moved the marker to this user, so the stored progress is this user's own, and
+        // may include ticks and notes that never reached the cloud. Take it in place of
+        // this tab's copy and leave the store alone; wiping it would lose them if the
+        // cloud read below fails. An unreadable store falls back to empty.
+        let stored = null;
+        try {
+            stored = JSON.parse(localStorage.getItem('moiCheckState'));
+        } catch {
+            stored = null;
+        }
+        completedItems = (stored && typeof stored === 'object' && !Array.isArray(stored)) ? stored : {};
     }
     localStorage.setItem(SYNCED_USER_KEY, currentUser.id);
     heldUserId = currentUser.id;
