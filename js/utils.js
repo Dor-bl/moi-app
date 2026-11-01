@@ -3,6 +3,9 @@
 
 let toastTimeout = null;
 
+// Ids changed in this tab whose write has not gone through yet (see saveItems).
+const unsavedIds = new Set();
+
 function getMilestoneObj(count) {
     let current = MILESTONES[0];
     for (let milestone of MILESTONES) {
@@ -42,6 +45,7 @@ function showBadgeToast(badge) {
 // which is what saveItems below is for.
 function saveState() {
     localStorage.setItem('moiCheckState', JSON.stringify(completedItems));
+    unsavedIds.clear();
 }
 
 // The progress as stored right now, or null when it is missing or cannot be trusted
@@ -63,19 +67,25 @@ function readStoredState() {
 // item this tab did not touch, and this tab's value wins for the ones it did — set,
 // or removed when it no longer holds the id.
 //
-// Memory is still the base, not just the store, so a tick made while storage was
-// refusing writes is written out by the next save that works, as saveState() always
-// did. The limit of that is the other direction: a tab that still holds an item
-// another tab has since unticked, or that was cleared by a sign-out elsewhere, will
-// write it back when it saves something else. That is unchanged, and fixing it
-// needs the tabs to tell each other, which is the machinery this app avoids.
+// A change whose write was refused stays this tab's until a write goes through: its
+// ids wait in unsavedIds and join the next save, so a note edited, a tick or an untick
+// made while storage was full is written out then, as saveState() always did, instead
+// of being replaced by the older stored value. The limit is the other direction: a tab
+// that still holds an item another tab has since unticked, or that was cleared by a
+// sign-out elsewhere, will write it back when it saves something else. That is
+// unchanged, and fixing it needs the tabs to tell each other, which is the machinery
+// this app avoids.
+//
+// Returns true when the save folded in items this tab did not hold, i.e. when what the
+// tab now holds is more than what it is showing; the caller repaints in that case.
 //
 // This is a re-read, not a lock: two saves in the same instant can still race. The
 // realistic case it closes is one tab left open while the user ticks in another.
 function saveItems(ids) {
+    for (const id of ids) unsavedIds.add(id);
     const merged = { ...completedItems, ...readStoredState() };
 
-    for (const id of ids) {
+    for (const id of unsavedIds) {
         if (Object.prototype.hasOwnProperty.call(completedItems, id)) {
             merged[id] = completedItems[id];
         } else {
@@ -86,7 +96,11 @@ function saveItems(ids) {
     // Adopted only once the write has gone through. A refused write throws from
     // here and leaves this tab holding exactly what it held before.
     localStorage.setItem('moiCheckState', JSON.stringify(merged));
+    // merged holds every id this tab held, so a longer one means items came in.
+    const adopted = Object.keys(merged).length > Object.keys(completedItems).length;
     completedItems = merged;
+    unsavedIds.clear();
+    return adopted;
 }
 
 function createConfetti(x, y) {

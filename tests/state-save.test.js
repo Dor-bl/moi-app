@@ -64,6 +64,21 @@ test('a note edited in a stale tab does not discard a note edited in another tab
     assert.equal(result['item-2'].note, 'from A', 'untouched items keep what the store says, not this tab’s older copy');
 });
 
+test('a save reports whether it folded in items this tab did not hold', () => {
+    const storage = createLocalStorage();
+    const a = openTab(storage);
+    const b = openTab(storage);
+
+    b.completedItems['item-2'] = entry();
+    assert.equal(b.saveItems(['item-2']), false, 'nothing came in from elsewhere');
+
+    a.completedItems['item-1'] = entry();
+    assert.equal(a.saveItems(['item-1']), true, 'item-2 came in from the other tab');
+
+    a.completedItems['item-1'].note = 'edited';
+    assert.equal(a.saveItems(['item-1']), false, 'nothing new the second time');
+});
+
 test('a reset still overwrites the store rather than merging into it', () => {
     const storage = createLocalStorage({ moiCheckState: JSON.stringify({ 'item-1': entry(), 'item-2': entry() }) });
     const tab = openTab(storage);
@@ -87,6 +102,40 @@ test('a refused write throws and leaves this tab holding what it had', () => {
     // Unchanged from before: ticks made while storage is refusing stay visible for the
     // session, and the next save that works writes them out.
     assert.deepEqual(Object.keys(plain(tab.completedItems)).sort(), ['item-1', 'item-2']);
+});
+
+test('a note edit whose write was refused is written out by the next save that works', () => {
+    const storage = createLocalStorage({ moiCheckState: JSON.stringify({ 'item-1': entry('old'), 'item-2': entry() }) });
+    const tab = openTab(storage);
+    const realSetItem = storage.setItem;
+
+    storage.setItem = () => { throw new Error('QuotaExceededError'); };
+    tab.completedItems['item-1'].note = 'edited';
+    assert.throws(() => tab.saveItems(['item-1']), /QuotaExceededError/);
+
+    storage.setItem = realSetItem;
+    delete tab.completedItems['item-2'];
+    tab.saveItems(['item-2']);
+
+    assert.equal(stored(storage)['item-1'].note, 'edited', 'the edit was not written out');
+    assert.equal(plain(tab.completedItems)['item-1'].note, 'edited', 'the tab lost its own edit');
+    assert.ok(!('item-2' in stored(storage)));
+});
+
+test('an untick whose write was refused is written out by the next save that works', () => {
+    const storage = createLocalStorage({ moiCheckState: JSON.stringify({ 'item-1': entry(), 'item-2': entry() }) });
+    const tab = openTab(storage);
+    const realSetItem = storage.setItem;
+
+    storage.setItem = () => { throw new Error('QuotaExceededError'); };
+    delete tab.completedItems['item-1'];
+    assert.throws(() => tab.saveItems(['item-1']), /QuotaExceededError/);
+
+    storage.setItem = realSetItem;
+    delete tab.completedItems['item-2'];
+    tab.saveItems(['item-2']);
+
+    assert.deepEqual(stored(storage), {}, 'the refused untick came back');
 });
 
 test('an unreadable store falls back to this tab’s copy instead of failing', () => {
