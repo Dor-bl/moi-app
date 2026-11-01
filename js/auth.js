@@ -22,6 +22,13 @@ if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PRO
 let currentUser = null;
 let authGeneration = 0;
 
+// The user this tab itself last synced as. The marker in storage cannot say it: when
+// another tab switches the browser to a different account, that tab moves the marker
+// to the new user first, so by the time this tab receives the sign-in the marker
+// already matches and nothing looks out of place. Null when this tab holds no
+// account's progress (a fresh load, or after a sign-out), so guest ticks still merge.
+let heldUserId = null;
+
 // Which account the progress in this browser was last synced with. It lets us
 // tell genuine guest progress (no marker) apart from another account's
 // leftovers (marker belongs to somebody else), so signing in never re-uploads
@@ -374,6 +381,7 @@ function onUserLoggedOut() {
     completedItems = {};
     saveState();
     localStorage.removeItem(SYNCED_USER_KEY);
+    heldUserId = null;
     updateAuthBtnState(false);
     renderList();
     updateProgress();
@@ -389,11 +397,15 @@ async function syncCloudProgress() {
     // Sign-out already clears both, so this only catches the paths where it
     // never ran - a crashed tab, a session that expired, storage half-cleared.
     const lastSyncedUser = localStorage.getItem(SYNCED_USER_KEY);
-    if (lastSyncedUser && lastSyncedUser !== currentUser.id) {
+    // The same applies to progress this tab itself holds for a different user: another
+    // tab switched the browser's account without a sign-out here (see heldUserId).
+    const switchedHere = heldUserId !== null && heldUserId !== currentUser.id;
+    if (switchedHere || (lastSyncedUser && lastSyncedUser !== currentUser.id)) {
         completedItems = {};
         saveState();
     }
     localStorage.setItem(SYNCED_USER_KEY, currentUser.id);
+    heldUserId = currentUser.id;
 
     const generation = authGeneration;
     const stale = () => generation !== authGeneration;
