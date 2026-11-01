@@ -89,9 +89,9 @@ function saveItems(ids) {
     // value means that happened. The store then holds that account's private progress, or
     // has just been emptied, and merging it would put it into completedItems, where the
     // cloud sync's full upload sends it to this account; writing this tab's copy over it
-    // would be the old leak in the other direction. So neither: the tab is about to reset
-    // itself, and a tick made in that gap is not saved. A guest has no currentUser and
-    // is not affected.
+    // would be the old leak in the other direction. So neither. After a sign-out this tab
+    // resets itself moments later, and a tick made in that gap is not saved. A guest has
+    // no currentUser and is not affected.
     if (currentUser && localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return false;
 
     for (const id of ids) unsavedIds.add(id);
