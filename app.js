@@ -1193,10 +1193,16 @@ function toggleComplete(id, event = null) {
         };
         if (event) createConfetti(event.clientX, event.clientY);
         syncItemToCloud(id, true, noteVal);
-        checkBadgeUnlocks(id, false);
     }
     
     saveItems([id]);
+
+    // After the save, not before it: saveItems() has by then folded in whatever other
+    // tabs ticked, so the category count includes their items. Checked beforehand, two
+    // tabs that each finish one of a category's last two items would both count one
+    // short, and the category would complete with no toast in either. A save that
+    // throws never gets here, which is right: nothing was saved to celebrate.
+    if (!isCompleted) checkBadgeUnlocks(id, false);
 
     const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
     if (card) {
