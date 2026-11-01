@@ -406,13 +406,13 @@ async function syncCloudProgress() {
 
         if (stale()) return;
 
-        // The marker was set to this user before the query. If it names someone else
-        // now, another tab switched the browser to that account while the query was in
-        // flight and this tab's auth listener has not run yet (so stale() cannot see it).
-        // The store is theirs: writing this tab's copy over it, or uploading from it,
-        // would hand one account's progress to the other.
-        const markerNow = localStorage.getItem(SYNCED_USER_KEY);
-        if (markerNow && markerNow !== currentUser.id) return;
+        // The marker was set to this user before the query. If it names someone else now,
+        // another tab switched the browser to that account while the query was in flight;
+        // if it is gone, another tab signed out and emptied the store. Either way this
+        // tab's auth listener has not run yet (so stale() cannot see it) and the store is
+        // no longer ours: writing this tab's copy over it, or uploading from it, would
+        // hand one account's progress to the other or leave it behind after sign-out.
+        if (localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return;
 
         if (error) {
             console.log('Cloud sync note:', error.message);

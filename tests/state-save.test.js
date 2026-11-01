@@ -181,6 +181,26 @@ test('the same tab still merges as before while the store belongs to its own acc
     assert.deepEqual(Object.keys(stored(storage)).sort(), ['a-item', 'a-other', 'x']);
 });
 
+// A signed-in tab always has its own account's marker (the sync sets it before anything
+// else), so a missing one means a sign-out in another tab removed it and emptied the store.
+// Saving from this tab's copy would put that account's progress back with no marker, where
+// nothing would ever clear it.
+test('a signed-in tab does not write back what a sign-out in another tab just cleared', () => {
+    const storage = createLocalStorage({ moiCheckState: JSON.stringify({ 'a-item': entry() }), moiCheckSyncedUser: 'user-a' });
+    const tab = openTab(storage);
+    tab.currentUser = { id: 'user-a', email: 'a@example.test' };
+
+    // Another tab signs out: marker removed, store emptied.
+    storage.removeItem('moiCheckSyncedUser');
+    storage.setItem('moiCheckState', JSON.stringify({}));
+
+    tab.completedItems['x'] = entry();
+    assert.equal(tab.saveItems(['x']), false);
+
+    assert.deepEqual(stored(storage), {}, 'the signed-out account’s progress was written back');
+    assert.equal(storage.getItem('moiCheckSyncedUser'), null);
+});
+
 // The cloud sync ends in a full upload of completedItems under the signed-in user's id,
 // so it must not adopt whatever another tab has put in the shared store while its query
 // was in flight. After an account switch elsewhere that is a different account's private
@@ -220,6 +240,42 @@ test('a sync does not upload another account’s progress that landed in the sto
     // Nor does A's sync write over B's store: the marker names B, so the store is B's.
     assert.deepEqual(Object.keys(stored(storage)), ['b-private'], 'A’s sync overwrote B’s store');
     assert.equal(storage.getItem('moiCheckSyncedUser'), 'user-b');
+});
+
+// The marker was set to this user before the query, so a missing one afterwards means a
+// sign-out in another tab removed it. The sync must not merge the signed-out account's
+// cloud rows into a store that has just been emptied.
+test('a sync does not repopulate the store after a sign-out in another tab cleared it mid-query', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({
+        rows: [{ user_id: 'user-a', item_id: 'a-item', date: '2026-10-30T08:00:00.000Z', note: '' }]
+    });
+
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    const realFrom = supabase.from;
+    supabase.from = table => {
+        const api = realFrom(table);
+        return { ...api, select: () => ({ eq: async (column, value) => {
+            await gate;
+            return api.select().eq(column, value);
+        } }) };
+    };
+
+    const tabA = openTab(storage, { supabaseClient: supabase });
+    tabA.currentUser = { id: 'user-a', email: 'a@example.test' };
+    const sync = tabA.syncCloudProgress();
+
+    // Another tab signs out: marker removed, store emptied.
+    storage.removeItem('moiCheckSyncedUser');
+    storage.removeItem('moiCheckState');
+
+    release();
+    await sync;
+
+    assert.equal(storage.getItem('moiCheckState'), null, 'the signed-out account’s progress came back');
+    assert.equal(storage.getItem('moiCheckSyncedUser'), null);
+    assert.deepEqual(supabase.upserts, []);
 });
 
 // The same window with one user action in it: the sync ends in a full upload of
