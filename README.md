@@ -385,8 +385,8 @@ and why there is no warning email, is in
 signing in again, so an account can be in daily use while that timestamp stays at its first
 visit. A refresh does update the session row (`updated_at`, `refreshed_at`), but signing out
 deletes that row, so the session tables forget the activity at exactly the moment it matters.
-A small table, `account_last_seen`, keeps it: a job at 03:20 copies each live session's latest
-timestamp into it, and the deletion at 03:23 reads it.
+A small table, `account_last_seen`, keeps it: a job at 20 minutes past every hour copies each
+live session's latest timestamp into it, and the deletion at 03:23 reads it.
 
 The deletion removes the `auth.users` row and nothing else. Everything that points at it —
 `user_progress`, `account_last_seen`, sessions, refresh tokens, identities — is
@@ -411,7 +411,7 @@ on conflict (user_id) do nothing;
 
 select cron.schedule(
   'record-account-activity',
-  '20 3 * * *',
+  '20 * * * *',
   $$
   insert into public.account_last_seen (user_id, seen_at)
   select user_id, max(greatest(updated_at, refreshed_at at time zone 'UTC'))
@@ -439,9 +439,12 @@ select cron.schedule(
 ```
 
 `refreshed_at` is stored without a time zone (in UTC), hence the cast. The live-session check
-in the deletion repeats what the 03:20 job records, so a night that job fails cannot delete an
-account in use. A sign-out between two runs loses only that day's refreshes, and the run
-before it already recorded the account as used. To see who the next run would delete, run
+in the deletion repeats what the hourly job records, so a failed copy cannot delete an account
+in use. A sign-out loses only the refreshes since the last hourly copy. The one case left
+open: an account due for deletion that is used for the first time in 24 months after 02:20 and
+signed out of before 03:23 on that same night. Closing it would need a trigger on Supabase's
+own `auth.sessions` table, which runs inside every sign-in and refresh, so a bug in it would
+break sign-in for everyone; that trade is not worth one hour. To see who the next run would delete, run
 the same `where` clause as a `select u.id, u.email, u.last_sign_in_at from auth.users u where …`.
 Change the window in both `privacy.html` §4 and this job, never one alone.
 

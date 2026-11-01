@@ -71,11 +71,15 @@ job together.
 The session timestamps cannot be read straight from `auth.sessions` at deletion time, because
 signing out deletes the session row and its refresh tokens with it. Someone who signed in once
 more than two years ago, kept using the app through refreshes, and then signed out would look
-untouched since that first sign-in, and be deleted that night. So a job at 03:20 copies each
+untouched since that first sign-in, and be deleted that night. So a job every hour copies each
 live session's latest timestamp into `account_last_seen` (one row per account: `user_id`,
 `seen_at`, no other data; row-level security on, no grants to `anon` or `authenticated`), and
-the deletion at 03:23 reads that. A sign-out only loses the refreshes since the previous
-night's copy. Refresh tokens are not a separate signal: they move with their session, and
+the deletion at 03:23 reads that. A sign-out only loses the refreshes since the last hourly
+copy. That leaves one case: an account due for deletion that is used for the first time in 24
+months between the 02:20 copy and the 03:23 deletion, and signed out of in that hour. Closing
+it would mean a trigger on Supabase's own `auth.sessions` table, which runs inside every
+sign-in and refresh; a fault there would break sign-in for everyone, which is a worse risk
+than this hour. Refresh tokens are not a separate signal: they move with their session, and
 when this was built none was newer than its session.
 
 `last_sign_in_at` alone would be wrong, and dangerously so. The SDK refreshes a session
@@ -92,7 +96,7 @@ refresh tokens, identities and MFA tables. That was checked in the database cata
 assumed. `delete_user()` is unchanged. It still acts only on `auth.uid()`, and the job does
 not call it: both jobs run as `postgres` inside `pg_cron`, the same way the `client_errors`
 sweep does, so no new function is exposed through the API. The deletion also checks live
-sessions directly, so a night the 03:20 copy fails cannot delete an account in use.
+sessions directly, so a failed copy cannot delete an account in use.
 
 **No warning email, decided.** A warning would need another scheduled job, an email template,
 a record of who was warned and when, and a way to undo it when someone comes back. That is a
