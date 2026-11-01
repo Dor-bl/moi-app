@@ -374,6 +374,47 @@ alter table user_progress add constraint user_progress_user_id_fkey
 
 If the function is not configured on the Supabase project, the app informs the user that self-service deletion is not yet available and provides contact info for manual removal.
 
+### Dormant accounts are deleted after 24 months
+
+An account nobody has used for 24 months is deleted, with its progress and notes, by a
+nightly `pg_cron` job. This is the retention period `privacy.html` §4 states; the reasoning,
+and why there is no warning email, is in
+[`docs/compliance/retention.md`](docs/compliance/retention.md) §2.
+
+"Used" means the latest of three timestamps, not `last_sign_in_at` alone. The SDK refreshes
+a session without signing in again, so an account can be in daily use while its
+`last_sign_in_at` stays at its first visit. A refresh does update the session and its
+refresh token, so the job keeps any account with one of those touched inside the window.
+
+The job deletes the `auth.users` row and nothing else. Everything that points at it —
+`user_progress`, sessions, refresh tokens, identities — is `on delete cascade`. It runs as
+`postgres` inside the database, so nothing new is exposed through the API, and
+`delete_user()` keeps its self-only check. Run this once in the Supabase SQL Editor:
+
+```sql
+select cron.schedule(
+  'delete-dormant-accounts',
+  '23 3 * * *',
+  $$
+  delete from auth.users u
+  where greatest(u.created_at, u.last_sign_in_at) < now() - interval '24 months'
+    and not exists (
+      select 1 from auth.sessions s
+      where s.user_id = u.id
+        and greatest(s.updated_at, s.refreshed_at at time zone 'UTC') >= now() - interval '24 months')
+    and not exists (
+      select 1 from auth.refresh_tokens r
+      where r.user_id = u.id::text
+        and r.updated_at >= now() - interval '24 months')
+  $$
+);
+```
+
+`refreshed_at` is stored without a time zone (in UTC), and `refresh_tokens.user_id` is text,
+hence the casts. To see who the next run would delete, run the same `where` clause as a
+`select u.id, u.email, u.last_sign_in_at from auth.users u where …`. Change the window in
+both `privacy.html` §4 and this job, never one alone.
+
 ### Troubleshooting: magic links fail with a 500
 
 If `POST /auth/v1/otp` returns **500 (Internal Server Error)** — typically for everyone

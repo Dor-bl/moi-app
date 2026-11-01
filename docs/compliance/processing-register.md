@@ -81,7 +81,7 @@ the other.
 | **Data categories** | Email address; display name and avatar URL where Google supplied them; `user_id`; per ticked item an `item_id`, a `date`, and a free-text `note`; `created_at` and `last_sign_in_at`; provider metadata. Also, in Supabase's auth internals, live sessions and refresh tokens, linked identities, and the IP address and user agent recorded against a session |
 | **Recipients** | Supabase (processor, DPA). Nobody else: the app copies this into no other store |
 | **Transfers** | Stored in the EU — AWS `eu-west-1`, Ireland. Supabase is a US company whose staff can reach that infrastructure to operate it, covered by its DPA and SCCs. See [`account-hosting-audit.md`](account-hosting-audit.md) §3 |
-| **Retention** | For as long as the account exists. **This is indefinite and should not be** — [#90](https://github.com/Dor-bl/moi-app/issues/90), and [`retention.md`](retention.md) §2 |
+| **Retention** | Until the user deletes it, or 24 months after the account was last used, measured by sign-ins and session refreshes. A nightly `pg_cron` job deletes the account record and everything cascades from it. No warning email, by decision. See [`retention.md`](retention.md) §2 |
 | **Measures** | Row-level security on `user_progress` scoped to `auth.uid() = user_id`; no password exists to steal (magic link and Google only); `on delete cascade` so erasing a user erases their rows; erasure via a `security definer` `delete_user()` that can only delete its own caller; TLS throughout |
 
 **Access and portability (Arts. 15, 20).** A signed-in user can download this activity's
@@ -329,13 +329,10 @@ otherwise, so the region claim in this register is enforced rather than asserted
 Each of these is a thing this record cannot state because nobody has decided or supplied it
 yet. None is a blocker for the rest of the file.
 
-1. **Account-data retention is indefinite** (activity 1). The register can only record what is
-   true; [#90](https://github.com/Dor-bl/moi-app/issues/90) is the fix, and `client_errors`
-   already proves `pg_cron` works for this.
-2. **Resend's 30-day retention is their stated figure**, unverified against live
+1. **Resend's 30-day retention is their stated figure**, unverified against live
    documentation. Carried as such in `privacy.html` §4 and in [`retention.md`](retention.md).
-3. **At-rest encryption is asserted by the providers**, not verified by us.
-4. **The pre-choice Google fetch could be removed** (activity 4). Drawing our own button and
+2. **At-rest encryption is asserted by the providers**, not verified by us.
+3. **The pre-choice Google fetch could be removed** (activity 4). Drawing our own button and
    loading Google's script only after the visitor picks it would take that request out of
    the dialog entirely, at the cost of a code change to the sign-in flow. Until the owner
    decides, it is documented and justified rather than eliminated.
