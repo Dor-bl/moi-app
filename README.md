@@ -402,6 +402,13 @@ create table public.account_last_seen (
 alter table public.account_last_seen enable row level security;
 revoke all on public.account_last_seen from anon, authenticated;
 
+-- Backfill once from today's sessions, so the deletion never runs on an empty table.
+insert into public.account_last_seen (user_id, seen_at)
+select user_id, max(greatest(updated_at, refreshed_at at time zone 'UTC'))
+from auth.sessions
+group by user_id
+on conflict (user_id) do nothing;
+
 select cron.schedule(
   'record-account-activity',
   '20 3 * * *',
