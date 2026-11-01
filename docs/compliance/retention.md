@@ -66,7 +66,7 @@ job together.
 
 - `auth.users.last_sign_in_at` (or `created_at`, for an account that never signed in again);
 - the newest `updated_at` or `refreshed_at` on any of the account's `auth.sessions`, as
-  recorded each night in `public.account_last_seen`.
+  recorded each hour in `public.account_last_seen`.
 
 The session timestamps cannot be read straight from `auth.sessions` at deletion time, because
 signing out deletes the session row and its refresh tokens with it. Someone who signed in once
