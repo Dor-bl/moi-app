@@ -138,6 +138,10 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
         let completedItems = {};
         let currentLang = 'en';
         const UI_TRANSLATIONS = { en: { signIn: 'Sign In', signOut: 'Sign Out' } };
+        const BUCKET_LIST = [
+            { id: '1', title: { en: 'Eat your first Groninger Eierbal', nl: 'Eet je eerste Groningse Eierbal' } },
+            { id: '2', title: { en: 'Climb the Martinitoren', nl: 'Beklim de Martinitoren' } }
+        ];
         function renderList() { globalThis.__renders.list++; }
         function updateProgress() { globalThis.__renders.progress++; }
     `, context, { filename: 'test-preamble.js' });
@@ -162,6 +166,8 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
             onUserLoggedIn,
             onUserLoggedOut,
             syncCloudProgress,
+            buildAccountExport,
+            bumpAuthGeneration() { authGeneration++; },
             syncItemToCloud,
             saveState,
             saveItems,

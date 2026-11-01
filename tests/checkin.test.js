@@ -147,9 +147,12 @@ test('a successful check-in stores the verdict and no coordinate', async () => {
     assert.deepEqual(Object.keys(JSON.parse(stored)), ['test-fest@2026-05-05']);
 
     // The claim the privacy note makes, asserted rather than left in prose:
-    // nothing resembling a coordinate survives the check.
-    assert.ok(!stored.includes('53.2'), `latitude leaked into storage: ${stored}`);
-    assert.ok(!stored.includes('6.55'), `longitude leaked into storage: ${stored}`);
+    // nothing resembling a coordinate survives the check. Timestamps are
+    // masked first: the check-in time's digits can spell a coordinate by
+    // chance (13:13:56.559Z contains "6.55"), which failed CI once.
+    const withoutTimes = stored.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, '<time>');
+    assert.ok(!withoutTimes.includes('53.2'), `latitude leaked into storage: ${stored}`);
+    assert.ok(!withoutTimes.includes('6.55'), `longitude leaked into storage: ${stored}`);
     assert.ok(!/latitude|longitude|accuracy|coords/.test(stored), `position leaked: ${stored}`);
 
     assert.equal(toasts.length, 1, 'the badge is celebrated once');
