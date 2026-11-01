@@ -148,6 +148,39 @@ test('an unreadable store falls back to this tab’s copy instead of failing', (
     assert.deepEqual(Object.keys(stored(storage)), ['item-1']);
 });
 
+// saveItems() adopts whatever the shared store holds. After another tab switches the
+// browser to a different account, that is the other account's private progress, and this
+// tab keeps believing it is the old one until its own auth listener runs. A signed-in tab
+// whose store has been marked for someone else therefore neither adopts nor writes.
+test('a signed-in tab does not adopt or overwrite the store once it belongs to another account', () => {
+    const storage = createLocalStorage({ moiCheckState: JSON.stringify({ 'a-item': entry() }), moiCheckSyncedUser: 'user-a' });
+    const tab = openTab(storage);
+    tab.currentUser = { id: 'user-a', email: 'a@example.test' };
+
+    // Another tab switches the browser to B: B's marker and B's private progress.
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({ 'b-private': entry('B’s note') }));
+
+    tab.completedItems['x'] = entry();
+    assert.equal(tab.saveItems(['x']), false);
+
+    assert.deepEqual(Object.keys(stored(storage)), ['b-private'], 'B’s store was written to');
+    assert.ok(!('b-private' in plain(tab.completedItems)), 'B’s progress was adopted');
+});
+
+test('the same tab still merges as before while the store belongs to its own account', () => {
+    const storage = createLocalStorage({ moiCheckState: JSON.stringify({ 'a-item': entry() }), moiCheckSyncedUser: 'user-a' });
+    const tab = openTab(storage);
+    tab.currentUser = { id: 'user-a', email: 'a@example.test' };
+
+    // Another tab of the same account ticks something.
+    storage.setItem('moiCheckState', JSON.stringify({ 'a-item': entry(), 'a-other': entry() }));
+
+    tab.completedItems['x'] = entry();
+    assert.equal(tab.saveItems(['x']), true);
+    assert.deepEqual(Object.keys(stored(storage)).sort(), ['a-item', 'a-other', 'x']);
+});
+
 // The cloud sync ends in a full upload of completedItems under the signed-in user's id,
 // so it must not adopt whatever another tab has put in the shared store while its query
 // was in flight. After an account switch elsewhere that is a different account's private
@@ -184,4 +217,41 @@ test('a sync does not upload another account’s progress that landed in the sto
     await sync;
 
     assert.deepEqual(supabase.upserts.map(u => u.row.item_id), [], 'nothing of B’s is uploaded under A');
+});
+
+// The same window with one user action in it: the sync ends in a full upload of
+// completedItems, so an item save that adopted B's progress first would hand it to A.
+test('an item save while a sync is pending does not put another account’s progress into the upload', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({
+        rows: [{ user_id: 'user-a', item_id: 'a-item', date: '2026-10-30T08:00:00.000Z', note: '' }]
+    });
+
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    const realFrom = supabase.from;
+    supabase.from = table => {
+        const api = realFrom(table);
+        return { ...api, select: () => ({ eq: async (column, value) => {
+            await gate;
+            return api.select().eq(column, value);
+        } }) };
+    };
+
+    const tabA = openTab(storage, { supabaseClient: supabase });
+    tabA.currentUser = { id: 'user-a', email: 'a@example.test' };
+    const sync = tabA.syncCloudProgress();
+
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({ 'b-private': entry('B’s note') }));
+
+    // One tick in A before A's auth listener has processed the switch.
+    tabA.completedItems['x'] = entry();
+    tabA.saveItems(['x']);
+
+    release();
+    await sync;
+
+    const uploaded = supabase.upserts.map(u => u.row.item_id);
+    assert.ok(!uploaded.includes('b-private'), 'B’s item was uploaded under A: ' + uploaded);
 });

@@ -68,6 +68,7 @@ export default [
         GOOGLE_CLIENT_ID: "writable",
         supabaseClient: "writable",
         currentUser: "writable",
+        SYNCED_USER_KEY: "readonly",
         completedItems: "writable",
         currentLang: "writable",
         currentFilter: "writable",

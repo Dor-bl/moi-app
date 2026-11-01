@@ -1,5 +1,5 @@
 // Utils Module - Shared Global Exports: getMilestoneObj, showBadgeToast, saveState, saveItems, createConfetti
-// Dependencies: Expects MILESTONES, UI_TRANSLATIONS, currentLang, completedItems.
+// Dependencies: Expects MILESTONES, UI_TRANSLATIONS, currentLang, completedItems, currentUser, SYNCED_USER_KEY.
 
 let toastTimeout = null;
 
@@ -78,10 +78,21 @@ function readStoredState() {
 //
 // Returns true when the save folded in items this tab did not hold, i.e. when what the
 // tab now holds is more than what it is showing; the caller repaints in that case.
+// Returns false, having written nothing, when the store belongs to another account.
 //
 // This is a re-read, not a lock: two saves in the same instant can still race. The
 // realistic case it closes is one tab left open while the user ticks in another.
 function saveItems(ids) {
+    // Another tab may have switched the browser to a different account while this tab,
+    // still signed in as the old one, has not yet run its auth listener. The store then
+    // holds that account's private progress, and merging it would put it into
+    // completedItems, where the cloud sync's full upload sends it to this account.
+    // Writing this tab's copy over it would be the old leak in the other direction. So
+    // neither: the tab is about to reset itself, and a tick made in that gap is not
+    // saved. No marker (guest progress) or a matching one is the normal case.
+    const owner = localStorage.getItem(SYNCED_USER_KEY);
+    if (currentUser && owner && owner !== currentUser.id) return false;
+
     for (const id of ids) unsavedIds.add(id);
     const merged = { ...completedItems, ...readStoredState() };
 
