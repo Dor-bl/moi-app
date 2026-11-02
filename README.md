@@ -141,6 +141,124 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 
    Two things are already taken care of: the Content Security Policy in `vercel.json` allows Google's script, stylesheet, iframe and endpoints under `https://accounts.google.com/gsi/` (the four entries [Google's guide](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid) lists), and the script is fetched only when someone opens the sign-in dialog, not on every visit — the privacy policy's Google entry describes that, so keep the two in step if you change it.
 
+### Knowing who a `user_id` belongs to (the `profiles` table)
+
+Every row in `user_progress` is keyed by a `user_id` UUID and nothing else, so the table on
+its own cannot tell you *whose* progress you are reading. The person behind the UUID lives in
+`auth.users`, inside Supabase's private `auth` schema.
+
+For a one-off lookup you do not need any schema change:
+
+- **Dashboard.** **Authentication -> Users** searches on the UUID and shows the email,
+  the provider, and the last sign-in. In the table editor, the arrow beside a `user_id` cell
+  follows the foreign key to that same row.
+- **SQL Editor**, which runs as `postgres` and so may read `auth`:
+
+  ```sql
+  select id, email,
+         raw_user_meta_data ->> 'full_name' as name,
+         created_at, last_sign_in_at
+  from auth.users
+  where id = '00000000-0000-0000-0000-000000000000';
+  ```
+
+What neither covers is anything running under the publishable key: the browser cannot read
+`auth.users`, by design, and should not be able to. `public.profiles` is the usual Supabase
+answer — a mirror of the few account fields that are safe to join against, kept in `public`
+and maintained by a trigger so it cannot drift:
+
+```sql
+create table public.profiles (
+  -- Same cascade as user_progress: deleting the user takes the mirror with
+  -- them, so delete_user() and a dashboard deletion both stay as they are.
+  id uuid primary key references auth.users (id) on delete cascade,
+  email text,
+  full_name text,
+  avatar_url text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+revoke all on public.profiles from anon, authenticated;
+grant select on public.profiles to authenticated;
+
+create policy "Users can read their own profile" on public.profiles
+  for select using (auth.uid() = id);
+
+create or replace function public.sync_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.profiles (id, email, full_name, avatar_url, updated_at)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
+    new.raw_user_meta_data ->> 'avatar_url',
+    now()
+  )
+  on conflict (id) do update set
+    email = excluded.email,
+    full_name = excluded.full_name,
+    avatar_url = excluded.avatar_url,
+    updated_at = now();
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_changed
+  after insert or update of email, raw_user_meta_data on auth.users
+  for each row execute function public.sync_profile();
+
+-- Backfill everyone who signed in before the trigger existed.
+insert into public.profiles (id, email, full_name, avatar_url)
+select id, email,
+       coalesce(raw_user_meta_data ->> 'full_name', raw_user_meta_data ->> 'name'),
+       raw_user_meta_data ->> 'avatar_url'
+from auth.users
+on conflict (id) do nothing;
+```
+
+The question the table exists for is then a plain join, with no `auth` schema in sight:
+
+```sql
+select p.email, p.full_name, up.item_id, up.date, up.note
+from public.user_progress up
+join public.profiles p on p.id = up.user_id
+order by p.email, up.date desc;
+```
+
+Five things to know before running it:
+
+- **Nobody signed in may write to the mirror, and only its subject may read it.** The
+  `revoke all` then `grant select` is the same shape as `client_errors` further down: the
+  grant settles that `anon` sees nothing at all and that `authenticated` can read but never
+  insert, update or delete, and the policy then settles *which* rows a reader gets. The
+  trigger is the only writer, and it writes as the table's owner.
+- **The read policy is deliberately self-only.** `profiles` holds email addresses, so
+  `using (true)` would hand every signed-in user every other user's address — a data breach
+  written as a convenience. The SQL Editor bypasses RLS and still sees every row, which is
+  what the two admin lookups above rely on — as would a server-side secret key, which is one
+  more reason one must never reach the browser. If other
+  people's names ever belong on screen — a shared leaderboard, say — expose a view over
+  `full_name` alone and leave `email` behind this policy.
+- **The trigger runs inside sign-up.** If it raises, Supabase answers *"Database error saving
+  new user"* and nobody can register. It is written so it cannot: the insert is unconditional
+  and has an `on conflict` arm. If you extend it and registration starts failing, drop the
+  trigger first and confirm sign-up recovers before debugging anything else.
+- **`update of email, raw_user_meta_data` is load-bearing.** `auth.users` is written on every
+  sign-in to move `last_sign_in_at`; without that column list the trigger would fire on each
+  of those for nothing.
+- **It adds no new category of personal data,** which is why `privacy.html` does not change:
+  email, name and avatar URL are already held under activity 1 of the
+  [processing register](docs/compliance/processing-register.md) and already disclosed. This is
+  a second copy, in the same database, under the same processor, for the same purpose, erased
+  by the same cascade. `buildAccountExport()` needs no change for the same reason — it already
+  exports all three from the account itself.
+
 ### Updating the vendored Supabase client
 
 The Supabase browser client is **vendored** at `assets/vendor/supabase-js-2.116.0.js` rather
