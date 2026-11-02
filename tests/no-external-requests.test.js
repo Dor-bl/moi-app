@@ -28,7 +28,8 @@ const attr = (tag, name) => {
 
 function externalLoads(html) {
     const found = [];
-    for (const tag of html.match(/<(?:script|img|iframe|source|video|audio|embed|link)\b[^>]*>/gi) || []) {
+    // Quote-aware: a ">" inside a quoted attribute value does not end the tag.
+    for (const tag of html.match(/<(?:script|img|iframe|source|video|audio|embed|link)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi) || []) {
         const name = tag.match(/^<(\w+)/)[1].toLowerCase();
         // A link is exempt only if every rel token is non-fetching ("canonical stylesheet" still loads).
         if (name === 'link' && (attr(tag, 'rel') || '').toLowerCase().split(/\s+/).every((t) => NON_FETCHING_REL.has(t))) continue;
@@ -64,6 +65,11 @@ test('the guard flags unquoted and padded URLs and mixed link relations', () => 
     const html = '<script src=https://unpkg.com/a.js></script><script src=" https://unpkg.com/b.js "></script>' +
         '<link rel="canonical stylesheet" href="https://cdn.example/a.css">';
     assert.deepEqual(externalLoads(html), ['script: https://unpkg.com/a.js', 'script: https://unpkg.com/b.js', 'link: https://cdn.example/a.css']);
+});
+
+test('a ">" inside a quoted attribute does not hide a later external URL', () => {
+    const html = '<img alt="A > B" src="https://cdn.example/a.png"><script alt=\'x > y\' src="https://unpkg.com/a.js"></script>';
+    assert.deepEqual(externalLoads(html), ['img: https://cdn.example/a.png', 'script: https://unpkg.com/a.js']);
 });
 
 test('the guard flags a CDN script and stylesheet but not a canonical link', () => {
