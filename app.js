@@ -228,6 +228,7 @@ function updateLanguageUI() {
 
     document.querySelector('.memory-section h3').textContent = t.addMemory;
     memoryNote.placeholder = t.memoryPlaceholder;
+    updateMemoryHint();
     modalUncheckBtn.textContent = t.markNotDone;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
     document.getElementById('txtCompletedMemories').textContent = t.recentMemories;
@@ -1332,6 +1333,14 @@ function buildEventBadgeCard({ badge, date }, t) {
     return card;
 }
 
+// Says where a memory note will be stored, so people can choose what to write.
+// Guest notes stay local until sign-in merges them into the account.
+function updateMemoryHint() {
+    const t = UI_TRANSLATIONS[currentLang];
+    document.getElementById('memoryNoteHint').textContent =
+        (currentUser && supabaseClient) ? t.memoryHintSignedIn : t.memoryHintGuest;
+}
+
 function openDetailModal(item) {
     selectedItemId = item.id;
     const isCompleted = !!completedItems[item.id];
@@ -1362,6 +1371,7 @@ function openDetailModal(item) {
         memoryNote.value = '';
     }
     
+    updateMemoryHint();
     updateModalButtonState(isCompleted);
     detailModal.classList.add('active');
 }
