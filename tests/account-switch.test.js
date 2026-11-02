@@ -165,3 +165,29 @@ test('non-object entries of every shape are dropped from the adopted store', asy
     assert.deepEqual(Object.keys(plain(tab.completedItems)), ['ok']);
     assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['ok']);
 });
+
+// The cleanup above only edits this tab's copy. When the cloud read then fails the sync
+// returns early, so unless the cleaned store is written back the bad entry stays in
+// localStorage, is loaded as it is on the next page load, and breaks the upload loop of
+// every later sync.
+test('the cleaned store is written back even when the cloud read fails', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [row('user-a', 'a-item')] });
+    const tab = await tabSignedInAsA(storage, supabase);
+
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({ 'b-local': entry('B unsynced'), 'b-bad': null }));
+
+    // From here on the cloud read fails.
+    const realFrom = supabase.from;
+    supabase.from = table => ({
+        ...realFrom(table),
+        select: () => ({ eq: async () => ({ data: null, error: { message: 'offline' } }) })
+    });
+
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+
+    assert.deepEqual(Object.keys(stored(storage)), ['b-local'], 'the malformed entry is still in storage');
+    assert.equal(stored(storage)['b-local'].note, 'B unsynced', 'the valid unsynced entry was lost');
+});

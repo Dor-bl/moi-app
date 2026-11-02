@@ -426,6 +426,10 @@ async function syncCloudProgress() {
                 delete completedItems[itemId];
             }
         }
+        // Written back now, not left to the save further down: a failed cloud read
+        // returns before that one, and the bad entry would stay in storage to be loaded
+        // as it is on the next page load.
+        saveState();
     }
     localStorage.setItem(SYNCED_USER_KEY, currentUser.id);
     heldUserId = currentUser.id;
