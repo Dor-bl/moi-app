@@ -530,6 +530,88 @@ alter table user_progress add constraint user_progress_user_id_fkey
 
 If the function is not configured on the Supabase project, the app informs the user that self-service deletion is not yet available and provides contact info for manual removal.
 
+### Dormant accounts are deleted after 24 months
+
+An account nobody has used for 24 months is deleted, with its progress and notes, by a
+nightly `pg_cron` job. This is the retention period `privacy.html` §4 states; the reasoning,
+and why there is no warning email, is in
+[`docs/compliance/retention.md`](docs/compliance/retention.md) §2.
+
+"Used" cannot be read from `last_sign_in_at` alone. The SDK refreshes a session without
+signing in again, so an account can be in daily use while that timestamp stays at its first
+visit. A refresh does update the session row (`updated_at`, `refreshed_at`), but signing out
+deletes that row, so the session tables forget the activity at exactly the moment it matters.
+A small table, `account_last_seen`, keeps it: a job at 20 minutes past every hour copies each
+live session's latest timestamp into it, and the deletion at 03:23 reads it.
+
+The deletion removes the `auth.users` row and nothing else. Everything that points at it —
+`user_progress`, `account_last_seen`, `profiles`, sessions, refresh tokens, identities — is
+`on delete cascade`. Both jobs run as `postgres` inside the database, so nothing new is
+exposed through the API, and `delete_user()` keeps its self-only check. Run this once in the
+Supabase SQL Editor:
+
+```sql
+create extension if not exists pg_cron with schema pg_catalog;
+
+create table public.account_last_seen (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  seen_at timestamptz not null
+);
+alter table public.account_last_seen enable row level security;
+revoke all on public.account_last_seen from anon, authenticated;
+
+-- Backfill once from today's sessions, so the deletion never runs on an empty table.
+insert into public.account_last_seen (user_id, seen_at)
+select user_id, max(greatest(updated_at, refreshed_at at time zone 'UTC'))
+from auth.sessions
+group by user_id
+on conflict (user_id) do nothing;
+
+select cron.schedule(
+  'record-account-activity',
+  '20 * * * *',
+  $$
+  insert into public.account_last_seen (user_id, seen_at)
+  select user_id, max(greatest(updated_at, refreshed_at at time zone 'UTC'))
+  from auth.sessions
+  group by user_id
+  on conflict (user_id) do update
+    set seen_at = greatest(account_last_seen.seen_at, excluded.seen_at)
+  $$
+);
+
+select cron.schedule(
+  'delete-dormant-accounts',
+  '23 3 * * *',
+  $$
+  delete from auth.users u
+  where greatest(u.created_at, u.last_sign_in_at,
+                 (select l.seen_at from public.account_last_seen l where l.user_id = u.id))
+        < now() - interval '24 months'
+    and not exists (
+      select 1 from auth.sessions s
+      where s.user_id = u.id
+        and greatest(s.updated_at, s.refreshed_at at time zone 'UTC') >= now() - interval '24 months')
+  $$
+);
+```
+
+`refreshed_at` is stored without a time zone (in UTC), hence the cast. The live-session check
+in the deletion repeats what the hourly job records, so a failed copy cannot delete an account
+in use.
+
+What it can still miss: a visit that resumes an existing session (no new sign-in) and is
+followed by a sign-out before the next hourly copy. That visit is never recorded, so the 24
+months run from the use recorded before it, and the account can be deleted that much earlier
+than 24 months after the visit. A fresh sign-in is always recorded (`last_sign_in_at`), so it
+takes a resumed session, a sign-out within the hour, and no visit after that. Closing it would
+need a trigger on Supabase's own `auth.sessions` table. It would run inside every sign-out, and
+inside the cascade when an account is deleted, so a fault in it would break both. That is not
+done; see `retention.md` §2.
+
+To see who the next run would delete, run the same `where` clause as a `select u.id, u.email, u.last_sign_in_at from auth.users u where …`.
+Change the window in both `privacy.html` §4 and this job, never one alone.
+
 ### Troubleshooting: magic links fail with a 500
 
 If `POST /auth/v1/otp` returns **500 (Internal Server Error)** — typically for everyone
