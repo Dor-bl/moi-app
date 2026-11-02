@@ -225,13 +225,20 @@ create trigger on_auth_user_changed
   after insert or update of email, raw_user_meta_data on auth.users
   for each row execute function public.sync_profile();
 
--- Backfill everyone who signed in before the trigger existed.
+-- Backfill everyone who signed in before the trigger existed. The same statement
+-- reconciles later: on a fresh table the conflict arm never fires, and after the
+-- trigger has been dropped for debugging it refreshes the rows that went stale as
+-- well as inserting the ones that were missed. The arm mirrors sync_profile()'s,
+-- so the two cannot drift.
 insert into public.profiles (id, email, full_name, avatar_url)
 select id, email,
        coalesce(raw_user_meta_data ->> 'full_name', raw_user_meta_data ->> 'name'),
        raw_user_meta_data ->> 'avatar_url'
 from auth.users
-on conflict (id) do nothing;
+on conflict (id) do update set
+  email = excluded.email,
+  full_name = excluded.full_name,
+  avatar_url = excluded.avatar_url;
 ```
 
 The question the table exists for is then a plain join, with no `auth` schema in sight:
@@ -573,9 +580,13 @@ The causes, in order of likelihood:
    one:** `on_auth_user_changed`, which calls `public.sync_profile()` to mirror the new
    account into `public.profiles` (see *Knowing who a `user_id` belongs to* above). It is
    written so that it cannot throw — one unconditional insert with an `on conflict` arm —
-   but it runs inside every sign-up, so it is the first thing to rule out: drop the trigger,
-   confirm registration recovers, and you have your answer. A trigger added by hand in the
-   SQL editor is the other candidate.
+   but it runs inside every sign-up, so it is the first thing to isolate: drop the trigger
+   and see whether registration recovers. That identifies the path, not the fault. **Do not
+   leave it dropped** — every account created meanwhile gets no mirror row, and recreating it
+   without fixing the cause brings the same failure back. Read the database error, repair
+   `sync_profile()` or whatever it depends on, recreate the trigger, then re-run the backfill
+   from that section, which reconciles the accounts that arrived without it. A trigger added
+   by hand in the SQL editor is the other candidate.
 
 Note that a failed send does not necessarily undo the sign-up: the auth event is logged
 with an `actor_id`, and the address can be left behind as an unconfirmed row in
