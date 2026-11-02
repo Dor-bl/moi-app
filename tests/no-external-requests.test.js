@@ -29,11 +29,11 @@ const attr = (tag, name) => {
 function externalLoads(html) {
     const found = [];
     // Quote-aware: a ">" inside a quoted attribute value does not end the tag.
-    for (const tag of html.match(/<(?:script|img|iframe|source|video|audio|embed|link)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi) || []) {
+    for (const tag of html.match(/<(?:script|img|iframe|source|video|audio|embed|link|input|object)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi) || []) {
         const name = tag.match(/^<(\w+)/)[1].toLowerCase();
         // A link is exempt only if every rel token is non-fetching ("canonical stylesheet" still loads).
         if (name === 'link' && (attr(tag, 'rel') || '').toLowerCase().split(/\s+/).every((t) => NON_FETCHING_REL.has(t))) continue;
-        for (const a of ['src', 'href', 'poster', 'srcset']) {
+        for (const a of ['src', 'href', 'poster', 'srcset', 'data']) {
             const value = attr(tag, a);
             if (!value) continue;
             // srcset is a comma-separated list of "url [descriptor]" candidates.
@@ -44,16 +44,28 @@ function externalLoads(html) {
     return found;
 }
 
+// Remote @import / url() in CSS text. Run over styles.css and over the whole HTML,
+// which covers <style> blocks and style="" attributes.
+const REMOTE_CSS = [/@import\s+(?:url\()?\s*["']?(?:https?:)?\/\//i, /url\(\s*["']?(?:https?:)?\/\//i];
+const remoteCss = (text) => REMOTE_CSS.some((re) => re.test(text));
+
 for (const file of ['index.html', 'privacy.html']) {
     test(`${file} loads nothing from another origin`, () => {
         assert.deepEqual(externalLoads(read(file)), []);
+        assert.equal(remoteCss(read(file)), false);
     });
 }
 
 test('styles.css does not import or reference remote resources', () => {
-    const css = read('styles.css');
-    assert.doesNotMatch(css, /@import\s+(?:url\()?\s*["']?(?:https?:)?\/\//i);
-    assert.doesNotMatch(css, /url\(\s*["']?(?:https?:)?\/\//i);
+    assert.equal(remoteCss(read('styles.css')), false);
+});
+
+test('the guard flags input/object loads and remote CSS in <style> and style=""', () => {
+    assert.deepEqual(externalLoads('<input type="image" src="https://cdn.example/b.png"><object data="//cdn.example/f"></object>'),
+        ['input: https://cdn.example/b.png', 'object: //cdn.example/f']);
+    assert.equal(remoteCss('<style>body{background:url(https://cdn.example/a.png)}</style>'), true);
+    assert.equal(remoteCss('<div style="background: url(\'//cdn.example/a.png\')">'), true);
+    assert.equal(remoteCss('<div style="background: url(assets/a.png)">'), false);
 });
 
 test('the guard flags remote srcset and poster candidates', () => {
