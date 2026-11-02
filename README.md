@@ -156,7 +156,11 @@ For a one-off lookup you do not need any schema change:
 
   ```sql
   select id, email,
-         raw_user_meta_data ->> 'full_name' as name,
+         -- Same fallback as buildAccountExport() and the mirror below: Google
+         -- supplies full_name, but an account whose metadata carries only
+         -- name would otherwise read as having none.
+         coalesce(raw_user_meta_data ->> 'full_name',
+                  raw_user_meta_data ->> 'name') as name,
          created_at, last_sign_in_at
   from auth.users
   where id = '00000000-0000-0000-0000-000000000000';
