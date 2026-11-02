@@ -230,6 +230,15 @@ create trigger on_auth_user_changed
 -- trigger has been dropped for debugging it refreshes the rows that went stale as
 -- well as inserting the ones that were missed. The arm mirrors sync_profile()'s,
 -- so the two cannot drift.
+--
+-- Run it while sign-ups are quiet. The statement reads auth.users as of its own
+-- start, so a change committing while it runs is written by the trigger and then
+-- overwritten by this statement's older value, leaving that row stale until the
+-- account changes again. Checked, not assumed: with `do nothing` the trigger's
+-- value survived and with `do update` it did not. The window is the statement's
+-- runtime and the blast radius is one row, which is why this says "run it quiet"
+-- rather than locking auth.users -- holding locks on the auth service's own table
+-- is a good way to cause the sign-up failure this backfill exists to recover from.
 insert into public.profiles (id, email, full_name, avatar_url)
 select id, email,
        coalesce(raw_user_meta_data ->> 'full_name', raw_user_meta_data ->> 'name'),
@@ -585,8 +594,9 @@ The causes, in order of likelihood:
    leave it dropped** — every account created meanwhile gets no mirror row, and recreating it
    without fixing the cause brings the same failure back. Read the database error, repair
    `sync_profile()` or whatever it depends on, recreate the trigger, then re-run the backfill
-   from that section, which reconciles the accounts that arrived without it. A trigger added
-   by hand in the SQL editor is the other candidate.
+   from that section — while sign-ups are quiet, for the reason its comment gives — which
+   reconciles the accounts that arrived without it. A trigger added by hand in the SQL editor
+   is the other candidate.
 
 Note that a failed send does not necessarily undo the sign-up: the auth event is logged
 with an `actor_id`, and the address can be left behind as an unconfirmed row in
