@@ -162,7 +162,8 @@
             
             <div class="memory-section">
                 <h3>Add a Memory</h3>
-                <textarea id="memoryNote" maxlength="1000" placeholder="How was it? What do you want to remember?"></textarea>
+                <textarea id="memoryNote" maxlength="1000" placeholder="How was it? What do you want to remember?" aria-describedby="memoryNoteHint"></textarea>
+                <p id="memoryNoteHint" class="privacy-note memory-hint">Notes stay in this browser. If you sign in, they are saved to your account on our servers.</p>
                 <div class="modal-actions">
                     <button class="btn primary-btn" id="modalCheckBtn">Mark as Complete</button>
                     <button class="btn secondary-btn" id="modalUncheckBtn" style="display: none;">Mark as not done</button>
