@@ -8,24 +8,34 @@ description: "Review a MoiCheck change (working diff, branch, or PR) against thi
 ## What this codebase is
 
 A no-build static web app: `index.html` loads classic (non-module) scripts in a **fixed order** —
-`config.js` → `js/data.js` → `js/theme.js` → `js/auth.js` → `js/utils.js` → `app.js` — and they
-share state through **global variables**, not imports. Supabase (auth + `user_progress` table) is
-loaded from a CDN. There is no bundler, no framework, and **no test suite**. CI runs one thing:
-`npm run lint` (ESLint).
+`js/analytics.js` → `config.js` → `js/error-reporter.js` → `js/data.js` → `js/events.js` →
+`js/theme.js` → `js/auth.js` → `js/utils.js` → `js/checkin.js` → `app.js` (the `<script>`
+tags at the bottom of `index.html` are the source of truth; check them when a diff adds a
+script) — and they share state through **global variables**, not imports. Supabase (auth +
+`user_progress` table) is a vendored script in `assets/vendor/`. There is no bundler and no
+framework. CI runs `npm run lint` (ESLint) and `npm test` (Node's built-in test runner plus
+Playwright visual checks in `tests/`).
 
-Review accordingly: correctness has to be argued from reading the code, and "add a build step" or
-"add tests for this" are not useful review findings here.
+Review accordingly: most correctness still has to be argued from reading the code, and "add a build
+step" is not a useful review finding here.
 
 ## How to run the review
 
 ```bash
-git fetch origin main && git diff origin/main...HEAD
+git fetch origin main
+git diff origin/main...HEAD                    # branch: committed work only
+git diff $(git merge-base origin/main HEAD)    # working tree: commits + staged + unstaged
+git ls-files --others --exclude-standard       # working tree: untracked files to read in full
 ```
 
-Then, always:
+Then, always (the first two lines bootstrap a fresh checkout the same way CI does — `npm test`
+launches Playwright's Chromium, which `npm ci` alone does not install):
 
 ```bash
+npm ci
+npx playwright install --with-deps chromium
 npm run lint
+npm test
 ```
 
 For a PR target, use `gh pr diff <number>` and read the PR description for intent. Read the full
@@ -90,7 +100,7 @@ interpolates into `innerHTML` any of:
 - `currentUser.email` or other profile data;
 - URL/query/hash values.
 
-Those must go through `textContent` (or `createElement` + `textContent`, as `openProfileModal` does
+Those must go through `textContent` (or `createElement` + `textContent`, as `renderMemoryList` does
 for notes). For `href` interpolation, keep `target="_blank" rel="noopener noreferrer"` and check the
 value is a repo-authored `item.url`, not user input.
 
@@ -116,8 +126,8 @@ value is a repo-authored `item.url`, not user input.
 ### 7. Rendering cost and listeners
 
 Per [`.jules/bolt.md`](../../../.jules/bolt.md): do not attach event listeners inside per-item render
-loops — delegate from the container. But do not flag a linear scan over the ~31-item `BUCKET_LIST`
-as a performance problem; at this size it is a readability question at most.
+loops — delegate from the container. But do not flag a linear scan over the static `BUCKET_LIST`
+(tens of items) as a performance problem; at this size it is a readability question at most.
 
 ### 8. Accessibility
 
@@ -145,7 +155,8 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
 
 ## Do not flag
 
-- Missing tests or test framework — the repo has none by design.
+- Missing tests for pure UI/content changes (new events, copy, styling). Do ask for a test when a
+  diff changes logic that `tests/` already covers (auth sync, check-ins, events, contrast).
 - Absence of a bundler, TypeScript, or a framework.
 - `innerHTML` with static repo-authored strings.
 - `var`-free global function declarations, or the shared-globals architecture itself.

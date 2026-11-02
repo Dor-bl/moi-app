@@ -1,9 +1,12 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, supabaseClient, currentUser, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, deleteUserAccountAndData
-// Dependencies: Expects UI_TRANSLATIONS, currentLang, completedItems, renderList, updateProgress, saveState.
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport
+// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
 const SUPABASE_ANON_KEY = (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) ? window.SUPABASE_ANON_KEY : '';
+// Public OAuth client ID (the same one pasted into Supabase's Google provider).
+// Optional: without it the app falls back to Supabase's redirect flow.
+const GOOGLE_CLIENT_ID = (typeof window !== 'undefined' && window.GOOGLE_CLIENT_ID) ? window.GOOGLE_CLIENT_ID : '';
 
 let supabaseClient = null;
 if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PROJECT_ID')) {
@@ -31,24 +34,35 @@ function updateAuthBtnState(isLoggedIn) {
     const userAccountBadge = document.getElementById('userAccountBadge');
     const userAccountEmail = document.getElementById('userAccountEmail');
     const accountDangerZone = document.getElementById('accountDangerZone');
+    const signOutBtn = document.getElementById('signOutBtn');
 
     if (accountDangerZone) {
         accountDangerZone.style.display = (isLoggedIn && currentUser) ? 'block' : 'none';
     }
+    // A failed export's message belongs to the session that saw it; don't let
+    // it greet whoever signs in next.
+    if (!(isLoggedIn && currentUser)) {
+        const exportDataError = document.getElementById('exportDataError');
+        if (exportDataError) exportDataError.textContent = '';
+    }
+    if (signOutBtn) signOutBtn.textContent = t.signOut;
 
     if (!authBtn) return;
 
+    // Signed in, the header button goes away and signing out happens in the
+    // profile modal (reached through the avatar). Keeping it here meant the
+    // header grew by the width of an email address the moment someone logged
+    // in, which is what crowded the row out on a phone.
     if (isLoggedIn && currentUser) {
-        const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : 'User';
-        authBtn.textContent = `${shortEmail} (${t.signOut})`;
-        authBtn.classList.add('user-logged-in');
+        const shortEmail = currentUser.email ? currentUser.email.split('@')[0] : t.accountNameFallback;
+        authBtn.hidden = true;
         if (userAccountBadge && userAccountEmail) {
             userAccountBadge.style.display = 'flex';
-            userAccountEmail.textContent = `☁️ Synced as ${currentUser.email || shortEmail}`;
+            userAccountEmail.textContent = t.syncedAs.replace('{account}', currentUser.email || shortEmail);
         }
     } else {
+        authBtn.hidden = false;
         authBtn.textContent = t.signIn;
-        authBtn.classList.remove('user-logged-in');
         if (userAccountBadge) {
             userAccountBadge.style.display = 'none';
         }
@@ -149,6 +163,130 @@ function finishMagicLinkSignIn(pending) {
         authActions.style.display = 'block';
         authModal.classList.remove('active');
     };
+}
+
+// Google sign-in runs on this origin instead of bouncing through Supabase's
+// OAuth callback, so Google's consent screen names this site and the app
+// rather than "<project>.supabase.co". Google Identity Services hands the
+// browser an ID token; Supabase verifies it in signInWithIdToken. The nonce
+// ties the token to this page load: we hash it ONCE here and give Google the
+// SHA-256, which Google embeds in the token unchanged; we send Supabase the
+// raw value, and Supabase hashes it to compare. Do not hash it again anywhere.
+// With no client ID configured the redirect-based button stays in place, so
+// this ships safely before the dashboard side is set up.
+let googleNonce = '';
+let googleSignInStarted = false;
+
+function randomHex(byteLength) {
+    const bytes = crypto.getRandomValues(new Uint8Array(byteLength));
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sha256Hex(text) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function googleIdentityReady() {
+    return !!(window.google && window.google.accounts && window.google.accounts.id);
+}
+
+function loadGoogleIdentity() {
+    return new Promise((resolve, reject) => {
+        if (googleIdentityReady()) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Google Identity Services script failed to load'));
+        document.head.appendChild(script);
+    });
+}
+
+// Called when the sign-in dialog opens, not on page load: fetching Google's
+// script contacts Google (IP address, its cookies), and the privacy policy
+// says that happens only when someone goes to sign in. Idempotent, since the
+// dialog opens more than once.
+async function initGoogleSignIn() {
+    if (!supabaseClient || !GOOGLE_CLIENT_ID) return;
+    if (googleSignInStarted) return;
+    googleSignInStarted = true;
+    // crypto.subtle only exists in secure contexts (https and localhost); the
+    // redirect flow still works everywhere else.
+    if (!window.crypto || !window.crypto.subtle) return;
+
+    const container = document.getElementById('googleSignInContainer');
+    const fallbackBtn = document.getElementById('googleAuthBtn');
+    if (!container || !fallbackBtn) return;
+
+    try {
+        await loadGoogleIdentity();
+        googleNonce = randomHex(32);
+        const hashedNonce = await sha256Hex(googleNonce);
+        window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            nonce: hashedNonce,
+            callback: onGoogleCredential
+        });
+        renderGoogleButton();
+        fallbackBtn.style.display = 'none';
+        container.style.display = 'flex';
+    } catch (err) {
+        // Script blocked or failed: leave the redirect-based button as it is,
+        // and allow another attempt next time the dialog opens.
+        googleSignInStarted = false;
+        console.warn('Google sign-in on this origin unavailable, using redirect flow:', err);
+    }
+}
+
+// Idempotent: called on init and again on language or theme changes, since
+// Google renders the button with a fixed locale and colour scheme.
+function renderGoogleButton() {
+    const container = document.getElementById('googleSignInContainer');
+    if (!container || !googleIdentityReady()) return;
+
+    const root = document.documentElement;
+    const dark = root.getAttribute('data-theme') === 'dark'
+        || (!root.hasAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    container.innerHTML = '';
+    window.google.accounts.id.renderButton(container, {
+        type: 'standard',
+        theme: dark ? 'filled_black' : 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'pill',
+        logo_alignment: 'left',
+        locale: currentLang === 'nl' ? 'nl' : 'en'
+    });
+}
+
+async function onGoogleCredential(response) {
+    if (!response || !response.credential) return;
+
+    const { error } = await supabaseClient.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+        nonce: googleNonce
+    });
+
+    if (error) {
+        console.error('Google sign-in failed:', {
+            status: error.status,
+            code: error.code,
+            message: error.message
+        }, error);
+        alert(error.message);
+        return;
+    }
+
+    // onAuthStateChange picks up the session; just put the modal away.
+    const authModal = document.getElementById('authModal');
+    if (authModal) authModal.classList.remove('active');
 }
 
 async function initAuth() {
@@ -282,17 +420,34 @@ async function syncCloudProgress() {
             });
             saveState();
 
+            // ⚡ Bolt Performance Optimization:
+            // Batching API Calls & O(1) Set Lookup
+            // Impact: Converts O(N) sequential HTTP requests and O(N) array scans into a single
+            // O(1) HTTP request and O(1) Set lookups. Drastically improves login speed for
+            // users syncing many local guest items to their new cloud account.
+            const cloudItemIds = new Set(data.map(d => d.item_id));
             const localEntries = Object.entries(completedItems);
+            const missingInCloud = [];
+
             for (let [itemId, localData] of localEntries) {
                 if (stale()) return;
-                const cloudMatch = data.find(d => d.item_id === itemId);
-                if (!cloudMatch) {
-                    await supabaseClient.from('user_progress').upsert({
+                if (!cloudItemIds.has(itemId)) {
+                    missingInCloud.push({
                         user_id: currentUser.id,
                         item_id: itemId,
                         note: localData.note || '',
                         date: localData.date || new Date().toISOString()
                     });
+                }
+            }
+
+            if (missingInCloud.length > 0) {
+                if (stale()) return;
+                const { error: upsertError } = await supabaseClient.from('user_progress').upsert(missingInCloud);
+                if (stale()) return;
+
+                if (upsertError) {
+                    console.log('Cloud sync upsert note:', upsertError.message);
                 }
             }
         }
@@ -310,6 +465,55 @@ function isMissingRpcError(error) {
         return true;
     }
     return false;
+}
+
+// GDPR Art. 20 (#89): everything we hold about the signed-in account, as a plain
+// object ready to download. Reads user_progress at call time rather than using
+// completedItems, so the file never depends on whether background sync finished.
+// Returns null if the account changed while the request was in flight (the
+// generation counter), and throws if the read fails, so the caller can show an
+// error rather than hand over an incomplete file.
+async function buildAccountExport() {
+    if (!supabaseClient || !currentUser) throw new Error('Not signed in');
+    const generation = authGeneration;
+    const user = currentUser;
+    const { data, error } = await supabaseClient
+        .from('user_progress')
+        .select('item_id, date, note')
+        .eq('user_id', user.id);
+    if (generation !== authGeneration) return null;
+    if (error) throw error;
+    // Google sign-in stores the profile name and picture here; magic-link
+    // accounts have neither, and get nulls rather than invented values.
+    const meta = user.user_metadata || {};
+    // app_metadata.provider is only the method the account was created with;
+    // providers lists every method linked since (an email sign-up that later
+    // used Google has both), so that is what the file reports.
+    const appMeta = user.app_metadata || {};
+    const providers = Array.isArray(appMeta.providers) && appMeta.providers.length
+        ? appMeta.providers
+        : (appMeta.provider ? [appMeta.provider] : []);
+    return {
+        exported_at: new Date().toISOString(),
+        account: {
+            id: user.id,
+            email: user.email,
+            name: meta.full_name || meta.name || null,
+            avatar_url: meta.avatar_url || null,
+            sign_in_providers: providers,
+            created_at: user.created_at || null,
+            last_sign_in_at: user.last_sign_in_at || null
+        },
+        // Oldest first, so the file reads as a timeline rather than in
+        // whatever order the database returned the rows.
+        completed_items: (data || [])
+            .slice()
+            .sort((a, b) => (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0))
+            .map(row => {
+                const item = BUCKET_LIST.find(i => String(i.id) === String(row.item_id));
+                return { item_id: row.item_id, title: item ? item.title[currentLang] : null, date: row.date, note: row.note || '' };
+            })
+    };
 }
 
 // GDPR Art. 17: Delete account and cloud data for the signed-in user.

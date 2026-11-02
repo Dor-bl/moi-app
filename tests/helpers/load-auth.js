@@ -32,11 +32,13 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
     const upserts = [];
     const deletes = [];
     const listeners = [];
+    let upsertCalls = 0;
 
     return {
         upserts,
         deletes,
         listeners,
+        get upsertCalls() { return upsertCalls; },
         emit(event, payload = null) {
             return Promise.all(listeners.map(cb => cb(event, payload)));
         },
@@ -47,7 +49,15 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
                         ? { data: null, error: selectError }
                         : { data: rows.filter(row => row[column] === value), error: null })
                 }),
-                upsert: async row => { upserts.push({ table, row }); return { error: null }; },
+                upsert: async rowOrRows => {
+                    upsertCalls++;
+                    if (Array.isArray(rowOrRows)) {
+                        rowOrRows.forEach(row => upserts.push({ table, row }));
+                    } else {
+                        upserts.push({ table, row: rowOrRows });
+                    }
+                    return { error: null };
+                },
                 delete: () => {
                     const filters = {};
                     const builder = {
@@ -80,7 +90,11 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
 // Returns handles onto the module's internal `let` bindings. They live in the
 // context's lexical scope rather than on its global object, so the only way to
 // reach them is from code evaluated in that same context.
-export function loadAuthModule({ storage = createLocalStorage(), supabaseClient = null } = {}) {
+// `overrides` are merged onto the sandbox before the scripts run, so a test can
+// supply the browser globals a particular path needs (a richer `document`,
+// `crypto`, `TextEncoder`, a `window.GOOGLE_CLIENT_ID`) without every other
+// test having to carry them.
+export function loadAuthModule({ storage = createLocalStorage(), supabaseClient = null, overrides = {} } = {}) {
     const renders = { list: 0, progress: 0 };
 
     const sandbox = {
@@ -100,6 +114,20 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
             history: { replaceState: () => {} }
         }
     };
+    for (const [key, value] of Object.entries(overrides)) {
+        if (key === 'window' && value && typeof value === 'object') {
+            // Adopt the caller's object as the page's window, by reference, so
+            // a test can change it after load (install `window.google`, swap
+            // `matchMedia`) and auth.js sees the change. Fill in the defaults
+            // it does not set.
+            for (const [name, fallback] of Object.entries(sandbox.window)) {
+                if (!(name in value)) value[name] = fallback;
+            }
+            sandbox.window = value;
+        } else {
+            sandbox[key] = value;
+        }
+    }
     sandbox.window.localStorage = storage;
 
     const context = vm.createContext(sandbox);
@@ -110,6 +138,10 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
         let completedItems = {};
         let currentLang = 'en';
         const UI_TRANSLATIONS = { en: { signIn: 'Sign In', signOut: 'Sign Out' } };
+        const BUCKET_LIST = [
+            { id: '1', title: { en: 'Eat your first Groninger Eierbal', nl: 'Eet je eerste Groningse Eierbal' } },
+            { id: '2', title: { en: 'Climb the Martinitoren', nl: 'Beklim de Martinitoren' } }
+        ];
         function renderList() { globalThis.__renders.list++; }
         function updateProgress() { globalThis.__renders.progress++; }
     `, context, { filename: 'test-preamble.js' });
@@ -128,11 +160,22 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
             get supabaseClient() { return supabaseClient; },
             set supabaseClient(value) { supabaseClient = value; },
             get authGeneration() { return authGeneration; },
+            get currentLang() { return currentLang; },
+            set currentLang(value) { currentLang = value; },
             initAuth,
             onUserLoggedIn,
             onUserLoggedOut,
             syncCloudProgress,
-            syncItemToCloud
+            buildAccountExport,
+            bumpAuthGeneration() { authGeneration++; },
+            syncItemToCloud,
+            // Google sign-in on the app's origin (js/auth.js). The two getters
+            // expose internal state the tests assert on.
+            initGoogleSignIn,
+            renderGoogleButton,
+            onGoogleCredential,
+            get googleNonce() { return googleNonce; },
+            get googleSignInStarted() { return googleSignInStarted; }
         };
     `, context, { filename: 'test-hooks.js' });
 
