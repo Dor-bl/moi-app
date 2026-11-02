@@ -141,6 +141,162 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 
    Two things are already taken care of: the Content Security Policy in `vercel.json` allows Google's script, stylesheet, iframe and endpoints under `https://accounts.google.com/gsi/` (the four entries [Google's guide](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid) lists), and the script is fetched only when someone opens the sign-in dialog, not on every visit — the privacy policy's Google entry describes that, so keep the two in step if you change it.
 
+### Knowing who a `user_id` belongs to (the `profiles` table)
+
+Every row in `user_progress` is keyed by a `user_id` UUID and nothing else, so the table on
+its own cannot tell you *whose* progress you are reading. The person behind the UUID lives in
+`auth.users`, inside Supabase's private `auth` schema.
+
+For a one-off lookup you do not need any schema change:
+
+- **Dashboard.** **Authentication -> Users** searches on the UUID and shows the email,
+  the provider, and the last sign-in. In the table editor, the arrow beside a `user_id` cell
+  follows the foreign key to that same row.
+- **SQL Editor**, which runs as `postgres` and so may read `auth`:
+
+  ```sql
+  select id, email,
+         -- Same fallback as buildAccountExport() and the mirror below: Google
+         -- supplies full_name, but an account whose metadata carries only
+         -- name would otherwise read as having none.
+         coalesce(raw_user_meta_data ->> 'full_name',
+                  raw_user_meta_data ->> 'name') as name,
+         created_at, last_sign_in_at
+  from auth.users
+  where id = '00000000-0000-0000-0000-000000000000';
+  ```
+
+What neither covers is anything running under the publishable key: the browser cannot read
+`auth.users`, by design, and should not be able to. `public.profiles` is the usual Supabase
+answer — a mirror of the few account fields that are safe to join against, kept in `public`
+and maintained by a trigger so it cannot drift:
+
+```sql
+create table public.profiles (
+  -- Same cascade as user_progress: deleting the user takes the mirror with
+  -- them, so delete_user() and a dashboard deletion both stay as they are.
+  id uuid primary key references auth.users (id) on delete cascade,
+  -- Three fields and no more. Each is a copy of something auth.users already
+  -- holds, privacy.html already discloses and the account export already
+  -- carries, so the mirror adds nothing new to account for. A freshness
+  -- column would: it would be a fourth field to place in the export and the
+  -- retention record, and the trigger below already keeps the copy current.
+  email text,
+  full_name text,
+  avatar_url text
+);
+
+alter table public.profiles enable row level security;
+revoke all on public.profiles from anon, authenticated;
+grant select on public.profiles to authenticated;
+
+create policy "Users can read their own profile" on public.profiles
+  for select using (auth.uid() = id);
+
+create or replace function public.sync_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.profiles (id, email, full_name, avatar_url)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
+    new.raw_user_meta_data ->> 'avatar_url'
+  )
+  on conflict (id) do update set
+    email = excluded.email,
+    full_name = excluded.full_name,
+    avatar_url = excluded.avatar_url;
+  return new;
+end;
+$$;
+
+-- A trigger function has no business being callable over the REST API, and
+-- Supabase's security advisor flags it as reachable at /rest/v1/rpc/sync_profile
+-- without this. Revoking EXECUTE closes that endpoint; the trigger is unaffected,
+-- because it runs as the function's owner rather than as the signed-in caller.
+revoke execute on function public.sync_profile() from public, anon, authenticated;
+
+create trigger on_auth_user_changed
+  after insert or update of email, raw_user_meta_data on auth.users
+  for each row execute function public.sync_profile();
+
+-- Backfill everyone who signed in before the trigger existed. The same statement
+-- reconciles later: on a fresh table the conflict arm never fires, and after the
+-- trigger has been dropped for debugging it refreshes the rows that went stale as
+-- well as inserting the ones that were missed. The arm mirrors sync_profile()'s,
+-- so the two cannot drift.
+--
+-- Run it while sign-ups are quiet. The statement reads auth.users as of its own
+-- start, so a change committing while it runs is written by the trigger and then
+-- overwritten by this statement's older value, leaving that row stale until the
+-- account changes again. Checked, not assumed: with `do nothing` the trigger's
+-- value survived and with `do update` it did not. The window is the statement's
+-- runtime and the blast radius is one row, which is why this says "run it quiet"
+-- rather than locking auth.users -- holding locks on the auth service's own table
+-- is a good way to cause the sign-up failure this backfill exists to recover from.
+insert into public.profiles (id, email, full_name, avatar_url)
+select id, email,
+       coalesce(raw_user_meta_data ->> 'full_name', raw_user_meta_data ->> 'name'),
+       raw_user_meta_data ->> 'avatar_url'
+from auth.users
+on conflict (id) do update set
+  email = excluded.email,
+  full_name = excluded.full_name,
+  avatar_url = excluded.avatar_url;
+```
+
+The question the table exists for is then a plain join, with no `auth` schema in sight:
+
+```sql
+select p.email, p.full_name, up.item_id, up.date, up.note
+from public.user_progress up
+join public.profiles p on p.id = up.user_id
+order by p.email, up.date desc;
+```
+
+Six things to know before running it:
+
+- **Nobody signed in may write to the mirror, and only its subject may read it.** The
+  `revoke all` then `grant select` is the same shape as `client_errors` further down: the
+  grant settles that `anon` sees nothing at all and that `authenticated` can read but never
+  insert, update or delete, and the policy then settles *which* rows a reader gets. The
+  trigger is the only writer, and it writes as the table's owner.
+- **The read policy is deliberately self-only.** `profiles` holds email addresses, so
+  `using (true)` would hand every signed-in user every other user's address — a data breach
+  written as a convenience. The SQL Editor bypasses RLS and still sees every row, which is
+  what the two admin lookups above rely on — as would a server-side secret key, which is one
+  more reason one must never reach the browser. If other
+  people's names ever belong on screen — a shared leaderboard, say — expose a view over
+  `full_name` alone and leave `email` behind this policy.
+- **`revoke execute` on the function is not optional.** Leave it out and the security advisor
+  reports `sync_profile()` as callable at `/rest/v1/rpc/sync_profile` by `anon` and
+  `authenticated` — checked on this project, where adding it cleared both findings. Calling a
+  trigger function directly fails anyway (`new` does not exist outside a trigger), so this
+  closes a door rather than fixing a hole, but a standing advisor warning is one you stop
+  reading. Supabase's auth service writes `auth.users` as its own role and fires the trigger
+  through the table, not through this grant, so registration is unaffected — verified against a
+  non-owner writer with no `EXECUTE`.
+- **The trigger runs inside sign-up.** If it raises, Supabase answers *"Database error saving
+  new user"* and nobody can register. It is written so it cannot: the insert is unconditional
+  and has an `on conflict` arm. If you extend it and registration starts failing, drop the
+  trigger first and confirm sign-up recovers before debugging anything else.
+- **`update of email, raw_user_meta_data` is load-bearing.** `auth.users` is written on every
+  sign-in to move `last_sign_in_at`; without that column list the trigger would fire on each
+  of those for nothing.
+- **It adds no new category of personal data,** which is why `privacy.html` does not change:
+  email, name and avatar URL are already held under activity 1 of the
+  [processing register](docs/compliance/processing-register.md) and already disclosed. This is
+  a second copy, in the same database, under the same processor, for the same purpose, erased
+  by the same cascade. `buildAccountExport()` needs no change for the same reason — it already
+  exports all three from the account itself. This SQL has been run against the project (2
+  November 2026), so activity 1 of the register and `retention.md` §1 describe the mirror as
+  live rather than as pending.
+
 ### Updating the vendored Supabase client
 
 The Supabase browser client is **vendored** at `assets/vendor/supabase-js-2.116.0.js` rather
@@ -428,10 +584,19 @@ The causes, in order of likelihood:
 3. **No custom SMTP configured at all.** Supabase's built-in sender only delivers to the
    project's team members and is rate limited to a handful of messages per hour, so it
    fails the same way for real users. It is for development only.
-4. **A database error while creating the user.** A trigger on `auth.users` (for example a
-   `handle_new_user` function that inserts into a profiles table) that throws will fail the
-   sign-up. The log says `Database error saving new user`. This repo's schema defines no
-   such trigger, so this only applies if one was added by hand in the SQL editor.
+4. **A database error while creating the user.** A trigger on `auth.users` that throws will
+   fail the sign-up, and the log says `Database error saving new user`. **This repo defines
+   one:** `on_auth_user_changed`, which calls `public.sync_profile()` to mirror the new
+   account into `public.profiles` (see *Knowing who a `user_id` belongs to* above). It is
+   written so that it cannot throw — one unconditional insert with an `on conflict` arm —
+   but it runs inside every sign-up, so it is the first thing to isolate: drop the trigger
+   and see whether registration recovers. That identifies the path, not the fault. **Do not
+   leave it dropped** — every account created meanwhile gets no mirror row, and recreating it
+   without fixing the cause brings the same failure back. Read the database error, repair
+   `sync_profile()` or whatever it depends on, recreate the trigger, then re-run the backfill
+   from that section — while sign-ups are quiet, for the reason its comment gives — which
+   reconciles the accounts that arrived without it. A trigger added by hand in the SQL editor
+   is the other candidate.
 
 Note that a failed send does not necessarily undo the sign-up: the auth event is logged
 with an `actor_id`, and the address can be left behind as an unconfirmed row in
