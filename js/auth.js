@@ -414,6 +414,18 @@ async function syncCloudProgress() {
             stored = null;
         }
         completedItems = (stored && typeof stored === 'object' && !Array.isArray(stored)) ? stored : {};
+        // Every value has to be an object too, not just the container. The upload
+        // below reads .note and .date off each one, and a single malformed entry
+        // throws there, inside the try that only logs - dropping every pending
+        // upsert and losing the unsynced progress this branch exists to keep.
+        // Dropped in place rather than copied into a fresh object, so a stored
+        // '__proto__' key stays the own property JSON.parse made it.
+        for (const itemId of Object.keys(completedItems)) {
+            const value = completedItems[itemId];
+            if (!value || typeof value !== 'object' || Array.isArray(value)) {
+                delete completedItems[itemId];
+            }
+        }
     }
     localStorage.setItem(SYNCED_USER_KEY, currentUser.id);
     heldUserId = currentUser.id;

@@ -123,3 +123,45 @@ test('the new user’s unsynced progress is uploaded under them once the cloud r
     assert.deepEqual(Object.keys(plain(tab.completedItems)).sort(), ['b-cloud', 'b-local']);
     assert.deepEqual(supabase.upserts.map(u => [u.row.user_id, u.row.item_id]), [['user-b', 'b-local']]);
 });
+
+// The values in the store are not guaranteed to be objects (a hand-edited key, a
+// half-written value, an older build). syncCloudProgress's upload reads .note and
+// .date off every entry it holds, inside a try that only logs, so one bad value
+// used to throw there and drop the whole upsert — losing exactly the unsynced
+// progress this branch adopts the store to keep.
+test('a malformed entry in the adopted store does not stop the new user’s progress uploading', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [row('user-a', 'a-item'), row('user-b', 'b-cloud')] });
+    const tab = await tabSignedInAsA(storage, supabase);
+    supabase.upserts.length = 0;
+
+    // Another tab switched to B; B's store carries an unsynced tick and a bad value.
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({ 'b-local': entry('B unsynced'), 'b-bad': null }));
+
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+
+    assert.deepEqual(supabase.upserts.map(u => [u.row.user_id, u.row.item_id]), [['user-b', 'b-local']],
+        'B’s unsynced tick was not uploaded');
+    assert.ok(!('b-bad' in plain(tab.completedItems)), 'the malformed entry was kept');
+    assert.deepEqual(Object.keys(plain(tab.completedItems)).sort(), ['b-cloud', 'b-local']);
+});
+
+test('non-object entries of every shape are dropped from the adopted store', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [] });
+    const tab = await tabSignedInAsA(storage, supabase);
+    supabase.upserts.length = 0;
+
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({
+        'ok': entry('keep me'), 'nul': null, 'num': 7, 'str': 'x', 'arr': [], 'bool': true
+    }));
+
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+
+    assert.deepEqual(Object.keys(plain(tab.completedItems)), ['ok']);
+    assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['ok']);
+});
