@@ -4,14 +4,15 @@
     NOT LIVE YET — to switch sponsorship on, do all of these:
 
     1. Create a Stripe Payment Link (enable iDEAL *and* card) and
-       replace REPLACE_WITH_STRIPE_PAYMENT_LINK with its URL.
+       replace REPLACE_WITH_STRIPE_PAYMENT_LINK in BOTH sponsor.html
+       and sponsor-nl.html with its URL.
     2. Bump the "Last updated" date in privacy.html.
-    3. Refresh the sponsor lastmod in sitemap.xml to the ship date.
+    3. Add both pages to sitemap.xml with that day's lastmod.
     4. Sanity-check the running-cost figures in the "Where the
        money goes" section below — they should be true on the day
        this ships, not the day it was written.
 
-    Until step 1 is done this page must not be linked from a
+    Until step 1 is done these pages must not be linked from a
     production deploy: the donate button points nowhere.
     ============================================================
 -->
@@ -28,6 +29,9 @@
     <link rel="icon" href="assets/brand/favicon-16.png" sizes="16x16" type="image/png">
     <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
     <link rel="canonical" href="https://moicheck.nl/sponsor.html">
+    <link rel="alternate" hreflang="en" href="https://moicheck.nl/sponsor.html">
+    <link rel="alternate" hreflang="nl" href="https://moicheck.nl/sponsor-nl.html">
+    <link rel="alternate" hreflang="x-default" href="https://moicheck.nl/sponsor.html">
 
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -141,7 +145,10 @@
     </header>
 
     <main class="legal-page">
-        <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
+        <div class="page-nav">
+            <a class="back-link" href="index.html">&larr; Back to MoiCheck</a>
+            <a class="lang-link" href="sponsor-nl.html" hreflang="nl" lang="nl">Lees dit in het Nederlands</a>
+        </div>
         <h1>Support MoiCheck</h1>
         <p class="lede">MoiCheck is free, has no ads, and no part of it is behind a paywall. That is not going to change. If it helped you settle into Groningen and you feel like chipping in towards the running costs, this page is how.</p>
 
@@ -197,7 +204,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>MoiCheck &bull; <a href="index.html" class="footer-link-btn">Back to app</a> &bull; <a href="privacy.html" class="footer-link-btn">Privacy Policy</a></p>
+        <p>MoiCheck &bull; <a href="index.html" class="footer-link-btn">Back to app</a> &bull; <a href="privacy.html" class="footer-link-btn">Privacy Policy</a> &bull; <a href="sponsor-nl.html" class="footer-link-btn" hreflang="nl" lang="nl">Nederlands</a></p>
     </footer>
 
     <script src="js/page-theme.js"></script>

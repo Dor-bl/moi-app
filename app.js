@@ -299,7 +299,13 @@ function updateLanguageUI() {
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
 
     const footerSponsorLink = document.getElementById('footerSponsorLink');
-    if (footerSponsorLink) footerSponsorLink.textContent = t.footerSponsor;
+    if (footerSponsorLink) {
+        footerSponsorLink.textContent = t.footerSponsor;
+        // The sponsor page is two static files rather than one page that
+        // switches language, so the link has to point at the right one.
+        footerSponsorLink.href = currentLang === 'nl' ? 'sponsor-nl.html' : 'sponsor.html';
+        footerSponsorLink.hreflang = currentLang;
+    }
 
     // Auth modal & header translations
     document.getElementById('authModalTitle').textContent = t.authTitle;

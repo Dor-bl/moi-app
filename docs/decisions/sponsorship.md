@@ -74,32 +74,56 @@ Per [the PR #50 post-mortem](../postmortems/pr-50-account-deletion.md) and `CLAU
 - **No feature flag for the link.** A config toggle to decide whether an `<a>` tag renders is more
   machinery than the feature. Staging is done by leaving the branch unmerged instead.
 - **No inline script on the page.** The CSP in `vercel.json` carries no `'unsafe-inline'` in
-  `script-src`, so the page uses the shared `js/page-theme.js` the same way `privacy.html` does
-  rather than carrying a `<script>` block of its own.
+  `script-src`, so the pages use the shared `js/page-theme.js` the same way `privacy.html` does
+  rather than carrying a `<script>` block of their own.
 - **No recurring/membership tier.** Subscriptions mean churn, refunds and support load, and the
   perks that usually come with them are the thing to avoid (see above).
+- **No in-page language switcher.** See below.
+
+## Bilingual: two files, not one page that toggles
+
+The app switches language in place, so mirroring that on the sponsor page was the obvious first
+instinct. It is the wrong shape here, for three reasons:
+
+- The CSP in `vercel.json` has no `'unsafe-inline'` in `script-src`, so a toggle means a new
+  `js/` file that exists only to hide and show `<div>`s. The donate page should not need a script
+  to render its own text.
+- Two URLs are indexable in two languages; one URL with hidden Dutch markup is indexable in one.
+  `sponsor.html` and `sponsor-nl.html` declare each other with `hreflang`, so Google can serve a
+  Dutch speaker the Dutch page.
+- Without JavaScript, a toggled page shows one language or both; two files always show exactly one.
+
+The prose is duplicated either way — in two files or in two `<div>`s on one — so the maintenance
+cost is the same, and the failure modes are fewer. `app.js` points the footer link at the file
+matching the current language; anyone landing on the wrong one has a link at the top and in the
+footer.
+
+The Dutch page links to the English privacy policy and says so. Translating that document is a
+much bigger job than translating this one, and promising a Dutch version by linking to it without
+the label would be worse than the honest note.
 
 ## Placement
 
-Footer link only, next to Privacy Policy and Contact. If a second surface is ever wanted, the
+Footer link only, next to Privacy Policy and Contact, pointing at the page in the reader's
+current language. If a second surface is ever wanted, the
 highest-intent moment is just after a category badge or the *Groningen Legend* milestone unlocks —
 but it must be dismissable, shown once, and must never gate anything.
 
 ## Flipping it on
 
 1. Create a Stripe Payment Link with **iDEAL and card** enabled; replace
-   `REPLACE_WITH_STRIPE_PAYMENT_LINK` in `sponsor.html`.
+   `REPLACE_WITH_STRIPE_PAYMENT_LINK` in **both** `sponsor.html` and `sponsor-nl.html`.
 2. Bump the "Last updated" date in `privacy.html`. The Stripe entries themselves are already
    written: the contribution row and payment sentence in §1, the processor bullet in §2, the
    transfer paragraph in §3, the seven-year retention line in §4, and the note in §5 that erasure
    does not reach a bookkeeping record.
-3. Refresh the sponsor `lastmod` in `sitemap.xml` to the ship date.
+3. Refresh the two `sponsor*.html` `lastmod` dates in `sitemap.xml` to the ship date.
 4. Confirm the Stripe entity and safeguards in
    [`../compliance/processing-register.md`](../compliance/processing-register.md) activity 11
    against the account that now exists, and drop the not-in-operation markers there and in
    [`../compliance/retention.md`](../compliance/retention.md).
-5. Re-check the running-cost figures in the "Where the money goes" section — they should be true on
-   the day it ships.
+5. Re-check the running-cost figures in the "Where the money goes" section of both pages — they
+   should be true on the day it ships.
 6. Merge.
 
 ## Alternatives considered

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<!--
+    ============================================================
+    NOT LIVE YET — to switch sponsorship on, do all of these:
+
+    1. Create a Stripe Payment Link (enable iDEAL *and* card) and
+       replace REPLACE_WITH_STRIPE_PAYMENT_LINK in BOTH sponsor.html
+       and sponsor-nl.html with its URL.
+    2. Bump the "Last updated" date in privacy.html.
+    3. Add both pages to sitemap.xml with that day's lastmod.
+    4. Sanity-check the running-cost figures in the "Where the
+       money goes" section below — they should be true on the day
+       this ships, not the day it was written.
+
+    Until step 1 is done these pages must not be linked from a
+    production deploy: the donate button points nowhere.
+    ============================================================
+-->
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steun MoiCheck</title>
+    <meta name="description" content="MoiCheck is een gratis, onafhankelijk hobbyproject. Heb je er iets aan gehad in Groningen, dan kun je meebetalen aan de kosten.">
+    <meta name="theme-color" content="#009639">
+
+    <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/brand/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="assets/brand/favicon-16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+    <link rel="canonical" href="https://moicheck.nl/sponsor-nl.html">
+    <link rel="alternate" hreflang="en" href="https://moicheck.nl/sponsor.html">
+    <link rel="alternate" hreflang="nl" href="https://moicheck.nl/sponsor-nl.html">
+    <link rel="alternate" hreflang="x-default" href="https://moicheck.nl/sponsor.html">
+
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .legal-page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+        .legal-page .back-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .legal-page .back-link:hover { text-decoration: underline; }
+        .legal-page .page-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.25rem;
+            align-items: baseline;
+            margin-bottom: 1.5rem;
+        }
+        .legal-page .page-nav .back-link { margin-bottom: 0; }
+        .legal-page .lang-link {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .legal-page h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.25rem;
+        }
+        .legal-page .lede {
+            color: var(--text-light);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+        .legal-page section { margin-bottom: 2rem; }
+        .legal-page h2 {
+            font-size: 1.15rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary-color);
+        }
+        .legal-page p, .legal-page li {
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+        }
+        .legal-page ul { padding-left: 1.25rem; }
+        .legal-page a { color: var(--primary-color); }
+        .brand-title { font-size: 1.75rem; font-weight: 800; margin: 0; }
+
+        .sponsor-cta-block {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+        .legal-page .sponsor-cta {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: #FFFFFF;
+            padding: 0.9rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        /* --primary-color is a light emerald in dark mode, so white label text
+           would sit at ~2.2:1 on it. Flip the label to the dark surface colour. */
+        [data-theme="dark"] .legal-page .sponsor-cta { color: #0F172A; }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) .legal-page .sponsor-cta { color: #0F172A; }
+        }
+        .legal-page .sponsor-cta:hover { opacity: 0.9; text-decoration: none; }
+        .legal-page .sponsor-cta:active { transform: scale(0.98); }
+        .sponsor-cta-note {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin: 1rem 0 0;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <svg class="groningen-flag" width="32" height="22" viewBox="0 0 60 40" aria-label="Groningen Flag">
+                    <defs>
+                        <clipPath id="flagClip">
+                            <rect width="60" height="40" rx="4"/>
+                        </clipPath>
+                    </defs>
+                    <g clip-path="url(#flagClip)">
+                        <rect x="0" y="0" width="30" height="20" fill="#DC2626"/>
+                        <rect x="30" y="0" width="30" height="20" fill="#1D4ED8"/>
+                        <rect x="0" y="20" width="30" height="20" fill="#1D4ED8"/>
+                        <rect x="30" y="20" width="30" height="20" fill="#DC2626"/>
+                        <rect x="22" y="0" width="16" height="40" fill="#FFFFFF"/>
+                        <rect x="0" y="14" width="60" height="12" fill="#FFFFFF"/>
+                        <rect x="25" y="0" width="10" height="40" fill="#10B981"/>
+                        <rect x="0" y="16" width="60" height="8" fill="#10B981"/>
+                    </g>
+                </svg>
+                <p class="brand-title">MoiCheck</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="legal-page">
+        <div class="page-nav">
+            <a class="back-link" href="index.html">&larr; Terug naar MoiCheck</a>
+            <a class="lang-link" href="sponsor.html" hreflang="en" lang="en">Read this in English</a>
+        </div>
+        <h1>Steun MoiCheck</h1>
+        <p class="lede">MoiCheck is gratis, heeft geen advertenties en niets zit achter een betaalmuur. Dat blijft zo. Heb je er iets aan gehad bij het wennen in Groningen en wil je meebetalen aan de kosten, dan kan dat hier.</p>
+
+        <section>
+            <h2>Wie hier achter zit</h2>
+            <p>Hoi &mdash; ik ben Dor. Ik kwam zelf als expat naar Groningen, en MoiCheck begon als het lijstje dat ik op dag &eacute;&eacute;n had willen krijgen: de dingen waar je je echt een Stadjer door gaat voelen, van een <em>eierbal</em> tot een zeehondentocht vanuit Lauwersoog.</p>
+            <p>Het is een hobbyproject. Er zit geen bedrijf achter, geen investeerder, geen team &mdash; alleen ik, in de avonden en weekenden. De items op de lijst staan er omdat ze goed zijn, niet omdat iemand ervoor betaald heeft.</p>
+        </section>
+
+        <section>
+            <h2>Waar het geld heen gaat</h2>
+            <p>MoiCheck draait met opzet goedkoop, maar online houden kost wel iets:</p>
+            <ul>
+                <li><strong>De domeinnaam moicheck.nl</strong> &mdash; ongeveer &euro;10 per jaar.</li>
+                <li><strong>Hosting</strong> (Vercel) &mdash; nu nog op een gratis pakket.</li>
+                <li><strong>Accounts &amp; voortgang synchroniseren</strong> (Supabase) &mdash; nu nog op een gratis pakket. Als er genoeg mensen inloggen, wordt dit ongeveer &euro;25 per maand.</li>
+                <li><strong>Inlog- en contactmails</strong> (Resend) &mdash; nu nog op een gratis pakket, met een maandelijks maximum aan mails.</li>
+            </ul>
+            <p>De rekening is dus klein, en die betaal ik zelf. Bijdragen helpen om dat zo te houden naarmate meer mensen de app gebruiken &mdash; en om de maandelijkse pakketten te betalen als de gratis versies te krap worden. Komt er meer binnen dan de app kost, dan gaat dat naar de app zelf: meer items, betere kaarten, meer van de provincie buiten de stad.</p>
+        </section>
+
+        <section>
+            <h2>Doe een bijdrage</h2>
+            <div class="sponsor-cta-block">
+                <!-- FLIP-ON STEP 1: replace the href with your Stripe Payment Link. -->
+                <a class="sponsor-cta" href="REPLACE_WITH_STRIPE_PAYMENT_LINK" rel="noopener noreferrer nofollow" target="_blank">Doe een eenmalige bijdrage</a>
+                <p class="sponsor-cta-note">Elk bedrag, &eacute;&eacute;n keer. Geen abonnement, niets dat doorloopt. Betaal met iDEAL of creditcard.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>Wat je er w&eacute;l en niet voor krijgt</h2>
+            <p>Niets, en dat is precies de bedoeling. Een bijdrage is een bedankje, geen aankoop:</p>
+            <ul>
+                <li><strong>Alles blijft gratis voor iedereen.</strong> Je ontgrendelt er niets mee, en dat gaat ook nooit gebeuren.</li>
+                <li><strong>Je kunt geen plek op de lijst kopen.</strong> Items komen erop omdat ze goed zijn. Mocht een bedrijf ooit voor een plek betalen, dan staat dat er duidelijk bij &mdash; maar het plan is dat het nooit gebeurt.</li>
+                <li><strong>Geen extra's, badges of supporterniveaus.</strong> Daarmee zou het een aankoop worden in plaats van een gift, en dat verandert wat het is (plus btw en administratie waar ik mijn avonden liever niet aan besteed).</li>
+                <li><strong>Suggesties zijn altijd welkom en altijd gratis.</strong> Gebruik het contactformulier op de <a href="index.html">hoofdpagina</a> &mdash; met een bijdrage komt jouw suggestie niet eerder aan de beurt.</li>
+            </ul>
+            <p>En voor de duidelijkheid: voel je vooral niet verplicht. De app gebruiken, hem doorgeven aan iemand die hier net is komen wonen, of me een goed item voor de lijst sturen is net zo veel waard.</p>
+        </section>
+
+        <section>
+            <h2>Betaling &amp; privacy</h2>
+            <p>Deze pagina heeft geen contact met Stripe totdat je op de knop drukt &mdash; het is een gewone link, dus volg je hem nooit, dan komt Stripe niets over je bezoek te weten. Volg je hem wel, dan verlaat je MoiCheck en ga je naar de afrekenpagina van Stripe zelf; daar vul je je bank- of kaartgegevens in. Die komen nooit bij MoiCheck terecht: ik zie ze niet en bewaar ze niet. Wat ik achteraf w&eacute;l zie, in het dashboard van Stripe, is het bedrag, de datum en de naam en het e-mailadres die je bij het afrekenen hebt ingevuld. Die bewaar ik voor de boekhouding die de Nederlandse wet verplicht stelt.</p>
+            <p>Een bijdrage maakt geen MoiCheck-account aan en wordt niet gekoppeld aan je voortgang op de lijst. Alle details staan in het <a href="privacy.html" hreflang="en" lang="en">privacybeleid</a> (in het Engels).</p>
+        </section>
+
+        <section>
+            <h2>Vragen</h2>
+            <p>Wil je iets vragen, voor- of achteraf &mdash; ook als je je bijdrage terug wilt, wat ik zonder discussie doe &mdash; mail dan naar <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>.</p>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>MoiCheck &bull; <a href="index.html" class="footer-link-btn">Terug naar de app</a> &bull; <a href="privacy.html" class="footer-link-btn" hreflang="en" lang="en">Privacy Policy</a> &bull; <a href="sponsor.html" class="footer-link-btn" hreflang="en" lang="en">English</a></p>
+    </footer>
+
+    <script src="js/page-theme.js"></script>
+</body>
+</html>
