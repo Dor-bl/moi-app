@@ -27,6 +27,7 @@ something is held at all.
 | --- | --- | --- |
 | Account record (email, name, provider metadata) | Until the user deletes it, or **24 months after it was last used** | `pg_cron`, nightly at 03:23. See §2 |
 | Progress and memory notes | Same as the account | `on delete cascade` from the account record |
+| Profile mirror in `public.profiles` (email, name, avatar URL) | Same as the account | `on delete cascade` from the account record |
 | Live sessions and refresh tokens | Supabase's own session lifetime; ended immediately on sign-out or deletion | Supabase |
 | Browser error reports | **30-day cutoff, swept nightly at 03:17** — so up to ~31 days in practice | `pg_cron` |
 | Contact messages (our mailbox) | As long as needed to answer | Judgement, applied by hand |
@@ -97,9 +98,9 @@ so the session timestamps catch real use. Progress rows are not a measure either
 use the app for a year without ticking anything new.
 
 **How it deletes.** The job deletes the `auth.users` row, nothing else. Every table that
-references it cascades: `user_progress`, `account_last_seen`, and Supabase's own sessions,
-refresh tokens, identities and MFA tables. That was checked in the database catalogue (`pg_constraint`), not
-assumed. `delete_user()` is unchanged. It still acts only on `auth.uid()`, and the job does
+references it cascades: `user_progress`, `account_last_seen`, the `public.profiles` mirror,
+and Supabase's own sessions, refresh tokens, identities and MFA tables. That was checked in
+the database catalogue (`pg_constraint`), not assumed. `delete_user()` is unchanged. It still acts only on `auth.uid()`, and the job does
 not call it: both jobs run as `postgres` inside `pg_cron`, the same way the `client_errors`
 sweep does, so no new function is exposed through the API. The deletion also checks live
 sessions directly, so a failed copy cannot delete an account in use.
