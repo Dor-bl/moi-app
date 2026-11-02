@@ -1,4 +1,4 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport, exportMissesLocalChanges
 // Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
@@ -44,6 +44,8 @@ function updateAuthBtnState(isLoggedIn) {
     if (!(isLoggedIn && currentUser)) {
         const exportDataError = document.getElementById('exportDataError');
         if (exportDataError) exportDataError.textContent = '';
+        const exportDataNotice = document.getElementById('exportDataNotice');
+        if (exportDataNotice) exportDataNotice.textContent = '';
     }
     if (signOutBtn) signOutBtn.textContent = t.signOut;
 
@@ -514,6 +516,18 @@ async function buildAccountExport() {
                 return { item_id: row.item_id, title: item ? item.title[currentLang] : null, date: row.date, note: row.note || '' };
             })
     };
+}
+
+// True when this browser shows completions or notes the exported cloud rows
+// lack (or the reverse), i.e. a background save has not reached the cloud.
+// The export stays cloud-only; this only lets the page warn that the file may
+// be missing recent changes. Dates are not compared: the cloud may format them
+// differently from the local copy.
+function exportMissesLocalChanges(exportedItems, localItems) {
+    const cloud = new Map((exportedItems || []).map(i => [String(i.item_id), i.note || '']));
+    const localIds = Object.keys(localItems || {});
+    if (localIds.length !== cloud.size) return true;
+    return localIds.some(id => !cloud.has(id) || cloud.get(id) !== (localItems[id].note || ''));
 }
 
 // GDPR Art. 17: Delete account and cloud data for the signed-in user.

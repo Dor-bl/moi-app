@@ -1065,6 +1065,12 @@ textarea:focus {
     margin-bottom: 0.75rem;
 }
 
+/* No gap while empty. Kept in the layout (not display: none) so screen
+   readers still announce the role="status" text when it appears. */
+#exportDataNotice:empty {
+    margin-bottom: 0;
+}
+
 .danger-outline-btn {
     background: none;
     color: var(--danger-color);

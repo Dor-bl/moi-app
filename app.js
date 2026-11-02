@@ -107,6 +107,7 @@ const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 const exportDataBtn = document.getElementById('exportDataBtn');
 const exportDataError = document.getElementById('exportDataError');
+const exportDataNotice = document.getElementById('exportDataNotice');
 const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
@@ -243,6 +244,7 @@ function updateLanguageUI() {
     // A failed export leaves its message on screen; keep it in step with the
     // language switch, as the magic-link error below does.
     if (exportDataError && exportDataError.textContent) exportDataError.textContent = t.exportDataError;
+    if (exportDataNotice && exportDataNotice.textContent) exportDataNotice.textContent = t.exportDataUnsynced;
 
     const deleteModalTitle = document.getElementById('deleteModalTitle');
     if (deleteModalTitle) deleteModalTitle.textContent = t.deleteModalTitle;
@@ -1895,6 +1897,7 @@ function setupEventListeners() {
             if (!currentUser || !supabaseClient) return;
             const generation = authGeneration;
             exportDataError.textContent = '';
+            if (exportDataNotice) exportDataNotice.textContent = '';
             exportDataBtn.disabled = true;
             try {
                 const out = await buildAccountExport();
@@ -1909,6 +1912,9 @@ function setupEventListeners() {
                 // Revoked on the next tick: revoking synchronously can cancel
                 // the download in some browsers before it has started.
                 setTimeout(() => URL.revokeObjectURL(url), 0);
+                if (exportDataNotice && exportMissesLocalChanges(out.completed_items, completedItems)) {
+                    exportDataNotice.textContent = UI_TRANSLATIONS[currentLang].exportDataUnsynced;
+                }
             } catch {
                 if (generation === authGeneration) exportDataError.textContent = UI_TRANSLATIONS[currentLang].exportDataError;
             } finally {

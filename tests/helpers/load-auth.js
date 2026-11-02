@@ -167,6 +167,7 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
             onUserLoggedOut,
             syncCloudProgress,
             buildAccountExport,
+            exportMissesLocalChanges,
             bumpAuthGeneration() { authGeneration++; },
             syncItemToCloud,
             // Google sign-in on the app's origin (js/auth.js). The two getters
