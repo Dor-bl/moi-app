@@ -172,10 +172,14 @@ create table public.profiles (
   -- Same cascade as user_progress: deleting the user takes the mirror with
   -- them, so delete_user() and a dashboard deletion both stay as they are.
   id uuid primary key references auth.users (id) on delete cascade,
+  -- Three fields and no more. Each is a copy of something auth.users already
+  -- holds, privacy.html already discloses and the account export already
+  -- carries, so the mirror adds nothing new to account for. A freshness
+  -- column would: it would be a fourth field to place in the export and the
+  -- retention record, and the trigger below already keeps the copy current.
   email text,
   full_name text,
-  avatar_url text,
-  updated_at timestamptz not null default now()
+  avatar_url text
 );
 
 alter table public.profiles enable row level security;
@@ -192,19 +196,17 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.profiles (id, email, full_name, avatar_url, updated_at)
+  insert into public.profiles (id, email, full_name, avatar_url)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
-    new.raw_user_meta_data ->> 'avatar_url',
-    now()
+    new.raw_user_meta_data ->> 'avatar_url'
   )
   on conflict (id) do update set
     email = excluded.email,
     full_name = excluded.full_name,
-    avatar_url = excluded.avatar_url,
-    updated_at = now();
+    avatar_url = excluded.avatar_url;
   return new;
 end;
 $$;
@@ -257,7 +259,8 @@ Five things to know before running it:
   [processing register](docs/compliance/processing-register.md) and already disclosed. This is
   a second copy, in the same database, under the same processor, for the same purpose, erased
   by the same cascade. `buildAccountExport()` needs no change for the same reason — it already
-  exports all three from the account itself.
+  exports all three from the account itself. The processing register records the mirror as
+  documented-but-not-created until you run this SQL; move it into activity 1's rows when you do.
 
 ### Updating the vendored Supabase client
 

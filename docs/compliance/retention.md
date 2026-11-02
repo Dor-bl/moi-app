@@ -27,7 +27,7 @@ something is held at all.
 | --- | --- | --- |
 | Account record (email, name, provider metadata) | **Until the user deletes it — indefinite** | Nothing. See §2 |
 | Progress and memory notes | Same as the account | `on delete cascade` on erasure |
-| Profile mirror in `public.profiles` (email, name, avatar URL) | Same as the account | `on delete cascade` on erasure |
+| Profile mirror in `public.profiles` (email, name, avatar URL) — **documented in `README.md`, not created yet** | Same as the account, once it exists | `on delete cascade` on erasure |
 | Live sessions and refresh tokens | Supabase's own session lifetime; ended immediately on sign-out or deletion | Supabase |
 | Browser error reports | **30-day cutoff, swept nightly at 03:17** — so up to ~31 days in practice | `pg_cron` |
 | Contact messages (our mailbox) | As long as needed to answer | Judgement, applied by hand |
@@ -83,9 +83,9 @@ Two details that issue needs to get right, recorded here so they are not redisco
   direction, where the timestamp misses users whose sessions kept refreshing through an
   incident window. Deleting an active user would be a bug with a compliance justification
   attached, so #90 has to decide what counts as use before it sets a threshold.
-- The `on delete cascade` on `user_progress.user_id` and on `public.profiles.id` should make
-  this a single delete against `auth.users`. Verify that against a test account rather than
-  trusting it.
+- The `on delete cascade` on `user_progress.user_id` — and on `public.profiles.id`, if that
+  mirror has been created by then (§1) — should make this a single delete against `auth.users`.
+  Verify that against a test account rather than trusting it.
 
 Until #90 lands, this section is the honest statement: **we have not set a retention period for
 account data.** When it lands, this section states the period and `privacy.html` §4 changes in

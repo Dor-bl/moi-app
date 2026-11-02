@@ -2,7 +2,7 @@
 
 **Status:** draft for owner review. One item needs the owner to supply a fact — see
 [Open points](#open-points).
-**Date:** 30 October 2026, amended 2 November 2026 (`public.profiles`)
+**Date:** 30 October 2026
 **Issue:** [#87](https://github.com/Dor-bl/moi-app/issues/87) (feeds
 [#86](https://github.com/Dor-bl/moi-app/issues/86) the legal-basis disclosure, and closes the
 last item of [#92](https://github.com/Dor-bl/moi-app/issues/92); companion:
@@ -21,9 +21,8 @@ falls away when processing is not occasional, and MoiCheck's runs on every sign-
 ticked item.
 
 **This is a record, not a policy.** It describes what the code does today, at commit
-`aaca88a`, plus the `public.profiles` mirror added on 2 November 2026. Where something
-ought to change, it says so and points at the issue; it does not quietly describe the
-intended state as if it were the current one.
+`aaca88a`. Where something ought to change, it says so and points at the issue; it does not
+quietly describe the intended state as if it were the current one.
 
 ### Who should read what
 
@@ -79,11 +78,11 @@ the other.
 | **Basis** | Art. 6(1)(b), performance of a contract — syncing is the service the user asked for. Not consent: refusing would mean the feature cannot work at all |
 | **Data subjects** | Account holders (people who chose to sign in) |
 | **Where the rows come from** | Ticks and notes made while signed in, **plus anything made while signed out in the same browser**, which `syncCloudProgress()` merges in on sign-in (activity 9) |
-| **Data categories** | Email address; display name and avatar URL where Google supplied them; `user_id`; per ticked item an `item_id`, a `date`, and a free-text `note`; `created_at` and `last_sign_in_at`; provider metadata. The email, display name and avatar URL are held **twice**: in `auth.users`, and mirrored into `public.profiles` by a trigger so a progress row can be joined to a person without reaching into the `auth` schema. Also, in Supabase's auth internals, live sessions and refresh tokens, linked identities, and the IP address and user agent recorded against a session |
+| **Data categories** | Email address; display name and avatar URL where Google supplied them; `user_id`; per ticked item an `item_id`, a `date`, and a free-text `note`; `created_at` and `last_sign_in_at`; provider metadata. Also, in Supabase's auth internals, live sessions and refresh tokens, linked identities, and the IP address and user agent recorded against a session |
 | **Recipients** | Supabase (processor, DPA). Nobody else: the app copies this into no other store |
 | **Transfers** | Stored in the EU — AWS `eu-west-1`, Ireland. Supabase is a US company whose staff can reach that infrastructure to operate it, covered by its DPA and SCCs. See [`account-hosting-audit.md`](account-hosting-audit.md) §3 |
 | **Retention** | For as long as the account exists. **This is indefinite and should not be** — [#90](https://github.com/Dor-bl/moi-app/issues/90), and [`retention.md`](retention.md) §2 |
-| **Measures** | Row-level security on `user_progress` scoped to `auth.uid() = user_id`, and on `public.profiles` to `auth.uid() = id` — self-only, so mirroring account fields into `public` widens nothing: no signed-in user can read another's address; no password exists to steal (magic link and Google only); `on delete cascade` so erasing a user erases their progress rows and their profile mirror; erasure via a `security definer` `delete_user()` that can only delete its own caller; TLS throughout |
+| **Measures** | Row-level security on `user_progress` scoped to `auth.uid() = user_id`; no password exists to steal (magic link and Google only); `on delete cascade` so erasing a user erases their rows; erasure via a `security definer` `delete_user()` that can only delete its own caller; TLS throughout |
 
 **Access and portability (Arts. 15, 20).** A signed-in user can download this activity's
 data themselves from the profile: `buildAccountExport()` in `js/auth.js` reads their
@@ -97,9 +96,19 @@ sessions and refresh-token tables with their IP and user agent, Auth's audit log
 identities row linking a Google account; the browser cannot reach the first three at all), and anything held
 outside this activity, such as contact correspondence (activity 2); those are answered by email,
 as `privacy.html` §5 says. If a column is added to `user_progress` or a field to the account,
-add it to the export too, or the file stops being complete. `public.profiles` added no
-field: it mirrors the email, name and avatar URL the export already carries from the account
-itself.
+add it to the export too, or the file stops being complete.
+
+**Documented but not created: `public.profiles`.** `README.md` carries SQL for a mirror of
+this activity's email, display name and avatar URL in the `public` schema, so that a progress
+row can be joined to a person without reaching into `auth`. **It has not been run against the
+project**, so nothing above describes it and there is no second copy today. It is recorded
+here because this register is also where you look to find out that something is *not* there.
+When it is created it adds no category — three fields already listed above, copied inside the
+same database, under the same processor, for the same purpose — and it brings its own
+row-level security (`auth.uid() = id`, self-only, with no write grant to any signed-in role)
+and `on delete cascade`. At that point this paragraph becomes a line in **Data categories**, a
+clause in **Measures**, and a row in [`retention.md`](retention.md) §1; the export still needs
+no change, because the mirror holds no field it does not already carry.
 
 Two notes a reader will otherwise trip over. **Memory notes are free text**, so a user may
 have typed anything into them, including the categories we say we don't collect; the field no
@@ -273,8 +282,7 @@ significant effect, since a badge changes nothing outside the app.
 
 A general description, as the article asks. Per-activity specifics are in the rows above.
 
-**Access control.** Row-level security on `user_progress` keyed to `auth.uid() = user_id` and
-on `public.profiles` to `auth.uid() = id`;
+**Access control.** Row-level security on `user_progress` keyed to `auth.uid() = user_id`;
 `client_errors` grants `anon` insert on named columns only, with no read; `auth.users`
 unreachable by the `anon` and `authenticated` roles; erasure through a `security definer`
 function with `set search_path = ''` that can only act on its caller.
@@ -362,7 +370,7 @@ The quickest check that it has not drifted: `grep` the code for table names and
 
 | Claim | Where it came from |
 | --- | --- |
-| Schema, RLS policies, grants, `delete_user()`, `profiles` and its sync trigger, `client_errors`, its `pg_cron` job | `README.md` |
+| Schema, RLS policies, grants, `delete_user()`, `client_errors`, its `pg_cron` job | `README.md` |
 | Purposes, recipients, transfers, retention as stated publicly | `privacy.html` §§1–4 |
 | Project region `eu-west-1`, contact relay pinned and **observed** answering from it | [`edge-function-region.md`](../decisions/edge-function-region.md) |
 | MFA chain, the two removed credentials, the revoked JWT secret, `fra1` | [`account-hosting-audit.md`](account-hosting-audit.md) |
