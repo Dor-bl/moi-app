@@ -1065,9 +1065,10 @@ textarea:focus {
     margin-bottom: 0.75rem;
 }
 
-/* Only takes space when the export has something to warn about. */
+/* No gap while empty. Kept in the layout (not display: none) so screen
+   readers still announce the role="status" text when it appears. */
 #exportDataNotice:empty {
-    display: none;
+    margin-bottom: 0;
 }
 
 .danger-outline-btn {
