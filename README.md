@@ -96,7 +96,9 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
      -- refuses with "Database error deleting user".
      user_id uuid references auth.users (id) on delete cascade not null,
      item_id text not null,
-     note text,
+     -- Matches maxlength="1000" on the memory textarea, so the cap holds for
+     -- API calls that skip the browser too.
+     note text check (char_length(note) <= 1000),
      date timestamp with time zone default timezone('utc'::text, now()) not null,
      primary key (user_id, item_id)
    );
@@ -113,6 +115,12 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
      drop constraint user_progress_user_id_fkey,
      add constraint user_progress_user_id_fkey
        foreign key (user_id) references auth.users (id) on delete cascade;
+   ```
+   Already created the table without the note length check? Add it (fails if an existing note is over 1000 characters; check with `select max(char_length(note)) from public.user_progress;` first):
+   ```sql
+   alter table public.user_progress
+     add constraint user_progress_note_check
+       check (char_length(note) <= 1000);
    ```
 3. Copy your project **URL** and **publishable key** from `Project Settings -> API Keys`.
 4. Paste them at the top of `js/auth.js` (`SUPABASE_URL` & `SUPABASE_ANON_KEY`) or set `window.SUPABASE_URL` and `window.SUPABASE_ANON_KEY` in `config.js`. Use the **publishable** key (`sb_publishable_...`, under *Project Settings -> API Keys*) as `SUPABASE_ANON_KEY`; the legacy JWT `anon` key still works but blocks revoking the legacy JWT secret.
