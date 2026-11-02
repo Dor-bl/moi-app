@@ -46,7 +46,7 @@ function externalLoads(html) {
 
 // Remote @import / url() in CSS text. Run over styles.css and over the whole HTML,
 // which covers <style> blocks and style="" attributes.
-const REMOTE_CSS = [/@import\s+(?:url\()?\s*["']?(?:https?:)?\/\//i, /url\(\s*["']?(?:https?:)?\/\//i];
+const REMOTE_CSS = [/@import\s*(?:url\()?\s*["']?(?:https?:)?\/\//i, /url\(\s*["']?(?:https?:)?\/\//i];
 const remoteCss = (text) => REMOTE_CSS.some((re) => re.test(text));
 
 for (const file of ['index.html', 'privacy.html']) {
@@ -65,6 +65,7 @@ test('the guard flags input/object loads and remote CSS in <style> and style=""'
         ['input: https://cdn.example/b.png', 'object: //cdn.example/f']);
     assert.equal(remoteCss('<style>body{background:url(https://cdn.example/a.png)}</style>'), true);
     assert.equal(remoteCss('<div style="background: url(\'//cdn.example/a.png\')">'), true);
+    assert.equal(remoteCss('<style>@import"https://cdn.example/a.css";</style>'), true);
     assert.equal(remoteCss('<div style="background: url(assets/a.png)">'), false);
 });
 
