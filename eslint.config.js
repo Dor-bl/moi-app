@@ -34,6 +34,7 @@ export default [
         syncItemToCloud: "readonly",
         deleteUserAccountAndData: "readonly",
         buildAccountExport: "readonly",
+        exportMissesLocalChanges: "readonly",
         describeMagicLinkError: "readonly",
         initGoogleSignIn: "readonly",
         renderGoogleButton: "readonly",

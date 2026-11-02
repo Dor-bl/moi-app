@@ -1065,6 +1065,11 @@ textarea:focus {
     margin-bottom: 0.75rem;
 }
 
+/* Only takes space when the export has something to warn about. */
+#exportDataNotice:empty {
+    display: none;
+}
+
 .danger-outline-btn {
     background: none;
     color: var(--danger-color);
