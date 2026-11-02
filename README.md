@@ -568,10 +568,14 @@ The causes, in order of likelihood:
 3. **No custom SMTP configured at all.** Supabase's built-in sender only delivers to the
    project's team members and is rate limited to a handful of messages per hour, so it
    fails the same way for real users. It is for development only.
-4. **A database error while creating the user.** A trigger on `auth.users` (for example a
-   `handle_new_user` function that inserts into a profiles table) that throws will fail the
-   sign-up. The log says `Database error saving new user`. This repo's schema defines no
-   such trigger, so this only applies if one was added by hand in the SQL editor.
+4. **A database error while creating the user.** A trigger on `auth.users` that throws will
+   fail the sign-up, and the log says `Database error saving new user`. **This repo defines
+   one:** `on_auth_user_changed`, which calls `public.sync_profile()` to mirror the new
+   account into `public.profiles` (see *Knowing who a `user_id` belongs to* above). It is
+   written so that it cannot throw — one unconditional insert with an `on conflict` arm —
+   but it runs inside every sign-up, so it is the first thing to rule out: drop the trigger,
+   confirm registration recovers, and you have your answer. A trigger added by hand in the
+   SQL editor is the other candidate.
 
 Note that a failed send does not necessarily undo the sign-up: the auth event is logged
 with an `actor_id`, and the address can be left behind as an unconfirmed row in
