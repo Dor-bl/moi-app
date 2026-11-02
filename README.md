@@ -215,6 +215,12 @@ begin
 end;
 $$;
 
+-- A trigger function has no business being callable over the REST API, and
+-- Supabase's security advisor flags it as reachable at /rest/v1/rpc/sync_profile
+-- without this. Revoking EXECUTE closes that endpoint; the trigger is unaffected,
+-- because it runs as the function's owner rather than as the signed-in caller.
+revoke execute on function public.sync_profile() from public, anon, authenticated;
+
 create trigger on_auth_user_changed
   after insert or update of email, raw_user_meta_data on auth.users
   for each row execute function public.sync_profile();
@@ -237,7 +243,7 @@ join public.profiles p on p.id = up.user_id
 order by p.email, up.date desc;
 ```
 
-Five things to know before running it:
+Six things to know before running it:
 
 - **Nobody signed in may write to the mirror, and only its subject may read it.** The
   `revoke all` then `grant select` is the same shape as `client_errors` further down: the
@@ -251,6 +257,14 @@ Five things to know before running it:
   more reason one must never reach the browser. If other
   people's names ever belong on screen — a shared leaderboard, say — expose a view over
   `full_name` alone and leave `email` behind this policy.
+- **`revoke execute` on the function is not optional.** Leave it out and the security advisor
+  reports `sync_profile()` as callable at `/rest/v1/rpc/sync_profile` by `anon` and
+  `authenticated` — checked on this project, where adding it cleared both findings. Calling a
+  trigger function directly fails anyway (`new` does not exist outside a trigger), so this
+  closes a door rather than fixing a hole, but a standing advisor warning is one you stop
+  reading. Supabase's auth service writes `auth.users` as its own role and fires the trigger
+  through the table, not through this grant, so registration is unaffected — verified against a
+  non-owner writer with no `EXECUTE`.
 - **The trigger runs inside sign-up.** If it raises, Supabase answers *"Database error saving
   new user"* and nobody can register. It is written so it cannot: the insert is unconditional
   and has an `on conflict` arm. If you extend it and registration starts failing, drop the
@@ -263,8 +277,9 @@ Five things to know before running it:
   [processing register](docs/compliance/processing-register.md) and already disclosed. This is
   a second copy, in the same database, under the same processor, for the same purpose, erased
   by the same cascade. `buildAccountExport()` needs no change for the same reason — it already
-  exports all three from the account itself. The processing register records the mirror as
-  documented-but-not-created until you run this SQL; move it into activity 1's rows when you do.
+  exports all three from the account itself. This SQL has been run against the project (2
+  November 2026), so activity 1 of the register and `retention.md` §1 describe the mirror as
+  live rather than as pending.
 
 ### Updating the vendored Supabase client
 
