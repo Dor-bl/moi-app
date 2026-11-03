@@ -1,10 +1,10 @@
 # Retention policy
 
-**Status:** draft for owner review. Section 2 records a gap rather than a period.
-**Date:** 30 October 2026
+**Status:** draft for owner review.
+**Date:** 30 October 2026; §2 rewritten 1 November 2026 for
+[#90](https://github.com/Dor-bl/moi-app/issues/90)
 **Issue:** [#87](https://github.com/Dor-bl/moi-app/issues/87) (companion:
-[`processing-register.md`](processing-register.md); the gap in §2 is
-[#90](https://github.com/Dor-bl/moi-app/issues/90))
+[`processing-register.md`](processing-register.md))
 
 ## Why this exists
 
@@ -25,8 +25,9 @@ something is held at all.
 
 | Category | Kept for | Enforced by |
 | --- | --- | --- |
-| Account record (email, name, provider metadata) | **Until the user deletes it — indefinite** | Nothing. See §2 |
-| Progress and memory notes | Same as the account | `on delete cascade` on erasure |
+| Account record (email, name, provider metadata) | Until the user deletes it, or **24 months after it was last used** | `pg_cron`, nightly at 03:23. See §2 |
+| Progress and memory notes | Same as the account | `on delete cascade` from the account record |
+| Profile mirror in `public.profiles` (email, name, avatar URL) | Same as the account | `on delete cascade` from the account record |
 | Live sessions and refresh tokens | Supabase's own session lifetime; ended immediately on sign-out or deletion | Supabase |
 | Browser error reports | **30-day cutoff, swept nightly at 03:17** — so up to ~31 days in practice | `pg_cron` |
 | Contact messages (our mailbox) | As long as needed to answer | Judgement, applied by hand |
@@ -54,49 +55,74 @@ that an erasure request cannot shorten: Article 17(3)(b) leaves a retention obli
 which is why `privacy.html` §5 tells the reader so outright rather than leaving them to assume
 deletion reaches everything.
 
-## 2. Account data: the gap
+## 2. Account data: 24 months after last use
 
-**Account data has no retention period, and that is a real finding rather than an oversight in
-this document.** `privacy.html` §4 says it is kept "for as long as your account exists, until
-you ask us to delete it". In practice: someone who signed in once in 2026, ticked three items
-and never came back still has an email address, a dated location-related history, and free-text
-notes in the database in 2036.
+**An account is deleted, with its progress and notes, once it has gone 24 months without
+being used.** Deleting it sooner is up to the user, from the profile. `privacy.html` §4 says
+the same thing to users. The job and its SQL are in the README under "Dormant accounts are
+deleted after 24 months".
 
-Two things make this worth fixing rather than living with:
+Before this, account data had no retention period at all: "until you ask us to delete it" put
+the whole burden on someone who had forgotten the app exists, which Article 5(1)(e) does not
+allow, and every dormant account was breach exposure with nobody behind it.
 
-- Article 5(1)(e) expects a limit, and "until the user asks" is not one — it puts the whole
-  burden on someone who has forgotten the app exists.
-- It is also the cheapest reduction in breach exposure available. Every dormant account is
-  blast radius with no user behind it.
+**Why 24 months.** MoiCheck is a list of things to do in Groningen, and people use it in
+bursts: a first year in the city, a visit, a summer. A year would delete someone who simply
+skipped one. Two years is long enough for that, and short enough that an account nobody has
+used for that long can fairly be called abandoned. Change it in `privacy.html` §4 and in the
+job together.
 
-**The fix is [#90](https://github.com/Dor-bl/moi-app/issues/90)**, and half the mechanism is
-already proven in this codebase: `client_errors` is purged nightly by `pg_cron`, so the
-extension is installed and scheduling works.
+**What counts as use.** The latest of:
 
-The other half is not reusable, and it is worth being exact about why. `delete_user()` **cannot
-be called by a scheduled job.** It takes no argument and acts only on `auth.uid()`, raising
-`not authenticated` when there is no signed-in caller — which is precisely the case inside
-`pg_cron`. That self-only check is a security property worth keeping, not an oversight to
-route around, so #90 needs a *separately authorized* way to delete a selected account while
-leaving `delete_user()` exactly as it is.
+- `auth.users.last_sign_in_at` (or `created_at`, for an account that never signed in again);
+- the newest `updated_at` or `refreshed_at` on any of the account's `auth.sessions`, as
+  recorded each hour in `public.account_last_seen`.
 
-Two details that issue needs to get right, recorded here so they are not rediscovered:
+The session timestamps cannot be read straight from `auth.sessions` at deletion time, because
+signing out deletes the session row and its refresh tokens with it. Someone who signed in once
+more than two years ago, kept using the app through refreshes, and then signed out would look
+untouched since that first sign-in, and be deleted that night. So a job every hour copies each
+live session's latest timestamp into `account_last_seen` (one row per account: `user_id`,
+`seen_at`, no other data; row-level security on, no grants to `anon` or `authenticated`), and
+the deletion at 03:23 reads that. A sign-out only loses the refreshes since the last hourly
+copy, and that is a real gap, not just a timing detail. A visit that resumes an existing
+session and ends in a sign-out before the next copy is never recorded. The 24 months then run
+from the use recorded before that visit, so the account can be deleted earlier than 24 months
+after the visit, by however long the gap before it was. Someone who comes back after 20
+months, looks for a few minutes, signs out and never returns would be deleted about 4 months
+later instead of 24. It needs all three: a resumed session rather than a fresh sign-in (which
+`last_sign_in_at` always records), a sign-out within the hour, and no visit afterwards.
+Closing it would mean a trigger on Supabase's own `auth.sessions` table. It would run inside
+every sign-out and inside the cascade when an account is deleted, so a fault in it would break
+both, in a schema Supabase owns. **Accepted for now, as the owner's call**: revisit if it
+matters more than that risk. Refresh tokens are not a separate signal: they move with their session, and
+when this was built none was newer than its session.
 
-- **Dormancy needs a measure of actual use, and neither obvious candidate is one.** Progress
-  rows are not: someone can use the app for a year without ticking anything new.
-  `auth.users.last_sign_in_at` is not either, and this is the trap — the SDK refreshes a
-  session automatically, so a user can keep using the app for years without ever signing in
-  again, leaving that timestamp frozen at their first visit.
-  [`breach-runbook.md`](breach-runbook.md) §2 already says the same thing from the other
-  direction, where the timestamp misses users whose sessions kept refreshing through an
-  incident window. Deleting an active user would be a bug with a compliance justification
-  attached, so #90 has to decide what counts as use before it sets a threshold.
-- The `on delete cascade` on `user_progress.user_id` should make this a single delete against
-  `auth.users`. Verify that against a test account rather than trusting it.
+`last_sign_in_at` alone would be wrong, and dangerously so. The SDK refreshes a session
+without signing in again, so someone can use the app for years while that timestamp stays at
+their first visit; [`breach-runbook.md`](breach-runbook.md) §2 notes the same gap. When this
+was built, 2 of the 8 accounts had session activity more than a day newer than their
+`last_sign_in_at`. Every app open more than an hour after the last one refreshes the session,
+so the session timestamps catch real use. Progress rows are not a measure either: someone can
+use the app for a year without ticking anything new.
 
-Until #90 lands, this section is the honest statement: **we have not set a retention period for
-account data.** When it lands, this section states the period and `privacy.html` §4 changes in
-the same pass.
+**How it deletes.** The job deletes the `auth.users` row, nothing else. Every table that
+references it cascades: `user_progress`, `account_last_seen`, the `public.profiles` mirror,
+and Supabase's own sessions, refresh tokens, identities and MFA tables. That was checked in
+the database catalogue (`pg_constraint`), not assumed. `delete_user()` is unchanged. It still acts only on `auth.uid()`, and the job does
+not call it: both jobs run as `postgres` inside `pg_cron`, the same way the `client_errors`
+sweep does, so no new function is exposed through the API. The deletion also checks live
+sessions directly, so a failed copy cannot delete an account in use.
+
+**No warning email, decided.** A warning would need another scheduled job, an email template,
+a record of who was warned and when, and a way to undo it when someone comes back. That is a
+feature several times the size of this one, sending mail to addresses we otherwise only use
+for sign-in links. Article 5(1)(e) asks for a limit, not for a reminder. The period is stated
+up front in `privacy.html` §4, which also points to the download, so users can keep a copy.
+Revisit this if the user base grows enough that people lose accounts they meant to keep.
+
+A deleted dormant account is treated like any other erasure for backups (§4), and it has the
+same gap there: it is not recorded outside the database (§5).
 
 ---
 
@@ -163,17 +189,15 @@ part a user does not need but an auditor does.
 
 ## 5. Known gaps
 
-1. **No retention period for account data** (§2). Tracked as
-   [#90](https://github.com/Dor-bl/moi-app/issues/90).
-2. **No record of erasures outside the database.** §4 point 4 is currently unexecutable: after a
+1. **No record of erasures outside the database.** §4 point 4 is currently unexecutable: after a
    restore we could not enumerate which accounts had been erased since the backup. A minimal
    fix is a line per erasure — timestamp and user id — written somewhere outside the project
    database. Deliberately *not* filed as an issue yet: a log of who deleted their account is
    itself personal data, retained after they asked to be forgotten, so it needs a decision about
    what it may contain and how long it lives before it is built. Worth raising with the owner
    rather than implementing on a hunch.
-3. **Resend's figure is unverified** (§3).
-4. **No stated retention for provider-side logs beyond what the plan gives.** Upgrading the
+2. **Resend's figure is unverified** (§3).
+3. **No stated retention for provider-side logs beyond what the plan gives.** Upgrading the
    Supabase plan would lengthen log retention, which cuts both ways: better forensics, more
    personal data held longer. Currently undecided, and fine as such.
 

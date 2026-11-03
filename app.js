@@ -107,6 +107,7 @@ const accountDangerZone = document.getElementById('accountDangerZone');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 const exportDataBtn = document.getElementById('exportDataBtn');
 const exportDataError = document.getElementById('exportDataError');
+const exportDataNotice = document.getElementById('exportDataNotice');
 const signOutBtn = document.getElementById('signOutBtn');
 
 // Delete Account Modal Elements
@@ -227,6 +228,7 @@ function updateLanguageUI() {
 
     document.querySelector('.memory-section h3').textContent = t.addMemory;
     memoryNote.placeholder = t.memoryPlaceholder;
+    updateMemoryHint();
     modalUncheckBtn.textContent = t.markNotDone;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
     document.getElementById('txtCompletedMemories').textContent = t.recentMemories;
@@ -243,6 +245,7 @@ function updateLanguageUI() {
     // A failed export leaves its message on screen; keep it in step with the
     // language switch, as the magic-link error below does.
     if (exportDataError && exportDataError.textContent) exportDataError.textContent = t.exportDataError;
+    if (exportDataNotice && exportDataNotice.textContent) exportDataNotice.textContent = t.exportDataUnsynced;
 
     const deleteModalTitle = document.getElementById('deleteModalTitle');
     if (deleteModalTitle) deleteModalTitle.textContent = t.deleteModalTitle;
@@ -1208,16 +1211,28 @@ function toggleComplete(id, event = null) {
         };
         if (event) createConfetti(event.clientX, event.clientY);
         syncItemToCloud(id, true, noteVal);
-        checkBadgeUnlocks(id, false);
     }
     
-    saveState();
+    const adopted = saveItems([id]);
+
+    // After the save, not before it: saveItems() has by then folded in whatever other
+    // tabs ticked, so the category count includes their items. Checked beforehand, two
+    // tabs that each finish one of a category's last two items would both count one
+    // short, and the category would complete with no toast in either. A save that
+    // throws never gets here, which is right: nothing was saved to celebrate. Nor does a
+    // save the account guard blocked (null): another tab took the store over, so this
+    // tick was not saved either.
+    if (!isCompleted && adopted !== null) checkBadgeUnlocks(id, false);
 
     const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
     if (card) {
         card.classList.toggle('completed', !isCompleted);
     }
-    scheduleListResort();
+    // The save folded in items another tab ticked: the list still shows them unchecked,
+    // and a click on such a box would untick what the user means to tick. Repaint so
+    // what is shown is what is held.
+    if (adopted) renderList();
+    else scheduleListResort();
     updateMapMarker(id);
 
     updateProgress();
@@ -1339,6 +1354,14 @@ function buildEventBadgeCard({ badge, date }, t) {
     return card;
 }
 
+// Says where a memory note will be stored, so people can choose what to write.
+// Guest notes stay local until sign-in merges them into the account.
+function updateMemoryHint() {
+    const t = UI_TRANSLATIONS[currentLang];
+    document.getElementById('memoryNoteHint').textContent =
+        (currentUser && supabaseClient) ? t.memoryHintSignedIn : t.memoryHintGuest;
+}
+
 function openDetailModal(item) {
     selectedItemId = item.id;
     const isCompleted = !!completedItems[item.id];
@@ -1369,6 +1392,7 @@ function openDetailModal(item) {
         memoryNote.value = '';
     }
     
+    updateMemoryHint();
     updateModalButtonState(isCompleted);
     detailModal.classList.add('active');
 }
@@ -1385,7 +1409,10 @@ function persistOpenNote() {
     if (note === (entry.note || '')) return;
 
     entry.note = note;
-    saveState();
+    if (saveItems([selectedItemId])) {
+        renderList();
+        updateProgress();
+    }
     syncItemToCloud(selectedItemId, true, note);
 }
 
@@ -1904,6 +1931,7 @@ function setupEventListeners() {
             if (!currentUser || !supabaseClient) return;
             const generation = authGeneration;
             exportDataError.textContent = '';
+            if (exportDataNotice) exportDataNotice.textContent = '';
             exportDataBtn.disabled = true;
             try {
                 const out = await buildAccountExport();
@@ -1918,6 +1946,9 @@ function setupEventListeners() {
                 // Revoked on the next tick: revoking synchronously can cancel
                 // the download in some browsers before it has started.
                 setTimeout(() => URL.revokeObjectURL(url), 0);
+                if (exportDataNotice && exportMissesLocalChanges(out.completed_items, completedItems)) {
+                    exportDataNotice.textContent = UI_TRANSLATIONS[currentLang].exportDataUnsynced;
+                }
             } catch {
                 if (generation === authGeneration) exportDataError.textContent = UI_TRANSLATIONS[currentLang].exportDataError;
             } finally {

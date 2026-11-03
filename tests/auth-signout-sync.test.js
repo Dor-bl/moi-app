@@ -73,6 +73,28 @@ test('guest progress made before any sign-in still merges into the account', asy
     assert.equal(storage.getItem('moiCheckSyncedUser'), USER_B.id);
 });
 
+test('a guest note over the server limit is clamped, so it cannot fail the whole merge batch', async () => {
+    // Written before the textarea had maxlength. The emoji sits on the cut so a
+    // UTF-16 slice would leave a lone surrogate behind.
+    const longNote = 'a'.repeat(999) + '😀' + 'tail that the database would reject';
+    const guestProgress = {
+        'item-7': { date: '2025-09-01T09:00:00.000Z', note: longNote },
+        'item-8': { date: '2025-09-02T09:00:00.000Z', note: 'short' }
+    };
+    const storage = createLocalStorage({ moiCheckState: JSON.stringify(guestProgress) });
+    const supabase = createFakeSupabase({ rows: [] });
+    const { module } = loadAuthModule({ storage, supabaseClient: supabase });
+    module.completedItems = { ...guestProgress };
+    module.currentUser = USER_B;
+
+    await module.syncCloudProgress();
+
+    const byId = Object.fromEntries(supabase.upserts.map(({ row }) => [row.item_id, row.note]));
+    assert.equal(Array.from(byId['item-7']).length, 1000, 'clamped to 1000 code points, as char_length counts');
+    assert.equal(byId['item-7'], 'a'.repeat(999) + '😀', 'the emoji on the boundary is kept whole');
+    assert.equal(byId['item-8'], 'short', 'other rows in the batch are untouched');
+});
+
 test('progress left by a previous account is dropped, not uploaded under the new user', async () => {
     const storage = browserAfterUserA();
     const bRows = [{ user_id: USER_B.id, item_id: 'item-7', date: '2025-09-02T08:00:00.000Z', note: "B's own note" }];

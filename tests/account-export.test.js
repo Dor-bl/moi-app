@@ -113,3 +113,16 @@ test('signing out clears a failed export\'s message, so the next account does no
 
     assert.equal(exportDataError.textContent, '');
 });
+
+test('the unsynced warning fires only when the screen and the exported rows differ', () => {
+    const { module } = loadAuthModule({});
+    const exported = [{ item_id: '1', note: 'with friends' }, { item_id: '2', note: '' }];
+
+    assert.equal(module.exportMissesLocalChanges(exported, { 1: { note: 'with friends' }, 2: { note: '' } }), false);
+    // A note edit that never reached the cloud.
+    assert.equal(module.exportMissesLocalChanges(exported, { 1: { note: 'edited' }, 2: { note: '' } }), true);
+    // A completion that never reached the cloud.
+    assert.equal(module.exportMissesLocalChanges(exported, { 1: { note: 'with friends' }, 2: {}, 3: { note: '' } }), true);
+    // An un-complete that never reached the cloud.
+    assert.equal(module.exportMissesLocalChanges(exported, { 1: { note: 'with friends' } }), true);
+});

@@ -1,4 +1,4 @@
-// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport
+// Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport, exportMissesLocalChanges
 // Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState.
 
 // Supabase Configuration
@@ -22,11 +22,29 @@ if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_PRO
 let currentUser = null;
 let authGeneration = 0;
 
+// The user this tab itself last synced as. The marker in storage cannot say it: when
+// another tab switches the browser to a different account, that tab moves the marker
+// to the new user first, so by the time this tab receives the sign-in the marker
+// already matches and nothing looks out of place. Null when this tab holds no
+// account's progress (a fresh load, or after a sign-out), so guest ticks still merge.
+let heldUserId = null;
+
 // Which account the progress in this browser was last synced with. It lets us
 // tell genuine guest progress (no marker) apart from another account's
 // leftovers (marker belongs to somebody else), so signing in never re-uploads
 // the previous user's ticks and notes under the new user's id. See issue #52.
 const SYNCED_USER_KEY = 'moiCheckSyncedUser';
+
+// user_progress.note has a server-side check (char_length <= 1000, see README).
+// The textarea's maxlength stops new notes going over it, but notes written
+// before that cap (#204) can still be longer, and one rejected row fails a
+// whole batch upsert. Clamp by code point, which is what char_length counts,
+// so the cut never splits an emoji into a lone surrogate.
+const NOTE_MAX_LENGTH = 1000;
+function clampNote(note) {
+    const chars = Array.from(note || '');
+    return chars.length > NOTE_MAX_LENGTH ? chars.slice(0, NOTE_MAX_LENGTH).join('') : (note || '');
+}
 
 function updateAuthBtnState(isLoggedIn) {
     const t = UI_TRANSLATIONS[currentLang];
@@ -44,6 +62,8 @@ function updateAuthBtnState(isLoggedIn) {
     if (!(isLoggedIn && currentUser)) {
         const exportDataError = document.getElementById('exportDataError');
         if (exportDataError) exportDataError.textContent = '';
+        const exportDataNotice = document.getElementById('exportDataNotice');
+        if (exportDataNotice) exportDataNotice.textContent = '';
     }
     if (signOutBtn) signOutBtn.textContent = t.signOut;
 
@@ -374,6 +394,7 @@ function onUserLoggedOut() {
     completedItems = {};
     saveState();
     localStorage.removeItem(SYNCED_USER_KEY);
+    heldUserId = null;
     updateAuthBtnState(false);
     renderList();
     updateProgress();
@@ -392,8 +413,39 @@ async function syncCloudProgress() {
     if (lastSyncedUser && lastSyncedUser !== currentUser.id) {
         completedItems = {};
         saveState();
+    } else if (heldUserId !== null && heldUserId !== currentUser.id) {
+        // This tab itself holds another user's progress: another tab switched the
+        // browser's account without a sign-out here (see heldUserId). That tab has already
+        // moved the marker to this user, so the stored progress is this user's own, and
+        // may include ticks and notes that never reached the cloud. Take it in place of
+        // this tab's copy and leave the store alone; wiping it would lose them if the
+        // cloud read below fails. An unreadable store falls back to empty.
+        let stored = null;
+        try {
+            stored = JSON.parse(localStorage.getItem('moiCheckState'));
+        } catch {
+            stored = null;
+        }
+        completedItems = (stored && typeof stored === 'object' && !Array.isArray(stored)) ? stored : {};
+        // Every value has to be an object too, not just the container. The upload
+        // below reads .note and .date off each one, and a single malformed entry
+        // throws there, inside the try that only logs - dropping every pending
+        // upsert and losing the unsynced progress this branch exists to keep.
+        // Dropped in place rather than copied into a fresh object, so a stored
+        // '__proto__' key stays the own property JSON.parse made it.
+        for (const itemId of Object.keys(completedItems)) {
+            const value = completedItems[itemId];
+            if (!value || typeof value !== 'object' || Array.isArray(value)) {
+                delete completedItems[itemId];
+            }
+        }
+        // Written back now, not left to the save further down: a failed cloud read
+        // returns before that one, and the bad entry would stay in storage to be loaded
+        // as it is on the next page load.
+        saveState();
     }
     localStorage.setItem(SYNCED_USER_KEY, currentUser.id);
+    heldUserId = currentUser.id;
 
     const generation = authGeneration;
     const stale = () => generation !== authGeneration;
@@ -405,6 +457,14 @@ async function syncCloudProgress() {
             .eq('user_id', currentUser.id);
 
         if (stale()) return;
+
+        // The marker was set to this user before the query. If it names someone else now,
+        // another tab switched the browser to that account while the query was in flight;
+        // if it is gone, another tab signed out and emptied the store. Either way this
+        // tab's auth listener has not run yet (so stale() cannot see it) and the store is
+        // no longer ours: writing this tab's copy over it, or uploading from it, would
+        // hand one account's progress to the other or leave it behind after sign-out.
+        if (localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return;
 
         if (error) {
             console.log('Cloud sync note:', error.message);
@@ -418,6 +478,12 @@ async function syncCloudProgress() {
                     note: row.note || ''
                 };
             });
+            // saveState(), not saveItems(), on purpose. This path ends in a full upload of
+            // completedItems under currentUser.id, so it must hold only this tab's own
+            // view. saveItems() would first adopt whatever another tab has put in the
+            // shared store while the query above was in flight: after an account switch
+            // there, that is a different account's private progress, and the upload below
+            // would hand it to this one. Overwriting is the safe direction here.
             saveState();
 
             // ⚡ Bolt Performance Optimization:
@@ -435,7 +501,7 @@ async function syncCloudProgress() {
                     missingInCloud.push({
                         user_id: currentUser.id,
                         item_id: itemId,
-                        note: localData.note || '',
+                        note: clampNote(localData.note),
                         date: localData.date || new Date().toISOString()
                     });
                 }
@@ -516,6 +582,18 @@ async function buildAccountExport() {
     };
 }
 
+// True when this browser shows completions or notes the exported cloud rows
+// lack (or the reverse), i.e. a background save has not reached the cloud.
+// The export stays cloud-only; this only lets the page warn that the file may
+// be missing recent changes. Dates are not compared: the cloud may format them
+// differently from the local copy.
+function exportMissesLocalChanges(exportedItems, localItems) {
+    const cloud = new Map((exportedItems || []).map(i => [String(i.item_id), i.note || '']));
+    const localIds = Object.keys(localItems || {});
+    if (localIds.length !== cloud.size) return true;
+    return localIds.some(id => !cloud.has(id) || cloud.get(id) !== (localItems[id].note || ''));
+}
+
 // GDPR Art. 17: Delete account and cloud data for the signed-in user.
 // Calls delete_user() RPC which atomically deletes progress rows and the auth.users record.
 // If the RPC has not been installed on the Supabase project yet, throws DELETE_NOT_CONFIGURED
@@ -591,6 +669,11 @@ async function deleteUserAccountAndData(targetUserId) {
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {
     if (!supabaseClient || !currentUser) return;
+    // The same ownership check as saveItems() and syncCloudProgress(): if another tab
+    // switched accounts or signed out and this tab has not heard yet, do not send. RLS
+    // would reject the write anyway (the token is no longer this user's); this just
+    // keeps a stale tab from trying.
+    if (localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return;
 
     try {
         if (isCompleted) {
@@ -600,7 +683,7 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
             await supabaseClient.from('user_progress').upsert({
                 user_id: currentUser.id,
                 item_id: itemId,
-                note: note,
+                note: clampNote(note),
                 date: (existing && existing.date) || new Date().toISOString()
             });
         } else {
