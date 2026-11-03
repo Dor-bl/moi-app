@@ -28,6 +28,17 @@ let authGeneration = 0;
 // the previous user's ticks and notes under the new user's id. See issue #52.
 const SYNCED_USER_KEY = 'moiCheckSyncedUser';
 
+// user_progress.note has a server-side check (char_length <= 1000, see README).
+// The textarea's maxlength stops new notes going over it, but notes written
+// before that cap (#204) can still be longer, and one rejected row fails a
+// whole batch upsert. Clamp by code point, which is what char_length counts,
+// so the cut never splits an emoji into a lone surrogate.
+const NOTE_MAX_LENGTH = 1000;
+function clampNote(note) {
+    const chars = Array.from(note || '');
+    return chars.length > NOTE_MAX_LENGTH ? chars.slice(0, NOTE_MAX_LENGTH).join('') : (note || '');
+}
+
 function updateAuthBtnState(isLoggedIn) {
     const t = UI_TRANSLATIONS[currentLang];
     const authBtn = document.getElementById('authBtn');
@@ -437,7 +448,7 @@ async function syncCloudProgress() {
                     missingInCloud.push({
                         user_id: currentUser.id,
                         item_id: itemId,
-                        note: localData.note || '',
+                        note: clampNote(localData.note),
                         date: localData.date || new Date().toISOString()
                     });
                 }
@@ -614,7 +625,7 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
             await supabaseClient.from('user_progress').upsert({
                 user_id: currentUser.id,
                 item_id: itemId,
-                note: note,
+                note: clampNote(note),
                 date: (existing && existing.date) || new Date().toISOString()
             });
         } else {
