@@ -78,7 +78,8 @@ function readStoredState() {
 //
 // Returns true when the save folded in items this tab did not hold, i.e. when what the
 // tab now holds is more than what it is showing; the caller repaints in that case.
-// Returns false, having written nothing, when the store no longer belongs to this signed-in user.
+// Returns null, having written nothing, when the store no longer belongs to this
+// signed-in user; null rather than false so callers can tell "blocked" from "saved".
 //
 // This is a re-read, not a lock: two saves in the same instant can still race. The
 // realistic case it closes is one tab left open while the user ticks in another.
@@ -92,7 +93,7 @@ function saveItems(ids) {
     // would be the old leak in the other direction. So neither. After a sign-out this tab
     // resets itself moments later, and a tick made in that gap is not saved. A guest has
     // no currentUser and is not affected.
-    if (currentUser && localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return false;
+    if (currentUser && localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return null;
 
     for (const id of ids) unsavedIds.add(id);
     const merged = { ...completedItems, ...readStoredState() };

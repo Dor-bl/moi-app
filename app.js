@@ -1207,8 +1207,10 @@ function toggleComplete(id, event = null) {
     // tabs ticked, so the category count includes their items. Checked beforehand, two
     // tabs that each finish one of a category's last two items would both count one
     // short, and the category would complete with no toast in either. A save that
-    // throws never gets here, which is right: nothing was saved to celebrate.
-    if (!isCompleted) checkBadgeUnlocks(id, false);
+    // throws never gets here, which is right: nothing was saved to celebrate. Nor does a
+    // save the account guard blocked (null): another tab took the store over, so this
+    // tick was not saved either.
+    if (!isCompleted && adopted !== null) checkBadgeUnlocks(id, false);
 
     const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
     if (card) {

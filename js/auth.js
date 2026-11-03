@@ -605,6 +605,11 @@ async function deleteUserAccountAndData(targetUserId) {
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {
     if (!supabaseClient || !currentUser) return;
+    // The same ownership check as saveItems() and syncCloudProgress(): if another tab
+    // switched accounts or signed out and this tab has not heard yet, do not send. RLS
+    // would reject the write anyway (the token is no longer this user's); this just
+    // keeps a stale tab from trying.
+    if (localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return;
 
     try {
         if (isCompleted) {

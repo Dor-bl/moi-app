@@ -162,7 +162,7 @@ test('a signed-in tab does not adopt or overwrite the store once it belongs to a
     storage.setItem('moiCheckState', JSON.stringify({ 'b-private': entry('B’s note') }));
 
     tab.completedItems['x'] = entry();
-    assert.equal(tab.saveItems(['x']), false);
+    assert.equal(tab.saveItems(['x']), null);
 
     assert.deepEqual(Object.keys(stored(storage)), ['b-private'], 'B’s store was written to');
     assert.ok(!('b-private' in plain(tab.completedItems)), 'B’s progress was adopted');
@@ -195,7 +195,7 @@ test('a signed-in tab does not write back what a sign-out in another tab just cl
     storage.setItem('moiCheckState', JSON.stringify({}));
 
     tab.completedItems['x'] = entry();
-    assert.equal(tab.saveItems(['x']), false);
+    assert.equal(tab.saveItems(['x']), null);
 
     assert.deepEqual(stored(storage), {}, 'the signed-out account’s progress was written back');
     assert.equal(storage.getItem('moiCheckSyncedUser'), null);
@@ -313,4 +313,43 @@ test('an item save while a sync is pending does not put another account’s prog
 
     const uploaded = supabase.upserts.map(u => u.row.item_id);
     assert.ok(!uploaded.includes('b-private'), 'B’s item was uploaded under A: ' + uploaded);
+});
+
+// syncItemToCloud() uses the same ownership check. RLS would reject a write sent with
+// another account's token (or none) anyway; this keeps a stale tab from sending it.
+test('a single-item cloud write is not sent once the store belongs to another account', async () => {
+    const storage = createLocalStorage({ moiCheckSyncedUser: 'user-b' });
+    const supabase = createFakeSupabase();
+    const tab = openTab(storage, { supabaseClient: supabase });
+    tab.currentUser = { id: 'user-a', email: 'a@example.test' };
+
+    await tab.syncItemToCloud('x', true, 'note');
+    await tab.syncItemToCloud('y', false);
+
+    assert.deepEqual(supabase.upserts, []);
+    assert.deepEqual(supabase.deletes, []);
+});
+
+test('a single-item cloud write is not sent after a sign-out in another tab removed the marker', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase();
+    const tab = openTab(storage, { supabaseClient: supabase });
+    tab.currentUser = { id: 'user-a', email: 'a@example.test' };
+
+    await tab.syncItemToCloud('x', true);
+
+    assert.deepEqual(supabase.upserts, []);
+});
+
+test('a single-item cloud write still goes out while the store belongs to this account', async () => {
+    const storage = createLocalStorage({ moiCheckSyncedUser: 'user-a' });
+    const supabase = createFakeSupabase();
+    const tab = openTab(storage, { supabaseClient: supabase });
+    tab.currentUser = { id: 'user-a', email: 'a@example.test' };
+
+    await tab.syncItemToCloud('x', true, 'note');
+    await tab.syncItemToCloud('y', false);
+
+    assert.deepEqual(supabase.upserts.map(u => [u.row.user_id, u.row.item_id, u.row.note]), [['user-a', 'x', 'note']]);
+    assert.equal(supabase.deletes.length, 1);
 });
