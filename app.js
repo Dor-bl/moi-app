@@ -299,7 +299,13 @@ function updateLanguageUI() {
     if (txtLanguageHeader) txtLanguageHeader.textContent = t.languageHeader;
 
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
-    if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
+    if (footerPrivacyLink) {
+        footerPrivacyLink.textContent = t.footerPrivacy;
+        // Like the sponsor page, the policy is two static files rather than one
+        // page that switches language, so the link has to pick the right one.
+        footerPrivacyLink.href = currentLang === 'nl' ? 'privacy-nl.html' : 'privacy.html';
+        footerPrivacyLink.hreflang = currentLang;
+    }
 
     const footerSponsorLink = document.getElementById('footerSponsorLink');
     if (footerSponsorLink) {

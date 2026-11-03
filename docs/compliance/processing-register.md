@@ -33,7 +33,7 @@ quietly describe the intended state as if it were the current one.
 | How long each category lives, and what that means for backups | [`retention.md`](retention.md) |
 | What to do when something has leaked | [`breach-runbook.md`](breach-runbook.md) |
 | Which accounts hold which credentials, and the regions | [`account-hosting-audit.md`](account-hosting-audit.md) |
-| What a visitor is told, in plain language | `privacy.html` |
+| What a visitor is told, in plain language | `privacy.html`, and its Dutch translation `privacy-nl.html` |
 
 `privacy.html` is the public statement and this is the internal record. They describe the same
 system and must not drift apart: **change one, check the other.** Where this file says
@@ -379,7 +379,8 @@ It is a record, so it is wrong the moment the system changes without it. Revisit
 
 - a new table, column, or `localStorage` key appears — a new key also means revisiting the
   consent-exemption analysis;
-- a processor is added, removed, or changes region;
+- a processor is added, removed, or changes region &mdash; in **both** language versions of the
+  policy, not one (`tests/policy-consistency.test.js` checks that much);
 - a retention period changes, in our code or in a provider's terms;
 - a new third party is contacted from the browser;
 - an item in Open points is resolved.

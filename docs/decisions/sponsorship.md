@@ -98,9 +98,10 @@ cost is the same, and the failure modes are fewer. `app.js` points the footer li
 matching the current language; anyone landing on the wrong one has a link at the top and in the
 footer.
 
-The Dutch page links to the English privacy policy and says so. Translating that document is a
-much bigger job than translating this one, and promising a Dutch version by linking to it without
-the label would be worse than the honest note.
+The Dutch page links to the Dutch privacy policy. It first linked to the English one with a label
+saying so, which was the honest stopgap while only the English existed; `privacy-nl.html` has since
+been written, and the reasoning for that is in
+[`privacy-policy-translation.md`](privacy-policy-translation.md).
 
 ## Placement
 

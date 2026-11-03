@@ -500,6 +500,13 @@ which credential and which region each service runs in.
 new table, column or `localStorage` key changes the register, and a new storage key also means
 revisiting the consent-exemption analysis above.
 
+The policy is two files: `privacy.html` and its Dutch translation `privacy-nl.html`. They are
+the same document and must say the same things, so **a change to one is a change to both**.
+`tests/policy-consistency.test.js` holds them to the structural half of that — same sections,
+same processors, same "last updated" date — and cannot check that the Dutch sentence you added
+says what the English one does. Why two files rather than one page that switches language:
+[`docs/decisions/privacy-policy-translation.md`](docs/decisions/privacy-policy-translation.md).
+
 ### Account deletion (GDPR right to erasure)
 
 Signed-in users can delete their account and data from the profile modal (*Delete my account & data*).

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacybeleid — MoiCheck</title>
+    <meta name="description" content="Hoe MoiCheck je gegevens verzamelt, gebruikt en beschermt.">
+    <meta name="theme-color" content="#009639">
+
+    <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/brand/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="assets/brand/favicon-16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+    <link rel="canonical" href="https://moicheck.nl/privacy-nl.html">
+    <link rel="alternate" hreflang="en" href="https://moicheck.nl/privacy.html">
+    <link rel="alternate" hreflang="nl" href="https://moicheck.nl/privacy-nl.html">
+    <link rel="alternate" hreflang="x-default" href="https://moicheck.nl/privacy.html">
+
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .legal-page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+        .legal-page .back-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .legal-page .back-link:hover { text-decoration: underline; }
+        .legal-page .page-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.25rem;
+            align-items: baseline;
+            margin-bottom: 1.5rem;
+        }
+        .legal-page .page-nav .back-link { margin-bottom: 0; }
+        .legal-page .lang-link {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .legal-page h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.25rem;
+        }
+        .legal-page .updated {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+        .legal-page section { margin-bottom: 2rem; }
+        .legal-page h2 {
+            font-size: 1.15rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary-color);
+        }
+        .legal-page p, .legal-page li {
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+        }
+        .legal-page ul {
+            padding-left: 1.25rem;
+        }
+        .legal-page table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+        .legal-page th, .legal-page td {
+            text-align: left;
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+        .legal-page th { color: var(--text-light); font-weight: 700; }
+        /* Dutch compounds are long unbreakable tokens - "gebruiksstatistieken",
+           "evenementenweergave", "toestemmingsregel" - and one per column is
+           enough to push a table's minimum width past a phone screen, which
+           scrolls the whole page sideways. The English text has no words this
+           long, which is why privacy.html needs none of this.
+
+           hyphens:auto fixes it by breaking them where Dutch actually breaks,
+           which lowers each column's minimum width without making the text
+           look chewed. The html element carries lang="nl", which is what tells
+           the browser which patterns to use.
+
+           Two things that look like they would also work, and do not:
+           overflow-wrap:break-word does not reduce a cell's minimum width at
+           all, so the page overflows exactly as before; overflow-wrap:anywhere
+           removes the floor completely, and the table layout then starves the
+           two narrow columns down to about three characters a line. */
+        .legal-page td, .legal-page th { hyphens: auto; }
+        /* Legal basis per purpose (GDPR Art. 13(1)(c)). Inside the "Why" cell
+           rather than a fourth column, which would undo the narrow-screen
+           sizing below. */
+        .legal-page .basis { display: block; margin-top: 0.4rem; color: var(--text-light); font-size: 0.85em; }
+        .legal-page a { color: var(--primary-color); }
+        /* The storage table's first column holds long key names; give it enough
+           room that they don't break mid-word on a normal screen. */
+        .storage-table th:first-child, .storage-table td:first-child { width: 30%; }
+        .legal-page code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.85em;
+            color: var(--text-light);
+            /* Key names are long unbreakable tokens; without this the storage
+               table forces the page wider than a phone screen. */
+            overflow-wrap: anywhere;
+        }
+        .brand-title { font-size: 1.75rem; font-weight: 800; margin: 0; }
+        /* The storage table is three columns of prose, and its minimum width is
+           the sum of those columns plus 72px of cell padding — about 335px,
+           which is wider than the content column on a small phone. The key
+           names already wrap (`overflow-wrap` above), so the token length is
+           not the constraint; the padding and type size are. Below 420px both
+           come down, which returns the table to inside the page gutter at
+           360-375px and stops the page scrolling sideways at 320px. */
+        @media (max-width: 420px) {
+            .legal-page table { font-size: 0.82rem; }
+            .legal-page th, .legal-page td { padding: 0.5rem 0.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <svg class="groningen-flag" width="32" height="22" viewBox="0 0 60 40" aria-label="Vlag van Groningen">
+                    <defs>
+                        <clipPath id="flagClip">
+                            <rect width="60" height="40" rx="4"/>
+                        </clipPath>
+                    </defs>
+                    <g clip-path="url(#flagClip)">
+                        <rect x="0" y="0" width="30" height="20" fill="#DC2626"/>
+                        <rect x="30" y="0" width="30" height="20" fill="#1D4ED8"/>
+                        <rect x="0" y="20" width="30" height="20" fill="#1D4ED8"/>
+                        <rect x="30" y="20" width="30" height="20" fill="#DC2626"/>
+                        <rect x="22" y="0" width="16" height="40" fill="#FFFFFF"/>
+                        <rect x="0" y="14" width="60" height="12" fill="#FFFFFF"/>
+                        <rect x="25" y="0" width="10" height="40" fill="#10B981"/>
+                        <rect x="0" y="16" width="60" height="8" fill="#10B981"/>
+                    </g>
+                </svg>
+                <p class="brand-title">MoiCheck</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="legal-page">
+        <div class="page-nav">
+            <a class="back-link" href="index.html">&larr; Terug naar MoiCheck</a>
+            <a class="lang-link" href="privacy.html" hreflang="en" lang="en">Read this in English</a>
+        </div>
+        <h1>Privacybeleid</h1>
+        <p class="updated">Laatst bijgewerkt: 1 november 2026</p>
+
+        <section>
+            <p>MoiCheck ("wij", "ons") is een kleine, onafhankelijke bucketlist-app voor Groningen, gerund door &eacute;&eacute;n persoon, D. Blayzer, als hobbyproject. D. Blayzer bepaalt wat er met jouw persoonsgegevens gebeurt en is daarvoor verantwoordelijk &mdash; de "verwerkingsverantwoordelijke", in AVG-termen &mdash; en is te bereiken op <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>. Dit beleid legt uit welke persoonsgegevens we verzamelen, waarom, op welke grondslag, hoe lang we ze bewaren en hoe je ze kunt inzien of laten verwijderen. We proberen zo min mogelijk te verzamelen.</p>
+            <p><strong>Dit is een vertaling.</strong> Het Engelstalige origineel, <a href="privacy.html" hreflang="en" lang="en">Privacy Policy</a>, is hetzelfde document in de taal waarin het geschreven is. Beide beschrijven precies dezelfde praktijk; wijken ze ergens van elkaar af, dan is dat een fout van ons en geen verschil in wat er gebeurt &mdash; laat het ons weten op het adres hierboven, dan herstellen we het.</p>
+        </section>
+
+        <section>
+            <h2>1. Wat we verzamelen</h2>
+            <table>
+                <thead>
+                    <tr><th>Gegevens</th><th>Wanneer</th><th>Waarom</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>E-mailadres</td>
+                        <td>Als je inlogt met een magic link of met Google</td>
+                        <td>Om je account te herkennen en je voortgang tussen apparaten te synchroniseren. <span class="basis">Grondslag: overeenkomst &mdash; dit is wat het account dat je zelf hebt aangevraagd laat werken.</span></td>
+                    </tr>
+                    <tr>
+                        <td>Naam (uit je Google-profiel)</td>
+                        <td>Als je met Google inlogt</td>
+                        <td>Wordt in de app aan jou getoond; verder wordt er niets mee gedaan. <span class="basis">Grondslag: overeenkomst.</span></td>
+                    </tr>
+                    <tr>
+                        <td>Voortgang op de bucketlist &amp; herinneringen</td>
+                        <td>Als je een item afvinkt of er een eigen notitie bij schrijft</td>
+                        <td>Om je voortgang, badges en herinneringen te tonen, gesynchroniseerd met je account. Voortgang die je in dezelfde browser hebt gemaakt v&oacute;&oacute;r het inloggen, wordt bij het inloggen aan je account toegevoegd. <span class="basis">Grondslag: overeenkomst.</span></td>
+                    </tr>
+                    <tr>
+                        <td>Naam, e-mailadres, onderwerp &amp; bericht</td>
+                        <td>Als je het contactformulier verstuurt</td>
+                        <td>Om je feedback, bugmelding of suggestie te lezen en te beantwoorden. De functie die het bericht doorgeeft leest ook je IP-adres, om te beperken hoeveel berichten &eacute;&eacute;n afzender binnen een minuut kan versturen; het blijft die minuut in het geheugen staan en wordt nooit vastgelegd of met je bericht meegestuurd. <span class="basis">Grondslag: gerechtvaardigd belang &mdash; mensen antwoorden die ons schrijven, en voorkomen dat het formulier wordt overspoeld.</span></td>
+                    </tr>
+                    <tr>
+                        <td>Naam, e-mailadres &amp; bedrag van een bijdrage</td>
+                        <td>Alleen als je ervoor kiest een eenmalige bijdrage te doen via de pagina <a href="sponsor-nl.html">Steun MoiCheck</a></td>
+                        <td>Om de boekhouding bij te houden voor geld dat binnenkomt, en om je te kunnen antwoorden of terug te betalen als je daarom vraagt. De betaling zelf gebeurt op de afrekenpagina van Stripe, dus je bank- of kaartgegevens bereiken MoiCheck helemaal niet; wat wij achteraf zien, in het dashboard van Stripe, is het bedrag, de datum en de naam en het e-mailadres die je bij Stripe hebt ingevuld. Een bijdrage maakt geen MoiCheck-account aan en wordt niet aan een bestaand account gekoppeld: er wordt niets over vastgelegd in de database van de app of in je browser, en je voortgang en je bijdrage komen elkaar nooit tegen. <span class="basis">Grondslag: wettelijke verplichting voor het bewaren van de vastlegging (paragraaf 4), en gerechtvaardigd belang &mdash; je kunnen antwoorden over geld dat je ons hebt gestuurd.</span></td>
+                    </tr>
+                    <tr>
+                        <td>Thema, taal en (als je niet ingelogd bent) voortgang</td>
+                        <td>Altijd, en alleen opgeslagen in je eigen browser</td>
+                        <td>Om je voorkeuren te onthouden en je de app te laten gebruiken zonder account. <span class="basis">Grondslag: niet nodig &mdash; dit blijft op je apparaat en bereikt ons nooit (paragraaf 6).</span></td>
+                    </tr>
+                    <tr>
+                        <td>Je locatie &mdash; wel gecontroleerd, nooit verzameld</td>
+                        <td>Alleen als je op "Ik ben hier" tikt bij een evenement dat op dat moment bezig is, en alleen voor die ene tik</td>
+                        <td>Om te bevestigen dat je echt bij het evenement bent voordat de badge wordt toegekend. De controle gebeurt volledig op je eigen apparaat: je browser vergelijkt je co&ouml;rdinaten met de locatie van het evenement en gooit ze daarna weg. Ze worden nooit naar ons gestuurd, nooit vastgelegd, en wij komen nooit te weten waar je was &mdash; of dat je &uuml;berhaupt ergens was. Het enige dat bewaard blijft is de aantekening op je eigen apparaat dat je de badge hebt verdiend. We lezen je locatie nooit op de achtergrond uit, en als je de toestemming weigert gebeurt er niets anders dan dat je die ene badge niet krijgt. <span class="basis">Grondslag: niet nodig &mdash; je co&ouml;rdinaten verlaten je apparaat nooit.</span></td>
+                    </tr>
+                    <tr>
+                        <td>Geaggregeerde gebruiksstatistieken</td>
+                        <td>Als je de hoofdpagina van MoiCheck opent, en als je wisselt tussen de lijst-, kaart- en evenementenweergave</td>
+                        <td>Om bezoeken te tellen, te zien welke sites hierheen linken, en te tellen hoe vaak elke weergave (lijst, kaart, evenementen) wordt geopend, zodat we weten of MoiCheck nuttig is en welke delen mensen echt gebruiken. Het zijn alleen tellingen &mdash; nergens wordt vastgelegd wie wat opende. Er worden geen cookies geplaatst. Zoals bij elk webverzoek draagt het verzoek zelf je IP-adres, je browsergegevens en de pagina waar je bent en de site waar je vandaan komt; Vercel gebruikt die alleen om de aggregaten op te bouwen, en wij zien uitsluitend die aggregaten &mdash; niets dat jou identificeert of je naar andere websites volgt. <span class="basis">Grondslag: gerechtvaardigd belang &mdash; weten of MoiCheck nuttig is.</span></td>
+                    </tr>
+                    <tr>
+                        <td>Foutmeldingen</td>
+                        <td>Alleen als er iets op de pagina stukgaat, maximaal vijf per bezoek</td>
+                        <td>Om bugs te vinden en te verhelpen die in jouw browser optreden en anders onopgemerkt zouden blijven. Een melding bevat de foutmelding, waar in onze code die optrad, het paginapad (zonder wat er in het adres achter staat), en de naam en versie van je browser. Er staan geen account- of inloggegevens in, en de melder haalt e-mailadressen en inlogtokens uit de fouttekst voordat die wordt verstuurd &mdash; al kan zo'n automatisch filter, zoals elk filter, een ongebruikelijke vorm missen, en dat is een van de redenen dat meldingen na ongeveer een maand worden gewist. We bewaren je IP-adres er niet bij, en er wordt niets op je apparaat opgeslagen. Meldingen blijven maximaal 31 dagen in onze database staan (paragraaf 4). <span class="basis">Grondslag: gerechtvaardigd belang &mdash; de app werkend houden.</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Je bank- of kaartgegevens zien of bewaren we nooit: bijdragen worden betaald op de eigen afrekenpagina van Stripe, en alleen de gegevens uit de rij hierboven bereiken ons. We verzamelen geen identiteitsbewijzen en geen bijzondere persoonsgegevens. Log je nooit in, gebruik je het contactformulier niet en doe je geen bijdrage, dan hebben we geen persoonsgegevens van je &mdash; behalve wat er in een foutmelding staat dat het filter hierboven heeft gemist. Wel geldt, zoals bij elke website, dat het enkele laden van de pagina of de kaart standaard verzoekgegevens (je IP-adres, browsergegevens, de opgevraagde pagina en de verwijzende site) naar de partijen uit paragraaf 2 stuurt. Het serveren van de pagina, en het laden van de kaart als je de kaartweergave opent, berusten op ons gerechtvaardigd belang om de site te laten draaien. Het laden van Googles inlogknop als je het inlogvenster opent, v&oacute;&oacute;rdat je hebt gekozen hoe je wilt inloggen, berust op ons gerechtvaardigd belang om inloggen met Google aan te bieden (paragraaf 2 legt uit wat dat verzoek aan Google vertelt).</p>
+            <p><strong>Wat de grondslagen betekenen.</strong> <em>Overeenkomst</em> betekent dat we de gegevens nodig hebben om je het account te geven waar je om hebt gevraagd. <em>Gerechtvaardigd belang</em> betekent dat we een eigen reden hebben &mdash; de reden die in de rij zelf staat &mdash; die we hebben afgewogen tegen jouw privacy, met als uitkomst dat jouw privacy daar niet voor hoeft te wijken; je kunt er bezwaar tegen maken (paragraaf 5). We baseren ons nergens op jouw toestemming.</p>
+            <p><strong>Moet je ons iets geven?</strong> Nee. Geen wet verplicht je daartoe, en de app werkt volledig zonder account. Een e-mailadres is alleen nodig als je zelf een account wilt: zonder account blijft je voortgang in die ene browser staan. Net zo hebben we alleen een naam en e-mailadres nodig om te kunnen antwoorden op een bericht dat je ons stuurt.</p>
+        </section>
+
+        <section>
+            <h2>2. Wie je gegevens verwerkt</h2>
+            <ul>
+                <li><strong>Supabase</strong> &mdash; host onze database en regelt het inloggen (magic-linkmails en inloggen met Google). Je e-mailadres, naam en bucketlist-voortgang en -notities staan in de infrastructuur van Supabase, net als de foutmeldingen uit paragraaf 1. De code die met Supabase praat wordt door MoiCheck zelf geserveerd en niet door een extern netwerk, dus bij het laden daarvan komt geen derde partij in beeld.</li>
+                <li><strong>Google</strong> &mdash; kies je "Doorgaan met Google", dan handelt Google het inloggen af en deelt het via Supabase je e-mailadres en naam met ons. De knop "Doorgaan met Google" wordt door Google zelf getekend: zodra je het inlogvenster opent, haalt de pagina Googles inlogscript op en laadt de knop van accounts.google.com, waarmee Google je IP-adres te zien krijgt en zijn eigen cookies kan uitlezen &mdash; voordat jij iets hebt gekozen. Bij een gewoon bezoek gebeurt dat niet, alleen als je dat venster opent. Google host ook de mailbox waar hallo@moicheck.nl in uitkomt &mdash; dat adres is zelf een doorstuuradres bij Cloudflare en geen account bij Google &mdash; dus een kopie van alles wat daarheen gestuurd wordt, contactformulierberichten incluis, staat ook op Googles infrastructuur. Google publiceert een verwerkersovereenkomst voor zijn zakelijke diensten, maar deze mailbox is een priv&eacute;account onder consumentenvoorwaarden en valt daar niet onder &mdash; paragraaf 3 zegt wat dat wel en niet betekent.</li>
+                <li><strong>Cloudflare</strong> &mdash; verzorgt Email Routing voor ons domein, dat post aan hallo@moicheck.nl (inclusief contactformulierberichten die via Resend binnenkomen) doorstuurt naar de Google-mailbox hierboven. Email Routing stuurt door en bewaart niet: aan de kant van Cloudflare is er geen postvak, en daarom ligt de eindbestemming van je bericht bij Google en niet bij Cloudflare. Cloudflare publiceert, net als Google, een verwerkersovereenkomst.</li>
+                <li><strong>Resend</strong> &mdash; bezorgt de e-mail die MoiCheck verstuurt, en dat zijn twee verschillende dingen. Resend is de afzender achter de inloglinks die je aanvraagt als je voor een magic link kiest, dus je e-mailadres en een eenmalig token gaan elke keer dat je zo inlogt via Resend. Resend bezorgt ook contactformulierberichten (naam, e-mailadres, onderwerp, bericht) in ons postvak. Het formulier post naar een kleine functie die op Supabase draait, die het bericht aan Resend doorgeeft; beide publiceren een verwerkersovereenkomst. Gebruik je het formulier liever helemaal niet, mail ons dan rechtstreeks op <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a> &mdash; dat komt in hetzelfde postvak terecht.</li>
+                <li><strong>OpenStreetMap, Leaflet en unpkg</strong> &mdash; de kaart wordt getekend met Leaflet, waarvan het script en de stylesheet van het contentnetwerk <strong>unpkg</strong> komen, en de kaarttegels komen rechtstreeks van de tegelservers van OpenStreetMap. Beide zien, zoals bij elk webverzoek, je IP-adres en de gebruikelijke verzoekgegevens. Geen van beide wordt benaderd voordat je naar de kaartweergave wisselt, dus gebruik je alleen de lijst, dan gaat er helemaal geen verzoek heen.</li>
+                <li><strong>Vercel</strong> &mdash; host de website van MoiCheck zelf, en levert Vercel Web Analytics, dat de geaggregeerde statistieken uit paragraaf 1 oplevert. Ook die zien, zoals bij elk webverzoek, je IP-adres en de gebruikelijke verzoekgegevens; Vercel gebruikt die alleen om de aggregaten op te bouwen en rapporteert aan ons alleen geaggregeerde cijfers terug, zoals bezoekaantallen, populaire pagina's, verwijzende sites en hoe vaak elke weergave van de app is geopend. Vercel plaatst geen cookies en volgt bezoekers niet over andere websites. Vercel publiceert een verwerkersovereenkomst en is gecertificeerd onder het EU&ndash;U.S. Data Privacy Framework.</li>
+                <li><strong>Stripe</strong> &mdash; neemt de eenmalige bijdragen aan die op de pagina <a href="sponsor-nl.html">Steun MoiCheck</a> worden aangeboden, en alleen die: MoiCheck verkoopt niets en rekent nergens iets voor. Terwijl je die pagina leest wordt er niets bij Stripe opgehaald &mdash; de knop is een gewone link, dus er gaat geen enkel verzoek naar Stripe totdat je hem volgt, en volg je hem nooit, dan komt Stripe niets over je bezoek te weten. Volg je hem wel, dan verlaat je MoiCheck en ga je naar de afrekenpagina van Stripe zelf, waar Stripe &mdash; als verwerkingsverantwoordelijke voor wat daar gebeurt &mdash; je bank- of kaartgegevens aanneemt onder zijn eigen privacybeleid; wat bij ons terugkomt is het bedrag, de datum en de naam en het e-mailadres die je hebt ingevuld. Stripe publiceert een verwerkersovereenkomst.</li>
+            </ul>
+            <p>We verkopen je gegevens niet en delen ze niet met adverteerders. Waar elk van deze partijen je gegevens verwerkt, en wat de delen dekt die de EU verlaten, staat in paragraaf 3.</p>
+        </section>
+
+        <section>
+            <h2>3. Waar je gegevens worden verwerkt</h2>
+            <p>Je account, je voortgang en je notities, en de foutmeldingen uit paragraaf 1, worden opgeslagen in de Europese Unie. Het Supabase-project achter MoiCheck draait in Ierland (AWS-regio <em>eu-west-1</em>), en de app kopieert ze naar de opslag van geen enkele andere dienst. Die bewering is smaller dan ze klinkt, dus hier staat wat er buiten de live database ligt, in plaats van je te laten aannemen dat er niets is. Supabase maakt daarvan automatische back-ups binnen hetzelfde project, dus gegevens die je hebt verwijderd blijven daarin staan totdat die back-ups verlopen &mdash; paragraaf 5 zegt wat dat betekent voor het verwijderen van je account. Je eigen browser bewaart je voortgang en notities op het apparaat waarop je dit leest, en dat is wat paragraaf 6 beschrijft: die kopie blijft in die browser, en het wissen van je sitegegevens haalt hem weg. En je e-mailadres bereikt de partijen die post voor ons vervoeren, wat de alinea hieronder en paragraaf 4 behandelen. Supabase is zelf een Amerikaans bedrijf, dus zijn medewerkers kunnen bij die infrastructuur om haar te beheren; die toegang valt onder de waarborgen die aan het eind van deze paragraaf staan.</p>
+            <p>Opgeslagen in de EU is niet hetzelfde als de EU nooit verlaten, en &eacute;&eacute;n stuk accountgegevens vertrekt wel degelijk. Log je in met een magic link, dan wordt de e-mail met die link verstuurd via Resend in de Verenigde Staten, met jouw adres erop &mdash; en niet alleen in het voorbijgaan: wat Resend zelf zegt te bewaren staat in paragraaf 4. Inloggen met Google gaat helemaal niet via Resend &mdash; dat handelt Google af, zoals paragraaf 2 beschrijft.</p>
+            <p><strong>Het contactformulier.</strong> Je bericht wordt afgehandeld door een kleine functie die op Supabase draait. Zulke functies draaien normaal gesproken in het datacentrum dat het dichtst bij de gebruiker ligt &mdash; wat zou betekenen dat een bericht dat van buiten Europa wordt verstuurd, ook buiten Europa wordt verwerkt. Wij hebben die van ons vastgezet op Ierland, zodat elke inzending in de EU wordt afgehandeld, waar hij ook vandaan komt. De keerzijde is dat het formulier niet uitwijkt als die regio een storing heeft: het faalt dan gewoon, en je kunt in plaats daarvan rechtstreeks mailen naar <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>, wat in hetzelfde postvak uitkomt.</p>
+            <p><strong>Wat de EU w&eacute;l verlaat.</strong> Je bericht in Ierland afhandelen is niet het einde van zijn reis. Van daar gaat het naar Resend, en vervolgens via Cloudflare Email Routing naar onze Gmail-mailbox &mdash; en in die mailbox blijft het liggen. Resend, Cloudflare en Google zijn Amerikaanse bedrijven, en geen van drie&euml;n beperkt zijn verwerking tot de EU. Hetzelfde geldt voor Vercel, dat deze site serveert en de bezoekcijfers uit paragraaf 1 oplevert, en voor de inlogmails hierboven, die de eerste van diezelfde stappen zetten. Dus schrijf je ons, log je in met een magic link, of laad je simpelweg de pagina, dan wordt een deel daarvan buiten de EU/EER afgehandeld.</p>
+            <p><strong>Bijdragen.</strong> Doe je er een, dan wordt de betaling door Stripe aangenomen en niet door ons. De entiteit daarachter is Stripe Payments Europe, in Ierland, en het geld en de gegevens die eraan hangen zijn van Stripe om te verwerken onder zijn eigen privacybeleid; onze kant ervan is het bedrag, de datum, de naam en het e-mailadres die we in het dashboard van Stripe zien en in onze boeken bewaren. Stripe is een groep met een Amerikaans moederbedrijf en beperkt zijn verwerking niet tot de EU, en publiceert zowel een verwerkersovereenkomst als de waarborgen die hieronder worden genoemd. Net als bij de mailbox verderop vertrouwen we op wat Stripe publiceert, en niet op een eigen controle.</p>
+            <p><strong>Wat dat rechtmatig maakt.</strong> Supabase, Resend, Cloudflare, Vercel en Stripe verwerken gegevens namens ons op basis van een overeenkomst, en elk van hen publiceert een verwerkersovereenkomst waarin de waarborgen staan voor het overbrengen van gegevens buiten de EER: de modelcontractbepalingen van de Europese Commissie (de Standard Contractual Clauses) en, voor de partijen die daaronder gecertificeerd zijn, het EU&ndash;U.S. Data Privacy Framework. We vertrouwen op de voorwaarden die zij publiceren en niet op een eigen controle, en we hebben partijen gekozen die ze aanbieden. Je mag ons vragen wat er voor een bepaalde partij geldt, op het adres in paragraaf 9.</p>
+            <p><strong>De mailbox, eerlijk gezegd.</strong> Het valt op dat Google niet in die zin staat, en die reden is het waard om te geven in plaats van weg te laten. Eerst: waar je bericht werkelijk belandt. hallo@moicheck.nl is zelf geen postvak maar een adres waarvoor Cloudflare Email Routing post aanneemt en doorstuurt, en het stuurt door naar een priv&eacute;-Google-account &mdash; een gewone Gmail-inbox, in de Verenigde Staten. Daar komt je bericht tot rust, en dat geldt net zo goed als je het formulier overslaat en ons rechtstreeks mailt; het is hoe dan ook hetzelfde postvak.</p>
+            <p>Dat account valt onder Googles consumentenvoorwaarden, niet onder een zakelijke afspraak met een verwerkersovereenkomst erachter. Deze laatste stap wordt dus, anders dan bij de vier partijen hierboven, niet door zo'n overeenkomst gedekt, en we schrijven dat liever op dan het af te ronden naar een waarborg die we niet hebben. Wat we je w&eacute;l concreet kunnen vertellen: het account vereist tweestapsverificatie, niemand anders dan wij leest mee, en je bericht wordt niet langer bewaard dan we nodig hebben om je te antwoorden. MoiCheck is het hobbyproject van &eacute;&eacute;n persoon, en het postvak wordt navenant beheerd &mdash; is dat geen afweging die je wilt maken, gebruik het formulier dan alsjeblieft niet, en mail ons ook niet: alles wat je stuurt komt op dezelfde plek aan.</p>
+            <p><strong>De kaart is anders, en daar moeten we eerlijk over zijn.</strong> De bestanden van Leaflet komen van unpkg en de tegels komen van OpenStreetMap, en met geen van beide hebben we een overeenkomst. Je browser haalt ze rechtstreeks op, zoals dat gaat met alles wat een pagina insluit, dus wat zij zien is het verzoek zelf &mdash; je IP-adres en de gebruikelijke browsergegevens &mdash; en ze serveren het vanaf hun eigen locatie die het dichtstbij ligt, niet vanuit de EU. We kunnen namens jou geen waarborgen beloven met partijen met wie we geen contract hebben, dus dat gaan we niet doen. Er gaat niets naar een van beide totdat je naar de kaartweergave wisselt; blijf je bij de lijst, dan wordt er helemaal geen verzoek gedaan.</p>
+        </section>
+
+        <section>
+            <h2>4. Hoe lang we het bewaren</h2>
+            <ul>
+                <li><strong>Accountgegevens &amp; voortgang/notities:</strong> bewaard zolang je je account gebruikt. Je kunt het zelf op elk moment verwijderen (paragraaf 5). Stop je met gebruiken, dan verwijderen wij het, met je voortgang en notities, zodra er 24 maanden voorbij zijn sinds je MoiCheck voor het laatst ingelogd hebt gebruikt &mdash; de app openen terwijl je nog ingelogd bent telt mee, ook als je niet opnieuw hebt ingelogd. We mailen je vooraf niet, dus wil je een kopie houden, download dan je gegevens (paragraaf 5) voordat het zover is.</li>
+                <li><strong>Inzendingen via het contactformulier:</strong> bewaard in ons mailpostvak zolang we ze nodig hebben om af te handelen wat je hebt geschreven, wat betekent dat er ook een kopie ligt bij wie dat postvak host. We kopi&euml;ren inzendingen niet naar de MoiCheck-app of zijn database, en er wordt niets van het contactformulier in je browser opgeslagen. De functie die het bericht doorgeeft houdt zelf geen kopie. Resend, dat het bezorgt, documenteert een bewaartermijn van 30 dagen voor e-mailgegevens op zijn standaardpakketten; we hebben dat niet tegen de actuele documentatie kunnen bevestigen, dus beschouw het als hun opgegeven termijn en niet als een door ons geverifieerde.</li>
+                <li><strong>Foutmeldingen:</strong> automatisch gewist zodra ze 30 dagen oud zijn, door een opruiming die eenmaal per dag draait &mdash; een melding bestaat dus maximaal 31 dagen. Ze bevatten geen account, sessie of IP-adres, dus we hebben geen manier om de meldingen van jouw bezoeken op te zoeken en eerder te wissen. Mist het filter een e-mailadres of inlogtoken in een melding, dan wordt die melding alsnog door diezelfde opruiming gewist, binnen 31 dagen.</li>
+                <li><strong>Vastlegging van bijdragen:</strong> zeven jaar bewaard, omdat de Nederlandse wet vereist dat gegevens over ontvangen geld zo lang worden bewaard &mdash; dit is dus het enige op deze pagina dat we op verzoek niet eerder kunnen verwijderen. Het is een regel in de boekhouding en in het dashboard van Stripe, en zegt niets over hoe je de app hebt gebruikt.</li>
+                <li><strong>Lokale voorkeuren</strong> (thema, taal, voortgang zonder account): blijven op je apparaat staan totdat je je browseropslag wist.</li>
+                <li><strong>Evenementbadges:</strong> blijven op het apparaat waarop ze zijn verdiend, totdat je je browseropslag wist. Wij ontvangen ze nooit, dus er is aan onze kant niets om te bewaren of te verwijderen &mdash; en ook niets voor ons om terug te zetten als je ze wist.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>5. Je rechten</h2>
+            <p>Op grond van de AVG kun je ons vragen om:</p>
+            <ul>
+                <li>je te vertellen welke gegevens we van je hebben;</li>
+                <li>onjuiste gegevens te corrigeren;</li>
+                <li>je account en de bijbehorende gegevens te verwijderen (het "recht op vergetelheid");</li>
+                <li>te beperken wat we met je gegevens doen zolang er een vraag over wordt uitgezocht;</li>
+                <li>je gegevens te exporteren in een overdraagbaar formaat;</li>
+                <li>bezwaar te maken tegen verwerking op grond van ons gerechtvaardigd belang.</li>
+            </ul>
+            <p>Er is geen toestemming die je kunt intrekken, omdat geen van onze verwerkingen op toestemming berust (paragraaf 1).</p>
+            <p><strong>Geen geautomatiseerde besluiten die jou raken.</strong> MoiCheck doet niet aan profilering en neemt geen geautomatiseerd besluit met rechtsgevolgen of vergelijkbaar aanzienlijke gevolgen voor jou. Het enige dat de app automatisch bepaalt zijn badges: mijlpalen worden geteld uit de items die je zelf afvinkt, en een evenementbadge wordt toegekend als je apparaat bevestigt dat je bij het evenement bent. Geen van beide heeft enig effect buiten de app.</p>
+            <p><strong>Je gegevens zelf downloaden:</strong> open als je ingelogd bent je profiel (het poppetje) en kies <em>Download mijn gegevens</em>. Je krijgt een JSON-bestand met je accountgegevens &mdash; e-mailadres, account-id, wanneer je je hebt aangemeld en voor het laatst hebt ingelogd, welke inlogmethoden je account gebruikt, en, als je Google hebt gebruikt, de naam en de link naar de profielfoto die Google heeft gedeeld &mdash; plus elk voltooid item dat in je account is opgeslagen, met id, titel, datum en notitie. Je browser bouwt het op uit wat op onze servers staat, zonder dat je het ons hoeft te vragen. Een wijziging die daar nog niet is opgeslagen, bijvoorbeeld een die je offline hebt gemaakt, staat niet in het bestand. Het dekt je account en voortgang zoals opgesomd, niet alles wat we hebben. Wat er niet in zit: de serverzijdige inloggegevens van Supabase &mdash; je inlogsessies en hun vernieuwingstokens, het IP-adres en de browser die daarbij zijn vastgelegd, het logboek van inloggebeurtenissen, de koppeling met een Google-account, en de datum waarop we je account voor het laatst in gebruik zagen (die we alleen bewaren om de termijn van 24 maanden uit paragraaf 4 toe te passen) &mdash; en alles wat buiten je account ligt, zoals berichten die je ons via het contactformulier hebt gestuurd. Wil je daar iets van hebben, mail ons dan.</p>
+            <p><strong>Je account zelf verwijderen:</strong> open als je ingelogd bent je profiel (het poppetje) en kies <em>Verwijder mijn account &amp; gegevens</em>. Na je bevestiging verwijderen we je voltooide items en notities definitief uit Supabase, halen we je inlogregistratie weg, loggen we je uit, en wissen we de voortgang die in die browser is opgeslagen. Dit kan niet ongedaan worden gemaakt. Twee soorten kopie overleven die verwijdering, en geen van beide is een weg terug naar je account: kopie&euml;n van je voortgang op andere apparaten waarop je hebt ingelogd blijven in de opslag van die browsers staan totdat je daar de sitegegevens wist, en de automatische back-ups die Supabase van de database maakt, gemaakt v&oacute;&oacute;r je verwijdering, worden niet bewerkt &mdash; die verlopen op hun eigen schema, en we zetten er niets uit terug om een account weer tot leven te wekken. Is automatische verwijdering op deze installatie niet beschikbaar, dan meldt de app dat; mail ons en we verwijderen je account handmatig.</p>
+            <p>Wil je een van de andere rechten uitoefenen, of kun je niet inloggen om de verwijdering in de app te gebruiken, mail ons dan op <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>. We reageren binnen een redelijke termijn en verwijderen bij verwijderingsverzoeken je accountgegevens uit Supabase.</p>
+            <p>E&eacute;n ding kunnen we op verzoek niet verwijderen: de vastlegging van een bijdrage, als je die hebt gedaan. De Nederlandse wet verplicht ons gegevens over ontvangen geld zeven jaar te bewaren (paragraaf 4), en het recht op wissing gaat niet boven een wettelijke bewaarplicht. Die vastlegging is niet aan je account gekoppeld, dus het verwijderen van je account raakt haar niet, en het bewaren ervan zegt ons niets over hoe je de app hebt gebruikt.</p>
+            <p>Uitloggen wist de voortgang die in die browser is opgeslagen, zodat de volgende persoon die op een gedeeld apparaat inlogt die niet erft. Je kunt je lokaal opgeslagen gegevens ook op elk moment wissen door de sitegegevens voor MoiCheck in je browser te wissen.</p>
+            <p><strong>Klachten.</strong> Vind je dat we verkeerd met je gegevens zijn omgegaan, dan heb je het recht een klacht in te dienen bij een toezichthouder. In Nederland is dat de <a href="https://www.autoriteitpersoonsgegevens.nl" target="_blank" rel="noopener noreferrer">Autoriteit Persoonsgegevens</a>. We horen het liever eerst van jou, op <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>, maar dat hoeft niet.</p>
+        </section>
+
+        <section>
+            <h2>6. Cookies &amp; lokale opslag</h2>
+            <p>We gebruiken geen advertentie- of trackingcookies, en niets wat we opslaan volgt je naar andere websites. Alles in de tabel hieronder wordt bewaard door je eigen browser, op je eigen apparaat.</p>
+            <p>De Nederlandse wet &mdash; artikel 11.7a van de Telecommunicatiewet, dat artikel 5(3) van de ePrivacy-richtlijn uitvoert &mdash; verplicht ons je toestemming te vragen voordat we iets op je apparaat opslaan of iets uitlezen dat er al staat, <em>tenzij</em> het strikt noodzakelijk is om de dienst te leveren waar je om hebt gevraagd. We tonen geen toestemmingsbanner omdat elk item in de tabel hieronder binnen die uitzondering valt: het is telkens &oacute;f de functie waarvoor je naar MoiCheck kwam, &oacute;f een instelling die je zelf hebt gekozen.</p>
+            <table class="storage-table">
+                <thead>
+                    <tr><th>Wat we opslaan</th><th>Wat het doet</th><th>Waarom het geen toestemming nodig heeft</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Voltooide items &amp; herinneringen<br><code>moiCheckState</code></td>
+                        <td>Onthoudt wat je hebt afgevinkt, en wat je erover hebt geschreven.</td>
+                        <td>Strikt noodzakelijk: je voortgang onthouden &iacute;s de dienst. Zonder dit zou MoiCheck alles vergeten zodra je het tabblad sluit.</td>
+                    </tr>
+                    <tr>
+                        <td>Taal<br><code>moiCheckLang</code></td>
+                        <td>Houdt de app in de taal die je hebt gekozen.</td>
+                        <td>Een instelling die je zelf hebt gekozen, alleen opgeslagen om die keuze te eerbiedigen.</td>
+                    </tr>
+                    <tr>
+                        <td>Thema<br><code>moiCheckTheme</code></td>
+                        <td>Houdt het lichte, donkere of systeemuiterlijk aan dat je hebt gekozen.</td>
+                        <td>Een instelling die je zelf hebt gekozen, alleen opgeslagen om die keuze te eerbiedigen.</td>
+                    </tr>
+                    <tr>
+                        <td>Thema, oudere naam<br><code>theme</code></td>
+                        <td>Dezelfde uiterlijkinstelling, onder de naam die een eerdere versie van MoiCheck gebruikte. Heb je geen actueel thema opgeslagen, dan nemen we het over en verwijderen we het bij je volgende bezoek; anders blijft het ongebruikt staan tot je je sitegegevens wist.</td>
+                        <td>Een instelling die je zelf hebt gekozen. Het uitlezen van iets dat al op je apparaat staat valt onder dezelfde toestemmingsregel, en onder dezelfde uitzondering.</td>
+                    </tr>
+                    <tr>
+                        <td>Indeling voltooide lijst<br><code>moiCheckCompletedCollapsed</code></td>
+                        <td>Onthoudt of je het voltooide gedeelte ingeklapt hebt gelaten.</td>
+                        <td>Een instelling die je zelf hebt gekozen, alleen opgeslagen om die keuze te eerbiedigen.</td>
+                    </tr>
+                    <tr>
+                        <td>Evenementbadges<br><code>moiCheckEvents</code></td>
+                        <td>Onthoudt bij welke evenementen je hebt ingecheckt, zodat de badge die je verdiende er de volgende keer nog is. Het bevat het evenement en de datum &mdash; nooit een locatie.</td>
+                        <td>Strikt noodzakelijk: de badge bewaren &iacute;s waar je om vroeg door op "Ik ben hier" te tikken. Er wordt niets opgeslagen tenzij je daarop tikt, en de locatiecontrole die eraan voorafgaat slaat helemaal niets op.</td>
+                    </tr>
+                    <tr>
+                        <td>Inlogsessie<br><em>geplaatst en beheerd door Supabase</em></td>
+                        <td>Houdt je ingelogd, zodat je niet op elke pagina een nieuwe magic link hoeft aan te vragen.</td>
+                        <td>Strikt noodzakelijk om inloggen te leveren &mdash; wat alleen gebeurt omdat je zelf hebt gevraagd in te loggen. Log je nooit in, dan wordt die sessie nooit aangemaakt.</td>
+                    </tr>
+                    <tr>
+                        <td>Accountmarkering<br><code>moiCheckSyncedUser</code></td>
+                        <td>Legt vast bij welk account de opgeslagen voortgang hoort.</td>
+                        <td>Strikt noodzakelijk om veilig te synchroniseren: het is wat voorkomt dat voortgang op een gedeeld apparaat onder een ander account wordt ge&uuml;pload. Het wordt alleen aangemaakt als je inlogt en verwijderd als je uitlogt; eindigt je sessie terwijl de app dicht is, dan wordt het gewist zodra je de app weer opent.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Bevestigen dat je bij een evenement bent <em>leest</em> je locatie van je apparaat, en dat valt onder diezelfde toestemmingsregel. We vragen er alleen om op het moment dat je op "Ik ben hier" tikt, je browser vraagt het aan jou voordat wij iets krijgen, en je co&ouml;rdinaten worden met die van het evenement vergeleken en daarna weggegooid in plaats van opgeslagen &mdash; dus wat er uiteindelijk bewaard blijft is de badge uit de tabel hierboven, en niets over waar je was. Paragraaf 1 beschrijft die controle volledig.</p>
+            <p>De bezoekstatistieken uit paragraaf 1 komen van Vercel Web Analytics, dat geen cookies plaatst en helemaal niets op je apparaat opslaat, dus de toestemmingsregel hierboven is daarop niet van toepassing.</p>
+            <p>Als je uitlogt worden je voltooide items, notities en de accountmarkering uit die browser gewist, zodat de volgende persoon die op een gedeeld apparaat inlogt ze niet erft. Je taal, thema en indelingsvoorkeuren zijn apparaatinstellingen en geen persoonsgegevens, dus die blijven staan. Evenementbadges blijven ook staan, en over die afweging moeten we eerlijk zijn: ze worden nergens heen ge&uuml;pload, dus ze bij het uitloggen wissen zou ze voorgoed vernietigen in plaats van ze bij je volgende keer inloggen terug te geven &mdash; de prijs is dat op een gedeeld apparaat de volgende persoon kan zien dat iemand bij een evenement heeft ingecheckt. Je kunt alles op elk moment weghalen door in je browser de sitegegevens voor MoiCheck te wissen.</p>
+        </section>
+
+        <section>
+            <h2>7. Kinderen</h2>
+            <p>MoiCheck is niet gericht op kinderen, en we verzamelen niet bewust gegevens van iemand onder de 16.</p>
+        </section>
+
+        <section>
+            <h2>8. Wijzigingen in dit beleid</h2>
+            <p>Veranderen we hoe we met je gegevens omgaan, dan werken we deze pagina bij en passen we de datum "laatst bijgewerkt" hierboven aan.</p>
+        </section>
+
+        <section>
+            <h2>9. Contact</h2>
+            <p>Vragen over dit beleid of over je gegevens? Mail <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>.</p>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>MoiCheck &bull; <a href="index.html" class="footer-link-btn">Terug naar de app</a> &bull; <a href="sponsor-nl.html" class="footer-link-btn">Steun MoiCheck</a> &bull; <a href="privacy.html" class="footer-link-btn" hreflang="en" lang="en">English</a></p>
+    </footer>
+
+    <script src="js/page-theme.js"></script>
+</body>
+</html>
