@@ -419,6 +419,14 @@ async function syncCloudProgress() {
 
         if (stale()) return;
 
+        // The marker was set to this user before the query. If it names someone else now,
+        // another tab switched the browser to that account while the query was in flight;
+        // if it is gone, another tab signed out and emptied the store. Either way this
+        // tab's auth listener has not run yet (so stale() cannot see it) and the store is
+        // no longer ours: writing this tab's copy over it, or uploading from it, would
+        // hand one account's progress to the other or leave it behind after sign-out.
+        if (localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return;
+
         if (error) {
             console.log('Cloud sync note:', error.message);
             return;
@@ -431,6 +439,12 @@ async function syncCloudProgress() {
                     note: row.note || ''
                 };
             });
+            // saveState(), not saveItems(), on purpose. This path ends in a full upload of
+            // completedItems under currentUser.id, so it must hold only this tab's own
+            // view. saveItems() would first adopt whatever another tab has put in the
+            // shared store while the query above was in flight: after an account switch
+            // there, that is a different account's private progress, and the upload below
+            // would hand it to this one. Overwriting is the safe direction here.
             saveState();
 
             // ⚡ Bolt Performance Optimization:
@@ -616,6 +630,11 @@ async function deleteUserAccountAndData(targetUserId) {
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {
     if (!supabaseClient || !currentUser) return;
+    // The same ownership check as saveItems() and syncCloudProgress(): if another tab
+    // switched accounts or signed out and this tab has not heard yet, do not send. RLS
+    // would reject the write anyway (the token is no longer this user's); this just
+    // keeps a stale tab from trying.
+    if (localStorage.getItem(SYNCED_USER_KEY) !== currentUser.id) return;
 
     try {
         if (isCompleted) {
