@@ -158,3 +158,35 @@ test('a re-tick whose upload failed survives the next sync', async () => {
     assert.ok('3' in plain(tab.completedItems), 'the re-tick was dropped as if it were a deletion elsewhere');
     assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['3'], 'the re-tick should reach the cloud on the next sync');
 });
+
+// The clear that matters for the cross-tab switch is the one beside heldUserId, not the
+// one in onUserLoggedOut(): when another tab moves the browser to B, this tab never logs
+// out, it just receives B's sign-in. The test above goes through the logout path and so
+// cannot protect this one. Here the store and marker are already B's, as #220's adoption
+// branch expects, and B's tick has never been uploaded — if the set still held A's ids it
+// would read as "was in B's cloud, now gone" and B's own progress would be deleted.
+test('a cross-tab switch to another account does not drop the new account’s progress', async () => {
+    const storage = createLocalStorage();
+    const rows = [cloudRow('user-a', '2', "A's")];
+    const supabase = createFakeSupabase({ rows });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+
+    tab.completedItems = {};
+    tab.currentUser = userA;
+    await tab.onUserLoggedIn();                  // this tab learns '2' is in A's cloud
+    assert.ok('2' in plain(tab.completedItems));
+    supabase.upserts.length = 0;
+
+    // Another tab switches the browser to B: it has already moved the marker and left B's
+    // own progress in the store. B has nothing in the cloud yet. No logout happens here.
+    rows.length = 0;
+    storage.setItem('moiCheckSyncedUser', 'user-b');
+    storage.setItem('moiCheckState', JSON.stringify({ '2': local("B's own") }));
+
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();                  // this tab only now hears about B
+
+    assert.ok('2' in plain(tab.completedItems), "B's own progress was dropped as if it were A's deletion");
+    assert.deepEqual(supabase.upserts.map(u => [u.row.user_id, u.row.item_id]), [['user-b', '2']],
+        "B's tick should be uploaded under B");
+});
