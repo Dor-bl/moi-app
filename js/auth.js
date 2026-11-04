@@ -29,6 +29,14 @@ let authGeneration = 0;
 // account's progress (a fresh load, or after a sign-out), so guest ticks still merge.
 let heldUserId = null;
 
+// Item ids this tab has seen in this account's cloud rows, or uploaded itself. It is what
+// lets the sync below tell an item that was never uploaded (a guest tick, which must be
+// merged up) from one that was uploaded and has since been deleted from another tab or
+// device (which must not be put back). Tab-local and in memory only, like heldUserId: no
+// tombstone in storage and no cross-tab protocol. Cleared whenever the account changes,
+// because item ids are shared across accounts and this knowledge is per account.
+let cloudKnownIds = new Set();
+
 // Which account the progress in this browser was last synced with. It lets us
 // tell genuine guest progress (no marker) apart from another account's
 // leftovers (marker belongs to somebody else), so signing in never re-uploads
@@ -395,6 +403,7 @@ function onUserLoggedOut() {
     saveState();
     localStorage.removeItem(SYNCED_USER_KEY);
     heldUserId = null;
+    cloudKnownIds.clear();
     updateAuthBtnState(false);
     renderList();
     updateProgress();
@@ -445,6 +454,7 @@ async function syncCloudProgress() {
         saveState();
     }
     localStorage.setItem(SYNCED_USER_KEY, currentUser.id);
+    if (heldUserId !== currentUser.id) cloudKnownIds.clear();
     heldUserId = currentUser.id;
 
     const generation = authGeneration;
@@ -495,9 +505,23 @@ async function syncCloudProgress() {
             const localEntries = Object.entries(completedItems);
             const missingInCloud = [];
 
+            for (const id of cloudItemIds) cloudKnownIds.add(id);
+            let dropped = false;
+
             for (let [itemId, localData] of localEntries) {
                 if (stale()) return;
                 if (!cloudItemIds.has(itemId)) {
+                    // Seen in this account's cloud before and gone now: unticked from
+                    // another tab or device. Uploading it again is what put a deleted
+                    // item back (see issue #225), so drop this tab's copy instead. An id
+                    // this tab has never seen in the cloud is a tick that never got
+                    // uploaded, which still merges up as before.
+                    if (cloudKnownIds.has(itemId)) {
+                        delete completedItems[itemId];
+                        cloudKnownIds.delete(itemId);
+                        dropped = true;
+                        continue;
+                    }
                     missingInCloud.push({
                         user_id: currentUser.id,
                         item_id: itemId,
@@ -507,6 +531,9 @@ async function syncCloudProgress() {
                 }
             }
 
+            // The save above ran before these deletions, so the store still shows them.
+            if (dropped) saveState();
+
             if (missingInCloud.length > 0) {
                 if (stale()) return;
                 const { error: upsertError } = await supabaseClient.from('user_progress').upsert(missingInCloud);
@@ -514,6 +541,8 @@ async function syncCloudProgress() {
 
                 if (upsertError) {
                     console.log('Cloud sync upsert note:', upsertError.message);
+                } else {
+                    for (const r of missingInCloud) cloudKnownIds.add(r.item_id);
                 }
             }
         }
