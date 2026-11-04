@@ -459,6 +459,14 @@ async function syncCloudProgress() {
 
     const generation = authGeneration;
     const stale = () => generation !== authGeneration;
+    // What this tab knew about the cloud when the read below was issued, like the
+    // generation counter above. The drop decision has to use this rather than the live
+    // set: a tick made while the read is in flight is uploaded by syncItemToCloud, which
+    // adds its id, and the read's older snapshot does not contain the row, so the live set
+    // would read it as "was in the cloud, now gone" and delete the tick the user just
+    // made. Against the pre-read copy it is simply an id the read did not know about, so
+    // it is uploaded again — the upsert is idempotent and its row already matches.
+    const knownAtReadTime = new Set(cloudKnownIds);
 
     try {
         const { data, error } = await supabaseClient
@@ -516,7 +524,7 @@ async function syncCloudProgress() {
                     // item back (see issue #225), so drop this tab's copy instead. An id
                     // this tab has never seen in the cloud is a tick that never got
                     // uploaded, which still merges up as before.
-                    if (cloudKnownIds.has(itemId)) {
+                    if (knownAtReadTime.has(itemId)) {
                         delete completedItems[itemId];
                         cloudKnownIds.delete(itemId);
                         dropped = true;

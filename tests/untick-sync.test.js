@@ -190,3 +190,36 @@ test('a cross-tab switch to another account does not drop the new account’s pr
     assert.deepEqual(supabase.upserts.map(u => [u.row.user_id, u.row.item_id]), [['user-b', '2']],
         "B's tick should be uploaded under B");
 });
+
+// The drop decision compares against what this tab knew when the read was issued, not the
+// live set. A tick made while the read is in flight is uploaded by syncItemToCloud, which
+// records its id, but the read's older snapshot cannot contain the row — against the live
+// set that reads as "was in the cloud, now gone" and deletes the tick the user just made.
+test('a tick made while a sync read is in flight is not deleted by it', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [] });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = {};
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+    supabase.upserts.length = 0;
+
+    // Hold the next read open so the tick can land during its flight.
+    let releaseRead;
+    const pendingRead = new Promise(resolve => { releaseRead = resolve; });
+    const realFrom = supabase.from;
+    supabase.from = table => ({ ...realFrom(table), select: () => ({ eq: () => pendingRead }) });
+
+    const syncing = tab.syncCloudProgress();
+
+    tab.completedItems['X'] = local('ticked during the sync');
+    await tab.syncItemToCloud('X', true, 'ticked during the sync');
+    assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['X'], 'the tick should reach the cloud');
+
+    releaseRead({ data: [], error: null });   // the read returns its older, empty snapshot
+    await syncing;
+    supabase.from = realFrom;
+
+    assert.ok('X' in plain(tab.completedItems), 'the tick was deleted although its cloud row exists');
+    assert.ok('X' in JSON.parse(storage.getItem('moiCheckState')), 'the tick was dropped from the store');
+});
