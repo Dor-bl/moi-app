@@ -145,7 +145,12 @@
 
         <section>
             <p>MoiCheck ("we", "us") is a small, independent bucket-list app for Groningen, run by one person, D. Blayzer, as a side project. D. Blayzer decides what happens to your personal data and is responsible for it &mdash; the "controller", in GDPR terms &mdash; and you can reach them at <a href="mailto:hallo@moicheck.nl">hallo@moicheck.nl</a>. This policy explains what personal data we collect, why, on what legal basis, how long we keep it, and how you can access or delete it. We try to collect as little as possible.</p>
-            <p><strong>There is a Dutch version.</strong> <a href="privacy-nl.html" hreflang="nl" lang="nl">Privacybeleid</a> is this same document in Dutch. The two describe exactly the same practice; if they ever disagree, that is a mistake on our part and not a difference in what happens &mdash; tell us at the address above and we will fix it. This English version is the original, and it is the one that governs: where the two differ, the English text prevails. That settles which sentence to read in the meantime; it does not make the Dutch version any less binding on how we actually behave, because both are describing the same thing we do.</p>
+            <!-- data-clause/data-governing-lang are read by
+                 tests/policy-consistency.test.js: they let it check that this
+                 paragraph exists in both translations and that the two name the
+                 same governing language, without matching on its wording. Change
+                 which language governs and you change it in both files. -->
+            <p data-clause="language-precedence" data-governing-lang="en"><strong>There is a Dutch version.</strong> <a href="privacy-nl.html" hreflang="nl" lang="nl">Privacybeleid</a> is this same document in Dutch. The two describe exactly the same practice; if they ever disagree, that is a mistake on our part and not a difference in what happens &mdash; tell us at the address above and we will fix it. This English version is the original, and it is the one that governs: where the two differ, the English text prevails. That settles which sentence to read in the meantime; it does not make the Dutch version any less binding on how we actually behave, because both are describing the same thing we do.</p>
         </section>
 
         <section>

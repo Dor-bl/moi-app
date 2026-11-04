@@ -13,12 +13,23 @@
 //   - every "section N" / "paragraaf N" / "§N" the policy cites is a section
 //     that exists;
 //   - every processor §2 names is placed somewhere in §3, which is where the
-//     policy says where each one handles data and what covers it.
+//     policy says where each one handles data and what covers it;
+//   - the language-precedence clause is present, before §1, and links to the
+//     other translation.
 //
 // And across the two translations, which is the drift a single-file check
-// cannot see: the same sections, the same processors, the same date. A fact
-// added to one language and not the other is the most likely way this document
-// ever becomes untrue, because the person editing it reads only one of them.
+// cannot see: the same sections, the same processors, the same date, and the
+// same answer to which language governs. A fact added to one language and not
+// the other is the most likely way this document ever becomes untrue, because
+// the person editing it reads only one of them.
+//
+// The precedence clause is checked through the data-clause and
+// data-governing-lang attributes on its paragraph rather than by its wording.
+// Matching the prose would mean this test fails on every rewrite of a sentence
+// it is not really about, which is how a test gets loosened until it checks
+// nothing. The attributes let it ask the two questions that matter — is the
+// clause still there, and do both files name the same winner — and stay quiet
+// about how either sentence is phrased.
 //
 // It cannot check meaning. A cross-reference can point at a section that exists
 // and still be the wrong one, §3 can name a provider while saying something
@@ -45,6 +56,7 @@ const POLICIES = [
     {
         file: 'privacy.html',
         lang: 'en',
+        counterpart: 'privacy-nl.html',
         // "section 4", "§4"
         citation: /(?:section|§)\s?(\d+)/gi,
         // §2 groups the map's three sources under one label
@@ -55,6 +67,7 @@ const POLICIES = [
     {
         file: 'privacy-nl.html',
         lang: 'nl',
+        counterpart: 'privacy.html',
         // "paragraaf 4", "§4"
         citation: /(?:paragraaf|§)\s?(\d+)/gi,
         // "OpenStreetMap, Leaflet en unpkg"
@@ -81,13 +94,23 @@ const read = policy => {
             .map(name => name.trim())
             .filter(Boolean);
     };
+    // The whole <p ...data-clause="language-precedence"...>…</p>, or null.
+    const precedenceClause = () => {
+        const m = text.match(/<p\b[^>]*\bdata-clause="language-precedence"[^>]*>[\s\S]*?<\/p>/);
+        return m ? { html: m[0], index: m.index } : null;
+    };
+    const governingLang = () => {
+        const clause = precedenceClause();
+        const m = clause && clause.html.match(/\bdata-governing-lang="([a-z-]+)"/);
+        return m ? m[1] : null;
+    };
     const updatedOn = () => {
         const m = text.match(policy.updated);
         if (!m) return null;
         const month = MONTHS[policy.lang].indexOf(m[2].toLowerCase());
         return month === -1 ? null : `${m[3]}-${String(month + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
     };
-    return { ...policy, text, headings, sectionBody, processors, updatedOn };
+    return { ...policy, text, headings, sectionBody, processors, precedenceClause, governingLang, updatedOn };
 };
 
 const policies = POLICIES.map(read);
@@ -130,6 +153,34 @@ for (const policy of policies) {
             `section 2 of ${policy.file} names ${missing.join(', ')} as handling visitors' data, but section 3 never mentions ${missing.length === 1 ? 'it' : 'them'}. Section 3 is where the policy says where each processor handles data and what covers any transfer out of the EU — a processor listed in one and absent from the other is the drift this PR series kept finding by hand`
         );
     });
+
+    test(`${policy.file} carries the language-precedence clause, before §1`, () => {
+        const clause = policy.precedenceClause();
+        assert.ok(
+            clause,
+            `${policy.file} has no <p data-clause="language-precedence">. The clause saying which translation governs where the two disagree was removed, or its marker was dropped in a rewrite — either way a reader of this file is no longer told, and the other translation may still claim one`
+        );
+
+        const occurrences = policy.text.match(/data-clause="language-precedence"/g) || [];
+        assert.equal(occurrences.length, 1, `${policy.file} marks ${occurrences.length} paragraphs as the precedence clause; there should be exactly one, or it is ambiguous which one governs`);
+
+        const firstHeading = policy.text.search(/<h2>1\. /);
+        assert.ok(firstHeading > -1, `${policy.file} has no section 1 heading to place the clause against`);
+        assert.ok(
+            clause.index < firstHeading,
+            `the precedence clause in ${policy.file} sits after the section 1 heading. It belongs in the opening section, where a reader meets it before the document it applies to, not buried further down`
+        );
+
+        assert.ok(
+            clause.html.includes(`href="${policy.counterpart}"`),
+            `the precedence clause in ${policy.file} does not link to ${policy.counterpart}. It tells the reader another translation exists and which one wins, so it has to be possible to get there from it`
+        );
+
+        assert.ok(
+            policy.governingLang(),
+            `the precedence clause in ${policy.file} has no data-governing-lang, so this test cannot tell which language it says prevails`
+        );
+    });
 }
 
 // --- The two translations against each other -------------------------------
@@ -153,6 +204,22 @@ test('both translations name the same processors in §2', () => {
         { onlyEnglish, onlyDutch },
         { onlyEnglish: [], onlyDutch: [] },
         `the two policies disagree about who processes visitors' data: ${en.file} alone names ${onlyEnglish.join(', ') || 'nothing extra'}, ${nl.file} alone names ${onlyDutch.join(', ') || 'nothing extra'}. Provider names are not translated, so this is a processor added to one language and not the other`
+    );
+});
+
+test('both translations name the same governing language', () => {
+    const languages = policies.map(p => p.lang);
+    const claims = policies.map(p => ({ file: p.file, governs: p.governingLang() }));
+    const distinct = [...new Set(claims.map(c => c.governs))];
+
+    assert.equal(
+        distinct.length,
+        1,
+        `the two policies disagree about which one governs: ${claims.map(c => `${c.file} says "${c.governs}"`).join(', ')}. One was edited to name itself, or the clause was reworded in one language only — and a reader is now told a different answer depending on which file they opened`
+    );
+    assert.ok(
+        languages.includes(distinct[0]),
+        `the precedence clause names "${distinct[0]}" as the governing language, which is not one of the policies here (${languages.join(', ')}). Either a translation was removed or the attribute holds a typo`
     );
 });
 

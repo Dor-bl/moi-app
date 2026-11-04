@@ -80,6 +80,21 @@ correct".
 The prevalence clause above is what covers the gap the test leaves: it decides which text wins
 while a drift is still unnoticed. It is not a reason to care less about finding them.
 
+The clause itself is checked too, since it is now load-bearing: each policy must carry exactly
+one paragraph marked `data-clause="language-precedence"`, before the section 1 heading, linking
+to the other translation — and the two must name the same `data-governing-lang`.
+
+**Why attributes rather than the sentence.** Matching the prose would mean the test fails every
+time the paragraph is reworded, which is how a test gets loosened until it checks nothing. The
+attributes let it ask only the two questions that matter — is the clause still there, and do both
+files name the same winner — while staying silent on phrasing. Changing which language governs is
+therefore a two-file edit by construction: flip one attribute and the suite fails until the other
+follows.
+
+Each of these was mutation-tested when written: deleting the clause from the Dutch file, editing
+it to claim Dutch governs, dropping the marker during a rewrite, moving the paragraph below
+section 1, and removing its link to the other translation all fail the suite.
+
 ## The one piece of CSS the English page does not need
 
 Dutch compounds are long, unbreakable tokens — *gebruiksstatistieken*,
