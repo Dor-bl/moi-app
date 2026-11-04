@@ -100,3 +100,61 @@ test('known limit: a deletion made on another device is still undone after a fre
     assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['2'],
         'if this now returns [] the cross-device case is fixed and this test should be replaced');
 });
+
+// An ordinary tick does not go through the batch upsert in syncCloudProgress — it is
+// uploaded on its own by syncItemToCloud from toggleComplete. If that path does not
+// record the id, the item still reads as "never reached the cloud", and a later sync
+// uploads it again after another tab unticks it: issue #225 on its most common path.
+test('a tick uploaded on its own is not put back after another tab unticks it', async () => {
+    const storage = createLocalStorage();
+    const rows = [cloudRow('user-b', 'already-synced')];
+    const supabase = createFakeSupabase({ rows });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = {};
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+
+    // The user ticks an item here; toggleComplete uploads it individually.
+    tab.completedItems['7'] = local('ticked here');
+    await tab.syncItemToCloud('7', true, 'ticked here');
+    rows.push(cloudRow('user-b', '7', 'ticked here'));
+    supabase.upserts.length = 0;
+
+    // Another tab of the same account unticks it.
+    rows.splice(rows.findIndex(r => r.item_id === '7'), 1);
+    await tab.syncCloudProgress();
+
+    assert.deepEqual(supabase.upserts, [], 'the item this tab ticked was uploaded again after the untick');
+    assert.ok(!('7' in plain(tab.completedItems)), 'this tab still holds the deleted item');
+});
+
+// The other direction. After this tab unticks an item the row is gone, so the tab must
+// stop believing it is in the cloud. Left behind, a re-tick whose upload fails reads as
+// "was in the cloud, now missing" and the next sync drops the user's tick instead.
+test('a re-tick whose upload failed survives the next sync', async () => {
+    const storage = createLocalStorage();
+    const rows = [cloudRow('user-b', '3', 'original')];
+    const supabase = createFakeSupabase({ rows });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = {};
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+
+    // Unticked here: the cloud row goes.
+    delete tab.completedItems['3'];
+    await tab.syncItemToCloud('3', false);
+    rows.length = 0;
+
+    // Re-ticked straight away, but this upload fails.
+    tab.completedItems['3'] = local('re-ticked');
+    const realFrom = supabase.from;
+    supabase.from = table => ({ ...realFrom(table), upsert: async () => ({ error: { message: 'offline' } }) });
+    await tab.syncItemToCloud('3', true, 're-ticked');
+    supabase.from = realFrom;
+    supabase.upserts.length = 0;
+
+    await tab.syncCloudProgress();
+
+    assert.ok('3' in plain(tab.completedItems), 'the re-tick was dropped as if it were a deletion elsewhere');
+    assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['3'], 'the re-tick should reach the cloud on the next sync');
+});

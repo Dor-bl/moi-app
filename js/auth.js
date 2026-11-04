@@ -709,17 +709,30 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
             // Keep the original completion date: this also runs when only the note
             // is edited, and a fresh timestamp would overwrite it in the cloud.
             const existing = completedItems[itemId];
-            await supabaseClient.from('user_progress').upsert({
+            // This write has to keep cloudKnownIds in step, not only the batch in
+            // syncCloudProgress: a tick that goes up here and is then unticked in another
+            // tab would otherwise still look like one that never reached the cloud, and
+            // the next sync would upload it again — the very thing #225 is about. The user
+            // id is captured before the await because an account change during the request
+            // would make this knowledge the wrong account's, and the set is per account.
+            const userId = currentUser.id;
+            const { error: upsertError } = await supabaseClient.from('user_progress').upsert({
                 user_id: currentUser.id,
                 item_id: itemId,
                 note: clampNote(note),
                 date: (existing && existing.date) || new Date().toISOString()
             });
+            if (!upsertError && currentUser && currentUser.id === userId) cloudKnownIds.add(itemId);
         } else {
-            await supabaseClient.from('user_progress')
+            // And the other direction: once the row is gone the set must stop claiming it
+            // is there. Left behind, a later re-tick whose upload fails would read as
+            // "was in the cloud, now missing" and the next sync would drop it.
+            const userId = currentUser.id;
+            const { error: deleteError } = await supabaseClient.from('user_progress')
                 .delete()
                 .eq('user_id', currentUser.id)
                 .eq('item_id', itemId);
+            if (!deleteError && currentUser && currentUser.id === userId) cloudKnownIds.delete(itemId);
         }
     } catch (err) {
         console.log('Cloud update note:', err);
