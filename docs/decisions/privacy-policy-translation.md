@@ -34,16 +34,32 @@ to Dutch and then opening the policy lands on the Dutch one.
 
 ## Which version governs
 
-Neither claims precedence over the other, and that is deliberate. The usual move — "in case of
-discrepancy the English version prevails" — would be a way of saying the Dutch text is
-decorative, which is both untrue and a poor thing to tell a Dutch reader of a document about
-their own rights. It is also doubtful that such a clause would do much against a Dutch
-consumer, since the obligation under Article 12 AVG is to inform *that reader* clearly.
+**The English version prevails.** Both policies say so in their opening section, next to the
+link to the other language.
 
-So both versions open by saying the same thing: this is one document in two languages, they
-describe the same practice, and a discrepancy is a mistake to report and fix rather than a
-difference in what we do. That is an accurate description of the intent, and it puts the burden
-where it belongs — on us keeping them in step.
+This was decided against the alternative, and the alternative is worth writing down because it
+is the one this file originally recommended. The argument for saying nothing was: a prevalence
+clause can read as "the Dutch text is decorative", which is a poor thing to tell a Dutch reader
+of a document about their own rights, and it is doubtful such a clause does much against a
+Dutch consumer anyway, since Article 12 AVG asks that *that reader* be informed clearly.
+
+The argument that won is simpler. Two texts will eventually disagree — that is what the drift
+section below is about — and when they do, somebody has to know which sentence to read. Leaving
+that open does not make the Dutch reader better off; it just means that on the day it matters,
+the answer is a negotiation instead of a line in the document. Naming the original as the one
+that governs is the ordinary way to resolve it, and it costs the Dutch reader nothing that the
+alternative was actually giving them.
+
+What the clause deliberately does **not** do, and both versions say this in as many words:
+
+- It does not make the Dutch version a lesser description of **what we do**. Both describe the
+  same practice; a discrepancy is a bug in the writing, not two different behaviours one of
+  which is sanctioned.
+- It does not touch the reader's rights. Those come from the AVG, not from this document, and
+  no clause here narrows them.
+
+So the clause settles which sentence to read while a mistake is still unfixed. That is the
+whole of its job, and the paragraphs are written to claim nothing more than that.
 
 ## Keeping them in step
 
@@ -60,6 +76,9 @@ of its English counterpart, or that a new sentence was added to one and not the 
 existing section. It catches the structural half so review can spend its attention on the half
 no test can reach. Treat a green run as "nothing obviously fell off", not as "the translation is
 correct".
+
+The prevalence clause above is what covers the gap the test leaves: it decides which text wins
+while a drift is still unnoticed. It is not a reason to care less about finding them.
 
 ## The one piece of CSS the English page does not need
 
