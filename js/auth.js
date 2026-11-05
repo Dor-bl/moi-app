@@ -1,5 +1,5 @@
 // Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport, exportMissesLocalChanges
-// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState.
+// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState, saveItems, readStoredState.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
@@ -28,14 +28,6 @@ let authGeneration = 0;
 // already matches and nothing looks out of place. Null when this tab holds no
 // account's progress (a fresh load, or after a sign-out), so guest ticks still merge.
 let heldUserId = null;
-
-// Item ids this tab has seen in this account's cloud rows, or uploaded itself. It is what
-// lets the sync below tell an item that was never uploaded (a guest tick, which must be
-// merged up) from one that was uploaded and has since been deleted from another tab or
-// device (which must not be put back). Tab-local and in memory only, like heldUserId: no
-// tombstone in storage and no cross-tab protocol. Cleared whenever the account changes,
-// because item ids are shared across accounts and this knowledge is per account.
-let cloudKnownIds = new Set();
 
 // Which account the progress in this browser was last synced with. It lets us
 // tell genuine guest progress (no marker) apart from another account's
@@ -403,7 +395,6 @@ function onUserLoggedOut() {
     saveState();
     localStorage.removeItem(SYNCED_USER_KEY);
     heldUserId = null;
-    cloudKnownIds.clear();
     updateAuthBtnState(false);
     renderList();
     updateProgress();
@@ -454,19 +445,23 @@ async function syncCloudProgress() {
         saveState();
     }
     localStorage.setItem(SYNCED_USER_KEY, currentUser.id);
-    if (heldUserId !== currentUser.id) cloudKnownIds.clear();
     heldUserId = currentUser.id;
 
     const generation = authGeneration;
     const stale = () => generation !== authGeneration;
-    // What this tab knew about the cloud when the read below was issued, like the
-    // generation counter above. The drop decision has to use this rather than the live
-    // set: a tick made while the read is in flight is uploaded by syncItemToCloud, which
-    // adds its id, and the read's older snapshot does not contain the row, so the live set
-    // would read it as "was in the cloud, now gone" and delete the tick the user just
-    // made. Against the pre-read copy it is simply an id the read did not know about, so
-    // it is uploaded again — the upsert is idempotent and its row already matches.
-    const knownAtReadTime = new Set(cloudKnownIds);
+    // Issue #225: "local has it, cloud does not" means two different things. An entry that
+    // never reached this account's cloud (a guest tick, a failed upload) must be uploaded;
+    // one that did and is gone now was unticked in another tab or on another device, and
+    // must be dropped. Entries carry `synced: true` once the cloud is known to hold them
+    // (see syncItemToCloud). The flag lives in the stored entry, so every tab and every
+    // later load sees it; an untick deletes the entry, so nothing outlives it.
+    // Taken before the read: only an entry already synced when the read was sent can be
+    // judged by it. A tick or re-tick made meanwhile is a new entry (new date), and is
+    // uploaded again instead - the upsert is idempotent.
+    const syncedAtRead = new Map();
+    for (const [id, entry] of Object.entries(completedItems)) {
+        if (entry && entry.synced) syncedAtRead.set(id, entry.date);
+    }
 
     try {
         const { data, error } = await supabaseClient
@@ -490,10 +485,14 @@ async function syncCloudProgress() {
         }
 
         if (data) {
+            // Read before the save below replaces it: another tab may have saved a tick
+            // there that has not reached the cloud yet, and it must not be dropped.
+            const stored = readStoredState() || {};
             data.forEach(row => {
                 completedItems[row.item_id] = {
                     date: row.date || new Date().toISOString(),
-                    note: row.note || ''
+                    note: row.note || '',
+                    synced: true
                 };
             });
             // saveState(), not saveItems(), on purpose. This path ends in a full upload of
@@ -513,22 +512,21 @@ async function syncCloudProgress() {
             const localEntries = Object.entries(completedItems);
             const missingInCloud = [];
 
-            for (const id of cloudItemIds) cloudKnownIds.add(id);
-            let dropped = false;
+            const dropped = [];
 
             for (let [itemId, localData] of localEntries) {
                 if (stale()) return;
                 if (!cloudItemIds.has(itemId)) {
-                    // Seen in this account's cloud before and gone now: unticked from
-                    // another tab or device. Uploading it again is what put a deleted
-                    // item back (see issue #225), so drop this tab's copy instead. An id
-                    // this tab has never seen in the cloud is a tick that never got
-                    // uploaded, which still merges up as before.
-                    if (knownAtReadTime.has(itemId)) {
-                        delete completedItems[itemId];
-                        cloudKnownIds.delete(itemId);
-                        dropped = true;
-                        continue;
+                    if (localData.synced && syncedAtRead.get(itemId) === localData.date) {
+                        const theirs = stored[itemId];
+                        if (theirs && typeof theirs === 'object' && theirs.date !== localData.date) {
+                            // Another tab re-ticked it after this tab's copy was synced.
+                            completedItems[itemId] = localData = theirs;
+                        } else {
+                            delete completedItems[itemId];
+                            dropped.push(itemId);
+                            continue;
+                        }
                     }
                     missingInCloud.push({
                         user_id: currentUser.id,
@@ -539,8 +537,8 @@ async function syncCloudProgress() {
                 }
             }
 
-            // The save above ran before these deletions, so the store still shows them.
-            if (dropped) saveState();
+            // A change, not a reset: saveItems() writes only these ids.
+            if (dropped.length) saveItems(dropped);
 
             if (missingInCloud.length > 0) {
                 if (stale()) return;
@@ -550,7 +548,7 @@ async function syncCloudProgress() {
                 if (upsertError) {
                     console.log('Cloud sync upsert note:', upsertError.message);
                 } else {
-                    for (const r of missingInCloud) cloudKnownIds.add(r.item_id);
+                    markSynced(missingInCloud);
                 }
             }
         }
@@ -704,6 +702,18 @@ async function deleteUserAccountAndData(targetUserId) {
     return { authDeleted: true };
 }
 
+// Records that the cloud now holds these uploaded rows, so a later sync that finds one
+// missing knows it was unticked elsewhere (see syncCloudProgress). Only for an entry that
+// is still the tick that was uploaded: one unticked or re-ticked since keeps its own state.
+function markSynced(rows) {
+    const ids = rows
+        .filter(r => completedItems[r.item_id] && completedItems[r.item_id].date === r.date)
+        .map(r => r.item_id);
+    if (!ids.length) return;
+    for (const id of ids) completedItems[id].synced = true;
+    saveItems(ids);
+}
+
 async function syncItemToCloud(itemId, isCompleted, note = '') {
     if (!supabaseClient || !currentUser) return;
     // The same ownership check as saveItems() and syncCloudProgress(): if another tab
@@ -717,30 +727,20 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
             // Keep the original completion date: this also runs when only the note
             // is edited, and a fresh timestamp would overwrite it in the cloud.
             const existing = completedItems[itemId];
-            // This write has to keep cloudKnownIds in step, not only the batch in
-            // syncCloudProgress: a tick that goes up here and is then unticked in another
-            // tab would otherwise still look like one that never reached the cloud, and
-            // the next sync would upload it again — the very thing #225 is about. The user
-            // id is captured before the await because an account change during the request
-            // would make this knowledge the wrong account's, and the set is per account.
-            const userId = currentUser.id;
-            const { error: upsertError } = await supabaseClient.from('user_progress').upsert({
+            const row = {
                 user_id: currentUser.id,
                 item_id: itemId,
                 note: clampNote(note),
                 date: (existing && existing.date) || new Date().toISOString()
-            });
-            if (!upsertError && currentUser && currentUser.id === userId) cloudKnownIds.add(itemId);
+            };
+            const generation = authGeneration;
+            const { error: upsertError } = await supabaseClient.from('user_progress').upsert(row);
+            if (!upsertError && generation === authGeneration) markSynced([row]);
         } else {
-            // And the other direction: once the row is gone the set must stop claiming it
-            // is there. Left behind, a later re-tick whose upload fails would read as
-            // "was in the cloud, now missing" and the next sync would drop it.
-            const userId = currentUser.id;
-            const { error: deleteError } = await supabaseClient.from('user_progress')
+            await supabaseClient.from('user_progress')
                 .delete()
                 .eq('user_id', currentUser.id)
                 .eq('item_id', itemId);
-            if (!deleteError && currentUser && currentUser.id === userId) cloudKnownIds.delete(itemId);
         }
     } catch (err) {
         console.log('Cloud update note:', err);

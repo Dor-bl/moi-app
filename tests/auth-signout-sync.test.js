@@ -107,7 +107,7 @@ test('progress left by a previous account is dropped, not uploaded under the new
 
     assert.deepEqual(supabase.upserts, [], "none of A's items are written to B's account");
     assert.deepEqual(plain(module.completedItems), {
-        'item-7': { date: '2025-09-02T08:00:00.000Z', note: "B's own note" }
+        'item-7': { date: '2025-09-02T08:00:00.000Z', note: "B's own note", synced: true }
     }, 'B ends up with only their own cloud rows');
     assert.equal(storage.getItem('moiCheckSyncedUser'), USER_B.id);
 });
