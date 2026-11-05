@@ -525,3 +525,47 @@ test('an upload that returns after another tab re-ticked the item does not overw
     assert.equal(stored['X'].note, 'from B', "A's older copy overwrote B's re-tick");
     assert.ok(!stored['X'].synced, "B's re-tick was marked synced although it never uploaded");
 });
+
+// Another tab's synced copy that is missing from the cloud was deleted, just like this
+// tab's: dropping both, rather than adopting the newer one, keeps the deletion.
+test('another tab’s uploaded note edit does not bring back an item deleted since', async () => {
+    const storage = createLocalStorage();
+    const rows = [cloudRow('user-b', 'X', 'old')];
+    const supabase = createFakeSupabase({ rows });
+    const tabA = await signedInTab(storage, supabase);
+    const tabB = await signedInTab(storage, supabase);
+
+    await editNote(tabB, 'X', 'edited in B');           // uploads, marked synced
+    assert.equal(JSON.parse(storage.getItem('moiCheckState'))['X'].synced, true);
+    rows.length = 0;                                     // then deleted on another device
+    supabase.upserts.length = 0;
+
+    await tabA.syncCloudProgress();
+
+    assert.deepEqual(supabase.upserts, [], 'the deleted item was uploaded again');
+    assert.ok(!('X' in JSON.parse(storage.getItem('moiCheckState'))), 'the deleted item is still stored');
+});
+
+// After declining to mark its upload, this tab must not keep its older copy: its next sync
+// would write that copy over the other tab's pending re-tick.
+test('a declined acknowledgement takes the other tab’s re-tick, so the next sync keeps it', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [] });
+    const tabA = await signedInTab(storage, supabase);
+
+    const held = holdUpserts(supabase);
+    tabA.completedItems['X'] = local('from A');
+    const uploading = tabA.syncItemToCloud('X', true, 'from A');
+    tabA.saveItems(['X']);
+    held.restore();
+    storage.setItem('moiCheckState', JSON.stringify({ X: { date: '2026-11-03T00:00:00.000Z', note: 'from B' } }));
+    held.releases[0]();
+    await uploading;
+    assert.equal(plain(tabA.completedItems)['X'].note, 'from B', "A kept its older copy");
+
+    supabase.upserts.length = 0;
+    await tabA.syncCloudProgress();              // the cloud has nothing for X
+
+    assert.equal(JSON.parse(storage.getItem('moiCheckState'))['X'].note, 'from B', "B's re-tick was overwritten");
+    assert.deepEqual(supabase.upserts.map(u => u.row.note), ['from B'], "B's re-tick should be uploaded");
+});

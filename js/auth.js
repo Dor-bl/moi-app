@@ -527,10 +527,10 @@ async function syncCloudProgress() {
                 if (!cloudItemIds.has(itemId)) {
                     if (localData.synced && syncedAtRead.get(itemId) === entryVersion(localData)) {
                         const theirs = stored[itemId];
-                        if (theirs && typeof theirs === 'object' &&
-                            (!theirs.synced || entryVersion(theirs) !== entryVersion(localData))) {
-                            // Another tab re-ticked it or edited its note after this tab's
-                            // copy was synced, or holds a change that has not uploaded yet.
+                        if (theirs && typeof theirs === 'object' && !theirs.synced) {
+                            // Another tab holds a re-tick or note edit that has not uploaded
+                            // yet. A synced copy there is gone from the cloud like this one,
+                            // so it is dropped with it rather than put back.
                             completedItems[itemId] = localData = theirs;
                             adopted.push(itemId);
                         } else {
@@ -722,14 +722,27 @@ async function deleteUserAccountAndData(targetUserId) {
 // written over by this tab's older copy.
 function markSynced(rows) {
     const stored = readStoredState() || {};
-    const ids = rows
-        .filter(r => {
-            const uploaded = `${r.date}\n${r.note}`;
-            const theirs = stored[r.item_id];
-            return entryVersion(completedItems[r.item_id]) === uploaded &&
-                (!theirs || entryVersion(theirs) === uploaded);
-        })
-        .map(r => r.item_id);
+    const ownStore = localStorage.getItem(SYNCED_USER_KEY) === currentUser.id;
+    const ids = [];
+    let tookNewer = false;
+    for (const r of rows) {
+        const uploaded = `${r.date}\n${r.note}`;
+        const theirs = stored[r.item_id];
+        if (entryVersion(completedItems[r.item_id]) !== uploaded) continue;
+        if (!theirs || entryVersion(theirs) === uploaded) {
+            ids.push(r.item_id);
+        } else if (ownStore && typeof theirs === 'object') {
+            // Another tab saved a newer version since this one was saved. Take it now,
+            // as the next save would: kept, this tab's older copy would be written over
+            // it by the next sync.
+            completedItems[r.item_id] = theirs;
+            tookNewer = true;
+        }
+    }
+    if (tookNewer) {
+        renderList();
+        updateProgress();
+    }
     if (!ids.length) return;
     for (const id of ids) completedItems[id].synced = true;
     // saveItems() folds in whatever another tab saved to the shared store while the request
