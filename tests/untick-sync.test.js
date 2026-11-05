@@ -342,3 +342,42 @@ test('a sync does not erase another tab’s re-tick that has not reached the clo
     assert.equal(stored['X'].note, 're-ticked');
     assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['X'], "B's re-tick should be uploaded");
 });
+
+// markSynced() saves through saveItems(), which folds in anything another tab saved to the
+// shared store while the request was in flight. This tab then holds an item it is not
+// showing as ticked, and a click on that box would untick it. saveItems() reports it by
+// returning true; the callers that drew the list before must redraw it.
+test('an upload that returns after another tab saved a tick repaints the list', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [] });
+    const { module: tab, renders } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = {};
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+    const repaintsBefore = renders.list;
+
+    // Hold this tab's upload open so the other tab can save while it is in flight.
+    let releaseUpload;
+    const gate = new Promise(resolve => { releaseUpload = resolve; });
+    const realFrom = supabase.from;
+    supabase.from = table => ({
+        ...realFrom(table),
+        upsert: async row => { await gate; return realFrom(table).upsert(row); }
+    });
+
+    tab.completedItems['X'] = local('ticked in this tab');
+    const uploading = tab.syncItemToCloud('X', true, 'ticked in this tab');
+
+    // Another tab of the same account ticks Y and saves it to the shared store.
+    const stored = JSON.parse(storage.getItem('moiCheckState') || '{}');
+    stored['Y'] = local('ticked in the other tab');
+    storage.setItem('moiCheckState', JSON.stringify(stored));
+
+    releaseUpload();
+    await uploading;
+    supabase.from = realFrom;
+
+    assert.ok('Y' in plain(tab.completedItems), 'this tab should have taken the other tab’s tick in');
+    assert.ok(renders.list > repaintsBefore,
+        'this tab holds Y but never redrew, so its box for Y still reads unticked and a click would untick it');
+});

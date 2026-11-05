@@ -711,7 +711,15 @@ function markSynced(rows) {
         .map(r => r.item_id);
     if (!ids.length) return;
     for (const id of ids) completedItems[id].synced = true;
-    saveItems(ids);
+    // saveItems() folds in whatever another tab saved to the shared store while the request
+    // was in flight, and returns true when it did. The list on screen was drawn before
+    // that, so it must be redrawn: otherwise this tab holds an item it shows as unticked,
+    // and a click on that box would untick what the other tab ticked. The same repaint
+    // toggleComplete and persistOpenNote do after their own saveItems().
+    if (saveItems(ids)) {
+        renderList();
+        updateProgress();
+    }
 }
 
 async function syncItemToCloud(itemId, isCompleted, note = '') {
