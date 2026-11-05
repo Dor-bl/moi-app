@@ -46,6 +46,13 @@ function clampNote(note) {
     return chars.length > NOTE_MAX_LENGTH ? chars.slice(0, NOTE_MAX_LENGTH).join('') : (note || '');
 }
 
+// What identifies one version of a completed entry: its date and its note. A note edit
+// keeps the date, so the date alone cannot tell an edit from the tick it was made on, and
+// an old read or upload would then pass for the newer edit (see syncCloudProgress).
+function entryVersion(entry) {
+    return entry && typeof entry === 'object' ? `${entry.date}\n${clampNote(entry.note)}` : null;
+}
+
 function updateAuthBtnState(isLoggedIn) {
     const t = UI_TRANSLATIONS[currentLang];
     const authBtn = document.getElementById('authBtn');
@@ -456,11 +463,11 @@ async function syncCloudProgress() {
     // (see syncItemToCloud). The flag lives in the stored entry, so every tab and every
     // later load sees it; an untick deletes the entry, so nothing outlives it.
     // Taken before the read: only an entry already synced when the read was sent can be
-    // judged by it. A tick or re-tick made meanwhile is a new entry (new date), and is
+    // judged by it. A tick, re-tick or note edit made meanwhile is a new version, and is
     // uploaded again instead - the upsert is idempotent.
     const syncedAtRead = new Map();
     for (const [id, entry] of Object.entries(completedItems)) {
-        if (entry && entry.synced) syncedAtRead.set(id, entry.date);
+        if (entry && entry.synced) syncedAtRead.set(id, entryVersion(entry));
     }
 
     try {
@@ -518,10 +525,12 @@ async function syncCloudProgress() {
             for (let [itemId, localData] of localEntries) {
                 if (stale()) return;
                 if (!cloudItemIds.has(itemId)) {
-                    if (localData.synced && syncedAtRead.get(itemId) === localData.date) {
+                    if (localData.synced && syncedAtRead.get(itemId) === entryVersion(localData)) {
                         const theirs = stored[itemId];
-                        if (theirs && typeof theirs === 'object' && theirs.date !== localData.date) {
-                            // Another tab re-ticked it after this tab's copy was synced.
+                        if (theirs && typeof theirs === 'object' &&
+                            (!theirs.synced || entryVersion(theirs) !== entryVersion(localData))) {
+                            // Another tab re-ticked it or edited its note after this tab's
+                            // copy was synced, or holds a change that has not uploaded yet.
                             completedItems[itemId] = localData = theirs;
                             adopted.push(itemId);
                         } else {
@@ -708,10 +717,18 @@ async function deleteUserAccountAndData(targetUserId) {
 
 // Records that the cloud now holds these uploaded rows, so a later sync that finds one
 // missing knows it was unticked elsewhere (see syncCloudProgress). Only for an entry that
-// is still the tick that was uploaded: one unticked or re-ticked since keeps its own state.
+// is still the version that was uploaded, here and in the store if the store has it: one
+// re-ticked or re-edited since, in this tab or another, keeps its own state, and is not
+// written over by this tab's older copy.
 function markSynced(rows) {
+    const stored = readStoredState() || {};
     const ids = rows
-        .filter(r => completedItems[r.item_id] && completedItems[r.item_id].date === r.date)
+        .filter(r => {
+            const uploaded = `${r.date}\n${r.note}`;
+            const theirs = stored[r.item_id];
+            return entryVersion(completedItems[r.item_id]) === uploaded &&
+                (!theirs || entryVersion(theirs) === uploaded);
+        })
         .map(r => r.item_id);
     if (!ids.length) return;
     for (const id of ids) completedItems[id].synced = true;

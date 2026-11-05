@@ -417,3 +417,111 @@ test('an upload that returns after another tab saved a tick repaints the list', 
     assert.ok(renders.list > repaintsBefore,
         'this tab holds Y but never redrew, so its box for Y still reads unticked and a click would untick it');
 });
+
+// A note edit keeps the entry's date, so the date alone does not identify a version. These
+// four cover the places that compare versions: the read-time snapshot, another tab's stored
+// copy, and the acknowledgement of an upload (against this tab's copy and the store's).
+async function signedInTab(storage, supabase) {
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = {};
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+    return tab;
+}
+function holdUpserts(supabase) {
+    const releases = [];
+    const realFrom = supabase.from;
+    supabase.from = table => ({ ...realFrom(table), upsert: row => new Promise(r => releases.push(() => {
+        supabase.upserts.push({ table, row }); r({ error: null });
+    })) });
+    return { releases, restore: () => { supabase.from = realFrom; } };
+}
+// What persistOpenNote() in app.js does for a note edit.
+function editNote(tab, id, note) {
+    tab.completedItems[id].note = note;
+    delete tab.completedItems[id].synced;
+    tab.saveItems([id]);
+    return tab.syncItemToCloud(id, true, note);
+}
+
+test('a note edit uploaded while a sync read is in flight is not dropped by it', async () => {
+    const storage = createLocalStorage();
+    const rows = [cloudRow('user-b', 'X', 'old')];
+    const supabase = createFakeSupabase({ rows });
+    const tab = await signedInTab(storage, supabase);
+    rows.length = 0;                                     // unticked elsewhere
+
+    let releaseRead;
+    const pendingRead = new Promise(resolve => { releaseRead = resolve; });
+    const realFrom = supabase.from;
+    supabase.from = table => ({ ...realFrom(table), select: () => ({ eq: () => pendingRead }) });
+    const syncing = tab.syncCloudProgress();
+    await editNote(tab, 'X', 'edited during the read');  // its upload succeeds
+    releaseRead({ data: [], error: null });
+    await syncing;
+    supabase.from = realFrom;
+
+    assert.equal(plain(tab.completedItems)['X']?.note, 'edited during the read', 'the edit was dropped');
+    assert.equal(JSON.parse(storage.getItem('moiCheckState'))['X']?.note, 'edited during the read');
+});
+
+test('a sync does not erase another tab’s note edit that has not uploaded yet', async () => {
+    const storage = createLocalStorage();
+    const rows = [cloudRow('user-b', 'X', 'old')];
+    const supabase = createFakeSupabase({ rows });
+    const tabA = await signedInTab(storage, supabase);
+    const tabB = await signedInTab(storage, supabase);
+
+    const realFrom = supabase.from;
+    supabase.from = table => ({ ...realFrom(table), upsert: async () => ({ error: { message: 'offline' } }) });
+    await editNote(tabB, 'X', 'edited in B');           // same date, upload fails
+    rows.length = 0;                                     // deleted on another device
+    supabase.upserts.length = 0;
+    supabase.from = realFrom;
+
+    await tabA.syncCloudProgress();
+
+    assert.equal(JSON.parse(storage.getItem('moiCheckState'))['X']?.note, 'edited in B', "B's note edit was erased");
+    assert.deepEqual(supabase.upserts.map(u => u.row.note), ['edited in B'], "B's note edit should be uploaded");
+});
+
+test('an older note upload that succeeds late does not mark a newer edit synced', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [cloudRow('user-b', 'X', 'old')] });
+    const tab = await signedInTab(storage, supabase);
+
+    const held = holdUpserts(supabase);
+    const first = editNote(tab, 'X', 'first edit');     // held open
+    held.restore();
+    const realFrom = supabase.from;
+    supabase.from = table => ({ ...realFrom(table), upsert: async () => ({ error: { message: 'offline' } }) });
+    await editNote(tab, 'X', 'second edit');            // fails
+    supabase.from = realFrom;
+    held.releases[0]();                                  // the first one now succeeds
+    await first;
+
+    assert.ok(!plain(tab.completedItems)['X'].synced, 'the unsent second edit was marked synced');
+    assert.ok(!JSON.parse(storage.getItem('moiCheckState'))['X'].synced);
+});
+
+test('an upload that returns after another tab re-ticked the item does not overwrite it', async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [] });
+    const tabA = await signedInTab(storage, supabase);
+
+    const held = holdUpserts(supabase);
+    tabA.completedItems['X'] = local('from A');
+    const uploading = tabA.syncItemToCloud('X', true, 'from A');
+    tabA.saveItems(['X']);
+    held.restore();
+
+    // Meanwhile another tab unticks X and re-ticks it; that upload fails, the store has it.
+    storage.setItem('moiCheckState', JSON.stringify({ X: { date: '2026-11-03T00:00:00.000Z', note: 'from B' } }));
+
+    held.releases[0]();
+    await uploading;
+
+    const stored = JSON.parse(storage.getItem('moiCheckState'));
+    assert.equal(stored['X'].note, 'from B', "A's older copy overwrote B's re-tick");
+    assert.ok(!stored['X'].synced, "B's re-tick was marked synced although it never uploaded");
+});
