@@ -1400,6 +1400,10 @@ function persistOpenNote() {
     if (note === (entry.note || '')) return;
 
     entry.note = note;
+    // The edit is not in the cloud until its upload succeeds (markSynced sets the flag
+    // again then). Left marked synced, a failed upload plus an untick in another tab
+    // would make the next sync drop the item and this note with it, instead of retrying.
+    delete entry.synced;
     if (saveItems([selectedItemId])) {
         renderList();
         updateProgress();
