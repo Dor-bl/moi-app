@@ -513,6 +513,7 @@ async function syncCloudProgress() {
             const missingInCloud = [];
 
             const dropped = [];
+            const adopted = [];
 
             for (let [itemId, localData] of localEntries) {
                 if (stale()) return;
@@ -522,6 +523,7 @@ async function syncCloudProgress() {
                         if (theirs && typeof theirs === 'object' && theirs.date !== localData.date) {
                             // Another tab re-ticked it after this tab's copy was synced.
                             completedItems[itemId] = localData = theirs;
+                            adopted.push(itemId);
                         } else {
                             delete completedItems[itemId];
                             dropped.push(itemId);
@@ -537,8 +539,10 @@ async function syncCloudProgress() {
                 }
             }
 
-            // A change, not a reset: saveItems() writes only these ids.
-            if (dropped.length) saveItems(dropped);
+            // A change, not a reset: saveItems() writes only these ids. Adopted re-ticks are
+            // written now too, since the save above replaced them with this tab's older copy
+            // and their upload below may fail.
+            if (dropped.length || adopted.length) saveItems([...dropped, ...adopted]);
 
             if (missingInCloud.length > 0) {
                 if (stale()) return;

@@ -343,6 +343,42 @@ test('a sync does not erase another tab’s re-tick that has not reached the clo
     assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['X'], "B's re-tick should be uploaded");
 });
 
+// Same start, but A's upload of the adopted re-tick fails too. The re-tick must still be in
+// the store afterwards, or the next load reads A's old synced copy and drops it.
+test('an adopted re-tick stays in the store when its upload fails', async () => {
+    const storage = createLocalStorage();
+    const rows = [cloudRow('user-b', 'X', 'old')];
+    const supabase = createFakeSupabase({ rows });
+    const { module: tabA } = loadAuthModule({ storage, supabaseClient: supabase });
+    const { module: tabB } = loadAuthModule({ storage, supabaseClient: supabase });
+    for (const tab of [tabA, tabB]) {
+        tab.completedItems = {};
+        tab.currentUser = userB;
+        await tab.onUserLoggedIn();
+    }
+
+    delete tabB.completedItems['X'];
+    const deleting = tabB.syncItemToCloud('X', false);
+    tabB.saveItems(['X']);
+    await deleting;
+    rows.length = 0;
+
+    const realFrom = supabase.from;
+    supabase.from = table => ({ ...realFrom(table), upsert: async () => ({ error: { message: 'offline' } }) });
+    tabB.completedItems['X'] = { date: '2026-11-02T00:00:00.000Z', note: 're-ticked' };
+    const uploading = tabB.syncItemToCloud('X', true, 're-ticked');
+    tabB.saveItems(['X']);
+    await uploading;
+
+    await tabA.syncCloudProgress();          // still offline
+    supabase.from = realFrom;
+
+    const stored = JSON.parse(storage.getItem('moiCheckState'));
+    assert.ok('X' in stored, "B's re-tick is gone from the store");
+    assert.equal(stored['X'].note, 're-ticked');
+    assert.ok(!stored['X'].synced, 'the re-tick is marked synced although it never uploaded');
+});
+
 // markSynced() saves through saveItems(), which folds in anything another tab saved to the
 // shared store while the request was in flight. This tab then holds an item it is not
 // showing as ticked, and a click on that box would untick it. saveItems() reports it by
