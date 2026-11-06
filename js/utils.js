@@ -1,4 +1,4 @@
-// Utils Module - Shared Global Exports: getMilestoneObj, showBadgeToast, saveState, saveItems, createConfetti
+// Utils Module - Shared Global Exports: getMilestoneObj, showBadgeToast, saveState, saveItems, readStoredState, createConfetti
 // Dependencies: Expects MILESTONES, UI_TRANSLATIONS, currentLang, completedItems, currentUser, SYNCED_USER_KEY.
 
 let toastTimeout = null;

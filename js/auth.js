@@ -1,5 +1,5 @@
 // Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport, exportMissesLocalChanges
-// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState.
+// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState, saveItems, readStoredState.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
@@ -44,6 +44,13 @@ const NOTE_MAX_LENGTH = 1000;
 function clampNote(note) {
     const chars = Array.from(note || '');
     return chars.length > NOTE_MAX_LENGTH ? chars.slice(0, NOTE_MAX_LENGTH).join('') : (note || '');
+}
+
+// What identifies one version of a completed entry: its date and its note. A note edit
+// keeps the date, so the date alone cannot tell an edit from the tick it was made on, and
+// an old read or upload would then pass for the newer edit (see syncCloudProgress).
+function entryVersion(entry) {
+    return entry && typeof entry === 'object' ? `${entry.date}\n${clampNote(entry.note)}` : null;
 }
 
 function updateAuthBtnState(isLoggedIn) {
@@ -449,6 +456,19 @@ async function syncCloudProgress() {
 
     const generation = authGeneration;
     const stale = () => generation !== authGeneration;
+    // Issue #225: "local has it, cloud does not" means two different things. An entry that
+    // never reached this account's cloud (a guest tick, a failed upload) must be uploaded;
+    // one that did and is gone now was unticked in another tab or on another device, and
+    // must be dropped. Entries carry `synced: true` once the cloud is known to hold them
+    // (see syncItemToCloud). The flag lives in the stored entry, so every tab and every
+    // later load sees it; an untick deletes the entry, so nothing outlives it.
+    // Taken before the read: only an entry already synced when the read was sent can be
+    // judged by it. A tick, re-tick or note edit made meanwhile is a new version, and is
+    // uploaded again instead - the upsert is idempotent.
+    const syncedAtRead = new Map();
+    for (const [id, entry] of Object.entries(completedItems)) {
+        if (entry && entry.synced) syncedAtRead.set(id, entryVersion(entry));
+    }
 
     try {
         const { data, error } = await supabaseClient
@@ -472,10 +492,14 @@ async function syncCloudProgress() {
         }
 
         if (data) {
+            // Read before the save below replaces it: another tab may have saved a tick
+            // there that has not reached the cloud yet, and it must not be dropped.
+            const stored = readStoredState() || {};
             data.forEach(row => {
                 completedItems[row.item_id] = {
                     date: row.date || new Date().toISOString(),
-                    note: row.note || ''
+                    note: row.note || '',
+                    synced: true
                 };
             });
             // saveState(), not saveItems(), on purpose. This path ends in a full upload of
@@ -495,9 +519,26 @@ async function syncCloudProgress() {
             const localEntries = Object.entries(completedItems);
             const missingInCloud = [];
 
+            const dropped = [];
+            const adopted = [];
+
             for (let [itemId, localData] of localEntries) {
                 if (stale()) return;
                 if (!cloudItemIds.has(itemId)) {
+                    if (localData.synced && syncedAtRead.get(itemId) === entryVersion(localData)) {
+                        const theirs = stored[itemId];
+                        if (theirs && typeof theirs === 'object' && !theirs.synced) {
+                            // Another tab holds a re-tick or note edit that has not uploaded
+                            // yet. A synced copy there is gone from the cloud like this one,
+                            // so it is dropped with it rather than put back.
+                            completedItems[itemId] = localData = theirs;
+                            adopted.push(itemId);
+                        } else {
+                            delete completedItems[itemId];
+                            dropped.push(itemId);
+                            continue;
+                        }
+                    }
                     missingInCloud.push({
                         user_id: currentUser.id,
                         item_id: itemId,
@@ -507,6 +548,11 @@ async function syncCloudProgress() {
                 }
             }
 
+            // A change, not a reset: saveItems() writes only these ids. Adopted re-ticks are
+            // written now too, since the save above replaced them with this tab's older copy
+            // and their upload below may fail.
+            if (dropped.length || adopted.length) saveItems([...dropped, ...adopted]);
+
             if (missingInCloud.length > 0) {
                 if (stale()) return;
                 const { error: upsertError } = await supabaseClient.from('user_progress').upsert(missingInCloud);
@@ -514,6 +560,8 @@ async function syncCloudProgress() {
 
                 if (upsertError) {
                     console.log('Cloud sync upsert note:', upsertError.message);
+                } else {
+                    markSynced(missingInCloud);
                 }
             }
         }
@@ -667,6 +715,47 @@ async function deleteUserAccountAndData(targetUserId) {
     return { authDeleted: true };
 }
 
+// Records that the cloud now holds these uploaded rows, so a later sync that finds one
+// missing knows it was unticked elsewhere (see syncCloudProgress). Only for an entry that
+// is still the version that was uploaded, here and in the store if the store has it: one
+// re-ticked or re-edited since, in this tab or another, keeps its own state, and is not
+// written over by this tab's older copy.
+function markSynced(rows) {
+    const stored = readStoredState() || {};
+    const ownStore = localStorage.getItem(SYNCED_USER_KEY) === currentUser.id;
+    const ids = [];
+    let tookNewer = false;
+    for (const r of rows) {
+        const uploaded = `${r.date}\n${r.note}`;
+        const theirs = stored[r.item_id];
+        if (entryVersion(completedItems[r.item_id]) !== uploaded) continue;
+        if (!theirs || entryVersion(theirs) === uploaded) {
+            ids.push(r.item_id);
+        } else if (ownStore && typeof theirs === 'object') {
+            // Another tab saved a newer version since this one was saved. Take it now,
+            // as the next save would: kept, this tab's older copy would be written over
+            // it by the next sync.
+            completedItems[r.item_id] = theirs;
+            tookNewer = true;
+        }
+    }
+    if (tookNewer) {
+        renderList();
+        updateProgress();
+    }
+    if (!ids.length) return;
+    for (const id of ids) completedItems[id].synced = true;
+    // saveItems() folds in whatever another tab saved to the shared store while the request
+    // was in flight, and returns true when it did. The list on screen was drawn before
+    // that, so it must be redrawn: otherwise this tab holds an item it shows as unticked,
+    // and a click on that box would untick what the other tab ticked. The same repaint
+    // toggleComplete and persistOpenNote do after their own saveItems().
+    if (saveItems(ids)) {
+        renderList();
+        updateProgress();
+    }
+}
+
 async function syncItemToCloud(itemId, isCompleted, note = '') {
     if (!supabaseClient || !currentUser) return;
     // The same ownership check as saveItems() and syncCloudProgress(): if another tab
@@ -680,12 +769,15 @@ async function syncItemToCloud(itemId, isCompleted, note = '') {
             // Keep the original completion date: this also runs when only the note
             // is edited, and a fresh timestamp would overwrite it in the cloud.
             const existing = completedItems[itemId];
-            await supabaseClient.from('user_progress').upsert({
+            const row = {
                 user_id: currentUser.id,
                 item_id: itemId,
                 note: clampNote(note),
                 date: (existing && existing.date) || new Date().toISOString()
-            });
+            };
+            const generation = authGeneration;
+            const { error: upsertError } = await supabaseClient.from('user_progress').upsert(row);
+            if (!upsertError && generation === authGeneration) markSynced([row]);
         } else {
             await supabaseClient.from('user_progress')
                 .delete()

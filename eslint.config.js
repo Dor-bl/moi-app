@@ -42,6 +42,7 @@ export default [
         showBadgeToast: "readonly",
         saveState: "readonly",
         saveItems: "readonly",
+        readStoredState: "readonly",
         createConfetti: "readonly",
         renderList: "readonly",
         updateProgress: "readonly",
