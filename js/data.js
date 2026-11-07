@@ -781,6 +781,28 @@ const EVENTS = [
         }
     },
     {
+        id: 'sint-martinusoptocht-2026',
+        date: '2026-11-07',
+        startTime: '16:00',
+        endTime: '18:00',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Sint Martinus Parade and Children\'s Festival', nl: 'Sint Martinusoptocht en Kinderfestival' },
+        location: { en: 'Hereplein to the Martinikerk', nl: 'Hereplein naar de Martinikerk' },
+        tip: { en: 'Children carry home-made lanterns (beet or not!) behind Sint Martinus on horseback and his Roman soldiers, from the Hereplein to the Martinikerk. Meet at the Hereplein at 16:15; the parade leaves at 16:30. Inside the church there is a trail of lights, a lantern contest, a story, songs and hot chocolate, and it wraps up around 17:30. Free, and a good warm-up for Sint Maarten on Wednesday.', nl: 'Kinderen lopen met zelfgemaakte lampionnen (biet of niet!) achter Sint Martinus te paard en zijn Romeinse soldaten aan, van het Hereplein naar de Martinikerk. Verzamelen om 16.15 uur op het Hereplein; de stoet vertrekt om 16.30 uur. In de kerk wacht een spoor van lichtjes, een lampionnenwedstrijd, een verhaal, liedjes en warme chocolademelk. Rond half 6 is het afgelopen. Gratis, en een mooie opwarmer voor Sint Maarten op woensdag.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/2305993411/sint-martinusoptocht-en-kinderfestival'
+    },
+    {
+        id: 'sunnemeerten-parade-2026',
+        date: '2026-11-07',
+        startTime: '18:00',
+        endTime: '19:30',
+        title: { en: 'Sunnemeerten Parade', nl: 'Sunnemeerten Parade' },
+        location: { en: 'City centre', nl: 'Binnenstad' },
+        tip: { en: 'A light parade through the city centre where people from the city and the surrounding villages carry light sculptures they built themselves in September and October. This is the second edition and the theme is "Rituelen" (rituals). It is short, 18:00 to 19:30, so wrap up warm and go early.', nl: 'Een lichtparade door de binnenstad waarin inwoners van stad en ommeland zelfgebouwde lichtsculpturen meedragen, die ze in september en oktober maakten. Dit is de tweede editie en het thema is "Rituelen". Het is kort, van 18.00 tot 19.30 uur, dus kleed je warm aan en kom op tijd.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/1588269624/sunnemeerten-parade-1'
+    },
+    {
         id: 'aclo-vitalis-run-2026',
         date: '2026-10-07',
         // Only the start is published; there is no end time to narrow to.
