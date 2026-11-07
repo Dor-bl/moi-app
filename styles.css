@@ -363,6 +363,9 @@ h1 {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
+    /* Sits above the per-view bars (progress, filters) so hiding those on a
+       view switch can't shift the tabs. */
+    margin-bottom: 1.5rem;
 }
 
 .view-btn {
