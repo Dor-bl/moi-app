@@ -13,7 +13,7 @@ This skill only reports. It does not fix, push, merge, comment or message anyone
 
 Work through these in order and keep the evidence for each, so the report can say how an item was found rather than assert it.
 
-1. **Local work.** `git status -sb`, `git log origin/<branch>..HEAD`, and `git branch -vv`. Anything uncommitted, committed but unpushed, or on a branch with no PR is open. A container is reclaimed when the session ends, so unpushed work is lost work.
+1. **Local work.** `git status -sb`, `git fetch -q` followed by `git log --branches --not --remotes --oneline` (every local commit that is on no remote branch, which also covers a branch that was never pushed), and `git branch -vv`. Anything uncommitted, committed but unpushed, or on a branch with no PR is open. A container is reclaimed when the session ends, so unpushed work is lost work.
 2. **Pull requests from this session.** For every PR this session opened or drove, read its current state, not the memory of it: draft or ready, merged or closed, CI on the current head, merge conflicts, unresolved review threads. A draft PR, a red check, a conflict, or an open thread is open. A merged PR is closed.
 3. **Merged but not confirmed live.** For each merged change, did the session check the deployed result (the site, the migration, the config)? A change merged but never looked at in production is open, and the item says what to look at. Where the repo has a live site (`moicheck.nl`), check it directly rather than assuming.
 4. **Caveats the session itself stated.** Re-read this session's own earlier messages for "not checked", "unverified", "left out", "couldn't reach", "I'll", "next step", and any test that failed for environmental reasons. Each one is either since resolved (say how) or still open (carry it into the report). Do not drop a caveat because it was already mentioned once.
@@ -32,7 +32,7 @@ Work through these in order and keep the evidence for each, so the report can sa
 Keep it short. Lead with the answer.
 
 ```
-Closure: <nothing open | N items open>
+Closure: <nothing open | N items open | incomplete>
 
 Open — mine
 - <item>: <what is wrong, evidence, what would close it>
@@ -45,6 +45,7 @@ Closed
 ```
 
 - If nothing is open, say **"Nothing open."** and give the short Closed list. Do not invent items to look thorough.
+- If a check could not run (GitHub or the live site was unreachable, a tool was missing) and nothing else is open, the headline is **"incomplete"**, not "Nothing open": say which checks are missing and what would settle them. When other items are open, list the unrun checks beside them.
 - Put each open item under whoever has the next move. "Mine" items are things this session can still do on request; "Yours" items need the user.
 - Name PRs by number and link, and say what state they were in when you read them, with the time if it could change.
 - State plainly anything you could not check, and why (a blocked host, a missing tool), rather than skipping it silently.
