@@ -1,6 +1,6 @@
 // Events Module - Shared Global Exports: todayInGroningen, resolveOccurrence,
-// getUpcomingEvents, isHappeningNow, isOngoing, formatEventDate, formatEventEnd,
-// formatEventsCoverageEnd
+// getUpcomingEvents, isHappeningNow, isOngoing, formatEventDate, formatEventTimes,
+// formatEventEnd, formatEventsCoverageEnd
 // timeInGroningen is internal only - nothing outside this file needs the clock.
 // Dependencies: none. Pure date logic, so tests can drive it without a DOM.
 
@@ -181,6 +181,16 @@ function formatEventDate(event, lang, today = todayInGroningen()) {
     return event.endDate
         ? formatter.formatRange(start, new Date(`${event.endDate}T00:00:00Z`))
         : formatter.format(start);
+}
+
+// "16:00-18:00" (en dash) for a single-day event with a published start, or just
+// "16:00" when only the start is known. Empty for everything else: a multi-day
+// event or one with per-day `hours` has no single time to print, and an
+// untimed event has none to show. startTime/endTime are Groningen wall-clock
+// strings already, so there is nothing to convert.
+function formatEventTimes(event) {
+    if (!event.startTime || event.endDate || event.hours) return '';
+    return event.endTime ? `${event.startTime}\u2013${event.endTime}` : event.startTime;
 }
 
 // The end of the run on its own, for ongoing events: the start is already past,

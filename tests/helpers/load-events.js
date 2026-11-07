@@ -30,6 +30,7 @@ export function loadEventsModule() {
             isOngoing,
             formatEventEnd,
             formatEventDate,
+            formatEventTimes,
             formatEventsCoverageEnd
         };
     `, context, { filename: 'test-hooks.js' });

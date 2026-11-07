@@ -772,7 +772,7 @@ function buildEventCard(event, today, ongoing = false) {
     const dateText = document.createElement('span');
     dateText.textContent = ongoing
         ? t.eventsOngoingUntil.replace('{date}', formatEventEnd(event, currentLang, today))
-        : formatEventDate(event, currentLang, today);
+        : [formatEventDate(event, currentLang, today), formatEventTimes(event)].filter(Boolean).join(' \u00b7 ');
     date.appendChild(dateText);
 
     if (now) {
