@@ -54,6 +54,7 @@ export default [
         isOngoing: "readonly",
         formatEventEnd: "readonly",
         formatEventDate: "readonly",
+        formatEventTimes: "readonly",
         formatEventsCoverageEnd: "readonly",
         renderEvents: "readonly",
         checkInKeyFor: "readonly",

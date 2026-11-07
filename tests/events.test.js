@@ -12,6 +12,7 @@ const {
     isHappeningNow,
     isOngoing,
     formatEventDate,
+    formatEventTimes,
     formatEventEnd,
     formatEventsCoverageEnd
 } = loadEventsModule();
@@ -407,4 +408,12 @@ test('an ongoing event shows when it closes, with the year only when it differs'
 test('the shipped LEGO exhibition sits in the ongoing section while it runs', () => {
     const lego = EVENTS.find(event => event.id === 'lego-fabuland-expositie');
     assert.equal(isOngoing(lego, '2026-09-25'), true);
+});
+
+test('a single-day timed event shows its times on the card, anything else shows none', () => {
+    assert.equal(formatEventTimes({ ...singleDay, startTime: '16:00', endTime: '18:00' }), '16:00\u201318:00');
+    assert.equal(formatEventTimes({ ...singleDay, startTime: '18:00' }), '18:00', 'start only');
+    assert.equal(formatEventTimes(singleDay), '', 'untimed');
+    assert.equal(formatEventTimes({ ...festival, startTime: '10:00', endTime: '17:00' }), '', 'multi-day');
+    assert.equal(formatEventTimes({ ...singleDay, startTime: '10:00', hours: { '2026-09-18': ['10:00', '12:00'] } }), '', 'per-day hours');
 });
