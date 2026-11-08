@@ -420,18 +420,26 @@ function readWordProgress() {
     }
 }
 
-// Records today's answer and hands back the whole record, so the caller can keep
+// Records an answer and hands back the whole record, so the caller can keep
 // rendering from it even when the write itself is refused (private browsing,
 // storage full): the answer then holds for this page view and is simply not
 // there tomorrow, which costs nothing worth guarding against.
-function recordWordAnswer(dateKey, wordId, correct, progress = readWordProgress()) {
-    progress[dateKey] = { id: wordId, correct };
+//
+// `progress` is the caller's copy, read once at page load. The store is shared
+// between tabs and that copy is not, so a tab left open across midnight would
+// otherwise write back a record missing whatever another tab saved since. Same
+// shape as saveItems: the stored value wins for every day this tab did not
+// answer, this tab's copy wins for the days it did (a day is answered once, so
+// the two never disagree), and the answers it holds from refused writes ride
+// along to the next write that goes through.
+function recordWordAnswer(dateKey, wordId, correct, progress = {}) {
+    const merged = { ...readWordProgress(), ...progress, [dateKey]: { id: wordId, correct } };
     try {
-        localStorage.setItem(WORD_PROGRESS_KEY, JSON.stringify(progress));
+        localStorage.setItem(WORD_PROGRESS_KEY, JSON.stringify(merged));
     } catch {
         // See above: the in-memory record is the fallback.
     }
-    return progress;
+    return merged;
 }
 
 // Whether the card shows at all: 'on' (the default, and the stored value when

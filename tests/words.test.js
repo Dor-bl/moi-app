@@ -110,6 +110,31 @@ test('answers are stored per day and read back; an untrustworthy store reads as 
     assert.deepEqual(plain(readWordProgress()), {});
 });
 
+// The multi-tab case: this tab's copy was read yesterday, another tab answered
+// today since, and this tab now answers yesterday's card. Today's answer must
+// survive the write, and an answer this tab holds from a refused write must too.
+test('an answer written from a stale copy keeps what another tab saved since', () => {
+    const storage = fakeStorage();
+    const { readWordProgress, recordWordAnswer } = loadWordsModule({ localStorage: storage });
+
+    const staleCopy = { '2026-11-06': { id: 'moi', correct: true } };          // read at load
+    storage.setItem(WORD_PROGRESS_KEY, JSON.stringify({                        // another tab since
+        '2026-11-06': { id: 'moi', correct: true },
+        '2026-11-08': { id: 'wotter', correct: true }
+    }));
+    staleCopy['2026-11-05'] = { id: 'stad', correct: false };                  // held after a refused write
+
+    const result = recordWordAnswer('2026-11-07', 'kouk', false, staleCopy);
+    const expected = {
+        '2026-11-05': { id: 'stad', correct: false },
+        '2026-11-06': { id: 'moi', correct: true },
+        '2026-11-07': { id: 'kouk', correct: false },
+        '2026-11-08': { id: 'wotter', correct: true }
+    };
+    assert.deepEqual(plain(result), expected);
+    assert.deepEqual(plain(readWordProgress()), expected);
+});
+
 test('a refused write still hands back the answer for this page view', () => {
     const storage = fakeStorage({ failWrites: true });
     const { recordWordAnswer } = loadWordsModule({ localStorage: storage });
