@@ -393,9 +393,12 @@ function switchView(view) {
         window.va?.('event', { name: `view_${view}` });
     }
 
-    if (view === 'list' && listNeedsResort) {
-        listNeedsResort = false;
-        renderList();
+    if (view === 'list') {
+        refreshWordOfDayIfDayTurned();
+        if (listNeedsResort) {
+            listNeedsResort = false;
+            renderList();
+        }
     }
 
     if (view === 'map') {
@@ -790,7 +793,9 @@ function renderWordOfDay() {
         strip.type = 'button';
         strip.className = 'word-strip';
         strip.setAttribute('aria-expanded', 'false');
-        strip.setAttribute('aria-label', t.wordExpand);
+        // No aria-label: it would replace the button's text as its accessible
+        // name, and the text is the point - tag, word, verdict. The action is
+        // appended off-screen instead, so a screen reader hears all of it.
         // The short label: the word is what the strip is for, and on a phone the
         // full tag plus "Kop d'r veur" plus the verdict does not fit on one line.
         tag.textContent = t.wordTagShort;
@@ -810,7 +815,11 @@ function renderWordOfDay() {
         spoken.textContent = answered.correct ? t.wordVerdictRight : t.wordVerdictWrong;
         verdict.append(glyph, spoken);
 
-        strip.append(tag, term, verdict);
+        const action = document.createElement('span');
+        action.className = 'word-sr-only';
+        action.textContent = t.wordExpand;
+
+        strip.append(tag, term, verdict, action);
         strip.insertAdjacentHTML('beforeend', WORD_CHEVRON);
         card.appendChild(strip);
         wordOfDaySection.replaceChildren(card);
@@ -903,7 +912,9 @@ function renderWordOfDay() {
         }
     }
 
-    const learned = Object.keys(wordProgress).length;
+    // Distinct words, not answered days: the list cycles, so after one full
+    // round a day count would keep climbing past the number of words there are.
+    const learned = new Set(Object.values(wordProgress).map(entry => entry?.id).filter(Boolean)).size;
     if (answered || learned > 0) {
         const footer = document.createElement('p');
         footer.className = 'word-footer';
@@ -921,6 +932,16 @@ function renderWordOfDay() {
     }
 
     wordOfDaySection.replaceChildren(card);
+}
+
+// A tab left open across midnight would keep showing yesterday's word until
+// something else re-rendered it. Called from the minute tick, on resume, and
+// when the list view comes back; it only redraws when the day has turned, so a
+// same-day call never disturbs focus or an answer in progress.
+function refreshWordOfDayIfDayTurned() {
+    if (!wordQuiz || wordQuiz.today === todayInGroningen()) return;
+    wordExpanded = false;
+    renderWordOfDay();
 }
 
 function toggleWordExpanded() {
@@ -2088,7 +2109,9 @@ function setupEventListeners() {
     // timer below while hidden, so becoming visible again is its own trigger
     // rather than something the timer can be trusted to catch promptly.
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden || currentView !== 'events' || pendingCheckInKey) return;
+        if (document.hidden) return;
+        refreshWordOfDayIfDayTurned();
+        if (currentView !== 'events' || pendingCheckInKey) return;
         renderEvents();
     });
 
@@ -2098,6 +2121,7 @@ function setupEventListeners() {
     // enough to keep the open tab honest without polling faster than the data
     // can actually change.
     setInterval(() => {
+        refreshWordOfDayIfDayTurned();
         if (currentView === 'events' && !pendingCheckInKey) renderEvents();
     }, 60 * 1000);
 
