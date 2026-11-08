@@ -552,7 +552,13 @@ body[data-active-view="memories"] .filters-container {
 
 /* Word of the day: same column as the list below it, which carries the
    bottom padding, so this only pads the top. The one coloured border on the
-   page, same treatment a running event gets: it is the thing that is new today. */
+   page, same treatment a running event gets: it is the thing that is new today.
+   Shown under "All" only: a category pill narrows the list to a task, and the
+   word is not a Food item. The filter resets on every load, so nobody misses it. */
+body[data-list-filtered="true"] .word-of-day {
+    display: none;
+}
+
 .word-of-day {
     padding: 1.5rem 1.5rem 0;
     max-width: 600px;

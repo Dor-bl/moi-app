@@ -2116,6 +2116,10 @@ function setupEventListeners() {
             filterPills.forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             currentFilter = pill.dataset.filter;
+            // The word card belongs to the whole list, not to a category: a pill
+            // tap is a narrowing, so the card steps aside until "All" is back.
+            // CSS keyed off this attribute, same as the view switch.
+            document.body.dataset.listFiltered = currentFilter === 'All' ? 'false' : 'true';
             renderList();
         });
     });
