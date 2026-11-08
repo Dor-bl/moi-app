@@ -68,6 +68,7 @@ function getFilteredEvents(events, filters) {
 
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
+const wordOfDaySection = document.getElementById('wordOfDay');
 const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
@@ -151,6 +152,7 @@ const themeOptionBtns = document.querySelectorAll('.theme-option-btn');
 function init() {
     initTheme();
     updateLanguageUI();
+    renderWordOfDay();
     renderList();
     updateProgress();
     setupEventListeners();
@@ -333,6 +335,7 @@ function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('moiCheckLang', currentLang);
     updateLanguageUI();
+    renderWordOfDay();
     renderList();
     updateProgress();
     if (currentView === 'events') renderEvents();
@@ -713,6 +716,153 @@ function buildCompletedDivider(count, collapsed) {
     });
 
     return divider;
+}
+
+// Today's quiz as rendered: the day it is for, the word, and the options in the
+// order shown, so a tap can be judged by index without the answer sitting in the
+// DOM. Rebuilt on every render; null until the first one.
+let wordQuiz = null;
+// The stored answers, read once and then kept here, so an answer still shows for
+// the rest of this page view when the write was refused (see recordWordAnswer).
+let wordProgress = null;
+
+function renderWordOfDay() {
+    if (!wordOfDaySection) return;
+    const t = UI_TRANSLATIONS[currentLang];
+    const today = todayInGroningen();
+    const word = wordForDate(today);
+    const options = quizOptionsFor(word, currentLang, today);
+    wordQuiz = { today, word, options };
+
+    if (wordProgress === null) wordProgress = readWordProgress();
+    // Only an answer for *this* word counts: a record from a different word on
+    // the same day can only come from a hand-edited store or a list change, and
+    // showing its verdict against today's options would be wrong either way.
+    const answered = wordProgress[today]?.id === word.id ? wordProgress[today] : null;
+
+    const card = document.createElement('div');
+    card.className = 'word-card';
+
+    const tag = document.createElement('span');
+    tag.className = 'word-tag';
+    tag.id = 'wordOfDayTag';
+    tag.textContent = t.wordTag;
+    card.appendChild(tag);
+
+    const term = document.createElement('h2');
+    term.className = 'word-term';
+    term.lang = 'gos';
+    term.textContent = word.word;
+    card.appendChild(term);
+
+    const prompt = document.createElement('p');
+    prompt.className = 'word-prompt';
+    prompt.id = 'wordOfDayPrompt';
+    prompt.textContent = t.wordPrompt;
+    card.appendChild(prompt);
+
+    const group = document.createElement('div');
+    group.className = 'word-options';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-labelledby', 'wordOfDayPrompt');
+    options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'word-option';
+        button.dataset.index = String(index);
+        button.textContent = option.text;
+        if (answered) {
+            button.disabled = true;
+            if (option.correct) button.classList.add('is-correct');
+            // `picked` is only set in this page view (see handleWordOptionClick),
+            // so after a reload a wrong answer shows the right one and nothing else.
+            else if (option.text === answered.picked) button.classList.add('is-wrong');
+        }
+        group.appendChild(button);
+    });
+    card.appendChild(group);
+
+    // Live region, so a screen reader hears the verdict without leaving the button.
+    // Focusable by script only: the answered buttons are disabled and cannot take
+    // focus back, so this is where a keyboard user lands after a tap.
+    const feedback = document.createElement('p');
+    feedback.className = 'word-feedback';
+    feedback.setAttribute('aria-live', 'polite');
+    feedback.tabIndex = -1;
+    if (answered) {
+        feedback.textContent = answered.correct
+            ? t.wordCorrect
+            : t.wordWrong.replace('{word}', word.word).replace('{meaning}', word.meaning[currentLang]);
+    }
+    card.appendChild(feedback);
+
+    if (answered) {
+        const example = document.createElement('div');
+        example.className = 'word-example';
+        const label = document.createElement('span');
+        label.className = 'word-example-label';
+        label.textContent = t.wordExampleLabel;
+        const gr = document.createElement('span');
+        gr.className = 'word-example-gr';
+        gr.lang = 'gos';
+        gr.textContent = word.example.gr;
+        const tr = document.createElement('span');
+        tr.className = 'word-example-tr';
+        tr.textContent = word.example[currentLang];
+        example.append(label, gr, tr);
+        card.appendChild(example);
+
+        if (word.note) {
+            const note = document.createElement('p');
+            note.className = 'word-note';
+            note.textContent = word.note[currentLang];
+            card.appendChild(note);
+        }
+    }
+
+    const learned = Object.keys(wordProgress).length;
+    if (answered || learned > 0) {
+        const footer = document.createElement('p');
+        footer.className = 'word-footer';
+        if (answered) {
+            const tomorrow = document.createElement('span');
+            tomorrow.textContent = t.wordTomorrow;
+            footer.appendChild(tomorrow);
+        }
+        if (learned > 0) {
+            const count = document.createElement('span');
+            count.textContent = learned === 1 ? t.wordLearnedOne : t.wordLearned.replace('{count}', learned);
+            footer.appendChild(count);
+        }
+        card.appendChild(footer);
+    }
+
+    wordOfDaySection.replaceChildren(card);
+}
+
+function handleWordOptionClick(button) {
+    if (!wordQuiz || button.disabled) return;
+    const option = wordQuiz.options[Number(button.dataset.index)];
+    if (!option) return;
+
+    // The day may have turned since the card was drawn; a tap after midnight
+    // answers yesterday's word, and the re-render below then shows today's.
+    wordProgress = recordWordAnswer(wordQuiz.today, wordQuiz.word.id, option.correct, wordProgress);
+    // `picked` is for the re-render to mark the chosen button; it is kept in
+    // memory only, the stored record holds just the verdict.
+    wordProgress[wordQuiz.today].picked = option.text;
+
+    if (option.correct) {
+        const rect = button.getBoundingClientRect();
+        createConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+    // Optional call: an ad blocker can block js/analytics.js outright.
+    window.va?.('event', { name: option.correct ? 'word_correct' : 'word_wrong' });
+
+    renderWordOfDay();
+    // The buttons were rebuilt and are now disabled, so focus would otherwise
+    // fall to <body>; the verdict is the natural place to land instead.
+    wordOfDaySection.querySelector('.word-feedback')?.focus({ preventScroll: true });
 }
 
 function renderList() {
@@ -1578,6 +1728,13 @@ function closeProfileModal() {
 const CONTACT_FUNCTION_REGION = 'eu-west-1';
 
 function setupEventListeners() {
+    if (wordOfDaySection) {
+        wordOfDaySection.addEventListener('click', (e) => {
+            const button = e.target.closest('.word-option');
+            if (button) handleWordOptionClick(button);
+        });
+    }
+
     // ⚡ Bolt Performance Optimization:
     // Event delegation on listContainer reduces memory usage by attaching one event listener
     // instead of creating new listeners for every card and checkbox on every render.

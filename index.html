@@ -127,6 +127,14 @@
     </header>
 
     <main>
+        <!-- One Gronings word a day with a three-way guess, rendered by
+             renderWordOfDay(). Lives above the list rather than in a tab of
+             its own: the point is a reason to open the app on a day with
+             nothing to tick, so it has to be the first thing seen. -->
+        <section class="word-of-day" id="wordOfDay" aria-labelledby="wordOfDayTag">
+            <!-- Filled by renderWordOfDay() on init -->
+        </section>
+
         <div class="list-container" id="listContainer">
             <!-- Cards will be injected here -->
         </div>
@@ -401,6 +409,7 @@
     <script src="js/error-reporter.js"></script>
     <script src="js/data.js"></script>
     <script src="js/events.js"></script>
+    <script src="js/words.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>
