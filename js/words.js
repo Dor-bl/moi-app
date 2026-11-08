@@ -11,7 +11,10 @@
 //
 // Each entry: `word` as shown, `meaning` as the quiz answer in both UI languages,
 // an `example` in Gronings (`gr`) with its translation, and an optional `note`
-// for the bit of context a local would add.
+// for the bit of context a local would add. `avoid` names other words whose
+// meaning is close enough that offering it as a wrong answer would punish a
+// right guess ("Groningen" for Stad); it works in both directions, so one side
+// of a pair is enough.
 const GRONINGS_WORDS = [
     {
         id: 'moi',
@@ -42,6 +45,7 @@ const GRONINGS_WORDS = [
     },
     {
         id: 'stad',
+        avoid: ['grunnen'],
         word: 'Stad',
         meaning: { en: 'the city of Groningen', nl: 'de stad Groningen' },
         example: { gr: 'Wie goan noar Stad.', en: "We're going into town.", nl: 'We gaan naar de stad.' },
@@ -69,6 +73,7 @@ const GRONINGS_WORDS = [
     },
     {
         id: 'olle-grieze',
+        avoid: ['toorn', 'ol'],
         word: "d'Olle Grieze",
         meaning: { en: 'the Martini Tower ("the old grey one")', nl: 'de Martinitoren ("de oude grijze")' },
         example: { gr: "Kiek, doar staait d'Olle Grieze.", en: 'Look, there stands the Martini Tower.', nl: 'Kijk, daar staat de Martinitoren.' }
@@ -179,6 +184,7 @@ const GRONINGS_WORDS = [
     },
     {
         id: 'nuver',
+        avoid: ['schier', 'goud'],
         word: 'Nuver',
         meaning: { en: 'nice, pleasant', nl: 'leuk, aardig, fijn' },
         example: { gr: "'t Is nuver weer vandoag.", en: "It's lovely weather today.", nl: 'Het is fijn weer vandaag.' }
@@ -379,12 +385,18 @@ function wordForDate(dateKey, words = GRONINGS_WORDS) {
     return words[index];
 }
 
+// True when either word lists the other in `avoid`.
+function overlaps(a, b) {
+    return Boolean(a.avoid?.includes(b.id) || b.avoid?.includes(a.id));
+}
+
 // Three answers in a fixed order for the day: the right one plus two meanings
 // borrowed from other words. Borrowed rather than written, so adding a word is
 // one entry and not three. A borrowed meaning that reads the same as the right
-// answer (or as the other borrowed one) is skipped, otherwise two buttons would
-// both be correct. The order is seeded by the day, the word and the language, so
-// the right answer is not always in the same slot and does not move on reload.
+// answer (or as the other borrowed one), or that the data marks as overlapping
+// with it, is skipped, otherwise two buttons would both be right. The order is
+// seeded by the day, the word and the language, so the right answer is not
+// always in the same slot and does not move on reload.
 function quizOptionsFor(word, lang, dateKey, words = GRONINGS_WORDS) {
     const seed = `${dateKey}|${word.id}|${lang}`;
     const answer = word.meaning[lang];
@@ -393,7 +405,7 @@ function quizOptionsFor(word, lang, dateKey, words = GRONINGS_WORDS) {
     const taken = new Set([normalise(answer)]);
     const distractors = [];
     const others = words
-        .filter(other => other.id !== word.id)
+        .filter(other => other.id !== word.id && !overlaps(word, other))
         .sort((a, b) => hashString(`${seed}|${a.id}`) - hashString(`${seed}|${b.id}`));
     for (const other of others) {
         const text = other.meaning[lang];

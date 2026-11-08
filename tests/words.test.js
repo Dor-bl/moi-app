@@ -67,6 +67,42 @@ test('quiz options hold the right answer exactly once among three distinct texts
     }
 });
 
+test('every avoid entry names a real other word', () => {
+    const ids = new Set(GRONINGS_WORDS.map(w => w.id));
+    for (const word of GRONINGS_WORDS) {
+        for (const other of word.avoid || []) {
+            assert.ok(ids.has(other), `${word.id} avoids unknown id ${other}`);
+            assert.notEqual(other, word.id, `${word.id} avoids itself`);
+        }
+    }
+});
+
+// Copilot's case on #233: the Dutch Stad quiz offered "Groningen" as a wrong
+// answer beside "de stad Groningen", so a right guess was recorded as wrong.
+test('a word never borrows a distractor from a word it overlaps with', () => {
+    const stad = GRONINGS_WORDS.find(w => w.id === 'stad');
+    assert.equal(wordForDate('2027-03-25').id, 'stad', 'premise: Stad is the word that day');
+    const texts = quizOptionsFor(stad, 'nl', '2027-03-25').map(o => o.text);
+    assert.ok(!texts.includes('Groningen'), `offered ${JSON.stringify(texts)}`);
+
+    const byId = new Map(GRONINGS_WORDS.map(w => [w.id, w]));
+    const byMeaning = lang => new Map(GRONINGS_WORDS.map(w => [w.meaning[lang].trim().toLowerCase(), w]));
+    for (const lang of LANGS) {
+        const lookup = byMeaning(lang);
+        for (const day of days('2026-01-01', GRONINGS_WORDS.length)) {
+            const word = wordForDate(day);
+            for (const option of quizOptionsFor(word, lang, day)) {
+                if (option.correct) continue;
+                const source = lookup.get(option.text.trim().toLowerCase());
+                assert.ok(source, `${word.id}/${lang}: distractor ${option.text} is not a word meaning`);
+                const pair = [word.id, source.id];
+                const avoided = byId.get(pair[0]).avoid?.includes(pair[1]) || byId.get(pair[1]).avoid?.includes(pair[0]);
+                assert.ok(!avoided, `${word.id}/${lang} on ${day} offered overlapping ${source.id}`);
+            }
+        }
+    }
+});
+
 test('quiz options are deterministic for a day and the answer moves between slots across days', () => {
     const word = wordForDate('2026-11-08');
     assert.deepEqual(plain(quizOptionsFor(word, 'en', '2026-11-08')), plain(quizOptionsFor(word, 'en', '2026-11-08')));
