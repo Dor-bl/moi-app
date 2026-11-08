@@ -148,6 +148,7 @@ const settingsModal = document.getElementById('settingsModal');
 const settingsBtn = document.getElementById('settingsBtn');
 const closeSettingsModalBtn = document.getElementById('closeSettingsModal');
 const themeOptionBtns = document.querySelectorAll('.theme-option-btn');
+const wordSettingBtns = document.querySelectorAll('.word-setting-btn');
 
 function init() {
     initTheme();
@@ -299,6 +300,12 @@ function updateLanguageUI() {
     document.getElementById('txtThemeSystem').textContent = t.themeSystem;
     const txtLanguageHeader = document.getElementById('txtLanguageHeader');
     if (txtLanguageHeader) txtLanguageHeader.textContent = t.languageHeader;
+    const txtWordHeader = document.getElementById('txtWordHeader');
+    if (txtWordHeader) txtWordHeader.textContent = t.wordTag;
+    const txtWordShow = document.getElementById('txtWordShow');
+    if (txtWordShow) txtWordShow.textContent = t.wordSettingShow;
+    const txtWordHide = document.getElementById('txtWordHide');
+    if (txtWordHide) txtWordHide.textContent = t.wordSettingHide;
 
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
@@ -725,9 +732,38 @@ let wordQuiz = null;
 // The stored answers, read once and then kept here, so an answer still shows for
 // the rest of this page view when the write was refused (see recordWordAnswer).
 let wordProgress = null;
+// An answered card is put away on load and comes back on a tap; answering opens
+// it. In memory only: tomorrow's word is unanswered and opens on its own, so
+// there is nothing worth remembering across visits.
+let wordExpanded = false;
+let wordSetting = readWordSetting();
+
+const WORD_CHEVRON = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
+function updateWordSettingButtons() {
+    wordSettingBtns.forEach(btn => {
+        const isCurrent = btn.dataset.wordSetting === wordSetting;
+        btn.classList.toggle('active', isCurrent);
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
+    });
+}
+
+function setWordSetting(value) {
+    wordSetting = value === 'off' ? 'off' : 'on';
+    saveWordSetting(wordSetting);
+    updateWordSettingButtons();
+    renderWordOfDay();
+}
 
 function renderWordOfDay() {
     if (!wordOfDaySection) return;
+    if (wordSetting === 'off') {
+        wordOfDaySection.hidden = true;
+        wordOfDaySection.replaceChildren();
+        return;
+    }
+    wordOfDaySection.hidden = false;
+
     const t = UI_TRANSLATIONS[currentLang];
     const today = todayInGroningen();
     const word = wordForDate(today);
@@ -747,7 +783,54 @@ function renderWordOfDay() {
     tag.className = 'word-tag';
     tag.id = 'wordOfDayTag';
     tag.textContent = t.wordTag;
-    card.appendChild(tag);
+
+    if (answered && !wordExpanded) {
+        card.classList.add('is-collapsed');
+        const strip = document.createElement('button');
+        strip.type = 'button';
+        strip.className = 'word-strip';
+        strip.setAttribute('aria-expanded', 'false');
+        strip.setAttribute('aria-label', t.wordExpand);
+        // The short label: the word is what the strip is for, and on a phone the
+        // full tag plus "Kop d'r veur" plus the verdict does not fit on one line.
+        tag.textContent = t.wordTagShort;
+
+        const term = document.createElement('span');
+        term.className = 'word-strip-term';
+        term.lang = 'gos';
+        term.textContent = word.word;
+
+        const verdict = document.createElement('span');
+        verdict.className = `word-strip-verdict ${answered.correct ? 'is-right' : 'is-wrong'}`;
+        const glyph = document.createElement('span');
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = answered.correct ? '✓' : '✗';
+        const spoken = document.createElement('span');
+        spoken.className = 'word-sr-only';
+        spoken.textContent = answered.correct ? t.wordVerdictRight : t.wordVerdictWrong;
+        verdict.append(glyph, spoken);
+
+        strip.append(tag, term, verdict);
+        strip.insertAdjacentHTML('beforeend', WORD_CHEVRON);
+        card.appendChild(strip);
+        wordOfDaySection.replaceChildren(card);
+        return;
+    }
+
+    const head = document.createElement('div');
+    head.className = 'word-head';
+    head.appendChild(tag);
+    if (answered) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'word-toggle';
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.setAttribute('aria-label', t.wordCollapse);
+        toggle.style.transform = 'rotate(180deg)';
+        toggle.insertAdjacentHTML('beforeend', WORD_CHEVRON);
+        head.appendChild(toggle);
+    }
+    card.appendChild(head);
 
     const term = document.createElement('h2');
     term.className = 'word-term';
@@ -840,6 +923,14 @@ function renderWordOfDay() {
     wordOfDaySection.replaceChildren(card);
 }
 
+function toggleWordExpanded() {
+    wordExpanded = !wordExpanded;
+    renderWordOfDay();
+    // The control that was pressed is gone with the re-render; land on its
+    // counterpart so a keyboard user is not dropped on <body>.
+    wordOfDaySection.querySelector(wordExpanded ? '.word-toggle' : '.word-strip')?.focus({ preventScroll: true });
+}
+
 function handleWordOptionClick(button) {
     if (!wordQuiz || button.disabled) return;
     const option = wordQuiz.options[Number(button.dataset.index)];
@@ -851,6 +942,8 @@ function handleWordOptionClick(button) {
     // `picked` is for the re-render to mark the chosen button; it is kept in
     // memory only, the stored record holds just the verdict.
     wordProgress[wordQuiz.today].picked = option.text;
+
+    wordExpanded = true;
 
     if (option.correct) {
         const rect = button.getBoundingClientRect();
@@ -1731,9 +1824,17 @@ function setupEventListeners() {
     if (wordOfDaySection) {
         wordOfDaySection.addEventListener('click', (e) => {
             const button = e.target.closest('.word-option');
-            if (button) handleWordOptionClick(button);
+            if (button) {
+                handleWordOptionClick(button);
+                return;
+            }
+            if (e.target.closest('.word-toggle, .word-strip')) toggleWordExpanded();
         });
     }
+    wordSettingBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => setWordSetting(e.currentTarget.dataset.wordSetting));
+    });
+    updateWordSettingButtons();
 
     // ⚡ Bolt Performance Optimization:
     // Event delegation on listContainer reduces memory usage by attaching one event listener

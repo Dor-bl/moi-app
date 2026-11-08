@@ -18,7 +18,10 @@ export function loadWordsModule({ localStorage } = {}) {
             wordForDate,
             quizOptionsFor,
             readWordProgress,
-            recordWordAnswer
+            recordWordAnswer,
+            WORD_SETTING_KEY,
+            readWordSetting,
+            saveWordSetting
         };
     `, context, { filename: 'test-hooks.js' });
     return context.__module;

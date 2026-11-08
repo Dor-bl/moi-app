@@ -1,5 +1,5 @@
-// Words Module - Shared Global Exports: GRONINGS_WORDS, WORD_PROGRESS_KEY, wordForDate,
-// quizOptionsFor, readWordProgress, recordWordAnswer
+// Words Module - Shared Global Exports: GRONINGS_WORDS, WORD_PROGRESS_KEY, WORD_SETTING_KEY,
+// wordForDate, quizOptionsFor, readWordProgress, recordWordAnswer, readWordSetting, saveWordSetting
 // Dependencies: none. Pure data and date arithmetic, so tests can drive it without a DOM;
 // only readWordProgress/recordWordAnswer touch localStorage, and only when called.
 
@@ -432,4 +432,24 @@ function recordWordAnswer(dateKey, wordId, correct, progress = readWordProgress(
         // See above: the in-memory record is the fallback.
     }
     return progress;
+}
+
+// Whether the card shows at all: 'on' (the default, and the stored value when
+// nothing or anything unexpected is there) or 'off', chosen in Settings.
+const WORD_SETTING_KEY = 'moiCheckWordOfDay';
+
+function readWordSetting() {
+    try {
+        return localStorage.getItem(WORD_SETTING_KEY) === 'off' ? 'off' : 'on';
+    } catch {
+        return 'on';
+    }
+}
+
+function saveWordSetting(value) {
+    try {
+        localStorage.setItem(WORD_SETTING_KEY, value === 'off' ? 'off' : 'on');
+    } catch {
+        // A refused write only means the choice lasts for this page view.
+    }
 }

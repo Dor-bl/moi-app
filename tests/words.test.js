@@ -117,3 +117,26 @@ test('a refused write still hands back the answer for this page view', () => {
     assert.deepEqual(plain(progress), { '2026-11-08': { id: 'moi', correct: true } });
     assert.deepEqual(storage.dump(), {});
 });
+
+test('the card is on unless the setting says off, and anything odd reads as on', () => {
+    const storage = fakeStorage();
+    const { WORD_SETTING_KEY, readWordSetting, saveWordSetting } = loadWordsModule({ localStorage: storage });
+
+    assert.equal(readWordSetting(), 'on', 'default');
+    saveWordSetting('off');
+    assert.equal(storage.getItem(WORD_SETTING_KEY), 'off');
+    assert.equal(readWordSetting(), 'off');
+    saveWordSetting('on');
+    assert.equal(readWordSetting(), 'on');
+
+    storage.setItem(WORD_SETTING_KEY, 'maybe');
+    assert.equal(readWordSetting(), 'on', 'unknown value');
+    saveWordSetting('whatever');
+    assert.equal(storage.getItem(WORD_SETTING_KEY), 'on', 'only on/off are ever written');
+});
+
+test('a refused setting write does not throw', () => {
+    const { saveWordSetting, readWordSetting } = loadWordsModule({ localStorage: fakeStorage({ failWrites: true }) });
+    assert.doesNotThrow(() => saveWordSetting('off'));
+    assert.equal(readWordSetting(), 'on');
+});
