@@ -18,6 +18,7 @@ As someone who moved to Groningen, this app is built to help new expats settle i
 - **55 Curated Groningen Bucket List Items**: Handpicked experiences spanning Food & Drink, Culture & Sights, Daily Life, Groningen Classics, and Nature & Wildlife.
 - **Contact & Item Suggestions Form**: Expats can easily get in touch, suggest new Groningen bucket list items, report bugs, or send feedback with full bilingual support.
 - **Category Filtering**: Easily filter items by category (*Food & Drink*, *Culture & Sights*, *Daily Life*, *Groningen Classics*, *Nature & Wildlife*).
+- **"Surprise Me!" Random Picker 🎲**: Can't decide what to do this weekend? Tap *Surprise me* in the filter bar to deal a random uncompleted experience from the active category (with a *Pick another 🎲* button in the detail modal to reroll without repeating the same card twice in a row).
 - **Interactive Details & Memories**: Click any card to open a detailed modal with local tips ("Why locals do it") and add personal memory notes.
 - **Progress Tracking & Milestones**: Watch your progress bar fill up as you complete tasks and unlock milestone badges (from *Newcomer* to *Real Groninger*).
 - **Instant Local Storage**: No sign-up wall required; all progress and notes are stored locally in your browser.

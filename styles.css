@@ -499,6 +499,41 @@ h1 {
     border-color: var(--text-color);
 }
 
+.surprise-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    padding: 0.5rem 0.9rem;
+    border-radius: 2rem;
+    border: 1px solid var(--primary-color);
+    background-color: var(--card-bg);
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+
+.surprise-pill:hover:not(:disabled),
+.surprise-pill:focus-visible {
+    background-color: rgba(var(--primary-rgb), 0.14);
+}
+
+.surprise-pill:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.surprise-pill:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--text-light);
+}
+
 .filter-pill-count {
     display: inline-block;
     margin-left: 0.4rem;

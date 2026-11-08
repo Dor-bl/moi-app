@@ -15,6 +15,8 @@ let currentFilter = 'All';
 const activeEventFilters = new Set();
 let currentView = 'list';
 let selectedItemId = null;
+let lastSurpriseId = null;
+let detailModalFromSurprise = false;
 // null = no explicit choice yet, so the section auto-collapses once it grows.
 let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
 let resortTimer = null;
@@ -70,6 +72,8 @@ function getFilteredEvents(events, filters) {
 const listContainer = document.getElementById('listContainer');
 const wordOfDaySection = document.getElementById('wordOfDay');
 const filterPills = document.querySelectorAll('.filter-pill');
+const surpriseBtn = document.getElementById('surpriseBtn');
+const txtSurpriseMe = document.getElementById('txtSurpriseMe');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
 const currentMilestone = document.getElementById('currentMilestone');
@@ -92,6 +96,7 @@ const modalTitle = document.getElementById('modalTitle');
 const modalTip = document.getElementById('modalTip');
 const memoryNote = document.getElementById('memoryNote');
 const modalCheckBtn = document.getElementById('modalCheckBtn');
+const modalSurpriseBtn = document.getElementById('modalSurpriseBtn');
 const modalUncheckBtn = document.getElementById('modalUncheckBtn');
 const closeDetailModalBtn = document.getElementById('closeDetailModal');
 
@@ -208,7 +213,14 @@ function renderFilterPills() {
             ? t.remainingCount.replace('{count}', remaining)
             : t.allDone;
         pill.setAttribute('aria-label', `${label}, ${status}`);
+        updateSurpriseButton();
     });
+}
+
+function updateSurpriseButton() {
+    if (!surpriseBtn) return;
+    const hasRemaining = getFilteredItems(currentFilter).some(i => !completedItems[i.id]);
+    surpriseBtn.disabled = !hasRemaining;
 }
 
 function updateLanguageUI() {
@@ -233,6 +245,8 @@ function updateLanguageUI() {
     memoryNote.placeholder = t.memoryPlaceholder;
     updateMemoryHint();
     modalUncheckBtn.textContent = t.markNotDone;
+    if (txtSurpriseMe) txtSurpriseMe.textContent = t.surpriseMe;
+    if (modalSurpriseBtn) modalSurpriseBtn.textContent = t.surpriseAnother;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
     document.getElementById('txtCompletedMemories').textContent = t.recentMemories;
     const txtCatBadges = document.getElementById('txtCategoryBadges');
@@ -354,7 +368,7 @@ function setLanguage(lang) {
     if (detailModal.classList.contains('active') && selectedItemId) {
         persistOpenNote();
         const item = itemsById[selectedItemId];
-        if (item) openDetailModal(item);
+        if (item) openDetailModal(item, { fromSurprise: detailModalFromSurprise });
     }
 }
 
@@ -1617,7 +1631,8 @@ function updateMemoryHint() {
         (currentUser && supabaseClient) ? t.memoryHintSignedIn : t.memoryHintGuest;
 }
 
-function openDetailModal(item) {
+function openDetailModal(item, { fromSurprise = false } = {}) {
+    detailModalFromSurprise = fromSurprise;
     selectedItemId = item.id;
     const isCompleted = !!completedItems[item.id];
     const t = UI_TRANSLATIONS[currentLang];
@@ -1682,6 +1697,7 @@ function closeDetailModal() {
     if (currentView === 'memories') renderMemories();
     detailModal.classList.remove('active');
     selectedItemId = null;
+    detailModalFromSurprise = false;
     memoryNote.value = '';
 }
 
@@ -1689,6 +1705,30 @@ function updateModalButtonState(isCompleted) {
     const t = UI_TRANSLATIONS[currentLang];
     modalCheckBtn.textContent = isCompleted ? t.saveNote : t.markComplete;
     modalUncheckBtn.style.display = isCompleted ? 'block' : 'none';
+    if (modalSurpriseBtn) {
+        const canReroll = !isCompleted && detailModalFromSurprise
+            && getFilteredItems(currentFilter).filter(i => !completedItems[i.id]).length > 1;
+        modalSurpriseBtn.style.display = canReroll ? 'block' : 'none';
+    }
+}
+
+function triggerSurprise() {
+    const picked = pickRandomUncompleted(
+        getFilteredItems(currentFilter),
+        completedItems,
+        selectedItemId || lastSurpriseId
+    );
+    if (!picked) return;
+
+    lastSurpriseId = picked.id;
+    window.va?.('event', { name: 'surprise_me' });
+
+    if (currentView === 'map' && leafletMap) {
+        const marker = mapMarkers.get(picked.id);
+        if (marker) marker.openPopup();
+    }
+
+    openDetailModal(picked, { fromSurprise: true });
 }
 
 function memoryTimestamp(value) {
@@ -2144,6 +2184,7 @@ function setupEventListeners() {
             // tap is a narrowing, so the card steps aside until "All" is back.
             // CSS keyed off this attribute, same as the view switch.
             document.body.dataset.listFiltered = currentFilter === 'All' ? 'false' : 'true';
+            updateSurpriseButton();
             renderList();
         });
     });
@@ -2433,6 +2474,17 @@ function setupEventListeners() {
             setTimeout(closeDetailModal, 600);
         }
     });
+
+    if (surpriseBtn) {
+        surpriseBtn.addEventListener('click', triggerSurprise);
+    }
+
+    if (modalSurpriseBtn) {
+        modalSurpriseBtn.addEventListener('click', () => {
+            persistOpenNote();
+            triggerSurprise();
+        });
+    }
 
     modalUncheckBtn.addEventListener('click', () => {
         if (!selectedItemId || !completedItems[selectedItemId]) return;
