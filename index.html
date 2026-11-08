@@ -127,6 +127,14 @@
     </header>
 
     <main>
+        <!-- One Gronings word a day with a three-way guess, rendered by
+             renderWordOfDay(). Lives above the list rather than in a tab of
+             its own: the point is a reason to open the app on a day with
+             nothing to tick, so it has to be the first thing seen. -->
+        <section class="word-of-day" id="wordOfDay" aria-labelledby="wordOfDayTag">
+            <!-- Filled by renderWordOfDay() on init -->
+        </section>
+
         <div class="list-container" id="listContainer">
             <!-- Cards will be injected here -->
         </div>
@@ -262,6 +270,23 @@
                     <button class="lang-option-btn" data-lang="nl">
                         <span class="lang-icon" aria-hidden="true">🇳🇱</span>
                         <span>Nederlands</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- The only way to get rid of the word card. Deliberately not an X on
+                 the card itself: that trains the cookie-banner swat, and the card
+                 is the daily reason to open the app. Here it is a decision. -->
+            <div class="settings-group">
+                <h3 id="txtWordHeader" style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Gronings word of the day</h3>
+                <div class="word-setting-options">
+                    <button class="word-setting-btn" data-word-setting="on">
+                        <span class="theme-icon" aria-hidden="true">🗣️</span>
+                        <span id="txtWordShow">Show</span>
+                    </button>
+                    <button class="word-setting-btn" data-word-setting="off">
+                        <span class="theme-icon" aria-hidden="true">🙈</span>
+                        <span id="txtWordHide">Hide</span>
                     </button>
                 </div>
             </div>
@@ -401,6 +426,7 @@
     <script src="js/error-reporter.js"></script>
     <script src="js/data.js"></script>
     <script src="js/events.js"></script>
+    <script src="js/words.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>

@@ -68,6 +68,7 @@ function getFilteredEvents(events, filters) {
 
 // DOM Elements
 const listContainer = document.getElementById('listContainer');
+const wordOfDaySection = document.getElementById('wordOfDay');
 const filterPills = document.querySelectorAll('.filter-pill');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
@@ -147,10 +148,12 @@ const settingsModal = document.getElementById('settingsModal');
 const settingsBtn = document.getElementById('settingsBtn');
 const closeSettingsModalBtn = document.getElementById('closeSettingsModal');
 const themeOptionBtns = document.querySelectorAll('.theme-option-btn');
+const wordSettingBtns = document.querySelectorAll('.word-setting-btn');
 
 function init() {
     initTheme();
     updateLanguageUI();
+    renderWordOfDay();
     renderList();
     updateProgress();
     setupEventListeners();
@@ -297,6 +300,12 @@ function updateLanguageUI() {
     document.getElementById('txtThemeSystem').textContent = t.themeSystem;
     const txtLanguageHeader = document.getElementById('txtLanguageHeader');
     if (txtLanguageHeader) txtLanguageHeader.textContent = t.languageHeader;
+    const txtWordHeader = document.getElementById('txtWordHeader');
+    if (txtWordHeader) txtWordHeader.textContent = t.wordTag;
+    const txtWordShow = document.getElementById('txtWordShow');
+    if (txtWordShow) txtWordShow.textContent = t.wordSettingShow;
+    const txtWordHide = document.getElementById('txtWordHide');
+    if (txtWordHide) txtWordHide.textContent = t.wordSettingHide;
 
     const footerPrivacyLink = document.getElementById('footerPrivacyLink');
     if (footerPrivacyLink) footerPrivacyLink.textContent = t.footerPrivacy;
@@ -333,6 +342,7 @@ function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('moiCheckLang', currentLang);
     updateLanguageUI();
+    renderWordOfDay();
     renderList();
     updateProgress();
     if (currentView === 'events') renderEvents();
@@ -383,9 +393,12 @@ function switchView(view) {
         window.va?.('event', { name: `view_${view}` });
     }
 
-    if (view === 'list' && listNeedsResort) {
-        listNeedsResort = false;
-        renderList();
+    if (view === 'list') {
+        refreshWordOfDayIfDayTurned();
+        if (listNeedsResort) {
+            listNeedsResort = false;
+            renderList();
+        }
     }
 
     if (view === 'map') {
@@ -713,6 +726,257 @@ function buildCompletedDivider(count, collapsed) {
     });
 
     return divider;
+}
+
+// Today's quiz as rendered: the day it is for, the word, and the options in the
+// order shown, so a tap can be judged by index without the answer sitting in the
+// DOM. Rebuilt on every render; null until the first one.
+let wordQuiz = null;
+// The stored answers, read once and then kept here, so an answer still shows for
+// the rest of this page view when the write was refused (see recordWordAnswer).
+let wordProgress = null;
+// An answered card is put away on load and comes back on a tap; answering opens
+// it. In memory only: tomorrow's word is unanswered and opens on its own, so
+// there is nothing worth remembering across visits.
+let wordExpanded = false;
+let wordSetting = readWordSetting();
+
+const WORD_CHEVRON = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
+function updateWordSettingButtons() {
+    wordSettingBtns.forEach(btn => {
+        const isCurrent = btn.dataset.wordSetting === wordSetting;
+        btn.classList.toggle('active', isCurrent);
+        btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
+    });
+}
+
+function setWordSetting(value) {
+    wordSetting = value === 'off' ? 'off' : 'on';
+    saveWordSetting(wordSetting);
+    updateWordSettingButtons();
+    renderWordOfDay();
+}
+
+function renderWordOfDay() {
+    if (!wordOfDaySection) return;
+    if (wordSetting === 'off') {
+        wordOfDaySection.hidden = true;
+        wordOfDaySection.replaceChildren();
+        return;
+    }
+    wordOfDaySection.hidden = false;
+
+    const t = UI_TRANSLATIONS[currentLang];
+    const today = todayInGroningen();
+    const word = wordForDate(today);
+    const options = quizOptionsFor(word, currentLang, today);
+    wordQuiz = { today, word, options };
+
+    if (wordProgress === null) wordProgress = readWordProgress();
+    // Only an answer for *this* word counts: a record from a different word on
+    // the same day can only come from a hand-edited store or a list change, and
+    // showing its verdict against today's options would be wrong either way.
+    const answered = wordProgress[today]?.id === word.id ? wordProgress[today] : null;
+
+    const card = document.createElement('div');
+    card.className = 'word-card';
+
+    const tag = document.createElement('span');
+    tag.className = 'word-tag';
+    tag.id = 'wordOfDayTag';
+    tag.textContent = t.wordTag;
+
+    if (answered && !wordExpanded) {
+        card.classList.add('is-collapsed');
+        const strip = document.createElement('button');
+        strip.type = 'button';
+        strip.className = 'word-strip';
+        strip.setAttribute('aria-expanded', 'false');
+        // No aria-label: it would replace the button's text as its accessible
+        // name, and the text is the point - tag, word, verdict. The action is
+        // appended off-screen instead, so a screen reader hears all of it.
+        // The short label: the word is what the strip is for, and on a phone the
+        // full tag plus "Kop d'r veur" plus the verdict does not fit on one line.
+        tag.textContent = t.wordTagShort;
+
+        const term = document.createElement('span');
+        term.className = 'word-strip-term';
+        term.lang = 'gos';
+        term.textContent = word.word;
+
+        const verdict = document.createElement('span');
+        verdict.className = `word-strip-verdict ${answered.correct ? 'is-right' : 'is-wrong'}`;
+        const glyph = document.createElement('span');
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = answered.correct ? '✓' : '✗';
+        const spoken = document.createElement('span');
+        spoken.className = 'word-sr-only';
+        spoken.textContent = answered.correct ? t.wordVerdictRight : t.wordVerdictWrong;
+        verdict.append(glyph, spoken);
+
+        const action = document.createElement('span');
+        action.className = 'word-sr-only';
+        action.textContent = t.wordExpand;
+
+        strip.append(tag, term, verdict, action);
+        strip.insertAdjacentHTML('beforeend', WORD_CHEVRON);
+        card.appendChild(strip);
+        wordOfDaySection.replaceChildren(card);
+        return;
+    }
+
+    const head = document.createElement('div');
+    head.className = 'word-head';
+    head.appendChild(tag);
+    if (answered) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'word-toggle';
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.setAttribute('aria-label', t.wordCollapse);
+        toggle.style.transform = 'rotate(180deg)';
+        toggle.insertAdjacentHTML('beforeend', WORD_CHEVRON);
+        head.appendChild(toggle);
+    }
+    card.appendChild(head);
+
+    const term = document.createElement('h2');
+    term.className = 'word-term';
+    term.lang = 'gos';
+    term.textContent = word.word;
+    card.appendChild(term);
+
+    const prompt = document.createElement('p');
+    prompt.className = 'word-prompt';
+    prompt.id = 'wordOfDayPrompt';
+    prompt.textContent = t.wordPrompt;
+    card.appendChild(prompt);
+
+    const group = document.createElement('div');
+    group.className = 'word-options';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-labelledby', 'wordOfDayPrompt');
+    options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'word-option';
+        button.dataset.index = String(index);
+        button.textContent = option.text;
+        if (answered) {
+            button.disabled = true;
+            if (option.correct) button.classList.add('is-correct');
+            // `picked` is only set in this page view (see handleWordOptionClick),
+            // so after a reload a wrong answer shows the right one and nothing else.
+            else if (option.text === answered.picked) button.classList.add('is-wrong');
+        }
+        group.appendChild(button);
+    });
+    card.appendChild(group);
+
+    // Live region, so a screen reader hears the verdict without leaving the button.
+    // Focusable by script only: the answered buttons are disabled and cannot take
+    // focus back, so this is where a keyboard user lands after a tap.
+    const feedback = document.createElement('p');
+    feedback.className = 'word-feedback';
+    feedback.setAttribute('aria-live', 'polite');
+    feedback.tabIndex = -1;
+    if (answered) {
+        feedback.textContent = answered.correct
+            ? t.wordCorrect
+            : t.wordWrong.replace('{word}', word.word).replace('{meaning}', word.meaning[currentLang]);
+    }
+    card.appendChild(feedback);
+
+    if (answered) {
+        const example = document.createElement('div');
+        example.className = 'word-example';
+        const label = document.createElement('span');
+        label.className = 'word-example-label';
+        label.textContent = t.wordExampleLabel;
+        const gr = document.createElement('span');
+        gr.className = 'word-example-gr';
+        gr.lang = 'gos';
+        gr.textContent = word.example.gr;
+        const tr = document.createElement('span');
+        tr.className = 'word-example-tr';
+        tr.textContent = word.example[currentLang];
+        example.append(label, gr, tr);
+        card.appendChild(example);
+
+        if (word.note) {
+            const note = document.createElement('p');
+            note.className = 'word-note';
+            note.textContent = word.note[currentLang];
+            card.appendChild(note);
+        }
+    }
+
+    // Distinct words, not answered days: the list cycles, so after one full
+    // round a day count would keep climbing past the number of words there are.
+    const learned = new Set(Object.values(wordProgress).map(entry => entry?.id).filter(Boolean)).size;
+    if (answered || learned > 0) {
+        const footer = document.createElement('p');
+        footer.className = 'word-footer';
+        if (answered) {
+            const tomorrow = document.createElement('span');
+            tomorrow.textContent = t.wordTomorrow;
+            footer.appendChild(tomorrow);
+        }
+        if (learned > 0) {
+            const count = document.createElement('span');
+            count.textContent = learned === 1 ? t.wordLearnedOne : t.wordLearned.replace('{count}', learned);
+            footer.appendChild(count);
+        }
+        card.appendChild(footer);
+    }
+
+    wordOfDaySection.replaceChildren(card);
+}
+
+// A tab left open across midnight would keep showing yesterday's word until
+// something else re-rendered it. Called from the minute tick, on resume, and
+// when the list view comes back; it only redraws when the day has turned, so a
+// same-day call never disturbs focus or an answer in progress.
+function refreshWordOfDayIfDayTurned() {
+    if (!wordQuiz || wordQuiz.today === todayInGroningen()) return;
+    wordExpanded = false;
+    renderWordOfDay();
+}
+
+function toggleWordExpanded() {
+    wordExpanded = !wordExpanded;
+    renderWordOfDay();
+    // The control that was pressed is gone with the re-render; land on its
+    // counterpart so a keyboard user is not dropped on <body>.
+    wordOfDaySection.querySelector(wordExpanded ? '.word-toggle' : '.word-strip')?.focus({ preventScroll: true });
+}
+
+function handleWordOptionClick(button) {
+    if (!wordQuiz || button.disabled) return;
+    const option = wordQuiz.options[Number(button.dataset.index)];
+    if (!option) return;
+
+    // The day may have turned since the card was drawn; a tap after midnight
+    // answers yesterday's word, and the re-render below then shows today's.
+    wordProgress = recordWordAnswer(wordQuiz.today, wordQuiz.word.id, option.correct, wordProgress);
+    // `picked` is for the re-render to mark the chosen button; it is kept in
+    // memory only, the stored record holds just the verdict.
+    wordProgress[wordQuiz.today].picked = option.text;
+
+    wordExpanded = true;
+
+    if (option.correct) {
+        const rect = button.getBoundingClientRect();
+        createConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+    // Optional call: an ad blocker can block js/analytics.js outright.
+    window.va?.('event', { name: option.correct ? 'word_correct' : 'word_wrong' });
+
+    renderWordOfDay();
+    // The buttons were rebuilt and are now disabled, so focus would otherwise
+    // fall to <body>; the verdict is the natural place to land instead.
+    wordOfDaySection.querySelector('.word-feedback')?.focus({ preventScroll: true });
 }
 
 function renderList() {
@@ -1578,6 +1842,21 @@ function closeProfileModal() {
 const CONTACT_FUNCTION_REGION = 'eu-west-1';
 
 function setupEventListeners() {
+    if (wordOfDaySection) {
+        wordOfDaySection.addEventListener('click', (e) => {
+            const button = e.target.closest('.word-option');
+            if (button) {
+                handleWordOptionClick(button);
+                return;
+            }
+            if (e.target.closest('.word-toggle, .word-strip')) toggleWordExpanded();
+        });
+    }
+    wordSettingBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => setWordSetting(e.currentTarget.dataset.wordSetting));
+    });
+    updateWordSettingButtons();
+
     // ⚡ Bolt Performance Optimization:
     // Event delegation on listContainer reduces memory usage by attaching one event listener
     // instead of creating new listeners for every card and checkbox on every render.
@@ -1830,7 +2109,9 @@ function setupEventListeners() {
     // timer below while hidden, so becoming visible again is its own trigger
     // rather than something the timer can be trusted to catch promptly.
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden || currentView !== 'events' || pendingCheckInKey) return;
+        if (document.hidden) return;
+        refreshWordOfDayIfDayTurned();
+        if (currentView !== 'events' || pendingCheckInKey) return;
         renderEvents();
     });
 
@@ -1840,6 +2121,7 @@ function setupEventListeners() {
     // enough to keep the open tab honest without polling faster than the data
     // can actually change.
     setInterval(() => {
+        refreshWordOfDayIfDayTurned();
         if (currentView === 'events' && !pendingCheckInKey) renderEvents();
     }, 60 * 1000);
 
@@ -1858,6 +2140,10 @@ function setupEventListeners() {
             filterPills.forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             currentFilter = pill.dataset.filter;
+            // The word card belongs to the whole list, not to a category: a pill
+            // tap is a narrowing, so the card steps aside until "All" is back.
+            // CSS keyed off this attribute, same as the view switch.
+            document.body.dataset.listFiltered = currentFilter === 'All' ? 'false' : 'true';
             renderList();
         });
     });
