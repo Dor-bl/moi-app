@@ -243,6 +243,13 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
         const secondTitle = await page.textContent('#modalTitle');
         assert.notEqual(secondTitle, firstTitle);
 
+        // Typing a draft note hides the reroll so it cannot be discarded;
+        // clearing the draft brings the reroll back.
+        await page.fill('#memoryNote', 'draft about this place');
+        assert.equal(await page.isVisible('#modalSurpriseBtn'), false);
+        await page.fill('#memoryNote', '');
+        assert.equal(await page.isVisible('#modalSurpriseBtn'), true);
+
         // Close modal, switch to NL in settings, and verify NL translations
         await page.click('#closeDetailModal');
         await page.click('#settingsBtn');

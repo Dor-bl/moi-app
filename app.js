@@ -1734,11 +1734,22 @@ function updateModalButtonState(isCompleted) {
     const t = UI_TRANSLATIONS[currentLang];
     modalCheckBtn.textContent = isCompleted ? t.saveNote : t.markComplete;
     modalUncheckBtn.style.display = isCompleted ? 'block' : 'none';
-    if (modalSurpriseBtn) {
-        const canReroll = !isCompleted && detailModalFromSurprise
-            && getFilteredItems(currentFilter).filter(i => !completedItems[i.id]).length > 1;
-        modalSurpriseBtn.style.display = canReroll ? 'block' : 'none';
-    }
+    updateRerollButton();
+}
+
+/**
+ * Shows the in-modal reroll button only when rerolling cannot lose anything: the
+ * modal came from Surprise Me, the item is uncompleted, another uncompleted item
+ * exists, and no unsaved draft note has been typed (an uncompleted item's draft
+ * lives only in the textarea, so dealing a new card would discard it).
+ */
+function updateRerollButton() {
+    if (!modalSurpriseBtn) return;
+    const canReroll = detailModalFromSurprise && !!selectedItemId
+        && !completedItems[selectedItemId]
+        && !memoryNote.value.trim()
+        && getFilteredItems(currentFilter).filter(i => !completedItems[i.id]).length > 1;
+    modalSurpriseBtn.style.display = canReroll ? 'block' : 'none';
 }
 
 /**
@@ -2516,9 +2527,12 @@ function setupEventListeners() {
 
     if (modalSurpriseBtn) {
         modalSurpriseBtn.addEventListener('click', () => {
+            // Never reroll over an unsaved draft on an uncompleted item.
+            if (!completedItems[selectedItemId] && memoryNote.value.trim()) return;
             persistOpenNote();
             triggerSurprise();
         });
+        memoryNote.addEventListener('input', updateRerollButton);
     }
 
     modalUncheckBtn.addEventListener('click', () => {
