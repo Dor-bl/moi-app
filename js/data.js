@@ -464,7 +464,7 @@ const BUCKET_LIST = [
     },
     {
         id: '56',
-        coords: [53.2161, 6.5623],
+        coords: [53.2162, 6.5626],
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Get something fixed for free at a Repair Café', nl: 'Laat iets gratis repareren bij een Repaircafé' },
         tip: { en: "Before you bin the toaster, do what Groningers do: carry it to a Repair Café, where volunteers with soldering irons and sewing machines fix it with you instead of for you. The one near the Akerkhof, run out of the Humanitas building, is the central one, and there are others in neighbourhoods like Paddepoel, Helpman and the Oosterparkwijk. Entry is free, and a donation is entirely voluntary (nobody minds if you skip it). Each café keeps its own schedule (some open monthly, others only every other month), so check the date and opening hours before you go.", nl: "Voordat je de broodrooster weggooit, doe wat Stadjers doen: neem 'm mee naar een Repaircafé, waar vrijwilligers met soldeerbouten en naaimachines het samen met jou repareren in plaats van voor jou. Het café bij het Akerkhof, in het gebouw van Humanitas, is het centrale, en er zijn er meer in wijken als Paddepoel, Helpman en de Oosterparkwijk. Binnenlopen kost niets, en een donatie is helemaal vrijwillig (niemand kijkt raar op als je er geen geeft). Elk café heeft zijn eigen rooster (sommige zijn maandelijks open, andere om de maand), dus check de datum en openingstijden voor je gaat." }
