@@ -1159,16 +1159,19 @@ const EVENTS = [
         id: 'whisky-festival-groningen-2026',
         date: '2026-11-27',
         endDate: '2026-11-28',
-        // Friday has one evening session; Saturday has an afternoon session
-        // (13.00 - 16.30) and an evening one (19.00 - 22.30), so its window
-        // spans both, including the gap between them.
+        // Per www.whiskyfestivalgroningen.nl (read 9 November 2026): Friday has
+        // one evening session (19:00 - 22:30), Saturday an afternoon session
+        // (13:00 - 16:30) and an evening one (19:00 - 22:30), each preceded by
+        // a separately ticketed tasting in the sacristy an hour earlier (18:00,
+        // 12:00, 18:00). Each day's window runs from its first tasting to its
+        // last session's end, so Saturday's includes the gap between sessions.
         hours: {
-            '2026-11-27': ['19:00', '22:30'],
-            '2026-11-28': ['13:00', '22:30']
+            '2026-11-27': ['18:00', '22:30'],
+            '2026-11-28': ['12:00', '22:30']
         },
         title: { en: 'Whisky Festival Groningen', nl: 'Whisky Festival Groningen' },
         location: { en: 'Akerk (Der Aa-kerk), Akerkhof 2', nl: 'Akerk (Der Aa-kerk), Akerkhof 2' },
-        tip: { en: 'A medieval church full of whisky: more than 35 stands from distilleries and importers, over 2,000 whiskies to taste, and brand ambassadors from home and abroad to talk you through them. There are three sessions: Friday evening 19:00 to 22:30, Saturday afternoon 13:00 to 16:30 and Saturday evening 19:00 to 22:30. It is pitched at curious beginners as much as at collectors, so you do not need to know your Islay from your Speyside to enjoy it. Tickets are sold per session through the organiser\'s site. Leave the bike at home.', nl: 'Een middeleeuwse kerk vol whisky: ruim 35 stands van merken en importeurs, meer dan 2.000 whisky\'s om te proeven en brand ambassadors uit binnen- en buitenland die je erdoorheen praten. Er zijn drie sessies: vrijdagavond 19.00 tot 22.30 uur, zaterdagmiddag 13.00 tot 16.30 uur en zaterdagavond 19.00 tot 22.30 uur. Het is net zo goed bedoeld voor nieuwsgierige beginners als voor kenners, dus je hoeft Islay en Speyside niet uit elkaar te houden om een mooie avond te hebben. Kaarten gaan per sessie via de site van de organisatie. Laat de fiets thuis.' },
+        tip: { en: 'A medieval church full of whisky: more than 30 stands from distilleries, importers and independent bottlers, over 2,000 whiskies to taste (plus some rum and cognac), and brand ambassadors from home and abroad to talk you through them. There are three sessions: Friday evening 19:00 to 22:30, Saturday afternoon 13:00 to 16:30 and Saturday evening 19:00 to 22:30, each with a separately ticketed small-group tasting in the sacristy an hour before the doors open and another an hour after. It is pitched at curious beginners as much as at collectors, so you do not need to know your Islay from your Speyside. Tickets are sold per session through the organiser\'s site; the rarer pours cost festival tokens (€1.25 each, at the till or ordered online beforehand), there is food inside, a €1 cloakroom and water points to rinse your glass. Strictly 18 and over. Leave the bike at home.', nl: 'Een middeleeuwse kerk vol whisky: ruim 30 stands van distilleerderijen, importeurs en onafhankelijke bottelaars, meer dan 2.000 whisky\'s om te proeven (en wat rum en cognac), en brand ambassadors uit binnen- en buitenland die je erdoorheen praten. Er zijn drie sessies: vrijdagavond 19.00 tot 22.30 uur, zaterdagmiddag 13.00 tot 16.30 uur en zaterdagavond 19.00 tot 22.30 uur, elk met een apart te boeken proeverij in kleine groep in de sacristie, een uur voor de deuren opengaan en nog een een uur erna. Het is net zo goed bedoeld voor nieuwsgierige beginners als voor kenners, dus je hoeft Islay en Speyside niet uit elkaar te houden. Kaarten gaan per sessie via de site van de organisatie; voor de bijzondere drams betaal je met festivalmunten (€1,25 per stuk, aan de kassa of vooraf online), er is eten binnen, een garderobe voor €1 en er zijn waterpunten om je glas te spoelen. Strikt 18+. Laat de fiets thuis.' },
         url: 'https://www.whiskyfestivalgroningen.nl'
     },
     {
