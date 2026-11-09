@@ -1142,18 +1142,31 @@ const EVENTS = [
     {
         id: 'cinema-culinair-groningen-2026',
         date: '2026-11-19',
-        endDate: '2026-11-29',
-        // No startTime/endTime: the listing gives 18.00 - 20.00, but its own text
-        // says brunch shows start at 11.30, dinner shows at 18.00 and some early
-        // dinner shows at 17.00, so there is no single daily window to publish.
-        // The organiser's ticket grid, read by the repo owner on 9 November 2026
-        // (the host is refused from the session), confirms the Mediacentrale
-        // and those three formats and start times for 28 and 29 November; the
-        // 19 November start and the prices are still the listing's.
+        endDate: '2026-11-22',
+        // Two entries, one per block of show days, because the Groningen run has
+        // no shows on 23, 24 and 25 November and a single span would show it as
+        // happening on those days (the same reason the STAR train days are
+        // separate entries). No startTime/endTime: the organiser publishes only
+        // start times, which differ per show (brunch 11:30, early dinner 17:00,
+        // dinner 18:00). Dates and shows read on 9 November 2026 from the
+        // organiser's Agenda Groningen page through www.cinemaculinair.nl's
+        // public WordPress API (its HTML is Cloudflare-gated and the apex is
+        // refused by the egress proxy); the prices are the Visit Groningen
+        // listing's, as the organiser keeps them in its ticket shop.
         title: { en: 'Cinema Culinair: eat what the film eats', nl: 'Cinema Culinair' },
         location: { en: 'Mediacentrale, Helperpark 272-298', nl: 'Mediacentrale, Helperpark 272-298' },
-        tip: { en: 'A film where every dish the characters eat is served to you at the same second it appears on screen. After a sold-out first run, Cinema Culinair is back in the industrial Mediacentrale for two weeks, with Chef, Chocolat, Julie & Julia, Grease, The Menu and Ratatouille each paired with its own menu. There are Film & Brunch shows from 11:30 and Film & Dinner shows from 18:00, some as an early dinner from 17:00, and which option runs depends on the film. Not cheap: adult tickets range from about €71 to €100 depending on the film, children\'s tickets from about €40. Book ahead on the organiser\'s site, and go hungry.', nl: 'Een film waarbij elk gerecht dat de personages eten op precies hetzelfde moment bij jou op tafel staat. Na een uitverkochte eerste editie strijkt Cinema Culinair twee weken neer in de industriële Mediacentrale, met Chef, Chocolat, Julie & Julia, Grease, The Menu en Ratatouille, elk met een eigen menu. Er zijn Film & Brunch-voorstellingen vanaf 11.30 uur en Film & Diner-voorstellingen vanaf 18.00 uur, sommige als early diner vanaf 17.00 uur; welke optie er is verschilt per film. Niet goedkoop: voor volwassenen kost een kaartje zo\'n €71 tot €100, afhankelijk van de film, voor kinderen vanaf ongeveer €40. Reserveer vooraf via de site van de organisatie, en kom met honger.' },
-        url: 'https://cinemaculinair.nl/'
+        tip: { en: 'A film where every dish the characters eat is served to you at the same second it appears on screen: "what you see is what you eat". After a sold-out first run, Cinema Culinair is back in the industrial Mediacentrale for ten shows over two long weekends. This first block: Chef with dinner on Thursday 19, Friday 20 and Saturday 21 November at 18:00, Chocolat with brunch on Saturday 21 at 11:30, and Julie & Julia with an early dinner on Sunday 22 at 17:00. Tickets are sold online only, with a €1.50 service fee each; the listing puts adult tickets at roughly €71 to €100 depending on the film and children\'s tickets from about €40. Because the dishes are timed to the film, the menu cannot be adapted for allergies, but you can pick the vegetarian or vegan version at checkout, and you can rebook once, free, up to three days before. Several shows are already sold out with a waiting list, so book early, and go hungry.', nl: 'Een film waarbij elk gerecht dat de personages eten op precies hetzelfde moment bij jou op tafel staat: "what you see is what you eat". Na een uitverkochte eerste editie strijkt Cinema Culinair opnieuw neer in de industriële Mediacentrale, met tien voorstellingen verdeeld over twee lange weekenden. Dit eerste blok: Chef met diner op donderdag 19, vrijdag 20 en zaterdag 21 november om 18.00 uur, Chocolat met brunch op zaterdag 21 om 11.30 uur en Julie & Julia met een early diner op zondag 22 om 17.00 uur. Kaarten zijn alleen online te koop, met €1,50 servicekosten per stuk; volgens de agenda kost een kaartje voor volwassenen zo\'n €71 tot €100, afhankelijk van de film, voor kinderen vanaf ongeveer €40. Omdat de gerechten op de film getimed zijn kan het menu niet worden aangepast voor allergieën, maar bij het afrekenen kies je wel de vegetarische of vegan variant, en tot drie dagen van tevoren kun je één keer gratis omboeken. Een aantal voorstellingen is al uitverkocht met wachtlijst, dus boek op tijd, en kom met honger.' },
+        url: 'https://cinemaculinair.nl/agenda/groningen/'
+    },
+    {
+        id: 'cinema-culinair-groningen-2026-11-26',
+        date: '2026-11-26',
+        endDate: '2026-11-29',
+        // Second block of the same run; see the entry above for the sourcing.
+        title: { en: 'Cinema Culinair: eat what the film eats', nl: 'Cinema Culinair' },
+        location: { en: 'Mediacentrale, Helperpark 272-298', nl: 'Mediacentrale, Helperpark 272-298' },
+        tip: { en: 'A film where every dish the characters eat is served to you at the same second it appears on screen: "what you see is what you eat". After a sold-out first run, Cinema Culinair is back in the industrial Mediacentrale for ten shows over two long weekends. This second block: Grease with dinner on Thursday 26 November at 18:00, The Menu with dinner on Friday 27 at 18:00, Ratatouille with brunch on Saturday 28 at 11:30 and with dinner at 18:00, and Ratatouille with an early dinner on Sunday 29 at 17:00. Tickets are sold online only, with a €1.50 service fee each; the listing puts adult tickets at roughly €71 to €100 depending on the film and children\'s tickets from about €40. Because the dishes are timed to the film, the menu cannot be adapted for allergies, but you can pick the vegetarian or vegan version at checkout, and you can rebook once, free, up to three days before. Several shows are already sold out with a waiting list, so book early, and go hungry.', nl: 'Een film waarbij elk gerecht dat de personages eten op precies hetzelfde moment bij jou op tafel staat: "what you see is what you eat". Na een uitverkochte eerste editie strijkt Cinema Culinair opnieuw neer in de industriële Mediacentrale, met tien voorstellingen verdeeld over twee lange weekenden. Dit tweede blok: Grease met diner op donderdag 26 november om 18.00 uur, The Menu met diner op vrijdag 27 om 18.00 uur, Ratatouille met brunch op zaterdag 28 om 11.30 uur en met diner om 18.00 uur, en Ratatouille met een early diner op zondag 29 om 17.00 uur. Kaarten zijn alleen online te koop, met €1,50 servicekosten per stuk; volgens de agenda kost een kaartje voor volwassenen zo\'n €71 tot €100, afhankelijk van de film, voor kinderen vanaf ongeveer €40. Omdat de gerechten op de film getimed zijn kan het menu niet worden aangepast voor allergieën, maar bij het afrekenen kies je wel de vegetarische of vegan variant, en tot drie dagen van tevoren kun je één keer gratis omboeken. Een aantal voorstellingen is al uitverkocht met wachtlijst, dus boek op tijd, en kom met honger.' },
+        url: 'https://cinemaculinair.nl/agenda/groningen/'
     },
     {
         id: 'whisky-festival-groningen-2026',
