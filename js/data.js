@@ -1146,6 +1146,10 @@ const EVENTS = [
         // No startTime/endTime: the listing gives 18.00 - 20.00, but its own text
         // says brunch shows start at 11.30, dinner shows at 18.00 and some early
         // dinner shows at 17.00, so there is no single daily window to publish.
+        // The organiser's ticket grid, read by the repo owner on 9 November 2026
+        // (the host is refused from the session), confirms the Mediacentrale
+        // and those three formats and start times for 28 and 29 November; the
+        // 19 November start and the prices are still the listing's.
         title: { en: 'Cinema Culinair: eat what the film eats', nl: 'Cinema Culinair' },
         location: { en: 'Mediacentrale, Helperpark 272-298', nl: 'Mediacentrale, Helperpark 272-298' },
         tip: { en: 'A film where every dish the characters eat is served to you at the same second it appears on screen. After a sold-out first run, Cinema Culinair is back in the industrial Mediacentrale for two weeks, with Chef, Chocolat, Julie & Julia, Grease, The Menu and Ratatouille each paired with its own menu. There are Film & Brunch shows from 11:30 and Film & Dinner shows from 18:00, some as an early dinner from 17:00, and which option runs depends on the film. Not cheap: adult tickets range from about €71 to €100 depending on the film, children\'s tickets from about €40. Book ahead on the organiser\'s site, and go hungry.', nl: 'Een film waarbij elk gerecht dat de personages eten op precies hetzelfde moment bij jou op tafel staat. Na een uitverkochte eerste editie strijkt Cinema Culinair twee weken neer in de industriële Mediacentrale, met Chef, Chocolat, Julie & Julia, Grease, The Menu en Ratatouille, elk met een eigen menu. Er zijn Film & Brunch-voorstellingen vanaf 11.30 uur en Film & Diner-voorstellingen vanaf 18.00 uur, sommige als early diner vanaf 17.00 uur; welke optie er is verschilt per film. Niet goedkoop: voor volwassenen kost een kaartje zo\'n €71 tot €100, afhankelijk van de film, voor kinderen vanaf ongeveer €40. Reserveer vooraf via de site van de organisatie, en kom met honger.' },
