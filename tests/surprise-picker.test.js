@@ -218,6 +218,7 @@ function startAppServer() {
 
 // Requires Playwright Chromium (`npx playwright install chromium` or `PW_CHROMIUM_PATH`).
 test('clicking Surprise me FAB opens a random uncompleted item and Pick another deals a different one across EN and NL', async () => {
+    const CATEGORY = 'Nature & Wildlife';
     const server = await startAppServer();
     let browser;
     try {
@@ -226,17 +227,33 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
             process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {}
         );
         const page = await browser.newPage({ viewport: { width: 375, height: 800 } });
+
+        // Complete all but two Nature items, so the picker must stay inside the
+        // active category and skip completed items to land on one of these two.
+        const { BUCKET_LIST } = loadPicker();
+        const natureItems = BUCKET_LIST.filter(i => i.category.en === CATEGORY);
+        assert.ok(natureItems.length > 2, 'need more than two Nature items for this test');
+        const openItems = natureItems.slice(0, 2);
+        const seeded = Object.fromEntries(natureItems.slice(2)
+            .map(i => [i.id, { date: '2026-01-01T00:00:00.000Z', note: '' }]));
+        await page.addInitScript(state => {
+            globalThis.localStorage.setItem('moiCheckState', state);
+        }, JSON.stringify(seeded));
+
         await page.goto(`http://127.0.0.1:${port}/`);
+        await page.click(`.filter-pill[data-filter="${CATEGORY}"]`);
 
         // Runs in the browser; globalThis keeps the Node-side linter happy.
         const focusedId = () => page.evaluate(() => globalThis.document.activeElement.id);
+        const openTitles = openItems.map(i => i.title.en);
 
         // Click "Surprise me" FAB
         await page.click('#surpriseBtn');
         await page.waitForSelector('#detailModal.active');
 
         const firstTitle = await page.textContent('#modalTitle');
-        assert.ok(firstTitle && firstTitle.length > 0);
+        assert.ok(openTitles.includes(firstTitle), `picked "${firstTitle}" is not an open ${CATEGORY} item`);
+        assert.equal(await page.textContent('#modalCategory'), CATEGORY);
         // Opening moves focus to the item title so screen readers announce it.
         assert.equal(await focusedId(), 'modalTitle');
         const rerollVisible = await page.isVisible('#modalSurpriseBtn');
@@ -247,6 +264,8 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
         await page.click('#modalSurpriseBtn');
         const secondTitle = await page.textContent('#modalTitle');
         assert.notEqual(secondTitle, firstTitle);
+        assert.ok(openTitles.includes(secondTitle), `rerolled "${secondTitle}" is not an open ${CATEGORY} item`);
+        assert.equal(await page.textContent('#modalCategory'), CATEGORY);
         // A reroll keeps the modal open and focuses the new title.
         assert.equal(await focusedId(), 'modalTitle');
 
