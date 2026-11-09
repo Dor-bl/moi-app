@@ -384,11 +384,13 @@ async function initAuth() {
 async function onUserLoggedIn() {
     authGeneration++;
     updateAuthBtnState(true);
+    // Before the cloud read, not after: the word card's sign-in nudge is for
+    // guests only and depends on nothing the sync brings back, so it should go
+    // the moment the session is known rather than after a slow request.
+    renderWordOfDay();
     await syncCloudProgress();
     renderList();
     updateProgress();
-    // The word card's sign-in nudge is for guests only.
-    renderWordOfDay();
 }
 
 // Sign-out leaves no progress from the signed-out account in this browser, so

@@ -1378,7 +1378,7 @@ const UI_TRANSLATIONS = {
         wordVerdictWrong: 'fout',
         wordSettingShow: 'Tonen',
         wordSettingHide: 'Verbergen',
-        wordNudge: 'Log in om je voortgang en herinneringen op al je apparaten te bewaren.',
+        wordNudge: 'Log in om je bucketlist-voortgang en herinneringen op al je apparaten te bewaren.',
         courseLink: 'Gratis Cursus Nederlands (RUG) 🎓',
         signIn: 'Inloggen',
         signOut: 'Uitloggen',
