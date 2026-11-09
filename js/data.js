@@ -1084,6 +1084,128 @@ const EVENTS = [
         location: { en: 'Zeerijp village hall (Dorpshuis), Borgweg 9', nl: 'Dorpshuis Zeerijp, Borgweg 9' },
         tip: { en: 'The ghost walks of Zeerijp have grown into an institution in the north, with more than 1,100 people from far and wide taking part. You walk an evening route through and around the village in groups of about ten that are put together for you, with actors along the way to give you a fright. They have been fully booked for years in a row, so if you want in, sign up through the form on the organisers\' website as soon as you can, or join as a volunteer, which is also possible. You choose a start slot when you sign up. Tickets are €12.50 (€10 up to age 12), paid at the village hall when you arrive, and you should be there 15 minutes before your start. Everyone must be 12 or older, or come with someone aged 18 or over.', nl: 'De spooktochten van Zeerijp zijn een begrip geworden in het noorden, met ruim 1100 deelnemers die van heinde en verre komen. Je loopt in de avond in vooraf ingedeelde groepen van ongeveer tien personen een route door en rond het dorp, met onderweg acts die zorgen voor spanning en schrikeffecten. Ze zijn al jaren op rij volgeboekt, dus wil je erbij zijn, meld je dan zo snel mogelijk aan via het inschrijfformulier op de website van de organisatie. Meedoen als vrijwilliger kan ook. Je kiest bij het inschrijven een starttijd. Een kaartje kost €12,50 (€10 t/m 12 jaar), te betalen bij binnenkomst in het dorpshuis, en je moet er 15 minuten voor je start zijn. Deelnemers zijn 12 jaar of ouder, of komen met iemand van 18 jaar of ouder.' },
         url: 'https://spooktochtzeerijp.nl/'
+    },
+    {
+        id: 'microscopiedag-hortus-haren-2026',
+        date: '2026-11-14',
+        startTime: '12:00',
+        endTime: '15:30',
+        kidFriendly: true,
+        title: { en: 'Microscopy Day at the Hortus (Mini-natuur uitvergroot)', nl: 'Mini-natuur uitvergroot in de Hortus (Microscopiedag)' },
+        location: { en: 'Hortus Botanicus Haren, Kerklaan 34, Haren', nl: 'Hortus Botanicus Haren, Kerklaan 34, Haren' },
+        tip: { en: 'Once a year dozens of places across Groningen and Drenthe set up microscopes for anyone who wants to look, and the Hortus in Haren joins in for the fourth year running. In the Plantage from 12:00 to 15:30 you can peer at tiny mushrooms, wafer-thin slices of a leaf and all kinds of sand, bring something small from home, or go on a mini expedition through the garden to collect your own specimen. Adults pay the normal garden entry; children up to 17 get in free. The Reitdiep visitor centre on the Wolddijk takes part the same afternoon, 14:00 to 16:00, and that one is free for everyone.', nl: 'Eén keer per jaar staan er op tientallen plekken in Groningen en Drenthe microscopen klaar voor iedereen die wil kijken, en de Hortus in Haren doet voor het vierde jaar op rij mee. In de Plantage kun je van 12.00 tot 15.30 uur minipaddenstoelen, flinterdunne plakjes boomblad en allerlei soorten zand bekijken, iets kleins van thuis meenemen, of op mini-expeditie door de tuin om zelf iets te verzamelen. Volwassenen betalen de gewone entree; kinderen tot en met 17 jaar mogen gratis naar binnen. Bezoekerscentrum Reitdiep aan de Wolddijk doet dezelfde middag mee, van 14.00 tot 16.00 uur, en daar is het voor iedereen gratis.' },
+        url: 'https://www.hortusharen.nl/agenda/mini-natuur-uitvergroot-in-de-hortus/'
+    },
+    {
+        id: 'sinterklaasintocht-groningen-2026',
+        date: '2026-11-14',
+        // Date, 13:00 - 15:30, "Gratis" and the parade route were read off the
+        // organiser's page (volksvermakengroningen.nl) by the repo owner on
+        // 9 November 2026; the intermediate times in the tip (boat 13:00,
+        // Zuiderhaven 13:30, parade 14:10, Grote Markt 15:00, children's
+        // programme 14:30 - 15:30) come from search snippets of the same page.
+        startTime: '13:00',
+        endTime: '15:30',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Sinterklaas arrives in Groningen (Sinterklaasintocht)', nl: 'Intocht van Sinterklaas in Stad' },
+        location: { en: 'Zuiderhaven and Praediniussingel through the city centre to the Grote Markt', nl: 'Zuiderhaven en Praediniussingel door de binnenstad naar de Grote Markt' },
+        tip: { en: 'The Dutch winter really starts when Sinterklaas sails in, and in Groningen that has been organised by the Koninklijke Vereeniging voor Volksvermaken since 1947. The steamboat comes up the Reitdiep at 13:00 and is received at the Zuiderhaven around 13:30; the parade on horseback leaves the Praediniussingel at 14:10 and reaches the Grote Markt at 15:00, where the mayor welcomes him from the steps of the Stadhuis. The route runs via the Museumbrug, Westerhaven, Astraat, Brugstraat and Gedempte Zuiderdiep to the Grote Markt, then loops through the Oude Ebbingestraat, Oude Boteringestraat, Broerstraat and Zwanestraat back to the Grote Markt. There is a children\'s programme on the Grote Markt from 14:30 to 15:30. Free, and busy: find a spot along the route early. If you are new to the country, this is the afternoon the pepernoten start making sense.', nl: 'De Nederlandse winter begint pas echt als Sinterklaas aankomt, en in Groningen regelt de Koninklijke Vereeniging voor Volksvermaken dat al sinds 1947. De stoomboot komt om 13.00 uur over het Reitdiep binnen en wordt rond 13.30 uur ontvangen in de Zuiderhaven; de optocht te paard vertrekt om 14.10 uur vanaf de Praediniussingel en komt om 15.00 uur aan op de Grote Markt, waar de burgemeester hem verwelkomt vanaf de trappen van het Stadhuis. De route gaat via de Museumbrug, Westerhaven, Astraat, Brugstraat en het Gedempte Zuiderdiep naar de Grote Markt, en maakt daarna een lus door de Oude Ebbingestraat, Oude Boteringestraat, Broerstraat en Zwanestraat terug naar de Grote Markt. Van 14.30 tot 15.30 uur is er een kinderprogramma op de Grote Markt. Gratis, en druk: zoek op tijd een plekje langs de route. Ben je nieuw in Nederland, dan is dit de middag waarop de pepernoten ineens logisch worden.' },
+        url: 'https://volksvermakengroningen.nl/evenementen/intocht-sinterklaas/'
+    },
+    {
+        id: 'museumnacht-westerwolde-2026',
+        date: '2026-11-14',
+        // The organiser says 19.00 - 24.00; 23:59 keeps the last minute inside
+        // the same day. Read on www.museumnachtwesterwolde.nl's public WordPress
+        // API on 9 November 2026 (the apex is refused by the egress proxy).
+        startTime: '19:00',
+        endTime: '23:59',
+        title: { en: 'Museum Night Westerwolde', nl: 'Museumnacht Westerwolde' },
+        location: { en: 'Vesting Bourtange and six other museums in Westerwolde', nl: 'Vesting Bourtange en zes andere musea in Westerwolde' },
+        tip: { en: 'Westerwolde is one of the few places in the Netherlands where it still gets properly dark, and for one night the seven museums in the municipality lean into that: Vesting Bourtange, Kamp de Beetse, Museum Klooster Ter Apel, Vestingmuseum Oudeschans, Het Dinosaurium, Burcht Wedde and Het MOW in Bellingwolde all open from 19:00 to midnight with their own programme of stories, music and light, for the second edition. Go on your own with a passe-partout (€12.50, bought online, you get a wristband at your first museum) or single tickets at the door (prices vary; Bourtange is €8, children up to 11 €5), or book the night bus (€22.50): two oldtimer buses, each with its own route, programme and stories told along the way, both leaving at 19:00 from the Vesting Bourtange car park, so bus passengers start there. The night mayor, singer Wim van der Kuip, tours all seven with a song written for the occasion. Bring a torch and warm clothes, and plan the drive: this is the far south-east of the province.', nl: 'Westerwolde is een van de weinige plekken in Nederland waar het nog echt donker wordt, en één nacht per jaar spelen de zeven musea in de gemeente daarop in: Vesting Bourtange, Kamp de Beetse, Museum Klooster Ter Apel, Vestingmuseum Oudeschans, Het Dinosaurium, Burcht Wedde en Het MOW in Bellingwolde zijn van 19.00 tot 24.00 uur open met elk een eigen programma van verhalen, muziek en licht, voor de tweede editie. Ga op eigen gelegenheid met een passe-partout (€12,50, vooraf online, bij je eerste museum krijg je een polsbandje) of met losse kaartjes aan de deur (de prijs verschilt per museum; Bourtange vraagt €8, kinderen t/m 11 jaar €5), of boek de Nachtbus (€22,50): twee oldtimerbussen met elk een eigen route, programma en verhalen onderweg, die allebei om 19.00 uur vertrekken vanaf de parkeerplaats van Vesting Bourtange, dus busreizigers beginnen daar. Nachtburgemeester Wim van der Kuip toert met een speciaal geschreven lied langs alle zeven. Neem een zaklamp en warme kleren mee en plan de rit: dit is het uiterste zuidoosten van de provincie.' },
+        url: 'https://museumnachtwesterwolde.nl/'
+    },
+    {
+        id: 'jonge-harten-2026',
+        date: '2026-11-14',
+        endDate: '2026-11-21',
+        // Per jongeharten.nl: the Festivalhart (Bloemstraat 38) opens 15:00 daily
+        // and closes 01:00 on Friday and Saturday, 00:00 the other days; 23:59
+        // keeps each day's last minute inside the same day, as for Winterstad.
+        // The programme starts earlier on two days (a 14:30 showing on the 14th,
+        // a 14:00 talk on the 21st), which `hours` carries for those days.
+        startTime: '15:00',
+        endTime: '23:59',
+        hours: {
+            '2026-11-14': ['14:30', '23:59'],
+            '2026-11-21': ['14:00', '23:59']
+        },
+        title: { en: 'Jonge Harten Festival (theatre for young people)', nl: 'Jonge Harten Festival' },
+        location: { en: 'Festival heart at Bloemstraat 38; shows at the Stadsschouwburg, Grand Theatre, De Kunstwerf and Studio X', nl: 'Festivalhart aan de Bloemstraat 38; voorstellingen in de Stadsschouwburg, het Grand Theatre, De Kunstwerf en Studio X' },
+        tip: { en: 'Eight days of theatre, performance, dance and workshops made for and often by young people, one of the festivals Groningen is known for in the Dutch theatre world. The idea is that theatre makers, not politicians or multinationals, set the agenda for the future, and that you cannot shape a future without the people who will live in it; this year\'s theme is "Practice the Possible". The festival heart at Bloemstraat 38 is free to walk into and open from 15:00 every day, until 01:00 on Friday and Saturday and midnight otherwise, with live music, a daily live podcast, an opening party on the 14th and the box office (17:00 to 23:00). The shows themselves play at the Stadsschouwburg, the Grand Theatre, De Kunstwerf and Studio X and are ticketed, nearly all with a youth price up to age 29; under-29s can also buy a passe-partout for unlimited shows, and a second youth ticket is half price. The programme marks each show\'s language, so look for the ones that work without Dutch.', nl: 'Acht dagen theater, performance, dans en workshops voor en vaak door jongeren, een van de festivals waar Groningen in theaterland om bekendstaat. Het idee: op Jonge Harten bepalen theatermakers de agenda, niet politici of multinationals, en de toekomst vormgeven zonder jongeren kan niet; het thema van dit jaar is "Practice the Possible". Het Festivalhart aan de Bloemstraat 38 is gratis toegankelijk en elke dag open vanaf 15.00 uur, op vrijdag en zaterdag tot 01.00 uur en anders tot middernacht, met livemuziek, dagelijks een live-podcast, een openingsfeest op de 14e en de kassa (17.00 tot 23.00 uur). De voorstellingen zelf spelen in de Stadsschouwburg, het Grand Theatre, De Kunstwerf en Studio X en zijn met kaartje, bijna allemaal met een jongerenprijs t/m 29 jaar; wie jonger is dan 29 kan ook een passe-partout kopen voor onbeperkt voorstellingen, en het tweede jongerenkaartje is voor de helft. Het programma geeft per voorstelling de taal aan, dus zoek de voorstellingen die ook zonder Nederlands te volgen zijn.' },
+        url: 'https://www.jongeharten.nl'
+    },
+    {
+        id: 'cinema-culinair-groningen-2026',
+        date: '2026-11-19',
+        endDate: '2026-11-22',
+        // Two entries, one per block of show days, because the Groningen run has
+        // no shows on 23, 24 and 25 November and a single span would show it as
+        // happening on those days (the same reason the STAR train days are
+        // separate entries). No startTime/endTime: the organiser publishes only
+        // start times, which differ per show (brunch 11:30, early dinner 17:00,
+        // dinner 18:00). Dates and shows read on 9 November 2026 from the
+        // organiser's Agenda Groningen page through www.cinemaculinair.nl's
+        // public WordPress API (its HTML is Cloudflare-gated and the apex is
+        // refused by the egress proxy); the prices are the Visit Groningen
+        // listing's, as the organiser keeps them in its ticket shop.
+        title: { en: 'Cinema Culinair: eat what the film eats', nl: 'Cinema Culinair' },
+        location: { en: 'Mediacentrale, Helperpark 272-298', nl: 'Mediacentrale, Helperpark 272-298' },
+        tip: { en: 'A film where every dish the characters eat is served to you at the same second it appears on screen: "what you see is what you eat". After a sold-out first run, Cinema Culinair is back in the industrial Mediacentrale for ten shows over two long weekends. This first block: Chef with dinner on Thursday 19, Friday 20 and Saturday 21 November at 18:00, Chocolat with brunch on Saturday 21 at 11:30, and Julie & Julia with an early dinner on Sunday 22 at 17:00. Tickets are sold online only, with a €1.50 service fee each; the listing puts adult tickets at roughly €71 to €100 depending on the film and children\'s tickets from about €40. Because the dishes are timed to the film, the menu cannot be adapted for allergies, but you can pick the vegetarian or vegan version at checkout, and you can rebook once, free, up to three days before. Several shows are already sold out with a waiting list, so book early, and go hungry.', nl: 'Een film waarbij elk gerecht dat de personages eten op precies hetzelfde moment bij jou op tafel staat: "what you see is what you eat". Na een uitverkochte eerste editie strijkt Cinema Culinair opnieuw neer in de industriële Mediacentrale, met tien voorstellingen verdeeld over twee lange weekenden. Dit eerste blok: Chef met diner op donderdag 19, vrijdag 20 en zaterdag 21 november om 18.00 uur, Chocolat met brunch op zaterdag 21 om 11.30 uur en Julie & Julia met een early diner op zondag 22 om 17.00 uur. Kaarten zijn alleen online te koop, met €1,50 servicekosten per stuk; volgens de agenda kost een kaartje voor volwassenen zo\'n €71 tot €100, afhankelijk van de film, voor kinderen vanaf ongeveer €40. Omdat de gerechten op de film getimed zijn kan het menu niet worden aangepast voor allergieën, maar bij het afrekenen kies je wel de vegetarische of vegan variant, en tot drie dagen van tevoren kun je één keer gratis omboeken. Een aantal voorstellingen is al uitverkocht met wachtlijst, dus boek op tijd, en kom met honger.' },
+        url: 'https://cinemaculinair.nl/agenda/groningen/'
+    },
+    {
+        id: 'cinema-culinair-groningen-2026-11-26',
+        date: '2026-11-26',
+        endDate: '2026-11-29',
+        // Second block of the same run; see the entry above for the sourcing.
+        title: { en: 'Cinema Culinair: eat what the film eats', nl: 'Cinema Culinair' },
+        location: { en: 'Mediacentrale, Helperpark 272-298', nl: 'Mediacentrale, Helperpark 272-298' },
+        tip: { en: 'A film where every dish the characters eat is served to you at the same second it appears on screen: "what you see is what you eat". After a sold-out first run, Cinema Culinair is back in the industrial Mediacentrale for ten shows over two long weekends. This second block: Grease with dinner on Thursday 26 November at 18:00, The Menu with dinner on Friday 27 at 18:00, Ratatouille with brunch on Saturday 28 at 11:30 and with dinner at 18:00, and Ratatouille with an early dinner on Sunday 29 at 17:00. Tickets are sold online only, with a €1.50 service fee each; the listing puts adult tickets at roughly €71 to €100 depending on the film and children\'s tickets from about €40. Because the dishes are timed to the film, the menu cannot be adapted for allergies, but you can pick the vegetarian or vegan version at checkout, and you can rebook once, free, up to three days before. Several shows are already sold out with a waiting list, so book early, and go hungry.', nl: 'Een film waarbij elk gerecht dat de personages eten op precies hetzelfde moment bij jou op tafel staat: "what you see is what you eat". Na een uitverkochte eerste editie strijkt Cinema Culinair opnieuw neer in de industriële Mediacentrale, met tien voorstellingen verdeeld over twee lange weekenden. Dit tweede blok: Grease met diner op donderdag 26 november om 18.00 uur, The Menu met diner op vrijdag 27 om 18.00 uur, Ratatouille met brunch op zaterdag 28 om 11.30 uur en met diner om 18.00 uur, en Ratatouille met een early diner op zondag 29 om 17.00 uur. Kaarten zijn alleen online te koop, met €1,50 servicekosten per stuk; volgens de agenda kost een kaartje voor volwassenen zo\'n €71 tot €100, afhankelijk van de film, voor kinderen vanaf ongeveer €40. Omdat de gerechten op de film getimed zijn kan het menu niet worden aangepast voor allergieën, maar bij het afrekenen kies je wel de vegetarische of vegan variant, en tot drie dagen van tevoren kun je één keer gratis omboeken. Een aantal voorstellingen is al uitverkocht met wachtlijst, dus boek op tijd, en kom met honger.' },
+        url: 'https://cinemaculinair.nl/agenda/groningen/'
+    },
+    {
+        id: 'whisky-festival-groningen-2026',
+        date: '2026-11-27',
+        endDate: '2026-11-28',
+        // Per www.whiskyfestivalgroningen.nl (read 9 November 2026): Friday has
+        // one evening session (19:00 - 22:30), Saturday an afternoon session
+        // (13:00 - 16:30) and an evening one (19:00 - 22:30), each preceded by
+        // a separately ticketed tasting in the sacristy an hour earlier (18:00,
+        // 12:00, 18:00). Each day's window runs from its first tasting to its
+        // last session's end, so Saturday's includes the gap between sessions.
+        hours: {
+            '2026-11-27': ['18:00', '22:30'],
+            '2026-11-28': ['12:00', '22:30']
+        },
+        title: { en: 'Whisky Festival Groningen', nl: 'Whisky Festival Groningen' },
+        location: { en: 'Akerk (Der Aa-kerk), Akerkhof 2', nl: 'Akerk (Der Aa-kerk), Akerkhof 2' },
+        tip: { en: 'A medieval church full of whisky: more than 30 stands from distilleries, importers and independent bottlers, over 2,000 whiskies to taste (plus some rum and cognac), and brand ambassadors from home and abroad to talk you through them. There are three sessions: Friday evening 19:00 to 22:30, Saturday afternoon 13:00 to 16:30 and Saturday evening 19:00 to 22:30, each with a separately ticketed small-group tasting in the sacristy an hour before the doors open and another an hour after. It is pitched at curious beginners as much as at collectors, so you do not need to know your Islay from your Speyside. Tickets are sold per session through the organiser\'s site; the rarer pours cost festival tokens (€1.25 each, at the till or ordered online beforehand), there is food inside, a €1 cloakroom and water points to rinse your glass. Strictly 18 and over. Leave the bike at home.', nl: 'Een middeleeuwse kerk vol whisky: ruim 30 stands van distilleerderijen, importeurs en onafhankelijke bottelaars, meer dan 2.000 whisky\'s om te proeven (en wat rum en cognac), en brand ambassadors uit binnen- en buitenland die je erdoorheen praten. Er zijn drie sessies: vrijdagavond 19.00 tot 22.30 uur, zaterdagmiddag 13.00 tot 16.30 uur en zaterdagavond 19.00 tot 22.30 uur, elk met een apart te boeken proeverij in kleine groep in de sacristie, een uur voor de deuren opengaan en nog een een uur erna. Het is net zo goed bedoeld voor nieuwsgierige beginners als voor kenners, dus je hoeft Islay en Speyside niet uit elkaar te houden. Kaarten gaan per sessie via de site van de organisatie; voor de bijzondere drams betaal je met festivalmunten (€1,25 per stuk, aan de kassa of vooraf online), er is eten binnen, een garderobe voor €1 en er zijn waterpunten om je glas te spoelen. Strikt 18+. Laat de fiets thuis.' },
+        url: 'https://www.whiskyfestivalgroningen.nl'
+    },
+    {
+        id: 'survivalrun-groningen-2026',
+        date: '2026-11-29',
+        // 09:00 is the first published start (the kids run, per the organiser's
+        // start-times post); the organiser gives no end time, so 16:00 is the
+        // Visit Groningen listing's.
+        startTime: '09:00',
+        endTime: '16:00',
+        title: { en: 'Survivalrun Groningen (obstacle trail run)', nl: 'Survivalrun Groningen' },
+        location: { en: 'ACLO sports centre, Blauwborgje 16, Zernike campus', nl: 'ACLO Sportcentrum, Blauwborgje 16, Zernike' },
+        tip: { en: 'Survivalrun is a Dutch outdoor sport that mixes trail running with obstacles, and the 13th Groningen edition sends you round a mostly unpaved course on and around the Zernike campus, with the start and finish on the south side of the ACLO sports centre. There is a distance for almost everyone: competition classes, an 8.5 km and a 5 km recreational run (solo, in pairs or as a team), a youth class for ages 8 to 14, a parent-and-child run from age 8 and a 2 km mini run from age 6, and this year the Dutch student championship is held here too. Starts run from the kids run at 09:00 to the parent-and-child run at 13:20. It is heavier than an obstacle run: you hand in your wristband at any obstacle you fail, and the organisers expect some technique (monkey hang, cat crawl, swing-over), with training evenings on Wednesdays and Thursdays if you want to learn. Register in advance on the organiser\'s site; the listing gives the fee as €27.50. Spectators are explicitly welcome: follow the runners by bike along the marked route, and the start-finish area and the survival track at De Bunders are where most obstacles are in view.', nl: 'Survivalrun is een echte Nederlandse buitensport die hardlopen combineert met hindernissen, en de 13e Groningse editie stuurt je over een grotendeels onverhard parcours op en rond de Zernike Campus, met start en finish aan de zuidkant van sportcentrum ACLO. Er is voor bijna iedereen een afstand: wedstrijdklassen, een recreantenrun van 8,5 en van 5 km (alleen, als koppel of als team), een jeugdklasse van 8 tot 14 jaar, een ouder-kindrun vanaf 8 jaar en een minirun van 2 km vanaf 6 jaar, en dit jaar wordt hier ook het Nederlands Studenten Kampioenschap gehouden. De starts lopen van de kidsrun om 9.00 uur tot de ouder-kindrun om 13.20 uur. Het is zwaarder dan een obstacle run: bij elke hindernis die je niet haalt lever je je polsbandje in, en de organisatie verwacht enige techniek (apenhang, catcrawl, swingover); op woensdag- en donderdagavond kun je meetrainen om het te leren. Inschrijven doe je vooraf via de site van de organisatie; volgens de agenda kost het €27,50. Toeschouwers zijn uitdrukkelijk welkom: volg de lopers per fiets langs de uitgezette route, en bij het start-finishterrein en de survivalbaan aan De Bunders zie je de meeste hindernissen tegelijk.' },
+        url: 'https://survivalrungroningen.nl/'
     }
 ];
 
