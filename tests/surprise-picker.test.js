@@ -2,7 +2,8 @@
 // 1. pickRandomUncompleted() unit behaviour (excludes completed items, avoids
 //    dealing the same card twice in a row when >1 candidate remains, returns the
 //    sole remaining item when only 1 is left, and returns null when all are done).
-// 2. .surprise-pill contrast in light, dark, and system themes (WCAG AA >= 4.5:1).
+// 2. .surprise-fab contrast in light, dark, and system themes (WCAG AA >= 4.5:1)
+//    and view-based visibility (shown in list & map, hidden in events & memories).
 // 3. End-to-end interaction in index.html: tapping #surpriseBtn opens #detailModal
 //    with an uncompleted item and shows #modalSurpriseBtn, and tapping
 //    #modalSurpriseBtn deals a different item.
@@ -80,7 +81,7 @@ function parseRgb(colorString) {
     return [r, g, b];
 }
 
-test('surprise-pill stays legible in light, dark, and system themes', async () => {
+test('surprise-fab stays legible in light, dark, and system themes and hides on events/memories views', async () => {
     const css = await readFile(path.join(REPO_ROOT, 'styles.css'), 'utf8');
     let browser;
     try {
@@ -102,31 +103,41 @@ test('surprise-pill stays legible in light, dark, and system themes', async () =
                 await page.setContent(`<!doctype html>
 <html${themeAttr ? ` data-theme="${themeAttr}"` : ''}>
 <head><style>${css}</style></head>
-<body>
-    <header class="app-header">
-        <div class="filters-container">
-            <button type="button" class="surprise-pill" id="surpriseBtn">
-                <span id="txtSurpriseMe">Surprise me</span>
-            </button>
-        </div>
-    </header>
+<body data-active-view="list">
+    <main>
+        <button type="button" class="surprise-fab" id="surpriseBtn">
+            <span id="txtSurpriseMe">Surprise me</span>
+        </button>
+    </main>
 </body>
 </html>`);
 
                 /* eslint-disable no-undef */
-                const colors = await page.evaluate(() => {
-                    const pill = document.getElementById('surpriseBtn');
-                    const style = getComputedStyle(pill);
-                    return { background: style.backgroundColor, color: style.color };
+                const info = await page.evaluate(() => {
+                    const fab = document.getElementById('surpriseBtn');
+                    const style = getComputedStyle(fab);
+                    const colors = { background: style.backgroundColor, color: style.color, position: style.position };
+                    const displayByView = {};
+                    for (const view of ['list', 'map', 'events', 'memories']) {
+                        document.body.dataset.activeView = view;
+                        displayByView[view] = getComputedStyle(fab).display;
+                    }
+                    return { colors, displayByView };
                 });
                 /* eslint-enable no-undef */
 
-                const ratio = contrastRatio(parseRgb(colors.background), parseRgb(colors.color));
+                assert.equal(info.colors.position, 'fixed');
+                assert.equal(info.displayByView.list, 'flex');
+                assert.equal(info.displayByView.map, 'flex');
+                assert.equal(info.displayByView.events, 'none');
+                assert.equal(info.displayByView.memories, 'none');
+
+                const ratio = contrastRatio(parseRgb(info.colors.background), parseRgb(info.colors.color));
 
                 assert.ok(
                     ratio >= 4.5,
-                    `${label}: surprise-pill contrast ratio ${ratio.toFixed(2)}:1 is below WCAG AA (4.5:1) — ` +
-                    `background ${colors.background}, text ${colors.color}`
+                    `${label}: surprise-fab contrast ratio ${ratio.toFixed(2)}:1 is below WCAG AA (4.5:1) — ` +
+                    `background ${info.colors.background}, text ${info.colors.color}`
                 );
             } finally {
                 await context.close();
@@ -167,7 +178,7 @@ function startAppServer() {
     return new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
-test('clicking Surprise me opens a random uncompleted item and Pick another deals a different one across EN and NL', async () => {
+test('clicking Surprise me FAB opens a random uncompleted item and Pick another deals a different one across EN and NL', async () => {
     const server = await startAppServer();
     let browser;
     try {
@@ -178,7 +189,7 @@ test('clicking Surprise me opens a random uncompleted item and Pick another deal
         const page = await browser.newPage({ viewport: { width: 375, height: 800 } });
         await page.goto(`http://127.0.0.1:${port}/`);
 
-        // Click "Surprise me"
+        // Click "Surprise me" FAB
         await page.click('#surpriseBtn');
         await page.waitForSelector('#detailModal.active');
 
@@ -207,4 +218,3 @@ test('clicking Surprise me opens a random uncompleted item and Pick another deal
         await new Promise(resolve => server.close(resolve));
     }
 });
-
