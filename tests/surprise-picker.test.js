@@ -228,12 +228,17 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
         const page = await browser.newPage({ viewport: { width: 375, height: 800 } });
         await page.goto(`http://127.0.0.1:${port}/`);
 
+        // Runs in the browser; globalThis keeps the Node-side linter happy.
+        const focusedId = () => page.evaluate(() => globalThis.document.activeElement.id);
+
         // Click "Surprise me" FAB
         await page.click('#surpriseBtn');
         await page.waitForSelector('#detailModal.active');
 
         const firstTitle = await page.textContent('#modalTitle');
         assert.ok(firstTitle && firstTitle.length > 0);
+        // Opening moves focus to the item title so screen readers announce it.
+        assert.equal(await focusedId(), 'modalTitle');
         const rerollVisible = await page.isVisible('#modalSurpriseBtn');
         assert.equal(rerollVisible, true);
         assert.equal(await page.textContent('#modalSurpriseBtn'), 'Pick another 🎲');
@@ -242,6 +247,8 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
         await page.click('#modalSurpriseBtn');
         const secondTitle = await page.textContent('#modalTitle');
         assert.notEqual(secondTitle, firstTitle);
+        // A reroll keeps the modal open and focuses the new title.
+        assert.equal(await focusedId(), 'modalTitle');
 
         // Typing a draft note hides the reroll so it cannot be discarded;
         // clearing the draft brings the reroll back.
@@ -252,6 +259,8 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
 
         // Close modal, switch to NL in settings, and verify NL translations
         await page.click('#closeDetailModal');
+        // Closing hands focus back to the Surprise me button that opened it.
+        assert.equal(await focusedId(), 'surpriseBtn');
         await page.click('#settingsBtn');
         await page.click('.lang-option-btn[data-lang="nl"]');
         await page.click('#closeSettingsModal');

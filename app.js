@@ -17,6 +17,8 @@ let currentView = 'list';
 let selectedItemId = null;
 let lastSurpriseId = null;
 let detailModalFromSurprise = false;
+// Element that had focus when the detail modal opened, so closing can hand it back.
+let detailModalReturnFocus = null;
 // null = no explicit choice yet, so the section auto-collapses once it grows.
 let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
 let resortTimer = null;
@@ -1685,7 +1687,12 @@ function openDetailModal(item, { fromSurprise = false } = {}) {
     
     updateMemoryHint();
     updateModalButtonState(isCompleted);
-    detailModal.classList.add('active');
+    // Only a fresh open moves focus; a re-render (e.g. language change) leaves it be.
+    if (!detailModal.classList.contains('active')) {
+        detailModalReturnFocus = document.activeElement;
+        detailModal.classList.add('active');
+        modalTitle.focus();
+    }
 }
 
 // A note only belongs to an item that is already completed; for anything else the
@@ -1723,6 +1730,23 @@ function closeDetailModal() {
     selectedItemId = null;
     detailModalFromSurprise = false;
     memoryNote.value = '';
+    restoreDetailModalFocus();
+}
+
+/**
+ * Hands focus back to whatever opened the detail modal. If that element is gone,
+ * hidden, or disabled (e.g. Surprise me after the last item is completed), focus
+ * is dropped out of the now-hidden modal instead of being left inside it.
+ */
+function restoreDetailModalFocus() {
+    const target = detailModalReturnFocus;
+    detailModalReturnFocus = null;
+    if (target && target !== document.body && target.isConnected
+        && !target.disabled && target.getClientRects().length > 0) {
+        target.focus();
+    } else if (detailModal.contains(document.activeElement)) {
+        document.activeElement.blur();
+    }
 }
 
 /**
@@ -2531,6 +2555,8 @@ function setupEventListeners() {
             if (!completedItems[selectedItemId] && memoryNote.value.trim()) return;
             persistOpenNote();
             triggerSurprise();
+            // The modal stays open, so move focus to the new title for screen readers.
+            modalTitle.focus();
         });
         memoryNote.addEventListener('input', updateRerollButton);
     }

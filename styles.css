@@ -1804,3 +1804,9 @@ textarea:focus {
     font-size: 0.75rem;
     color: #E2E8F0;
 }
+
+/* The detail modal title takes focus programmatically (tabindex="-1") so screen
+   readers announce the item; it is not an interactive control, so no ring. */
+#modalTitle:focus {
+    outline: none;
+}
