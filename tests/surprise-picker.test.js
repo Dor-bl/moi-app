@@ -7,6 +7,9 @@
 // 3. End-to-end interaction in index.html: tapping #surpriseBtn opens #detailModal
 //    with an uncompleted item and shows #modalSurpriseBtn, and tapping
 //    #modalSurpriseBtn deals a different item.
+//
+// Prerequisite for browser tests: run `npx playwright install chromium` on a fresh
+// checkout, or point `PW_CHROMIUM_PATH` at an existing Chromium executable.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,6 +23,11 @@ import { chromium } from 'playwright';
 
 const REPO_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
+/**
+ * Loads `js/data.js` and `js/utils.js` into an isolated VM context for unit testing.
+ *
+ * @returns {{BUCKET_LIST: Array<object>, UI_TRANSLATIONS: object, pickRandomUncompleted: Function}}
+ */
 function loadPicker() {
     const context = vm.createContext({ console, Date, Math, JSON, Set, Object });
     vm.runInContext(fs.readFileSync(path.join(REPO_ROOT, 'js/data.js'), 'utf8'), context, { filename: 'js/data.js' });
@@ -60,6 +68,12 @@ test('surprise translations exist in both EN and NL', () => {
     }
 });
 
+/**
+ * Computes WCAG relative luminance for an sRGB triplet.
+ *
+ * @param {number[]} rgb - [r, g, b] channels in 0..255.
+ * @returns {number} Relative luminance in 0..1.
+ */
 function relativeLuminance([r, g, b]) {
     const [rs, gs, bs] = [r, g, b].map(channel => {
         const c = channel / 255;
@@ -68,12 +82,25 @@ function relativeLuminance([r, g, b]) {
     return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 
+/**
+ * Computes the WCAG contrast ratio between two sRGB triplets.
+ *
+ * @param {number[]} rgbA - First [r, g, b] color.
+ * @param {number[]} rgbB - Second [r, g, b] color.
+ * @returns {number} Contrast ratio (>= 1).
+ */
 function contrastRatio(rgbA, rgbB) {
     const lA = relativeLuminance(rgbA) + 0.05;
     const lB = relativeLuminance(rgbB) + 0.05;
     return lA > lB ? lA / lB : lB / lA;
 }
 
+/**
+ * Parses a computed CSS `rgb()`/`rgba()` color string into [r, g, b].
+ *
+ * @param {string} colorString - CSS rgb/rgba string.
+ * @returns {number[]} [r, g, b] channels.
+ */
 function parseRgb(colorString) {
     const match = colorString.match(/rgba?\(([^)]+)\)/);
     assert.ok(match, `expected an rgb()/rgba() color, got "${colorString}"`);
@@ -156,6 +183,12 @@ const MIME = {
     '.woff2': 'font/woff2'
 };
 
+/**
+ * Starts a local HTTP static server rooted at `REPO_ROOT` for end-to-end Playwright tests.
+ * Rejects any resolved path outside `REPO_ROOT` with HTTP 404.
+ *
+ * @returns {Promise<import('node:http').Server>} Listening HTTP server instance.
+ */
 function startAppServer() {
     const server = http.createServer(async (req, res) => {
         try {
@@ -166,7 +199,12 @@ function startAppServer() {
                 res.end('');
                 return;
             }
-            const filePath = path.join(REPO_ROOT, rel);
+            const filePath = path.resolve(REPO_ROOT, '.' + rel);
+            if (!filePath.startsWith(REPO_ROOT + path.sep) && filePath !== REPO_ROOT) {
+                res.writeHead(404);
+                res.end();
+                return;
+            }
             const data = await readFile(filePath);
             res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream' });
             res.end(data);
@@ -178,6 +216,7 @@ function startAppServer() {
     return new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
+// Requires Playwright Chromium (`npx playwright install chromium` or `PW_CHROMIUM_PATH`).
 test('clicking Surprise me FAB opens a random uncompleted item and Pick another deals a different one across EN and NL', async () => {
     const server = await startAppServer();
     let browser;

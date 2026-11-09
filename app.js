@@ -165,6 +165,10 @@ function init() {
     initAuth();
 }
 
+/**
+ * Updates category filter pill labels, remaining counts, and accessible status text,
+ * and refreshes the Surprise Me button enabled state.
+ */
 function renderFilterPills() {
     const t = UI_TRANSLATIONS[currentLang];
 
@@ -213,16 +217,22 @@ function renderFilterPills() {
             ? t.remainingCount.replace('{count}', remaining)
             : t.allDone;
         pill.setAttribute('aria-label', `${label}, ${status}`);
-        updateSurpriseButton();
     });
+    updateSurpriseButton();
 }
 
+/**
+ * Disables the Surprise Me button when every item in the active category filter is completed.
+ */
 function updateSurpriseButton() {
     if (!surpriseBtn) return;
     const hasRemaining = getFilteredItems(currentFilter).some(i => !completedItems[i.id]);
     surpriseBtn.disabled = !hasRemaining;
 }
 
+/**
+ * Applies the active language translations (EN/NL) to all static UI labels and controls.
+ */
 function updateLanguageUI() {
     const t = UI_TRANSLATIONS[currentLang];
 
@@ -351,6 +361,11 @@ function updateLanguageUI() {
     updateAuthBtnState(!!currentUser);
 }
 
+/**
+ * Switches the active application language, persists the choice, and re-renders active views.
+ *
+ * @param {string} lang - Language code ('en' or 'nl').
+ */
 function setLanguage(lang) {
     if (!ALLOWED_LANGS.includes(lang) || lang === currentLang) return;
     currentLang = lang;
@@ -1631,6 +1646,12 @@ function updateMemoryHint() {
         (currentUser && supabaseClient) ? t.memoryHintSignedIn : t.memoryHintGuest;
 }
 
+/**
+ * Populates and opens the item detail modal.
+ *
+ * @param {object} item - Bucket-list item to display.
+ * @param {{fromSurprise?: boolean}} [options] - Whether the modal was opened via Surprise Me.
+ */
 function openDetailModal(item, { fromSurprise = false } = {}) {
     detailModalFromSurprise = fromSurprise;
     selectedItemId = item.id;
@@ -1690,6 +1711,9 @@ function persistOpenNote() {
     syncItemToCloud(selectedItemId, true, note);
 }
 
+/**
+ * Persists any edited memory note and closes the item detail modal.
+ */
 function closeDetailModal() {
     persistOpenNote();
     // A note edited from the List tab never reaches updateProgress, so an
@@ -1701,6 +1725,11 @@ function closeDetailModal() {
     memoryNote.value = '';
 }
 
+/**
+ * Updates the primary, uncheck, and reroll button visibility and labels inside the detail modal.
+ *
+ * @param {boolean} isCompleted - Whether the currently selected item is completed.
+ */
 function updateModalButtonState(isCompleted) {
     const t = UI_TRANSLATIONS[currentLang];
     modalCheckBtn.textContent = isCompleted ? t.saveNote : t.markComplete;
@@ -1712,6 +1741,9 @@ function updateModalButtonState(isCompleted) {
     }
 }
 
+/**
+ * Picks a random uncompleted item from the active category filter and opens its detail modal.
+ */
 function triggerSurprise() {
     const picked = pickRandomUncompleted(
         getFilteredItems(currentFilter),
@@ -1881,6 +1913,9 @@ function closeProfileModal() {
 // name hallo@moicheck.nl as the way to reach us without it.
 const CONTACT_FUNCTION_REGION = 'eu-west-1';
 
+/**
+ * Attaches DOM event listeners for view switching, filtering, modals, Surprise Me, and auth flows.
+ */
 function setupEventListeners() {
     if (wordOfDaySection) {
         wordOfDaySection.addEventListener('click', (e) => {

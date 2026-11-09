@@ -68,6 +68,15 @@ python3 -m http.server 8000
 
 Then visit `http://localhost:8000` in your web browser.
 
+### Running Tests
+```bash
+npm ci
+npx playwright install chromium
+npm run lint
+npm test
+```
+Browser-based tests launch headless Chromium via Playwright (or use the binary at `PW_CHROMIUM_PATH` when set).
+
 ---
 
 ## 🟢 Example Bucket List Items

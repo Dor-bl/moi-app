@@ -116,9 +116,17 @@ function saveItems(ids) {
     return adopted;
 }
 
-// Picks a random uncompleted item from `items`. When more than one candidate
-// remains and `avoidId` is among them, `avoidId` is excluded so back-to-back
-// taps ("Surprise me" / "Pick another") never deal the same card twice in a row.
+/**
+ * Picks a random uncompleted item from `items`. When more than one candidate
+ * remains and `avoidId` is among them, `avoidId` is excluded so back-to-back
+ * taps ("Surprise me" / "Pick another") never deal the same card twice in a row.
+ *
+ * @param {Array<{id: string}>} items - Candidate bucket-list items.
+ * @param {Object<string, object>} completedMap - Map of completed item IDs.
+ * @param {string|null} [avoidId=null] - Item ID to avoid repeating when 2+ remain.
+ * @param {() => number} [rand=Math.random] - Random number generator in [0, 1).
+ * @returns {object|null} Chosen uncompleted item, or null when all are completed.
+ */
 function pickRandomUncompleted(items, completedMap, avoidId = null, rand = Math.random) {
     const remaining = items.filter(item => !completedMap[item.id]);
     if (remaining.length === 0) return null;
