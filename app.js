@@ -758,6 +758,46 @@ function setWordSetting(value) {
     renderWordOfDay();
 }
 
+// Where focus goes back to when the sign-in sheet closes: whichever control
+// opened it (the header button or the nudge under the word card). Same shape
+// as the sign-out and delete dialogs further down.
+let authModalReturnFocus = null;
+
+// Opens the sign-in sheet in its starting state. Shared by the header button
+// and the nudge under an answered word card.
+function openAuthModal() {
+    authModalReturnFocus = document.activeElement;
+    authActions.style.display = 'block';
+    magicLinkSuccess.style.display = 'none';
+    document.getElementById('magicFinish').style.display = 'none';
+    authModal.classList.add('active');
+    // Focus moves into the sheet, so Tab walks its controls rather than the
+    // page behind it. The close button rather than the email field: focusing
+    // an input raises the keyboard on a phone before anyone has chosen how to
+    // sign in.
+    closeAuthModalBtn.focus();
+    // Google's button is fetched from Google only now, when someone has
+    // chosen to sign in. Not awaited: the custom button stays usable
+    // until Google's replaces it.
+    initGoogleSignIn();
+}
+
+// Closes the sheet and hands focus back to its opener. The opener can be gone
+// by then (the nudge is rebuilt with the card, and disappears on sign-in), and
+// so can the header sign-in button (hidden once signed in), so the fallbacks
+// are the header button and then the profile button, which is always there.
+// Every way of closing the sheet goes through here: the close buttons, a tap
+// on the backdrop, and a completed Google sign-in.
+function closeAuthModal() {
+    authModal.classList.remove('active');
+    const opener = authModalReturnFocus;
+    authModalReturnFocus = null;
+    const canTakeFocus = el => !!el && typeof el.focus === 'function' && el.isConnected
+        && !el.disabled && el.getClientRects().length > 0;
+    const target = [opener, authBtn, profileBtn].find(canTakeFocus);
+    if (target) target.focus();
+}
+
 function renderWordOfDay() {
     if (!wordOfDaySection) return;
     if (wordSetting === 'off') {
@@ -910,6 +950,24 @@ function renderWordOfDay() {
             note.textContent = word.note[currentLang];
             card.appendChild(note);
         }
+    }
+
+    // A guest who has just answered is in a good moment to hear what signing in
+    // is for. One quiet line, only on the open answered card, so it is seen at
+    // most once a day and never on the unanswered card or the folded strip.
+    // It promises what sync does today (progress and memories); the word count
+    // itself is local, so it is not mentioned until it syncs too.
+    if (answered && !currentUser) {
+        const nudge = document.createElement('p');
+        nudge.className = 'word-nudge';
+        const text = document.createElement('span');
+        text.textContent = t.wordNudge;
+        const action = document.createElement('button');
+        action.type = 'button';
+        action.className = 'word-nudge-btn';
+        action.textContent = t.signIn;
+        nudge.append(text, action);
+        card.appendChild(nudge);
     }
 
     // Distinct words, not answered days: the list cycles, so after one full
@@ -1849,6 +1907,13 @@ function setupEventListeners() {
                 handleWordOptionClick(button);
                 return;
             }
+            if (e.target.closest('.word-nudge-btn')) {
+                // The one number that says whether the nudge earns its line.
+                // Optional call: an ad blocker can block js/analytics.js outright.
+                window.va?.('event', { name: 'word_nudge_signin' });
+                openAuthModal();
+                return;
+            }
             if (e.target.closest('.word-toggle, .word-strip')) toggleWordExpanded();
         });
     }
@@ -1899,16 +1964,7 @@ function setupEventListeners() {
     });
 
     // Auth Modal events
-    authBtn.addEventListener('click', () => {
-        authActions.style.display = 'block';
-        magicLinkSuccess.style.display = 'none';
-        document.getElementById('magicFinish').style.display = 'none';
-        authModal.classList.add('active');
-        // Google's button is fetched from Google only now, when someone has
-        // chosen to sign in. Not awaited: the custom button stays usable
-        // until Google's replaces it.
-        initGoogleSignIn();
-    });
+    authBtn.addEventListener('click', openAuthModal);
 
     // Sign-out confirmation modal controls
     let signOutModalReturnFocus = null;
@@ -2012,13 +2068,8 @@ function setupEventListeners() {
         });
     }
 
-    closeAuthModalBtn.addEventListener('click', () => {
-        authModal.classList.remove('active');
-    });
-
-    magicSuccessClose.addEventListener('click', () => {
-        authModal.classList.remove('active');
-    });
+    closeAuthModalBtn.addEventListener('click', closeAuthModal);
+    magicSuccessClose.addEventListener('click', closeAuthModal);
 
     googleAuthBtn.addEventListener('click', async () => {
         if (!supabaseClient) {
@@ -2415,6 +2466,8 @@ function setupEventListeners() {
                 closeSignOutModal();
             } else if (modal === profileModal) {
                 closeProfileModal();
+            } else if (modal === authModal) {
+                closeAuthModal();
             } else {
                 modal.classList.remove('active');
             }

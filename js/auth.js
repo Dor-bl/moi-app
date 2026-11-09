@@ -1,5 +1,5 @@
 // Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport, exportMissesLocalChanges
-// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState, saveItems, readStoredState.
+// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, renderWordOfDay, closeAuthModal, saveState, saveItems, readStoredState.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
@@ -311,9 +311,10 @@ async function onGoogleCredential(response) {
         return;
     }
 
-    // onAuthStateChange picks up the session; just put the modal away.
-    const authModal = document.getElementById('authModal');
-    if (authModal) authModal.classList.remove('active');
+    // onAuthStateChange picks up the session; just put the sheet away. Through
+    // closeAuthModal so focus leaves the hidden sheet: the opener is gone by now
+    // (the header button hides on sign-in), so it lands on the profile button.
+    closeAuthModal();
 }
 
 async function initAuth() {
@@ -384,6 +385,10 @@ async function initAuth() {
 async function onUserLoggedIn() {
     authGeneration++;
     updateAuthBtnState(true);
+    // Before the cloud read, not after: the word card's sign-in nudge is for
+    // guests only and depends on nothing the sync brings back, so it should go
+    // the moment the session is known rather than after a slow request.
+    renderWordOfDay();
     await syncCloudProgress();
     renderList();
     updateProgress();
@@ -405,6 +410,7 @@ function onUserLoggedOut() {
     updateAuthBtnState(false);
     renderList();
     updateProgress();
+    renderWordOfDay();
 }
 
 async function syncCloudProgress() {

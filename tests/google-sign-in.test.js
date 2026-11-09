@@ -67,6 +67,9 @@ function createBrowser({ googleScript = 'ok' } = {}) {
     };
     sandbox.crypto = globalThis.crypto;
     sandbox.TextEncoder = TextEncoder;
+    // app.js owns the sheet's close (and the focus hand-off); here it only has
+    // to take the sheet down so the tests below can see it closed.
+    sandbox.closeAuthModal = () => elements.authModal.classList.remove('active');
     sandbox.window = {
         GOOGLE_CLIENT_ID: CLIENT_ID,
         crypto: globalThis.crypto,
