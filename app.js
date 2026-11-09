@@ -783,15 +783,19 @@ function openAuthModal() {
 }
 
 // Closes the sheet and hands focus back to its opener. The opener can be gone
-// by then (the nudge is rebuilt with the card, and disappears on sign-in), so
-// the header button is the fallback.
+// by then (the nudge is rebuilt with the card, and disappears on sign-in), and
+// so can the header sign-in button (hidden once signed in), so the fallbacks
+// are the header button and then the profile button, which is always there.
+// Every way of closing the sheet goes through here: the close buttons, a tap
+// on the backdrop, and a completed Google sign-in.
 function closeAuthModal() {
     authModal.classList.remove('active');
     const opener = authModalReturnFocus;
     authModalReturnFocus = null;
     const canTakeFocus = el => !!el && typeof el.focus === 'function' && el.isConnected
         && !el.disabled && el.getClientRects().length > 0;
-    (canTakeFocus(opener) ? opener : authBtn).focus();
+    const target = [opener, authBtn, profileBtn].find(canTakeFocus);
+    if (target) target.focus();
 }
 
 function renderWordOfDay() {
@@ -2462,6 +2466,8 @@ function setupEventListeners() {
                 closeSignOutModal();
             } else if (modal === profileModal) {
                 closeProfileModal();
+            } else if (modal === authModal) {
+                closeAuthModal();
             } else {
                 modal.classList.remove('active');
             }
