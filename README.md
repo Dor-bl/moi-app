@@ -85,7 +85,7 @@ MoiCheck supports **User Accounts & Cross-Device Cloud Sync** powered by **Supab
 ### Features:
 - **Google 1-Click Login**: Instant OAuth sign-in.
 - **Magic Email Links**: Login via passwordless email link.
-- **Automatic Progress Merge**: Local guest progress automatically merges into user accounts upon login.
+- **Automatic Progress Merge**: Local guest progress automatically merges into user accounts upon login. For an item the account already has, the account's row wins, except that a guest's memory note is kept (and uploaded) when the account has no note for that item; when both have a note, the account's stays.
 
 ### 1-Minute Supabase Setup Instructions:
 1. Create a free account at [supabase.com](https://supabase.com) and create a project.

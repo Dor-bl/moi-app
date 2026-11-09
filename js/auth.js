@@ -501,11 +501,31 @@ async function syncCloudProgress() {
             // Read before the save below replaces it: another tab may have saved a tick
             // there that has not reached the cloud yet, and it must not be dropped.
             const stored = readStoredState() || {};
+            // For an item the account already holds, the account's row wins, with one
+            // exception: a note written here that the account does not have. A guest
+            // who ticked an item and wrote a memory before signing in, into an account
+            // that has the tick but no note, keeps the memory, and it is uploaded below
+            // so the other devices get it too. When both sides have a note the account's
+            // wins outright, as before; choosing between two memories is not this code's
+            // call. Only an unsynced local entry can carry a note across: one marked
+            // synced was judged against the cloud already, so an empty cloud note there
+            // means the note was cleared on another device, and the clearing stands.
+            const carriedNotes = [];
             data.forEach(row => {
+                const local = completedItems[row.item_id];
+                const cloudNote = row.note || '';
+                const date = row.date || new Date().toISOString();
+                let guestNote = '';
+                if (!cloudNote && local && typeof local === 'object' && !local.synced
+                    && typeof local.note === 'string' && local.note.trim()) {
+                    guestNote = clampNote(local.note);
+                    carriedNotes.push({ user_id: currentUser.id, item_id: row.item_id, note: guestNote, date });
+                }
                 completedItems[row.item_id] = {
-                    date: row.date || new Date().toISOString(),
-                    note: row.note || '',
-                    synced: true
+                    date,
+                    note: cloudNote || guestNote,
+                    // A carried note is not in the cloud yet; the upload below marks it.
+                    synced: !guestNote
                 };
             });
             // saveState(), not saveItems(), on purpose. This path ends in a full upload of
@@ -559,15 +579,19 @@ async function syncCloudProgress() {
             // and their upload below may fail.
             if (dropped.length || adopted.length) saveItems([...dropped, ...adopted]);
 
-            if (missingInCloud.length > 0) {
+            // One upsert for everything the cloud lacks: items it does not have, and
+            // notes it does not have on items it does. A failed upload leaves the carried
+            // notes unsynced in the store, so the next sync carries them again.
+            const uploads = [...carriedNotes, ...missingInCloud];
+            if (uploads.length > 0) {
                 if (stale()) return;
-                const { error: upsertError } = await supabaseClient.from('user_progress').upsert(missingInCloud);
+                const { error: upsertError } = await supabaseClient.from('user_progress').upsert(uploads);
                 if (stale()) return;
 
                 if (upsertError) {
                     console.log('Cloud sync upsert note:', upsertError.message);
                 } else {
-                    markSynced(missingInCloud);
+                    markSynced(uploads);
                 }
             }
         }
