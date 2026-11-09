@@ -1,5 +1,5 @@
 // Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport, exportMissesLocalChanges
-// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, saveState, saveItems, readStoredState.
+// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, renderWordOfDay, saveState, saveItems, readStoredState.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
@@ -387,6 +387,8 @@ async function onUserLoggedIn() {
     await syncCloudProgress();
     renderList();
     updateProgress();
+    // The word card's sign-in nudge is for guests only.
+    renderWordOfDay();
 }
 
 // Sign-out leaves no progress from the signed-out account in this browser, so
@@ -405,6 +407,7 @@ function onUserLoggedOut() {
     updateAuthBtnState(false);
     renderList();
     updateProgress();
+    renderWordOfDay();
 }
 
 async function syncCloudProgress() {

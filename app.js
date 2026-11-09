@@ -758,6 +758,19 @@ function setWordSetting(value) {
     renderWordOfDay();
 }
 
+// Opens the sign-in sheet in its starting state. Shared by the header button
+// and the nudge under an answered word card.
+function openAuthModal() {
+    authActions.style.display = 'block';
+    magicLinkSuccess.style.display = 'none';
+    document.getElementById('magicFinish').style.display = 'none';
+    authModal.classList.add('active');
+    // Google's button is fetched from Google only now, when someone has
+    // chosen to sign in. Not awaited: the custom button stays usable
+    // until Google's replaces it.
+    initGoogleSignIn();
+}
+
 function renderWordOfDay() {
     if (!wordOfDaySection) return;
     if (wordSetting === 'off') {
@@ -910,6 +923,24 @@ function renderWordOfDay() {
             note.textContent = word.note[currentLang];
             card.appendChild(note);
         }
+    }
+
+    // A guest who has just answered is in a good moment to hear what signing in
+    // is for. One quiet line, only on the open answered card, so it is seen at
+    // most once a day and never on the unanswered card or the folded strip.
+    // It promises what sync does today (progress and memories); the word count
+    // itself is local, so it is not mentioned until it syncs too.
+    if (answered && !currentUser) {
+        const nudge = document.createElement('p');
+        nudge.className = 'word-nudge';
+        const text = document.createElement('span');
+        text.textContent = t.wordNudge;
+        const action = document.createElement('button');
+        action.type = 'button';
+        action.className = 'word-nudge-btn';
+        action.textContent = t.signIn;
+        nudge.append(text, action);
+        card.appendChild(nudge);
     }
 
     // Distinct words, not answered days: the list cycles, so after one full
@@ -1849,6 +1880,13 @@ function setupEventListeners() {
                 handleWordOptionClick(button);
                 return;
             }
+            if (e.target.closest('.word-nudge-btn')) {
+                // The one number that says whether the nudge earns its line.
+                // Optional call: an ad blocker can block js/analytics.js outright.
+                window.va?.('event', { name: 'word_nudge_signin' });
+                openAuthModal();
+                return;
+            }
             if (e.target.closest('.word-toggle, .word-strip')) toggleWordExpanded();
         });
     }
@@ -1899,16 +1937,7 @@ function setupEventListeners() {
     });
 
     // Auth Modal events
-    authBtn.addEventListener('click', () => {
-        authActions.style.display = 'block';
-        magicLinkSuccess.style.display = 'none';
-        document.getElementById('magicFinish').style.display = 'none';
-        authModal.classList.add('active');
-        // Google's button is fetched from Google only now, when someone has
-        // chosen to sign in. Not awaited: the custom button stays usable
-        // until Google's replaces it.
-        initGoogleSignIn();
-    });
+    authBtn.addEventListener('click', openAuthModal);
 
     // Sign-out confirmation modal controls
     let signOutModalReturnFocus = null;

@@ -45,6 +45,7 @@ export default [
         readStoredState: "readonly",
         createConfetti: "readonly",
         renderList: "readonly",
+        renderWordOfDay: "readonly",
         updateProgress: "readonly",
         setupEventListeners: "readonly",
         todayInGroningen: "readonly",

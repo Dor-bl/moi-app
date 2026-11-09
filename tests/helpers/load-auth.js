@@ -144,6 +144,8 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
         ];
         function renderList() { globalThis.__renders.list++; }
         function updateProgress() { globalThis.__renders.progress++; }
+        // The word card's guest nudge follows the session; the tests here do not look at it.
+        function renderWordOfDay() {}
     `, context, { filename: 'test-preamble.js' });
     sandbox.__renders = renders;
 
