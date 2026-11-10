@@ -353,6 +353,21 @@ const GRONINGS_WORDS = [
         word: 'Mout',
         meaning: { en: 'must, have to', nl: 'moet' },
         example: { gr: 'Dat mout zo.', en: 'It has to be like that.', nl: 'Dat moet zo.' }
+    },
+    {
+        id: 'douk',
+        word: 'Douk',
+        meaning: { en: 'mist, misty weather', nl: 'mist, mistig weer' },
+        example: { gr: "Wat n douk vanmörn, ik zag gain haand veur ogen.", en: "What a mist this morning, I couldn't see my hand in front of my face.", nl: 'Wat een mist vanochtend, ik zag geen hand voor ogen.' },
+        note: { en: 'Flat land and lots of water make for thick autumn mornings. Cycle with your lights on.', nl: 'Vlak land en veel water geven dikke herfstochtenden. Fiets met je lampjes aan.' }
+    },
+    {
+        id: 'kon-minder',
+        avoid: ['goud', 'nuver'],
+        word: 'Kon minder',
+        meaning: { en: 'good, really good', nl: 'goed, echt goed' },
+        example: { gr: "Hou was 't eten? Kon minder.", en: 'How was the food? Really good.', nl: 'Hoe was het eten? Echt goed.' },
+        note: { en: 'Literally "could be less". Groningers do not gush, so this is high praise.', nl: 'Letterlijk "kon minder". Groningers overdrijven niet, dus dit is een groot compliment.' }
     }
 ];
 

@@ -81,8 +81,8 @@ test('every avoid entry names a real other word', () => {
 // answer beside "de stad Groningen", so a right guess was recorded as wrong.
 test('a word never borrows a distractor from a word it overlaps with', () => {
     const stad = GRONINGS_WORDS.find(w => w.id === 'stad');
-    assert.equal(wordForDate('2027-03-25').id, 'stad', 'premise: Stad is the word that day');
-    const texts = quizOptionsFor(stad, 'nl', '2027-03-25').map(o => o.text);
+    assert.equal(wordForDate('2029-10-22').id, 'stad', 'premise: Stad is the word that day');
+    const texts = quizOptionsFor(stad, 'nl', '2029-10-22').map(o => o.text);
     assert.ok(!texts.includes('Groningen'), `offered ${JSON.stringify(texts)}`);
 
     const byId = new Map(GRONINGS_WORDS.map(w => [w.id, w]));
