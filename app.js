@@ -1126,9 +1126,24 @@ function buildEventCard(event, today, ongoing = false) {
 
     if (event.tip) {
         const tip = document.createElement('p');
-        tip.className = 'event-tip';
+        const expanded = expandedEventTips.has(event.id);
+        tip.className = `event-tip${expanded ? '' : ' clamped'}`;
+        tip.id = `event-tip-${event.id}`;
         tip.textContent = event.tip[currentLang];
         card.appendChild(tip);
+
+        // Hidden until renderEvents() has measured the clamped text: a tip short
+        // enough to fit needs no button. Once expanded it stays shown, since the
+        // full text no longer overflows but the user still needs a way back.
+        const more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'event-tip-toggle';
+        more.dataset.eventId = event.id;
+        more.setAttribute('aria-controls', tip.id);
+        more.setAttribute('aria-expanded', String(expanded));
+        more.textContent = expanded ? t.eventsShowLess : t.eventsShowMore;
+        more.hidden = !expanded;
+        card.appendChild(more);
     }
 
     if (event.url) {
@@ -1421,6 +1436,24 @@ function showCheckInFailure(key, reason) {
     if (refocus) button.focus();
 }
 
+// Expanded descriptions, by event id, so the minute tick's re-render does not
+// collapse a description the user is reading.
+const expandedEventTips = new Set();
+
+// Toggled in place rather than via renderEvents(), which would move focus off
+// the button the user just pressed.
+function toggleEventTip(toggle) {
+    const t = UI_TRANSLATIONS[currentLang];
+    const id = toggle.dataset.eventId;
+    const tip = document.getElementById(toggle.getAttribute('aria-controls'));
+    const expand = !expandedEventTips.has(id);
+    if (expand) expandedEventTips.add(id);
+    else expandedEventTips.delete(id);
+    tip?.classList.toggle('clamped', !expand);
+    toggle.setAttribute('aria-expanded', String(expand));
+    toggle.textContent = expand ? t.eventsShowLess : t.eventsShowMore;
+}
+
 function renderEvents() {
     const today = todayInGroningen();
 
@@ -1470,6 +1503,18 @@ function renderEvents() {
     }
 
     eventsContainer.replaceChildren(fragment);
+    revealOverflowingTipToggles();
+}
+
+// Line-clamping hides overflow without saying whether there was any, so measure
+// after the cards are in the DOM and only offer "Show more" where text was cut.
+function revealOverflowingTipToggles() {
+    eventsContainer.querySelectorAll('.event-tip.clamped').forEach(tip => {
+        const toggle = tip.nextElementSibling;
+        if (toggle?.classList.contains('event-tip-toggle')) {
+            toggle.hidden = tip.scrollHeight <= tip.clientHeight + 1;
+        }
+    });
 }
 
 function updateProgress() {
@@ -2148,6 +2193,11 @@ function setupEventListeners() {
     // renderEvents runs on a minute tick, so a listener bound inside the card
     // builder would be rebuilt for every card, every minute, all visit.
     eventsContainer.addEventListener('click', (e) => {
+        const tipToggle = e.target.closest('.event-tip-toggle');
+        if (tipToggle) {
+            toggleEventTip(tipToggle);
+            return;
+        }
         const button = e.target.closest('.event-checkin-btn');
         // One check-in at a time, whichever card it was started from: a second
         // tap while a fix is in flight would mean two location reads and two

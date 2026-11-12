@@ -964,6 +964,32 @@ body[data-list-filtered="true"] .word-of-day {
     margin: 0.15rem 0 0;
 }
 
+/* Three lines is enough to tell whether an event is worth reading about; the
+   rest sits behind "Show more" so a long description doesn't fill the screen. */
+.event-tip.clamped {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+}
+
+.event-tip-toggle {
+    justify-self: start;
+    padding: 0.25rem 0;
+    background: none;
+    border: none;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    cursor: pointer;
+}
+
+.event-tip-toggle[hidden] {
+    display: none;
+}
+
 .event-link {
     justify-self: start;
     margin-top: 0.35rem;
