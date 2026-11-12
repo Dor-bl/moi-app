@@ -318,6 +318,8 @@ test('both languages carry every events string', () => {
             'eventsFilterHoliday',
             'eventsFilterEmpty',
             'eventsMoreInfo',
+            'eventsShowMore',
+            'eventsShowLess',
             'eventsEmpty',
             'eventsCoverage',
             'eventsOngoing',
