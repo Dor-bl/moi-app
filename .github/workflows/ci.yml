@@ -34,7 +34,9 @@ jobs:
 
   test:
     name: Unit & Visual Regression Tests
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright 1.56 cannot install
+    # browser dependencies on. Unpin once Playwright supports it.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
