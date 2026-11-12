@@ -1502,8 +1502,15 @@ function renderEvents() {
         }
     }
 
+    // The minute tick rebuilds every card; put keyboard focus back on the same
+    // event's toggle so a keyboard user does not lose their place in the list.
+    const focusedTipId = document.activeElement?.closest?.('.event-tip-toggle')?.dataset.eventId;
     eventsContainer.replaceChildren(fragment);
     revealOverflowingTipToggles();
+    if (focusedTipId) {
+        eventsContainer.querySelector(`.event-tip-toggle[data-event-id="${CSS.escape(focusedTipId)}"]:not([hidden])`)
+            ?.focus({ preventScroll: true });
+    }
 }
 
 // Line-clamping hides overflow without saying whether there was any, so measure
@@ -2192,6 +2199,12 @@ function setupEventListeners() {
     // Delegated from the container, like the bucket list's checkboxes above:
     // renderEvents runs on a minute tick, so a listener bound inside the card
     // builder would be rebuilt for every card, every minute, all visit.
+    // Overflow depends on width, so a rotation can newly clamp a description
+    // whose toggle was hidden. Re-measure only; no rebuild, no focus change.
+    window.addEventListener('resize', () => {
+        if (currentView === 'events') revealOverflowingTipToggles();
+    });
+
     eventsContainer.addEventListener('click', (e) => {
         const tipToggle = e.target.closest('.event-tip-toggle');
         if (tipToggle) {
