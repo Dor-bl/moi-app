@@ -1111,6 +1111,25 @@ const EVENTS = [
         url: 'https://www.hortusharen.nl/agenda/mini-natuur-uitvergroot-in-de-hortus/'
     },
     {
+        id: 'microscoopmiddag-reitdiep-2026',
+        date: '2026-11-14',
+        // Unverified at source: date, 14:00 - 16:00 and "Gratis" for adults and
+        // children come from the Visit Groningen listing (page text and
+        // schema.org eventSchedule), confirmed by an owner screenshot on
+        // 13 November 2026. The organiser's page (www.groningerlandschap.nl) is
+        // refused by the egress proxy and was not read. kidFriendly follows the
+        // listing's "Met kinderen" category and the organiser URL's
+        // "jeugdactiviteiten" section.
+        startTime: '14:00',
+        endTime: '16:00',
+        kidFriendly: true,
+        free: true,
+        title: { en: 'Microscope afternoon at the Reitdiep visitor centre', nl: 'Microscoopmiddag in Bezoekerscentrum Reitdiep' },
+        location: { en: 'Bezoekerscentrum Reitdiep, Wolddijk 103, Groningen', nl: 'Bezoekerscentrum Reitdiep, Wolddijk 103, Groningen' },
+        tip: { en: 'Ever wondered what a butterfly wing or the tiny bones of a mouse look like up close? Het Groninger Landschap sets out microscopes in the lab of its visitor centre on the edge of the city, and you can look at whatever is on the table or bring a find of your own from a walk. Two hours, free for adults and children, and an easy bike ride out along the Reitdiep. It is the city end of the same Microscopy Day the Hortus in Haren joins that morning.', nl: 'Altijd al willen weten hoe een vlindervleugel of de botjes van een muis er van dichtbij uitzien? Het Groninger Landschap zet in het laboratorium van het bezoekerscentrum aan de rand van Stad microscopen klaar, en je kunt bekijken wat er ligt of je eigen natuurvondst van een wandeling meenemen. Twee uur, gratis voor volwassenen en kinderen, en een mooi fietstochtje langs het Reitdiep. Het is de Stadse kant van dezelfde Microscopiedag waar de Hortus in Haren eerder die dag aan meedoet.' },
+        url: 'https://www.groningerlandschap.nl/activiteiten/jeugdactiviteiten/microscoopmiddag-7/'
+    },
+    {
         id: 'sinterklaasintocht-groningen-2026',
         date: '2026-11-14',
         // Date, 13:00 - 15:30, "Gratis" and the parade route were read off the
