@@ -1690,7 +1690,9 @@ function openDetailModal(item, { fromSurprise = false } = {}) {
     // Only a fresh open moves focus; a re-render (e.g. language change) leaves it be.
     if (!detailModal.classList.contains('active')) {
         detailModalReturnFocus = document.activeElement;
+        detailModal.removeAttribute('inert');
         detailModal.classList.add('active');
+        if (surpriseBtn) surpriseBtn.setAttribute('inert', '');
         modalTitle.focus();
     }
 }
@@ -1727,9 +1729,12 @@ function closeDetailModal() {
     // open Memories tab behind the modal would otherwise show the old text.
     if (currentView === 'memories') renderMemories();
     detailModal.classList.remove('active');
+    detailModal.setAttribute('inert', '');
+    if (surpriseBtn) surpriseBtn.removeAttribute('inert');
     selectedItemId = null;
     detailModalFromSurprise = false;
     memoryNote.value = '';
+    updateRerollButton();
     restoreDetailModalFocus();
 }
 
@@ -1778,8 +1783,16 @@ function updateRerollButton() {
 
 /**
  * Picks a random uncompleted item from the active category filter and opens its detail modal.
+ * Guards against discarding an unsaved draft note and persists edits to a completed item's
+ * note when called while the detail modal is already open.
  */
 function triggerSurprise() {
+    if (detailModal.classList.contains('active') && selectedItemId) {
+        // Never reroll over an unsaved draft on an uncompleted item.
+        if (!completedItems[selectedItemId] && memoryNote.value.trim()) return;
+        persistOpenNote();
+    }
+
     const picked = pickRandomUncompleted(
         getFilteredItems(currentFilter),
         completedItems,
@@ -1795,7 +1808,12 @@ function triggerSurprise() {
         if (marker) marker.openPopup();
     }
 
+    const wasOpen = detailModal.classList.contains('active');
     openDetailModal(picked, { fromSurprise: true });
+    if (wasOpen) {
+        // The modal stays open on reroll, so move focus to the new title for screen readers.
+        modalTitle.focus();
+    }
 }
 
 function memoryTimestamp(value) {
@@ -2546,18 +2564,14 @@ function setupEventListeners() {
     });
 
     if (surpriseBtn) {
-        surpriseBtn.addEventListener('click', triggerSurprise);
+        surpriseBtn.addEventListener('click', () => {
+            if (detailModal.classList.contains('active')) return;
+            triggerSurprise();
+        });
     }
 
     if (modalSurpriseBtn) {
-        modalSurpriseBtn.addEventListener('click', () => {
-            // Never reroll over an unsaved draft on an uncompleted item.
-            if (!completedItems[selectedItemId] && memoryNote.value.trim()) return;
-            persistOpenNote();
-            triggerSurprise();
-            // The modal stays open, so move focus to the new title for screen readers.
-            modalTitle.focus();
-        });
+        modalSurpriseBtn.addEventListener('click', triggerSurprise);
         memoryNote.addEventListener('input', updateRerollButton);
     }
 

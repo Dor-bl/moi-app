@@ -247,9 +247,16 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
         const focusedId = () => page.evaluate(() => globalThis.document.activeElement.id);
         const openTitles = openItems.map(i => i.title.en);
 
+        // Before opening, the detail modal is inert and carries dialog semantics.
+        assert.notEqual(await page.getAttribute('#detailModal', 'inert'), null);
+        assert.equal(await page.getAttribute('#detailModal .modal-content', 'role'), 'dialog');
+        assert.equal(await page.getAttribute('#detailModal .modal-content', 'aria-labelledby'), 'modalTitle');
+
         // Click "Surprise me" FAB
         await page.click('#surpriseBtn');
         await page.waitForSelector('#detailModal.active');
+        assert.equal(await page.getAttribute('#detailModal', 'inert'), null);
+        assert.notEqual(await page.getAttribute('#surpriseBtn', 'inert'), null);
 
         const firstTitle = await page.textContent('#modalTitle');
         assert.ok(openTitles.includes(firstTitle), `picked "${firstTitle}" is not an open ${CATEGORY} item`);
@@ -269,15 +276,25 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
         // A reroll keeps the modal open and focuses the new title.
         assert.equal(await focusedId(), 'modalTitle');
 
-        // Typing a draft note hides the reroll so it cannot be discarded;
+        // Typing a draft note hides the reroll so it cannot be discarded, and
+        // neither the background FAB nor the reroll entry point may replace it;
         // clearing the draft brings the reroll back.
         await page.fill('#memoryNote', 'draft about this place');
         assert.equal(await page.isVisible('#modalSurpriseBtn'), false);
+        await page.evaluate(() => {
+            globalThis.document.getElementById('surpriseBtn').click();
+            globalThis.document.getElementById('modalSurpriseBtn').click();
+        });
+        assert.equal(await page.textContent('#modalTitle'), secondTitle);
+        assert.equal(await page.inputValue('#memoryNote'), 'draft about this place');
         await page.fill('#memoryNote', '');
         assert.equal(await page.isVisible('#modalSurpriseBtn'), true);
 
         // Close modal, switch to NL in settings, and verify NL translations
         await page.click('#closeDetailModal');
+        assert.notEqual(await page.getAttribute('#detailModal', 'inert'), null);
+        assert.equal(await page.getAttribute('#surpriseBtn', 'inert'), null);
+        assert.equal(await page.isVisible('#modalSurpriseBtn'), false);
         // Closing hands focus back to the Surprise me button that opened it.
         assert.equal(await focusedId(), 'surpriseBtn');
         await page.click('#settingsBtn');
