@@ -71,7 +71,9 @@ test('the completed-items count pill on the completed divider stays legible in e
     const css = await readFile(path.join(REPO_ROOT, 'styles.css'), 'utf8');
     let browser;
     try {
-        browser = await chromium.launch();
+        browser = await chromium.launch(
+            process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {}
+        );
 
         const cases = [
             { label: 'explicit dark theme', themeAttr: 'dark', colorScheme: 'dark' },

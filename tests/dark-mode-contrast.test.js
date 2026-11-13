@@ -171,7 +171,9 @@ test('dark-mode map popup title stays legible against Leaflet\'s equal-specifici
         // leaves the static server closed instead of hanging the test run.
         let browser;
         try {
-            browser = await chromium.launch();
+            browser = await chromium.launch(
+                process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {}
+            );
 
             const cases = [
                 { label: 'explicit dark theme', themeAttr: 'dark', colorScheme: 'dark' },
