@@ -602,9 +602,23 @@ const EVENTS = [
         id: 'aigrunn-2026',
         date: '2026-11-13',
         title: { en: 'aiGrunn Conference', nl: 'aiGrunn Conferentie' },
-        location: { en: 'City centre', nl: 'Binnenstad' },
+        location: { en: 'Forum Groningen and city centre', nl: 'Forum Groningen en binnenstad' },
         tip: { en: 'The North\'s biggest AI gathering, from the people behind the PyGrunn Python conference: more than 1,000 professionals and talks across eight tracks, from tech to business and government. A good way into Groningen\'s tech scene if you work in or near AI. Tickets are sold online.', nl: 'De grootste AI-bijeenkomst van het Noorden, van de makers van de Python-conferentie PyGrunn: ruim 1000 professionals en talks verdeeld over acht tracks, van tech tot business en overheid. Een goede ingang tot de Groningse techscene als je in of rond AI werkt. Kaartjes koop je online.' },
-        url: 'https://www.aigrunn.org/'
+        url: 'https://www.aigrunn.org/',
+        // Centred on Forum Groningen (Nieuwe Markt 1, from the bucket list's
+        // own Forum point), which aigrunn.org names as the main conference
+        // venue alongside aiLand on the Nieuwe Markt outside. 500m covers the
+        // Forum, the Nieuwe Markt and the nearby city-centre track venues
+        // (such as Tumult on the Grote Markt).
+        checkIn: { coords: [53.2190, 6.5701], radius: 500 },
+        badge: {
+            icon: '🤖',
+            title: { en: 'aiGrunn Attendee', nl: 'aiGrunn-bezoeker' },
+            desc: {
+                en: 'Checked in at the aiGrunn Conference, the North\'s biggest AI gathering!',
+                nl: 'Ingecheckt bij de aiGrunn Conferentie, de grootste AI-bijeenkomst van het Noorden!'
+            }
+        }
     },
     {
         id: 'winterstad-2026',
