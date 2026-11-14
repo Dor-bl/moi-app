@@ -468,6 +468,15 @@ const BUCKET_LIST = [
         category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
         title: { en: 'Get something fixed for free at a Repair Café', nl: 'Laat iets gratis repareren bij een Repaircafé' },
         tip: { en: "Before you bin the toaster, do what Groningers do: carry it to a Repair Café, where volunteers with soldering irons and sewing machines fix it with you instead of for you. The one near the Akerkhof, run out of the Humanitas building, is the central one, and there are others in neighbourhoods like Paddepoel, Helpman and the Oosterparkwijk. Entry is free, and a donation is entirely voluntary (nobody minds if you skip it). Each café keeps its own schedule (some open monthly, others only every other month), so check the date and opening hours before you go.", nl: "Voordat je de broodrooster weggooit, doe wat Stadjers doen: neem 'm mee naar een Repaircafé, waar vrijwilligers met soldeerbouten en naaimachines het samen met jou repareren in plaats van voor jou. Het café bij het Akerkhof, in het gebouw van Humanitas, is het centrale, en er zijn er meer in wijken als Paddepoel, Helpman en de Oosterparkwijk. Binnenlopen kost niets, en een donatie is helemaal vrijwillig (niemand kijkt raar op als je er geen geeft). Elk café heeft zijn eigen rooster (sommige zijn maandelijks open, andere om de maand), dus check de datum en openingstijden voor je gaat." }
+    },
+    {
+        id: '57',
+        coords: [53.2357, 6.5843],
+        category: { en: 'Daily Life', nl: 'Dagelijks Leven' },
+        title: { en: 'Rescue your bike from the Fietsdepot', nl: 'Haal je fiets terug uit het Fietsdepot' },
+        tip: { en: "Sooner or later it happens to everyone: you walk back to the rack and your bike is gone. Not stolen, just picked up by the gemeente because it was parked where it shouldn't be, or left in the same spot too long (around the stations and in the centre that limit is only 12 days). Before you panic, look it up on verlorenofgevonden.nl. If it's there, it's waiting at the depot on the Ulgersmaweg on the northeast edge of town, which is open on weekday afternoons. Getting it back costs €25, card only, and you have four weeks to collect it. After the first time, you'll check the signs before you park.", nl: "Vroeg of laat overkomt het iedereen: je loopt terug naar het rek en je fiets is weg. Niet gestolen, maar opgehaald door de gemeente omdat hij verkeerd stond, of te lang op dezelfde plek (bij de stations en in het centrum is dat al na 12 dagen). Raak niet meteen in paniek en zoek hem eerst op via verlorenofgevonden.nl. Staat hij erop, dan wacht hij in het depot aan de Ulgersmaweg aan de noordoostkant van de stad, dat op doordeweekse middagen open is. Terughalen kost €25, alleen pinnen, en je hebt vier weken om hem op te halen. Na de eerste keer kijk je wel twee keer naar de borden voor je je fiets neerzet." },
+        url: 'https://gemeente.groningen.nl/fiets-weggehaald-door-gemeente',
+        urlLabel: { en: 'Bike Removed by the Gemeente 🚲', nl: 'Fiets Weggehaald door Gemeente 🚲' }
     }
 ];
 
