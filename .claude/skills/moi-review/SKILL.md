@@ -147,6 +147,12 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
   **nit**. Label each one.
 - Cite `file.js:line` and state the concrete failure: inputs or sequence of events → wrong result.
   If you cannot describe how it breaks, it is a nit or it is not a finding.
+- Mark each finding **verified** (you reproduced it, or traced the code path to the failure) or
+  **suspected** (it looks wrong, but you did not prove it). Do not mark a finding verified to make
+  it sound stronger.
+- End with a **Not checked** line naming what the review did not verify (for example, "did not
+  load it in a browser" or "NL strings not read"), or "nothing" if that is true. This line is how
+  much a GO can be trusted, so do not leave it out to make a review look cleaner.
 - Keep it short. A clean change deserves "looks good, here's what I checked", not manufactured
   findings.
 - If a bot comment prompted the review, evaluate it on its merits and say so when it is wrong —
