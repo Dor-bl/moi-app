@@ -63,7 +63,7 @@ When the prose names an area but gives no location or failure, treat the noun as
 
 ## 4. Verification can say no
 
-This does not override [`CLAUDE.md`](../../../CLAUDE.md) rule 4 or the "decline unrealistic edge cases" guidance in [`code-review`](../../../.github/skills/code-review/SKILL.md). A finding that needs hundreds of lines to satisfy a multi-tab race is still declined with the trade-off explained; the PR #50 post-mortem is what happens otherwise.
+This does not override [`CLAUDE.md`](../../../CLAUDE.md) rule 4 or the "decline unrealistic edge cases" guidance in [`moi-review`](../moi-review/SKILL.md). A finding that needs hundreds of lines to satisfy a multi-tab race is still declined with the trade-off explained; the PR #50 post-mortem is what happens otherwise.
 
 Keep three outcomes distinct, and say which one it is: **not real** (you checked, the code is already right), **real but not worth it** (declined, with the cost stated), **real** (fixed). On 145 one suggestion was declined, and the reasoning was documented and pinned by a test; that was the process working, not failing.
 

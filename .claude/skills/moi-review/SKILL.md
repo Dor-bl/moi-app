@@ -1,5 +1,5 @@
 ---
-name: code-review
+name: moi-review
 description: "Review a MoiCheck change (working diff, branch, or PR) against this repo's conventions — vanilla-JS globals and script load order, Supabase auth ownership rules, XSS-safe DOM rendering, EN/NL i18n completeness, and the PR #50 anti-over-engineering rules. Use when asked to review a diff or PR, to check a change before opening or merging a PR, or when responding to Copilot/bot review comments on this repo."
 ---
 
@@ -161,3 +161,10 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
 - `innerHTML` with static repo-authored strings.
 - `var`-free global function declarations, or the shared-globals architecture itself.
 - Linear scans over the small static arrays.
+
+## Keeping this checklist current
+
+This file is the reviewer's only memory, and it is edited by hand. When a bug reaches `main` that
+a review should have caught, add one line to the checklist above in the same PR as the fix, naming
+the concrete failure it guards against. Do not add rules for edge cases nobody has hit: a list
+that only grows gets stricter every round, which is how PR #50 happened.
