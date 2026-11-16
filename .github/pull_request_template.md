@@ -2,7 +2,7 @@
 Agent note: fill this in from your own diff. Delete sections that do not apply,
 and delete every comment block (like this one) before opening the PR.
 Repo rules live in CLAUDE.md, GEMINI.md, .jules/bolt.md and
-.github/skills/code-review/SKILL.md — read those, not just this file.
+.claude/skills/moi-review/SKILL.md — read those, not just this file.
 -->
 
 ## What & why

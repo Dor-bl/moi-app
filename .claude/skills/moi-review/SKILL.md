@@ -1,5 +1,5 @@
 ---
-name: code-review
+name: moi-review
 description: "Review a MoiCheck change (working diff, branch, or PR) against this repo's conventions — vanilla-JS globals and script load order, Supabase auth ownership rules, XSS-safe DOM rendering, EN/NL i18n completeness, and the PR #50 anti-over-engineering rules. Use when asked to review a diff or PR, to check a change before opening or merging a PR, or when responding to Copilot/bot review comments on this repo."
 ---
 
@@ -147,6 +147,12 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
   **nit**. Label each one.
 - Cite `file.js:line` and state the concrete failure: inputs or sequence of events → wrong result.
   If you cannot describe how it breaks, it is a nit or it is not a finding.
+- Mark each finding **verified** (you reproduced it, or traced the code path to the failure) or
+  **suspected** (it looks wrong, but you did not prove it). Do not mark a finding verified to make
+  it sound stronger.
+- End with a **Not checked** line naming what the review did not verify (for example, "did not
+  load it in a browser" or "NL strings not read"), or "nothing" if that is true. This line is how
+  much a GO can be trusted, so do not leave it out to make a review look cleaner.
 - Keep it short. A clean change deserves "looks good, here's what I checked", not manufactured
   findings.
 - If a bot comment prompted the review, evaluate it on its merits and say so when it is wrong —
@@ -161,3 +167,10 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
 - `innerHTML` with static repo-authored strings.
 - `var`-free global function declarations, or the shared-globals architecture itself.
 - Linear scans over the small static arrays.
+
+## Keeping this checklist current
+
+This file is the reviewer's only memory, and it is edited by hand. When a bug reaches `main` that
+a review should have caught, add one line to the checklist above in the same PR as the fix, naming
+the concrete failure it guards against. Do not add rules for edge cases nobody has hit: a list
+that only grows gets stricter every round, which is how PR #50 happened.

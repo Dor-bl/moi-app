@@ -9,7 +9,7 @@ not fix. Never edit files, commit, or push — if a fix is obvious, describe it 
 
 ## Procedure
 
-1. Load the review checklist in [`.github/skills/code-review/SKILL.md`](../skills/code-review/SKILL.md)
+1. Load the review checklist in [`.claude/skills/moi-review/SKILL.md`](../../.claude/skills/moi-review/SKILL.md)
    and follow it. It is the source of truth for what to check and what not to flag; do not
    duplicate or override it here.
 2. Get the diff for the target you were given (run `git fetch origin main` first):
