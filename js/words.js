@@ -365,9 +365,9 @@ const GRONINGS_WORDS = [
         id: 'kon-minder',
         avoid: ['goud', 'nuver'],
         word: 'Kon minder',
-        meaning: { en: 'good, really good', nl: 'goed, echt goed' },
-        example: { gr: "Hou was 't eten? Kon minder.", en: 'How was the food? Really good.', nl: 'Hoe was het eten? Echt goed.' },
-        note: { en: 'Literally "could be less". Groningers do not gush, so this is high praise.', nl: 'Letterlijk "kon minder". Groningers overdrijven niet, dus dit is een groot compliment.' }
+        meaning: { en: 'could be worse', nl: 'kan slechter' },
+        example: { gr: "Hou was 't eten? Kon minder.", en: 'How was the food? Could be worse.', nl: 'Hoe was het eten? Kan slechter.' },
+        note: { en: 'Groningers do not gush, so "could be worse" is usually high praise: the food was actually great.', nl: 'Groningers overdrijven niet, dus "kan slechter" is meestal een groot compliment: het eten was eigenlijk heel goed.' }
     }
 ];
 
