@@ -499,6 +499,45 @@ h1 {
     border-color: var(--text-color);
 }
 
+.surprise-fab {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+    padding: 0.75rem 1.15rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    /* Vetted at 5.48:1 in :root for both light and dark themes. */
+    background-color: var(--primary-btn-bg);
+    color: #FFFFFF;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.28), 0 4px 8px -2px rgba(0, 0, 0, 0.16);
+    transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+    font-family: inherit;
+}
+
+.surprise-fab:hover:not(:disabled),
+.surprise-fab:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.34), 0 6px 10px -2px rgba(0, 0, 0, 0.2);
+}
+
+.surprise-fab:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.surprise-fab:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
 .filter-pill-count {
     display: inline-block;
     margin-left: 0.4rem;
@@ -541,12 +580,14 @@ body[data-active-view="events"] .map-wrapper,
 body[data-active-view="events"] .memories-container,
 body[data-active-view="events"] .progress-container,
 body[data-active-view="events"] .filters-container,
+body[data-active-view="events"] .surprise-fab,
 body[data-active-view="memories"] .word-of-day,
 body[data-active-view="memories"] .list-container,
 body[data-active-view="memories"] .map-wrapper,
 body[data-active-view="memories"] .events-container,
 body[data-active-view="memories"] .event-filters-container,
-body[data-active-view="memories"] .filters-container {
+body[data-active-view="memories"] .filters-container,
+body[data-active-view="memories"] .surprise-fab {
     display: none;
 }
 
@@ -1568,7 +1609,7 @@ textarea:focus {
 /* Footer & Contact Form */
 .app-footer {
     text-align: center;
-    padding: 2rem 1.5rem 3rem;
+    padding: 2rem 1.5rem 5rem;
     color: var(--text-light);
     font-size: 0.875rem;
 }
@@ -1819,4 +1860,10 @@ textarea:focus {
 .badge-toast-info p {
     font-size: 0.75rem;
     color: #E2E8F0;
+}
+
+/* The detail modal title takes focus programmatically (tabindex="-1") so screen
+   readers announce the item; it is not an interactive control, so no ring. */
+#modalTitle:focus {
+    outline: none;
 }

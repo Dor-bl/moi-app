@@ -157,14 +157,19 @@
                 <!-- Every completed item, newest first, injected by renderMemories() -->
             </div>
         </div>
+
+        <button type="button" class="surprise-fab" id="surpriseBtn">
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"></circle></svg>
+            <span id="txtSurpriseMe">Surprise me</span>
+        </button>
     </main>
 
     <!-- Detail Modal -->
-    <div class="modal-overlay" id="detailModal">
-        <div class="modal-content">
+    <div class="modal-overlay" id="detailModal" inert>
+        <div class="modal-content" role="dialog" aria-labelledby="modalTitle">
             <button class="close-btn" id="closeDetailModal">&times;</button>
             <span class="category-tag" id="modalCategory">Category</span>
-            <h2 id="modalTitle">Item Title</h2>
+            <h2 id="modalTitle" tabindex="-1">Item Title</h2>
             <p class="modal-tip"><strong>Local tip:</strong> <span id="modalTip">Tip text</span></p>
             <div id="modalLinkContainer"></div>
             
@@ -174,6 +179,7 @@
                 <p id="memoryNoteHint" class="privacy-note memory-hint">Notes stay in this browser. If you sign in, they are saved to your account on our servers.</p>
                 <div class="modal-actions">
                     <button class="btn primary-btn" id="modalCheckBtn">Mark as Complete</button>
+                    <button type="button" class="btn secondary-btn" id="modalSurpriseBtn" style="display: none;">Pick another 🎲</button>
                     <button class="btn secondary-btn" id="modalUncheckBtn" style="display: none;">Mark as not done</button>
                 </div>
             </div>

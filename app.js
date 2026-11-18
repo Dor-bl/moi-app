@@ -15,6 +15,10 @@ let currentFilter = 'All';
 const activeEventFilters = new Set();
 let currentView = 'list';
 let selectedItemId = null;
+let lastSurpriseId = null;
+let detailModalFromSurprise = false;
+// Element that had focus when the detail modal opened, so closing can hand it back.
+let detailModalReturnFocus = null;
 // null = no explicit choice yet, so the section auto-collapses once it grows.
 let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
 let resortTimer = null;
@@ -70,6 +74,8 @@ function getFilteredEvents(events, filters) {
 const listContainer = document.getElementById('listContainer');
 const wordOfDaySection = document.getElementById('wordOfDay');
 const filterPills = document.querySelectorAll('.filter-pill');
+const surpriseBtn = document.getElementById('surpriseBtn');
+const txtSurpriseMe = document.getElementById('txtSurpriseMe');
 const progressCount = document.getElementById('progressCount');
 const progressFill = document.getElementById('progressFill');
 const currentMilestone = document.getElementById('currentMilestone');
@@ -92,6 +98,7 @@ const modalTitle = document.getElementById('modalTitle');
 const modalTip = document.getElementById('modalTip');
 const memoryNote = document.getElementById('memoryNote');
 const modalCheckBtn = document.getElementById('modalCheckBtn');
+const modalSurpriseBtn = document.getElementById('modalSurpriseBtn');
 const modalUncheckBtn = document.getElementById('modalUncheckBtn');
 const closeDetailModalBtn = document.getElementById('closeDetailModal');
 
@@ -160,6 +167,10 @@ function init() {
     initAuth();
 }
 
+/**
+ * Updates category filter pill labels, remaining counts, and accessible status text,
+ * and refreshes the Surprise Me button enabled state.
+ */
 function renderFilterPills() {
     const t = UI_TRANSLATIONS[currentLang];
 
@@ -209,8 +220,21 @@ function renderFilterPills() {
             : t.allDone;
         pill.setAttribute('aria-label', `${label}, ${status}`);
     });
+    updateSurpriseButton();
 }
 
+/**
+ * Disables the Surprise Me button when every item in the active category filter is completed.
+ */
+function updateSurpriseButton() {
+    if (!surpriseBtn) return;
+    const hasRemaining = getFilteredItems(currentFilter).some(i => !completedItems[i.id]);
+    surpriseBtn.disabled = !hasRemaining;
+}
+
+/**
+ * Applies the active language translations (EN/NL) to all static UI labels and controls.
+ */
 function updateLanguageUI() {
     const t = UI_TRANSLATIONS[currentLang];
 
@@ -233,6 +257,8 @@ function updateLanguageUI() {
     memoryNote.placeholder = t.memoryPlaceholder;
     updateMemoryHint();
     modalUncheckBtn.textContent = t.markNotDone;
+    if (txtSurpriseMe) txtSurpriseMe.textContent = t.surpriseMe;
+    if (modalSurpriseBtn) modalSurpriseBtn.textContent = t.surpriseAnother;
     document.querySelector('#profileModal h2').textContent = t.yourJourney;
     document.getElementById('txtCompletedMemories').textContent = t.recentMemories;
     const txtCatBadges = document.getElementById('txtCategoryBadges');
@@ -337,6 +363,11 @@ function updateLanguageUI() {
     updateAuthBtnState(!!currentUser);
 }
 
+/**
+ * Switches the active application language, persists the choice, and re-renders active views.
+ *
+ * @param {string} lang - Language code ('en' or 'nl').
+ */
 function setLanguage(lang) {
     if (!ALLOWED_LANGS.includes(lang) || lang === currentLang) return;
     currentLang = lang;
@@ -354,7 +385,7 @@ function setLanguage(lang) {
     if (detailModal.classList.contains('active') && selectedItemId) {
         persistOpenNote();
         const item = itemsById[selectedItemId];
-        if (item) openDetailModal(item);
+        if (item) openDetailModal(item, { fromSurprise: detailModalFromSurprise });
     }
 }
 
@@ -1727,7 +1758,14 @@ function updateMemoryHint() {
         (currentUser && supabaseClient) ? t.memoryHintSignedIn : t.memoryHintGuest;
 }
 
-function openDetailModal(item) {
+/**
+ * Populates and opens the item detail modal.
+ *
+ * @param {object} item - Bucket-list item to display.
+ * @param {{fromSurprise?: boolean}} [options] - Whether the modal was opened via Surprise Me.
+ */
+function openDetailModal(item, { fromSurprise = false } = {}) {
+    detailModalFromSurprise = fromSurprise;
     selectedItemId = item.id;
     const isCompleted = !!completedItems[item.id];
     const t = UI_TRANSLATIONS[currentLang];
@@ -1759,7 +1797,14 @@ function openDetailModal(item) {
     
     updateMemoryHint();
     updateModalButtonState(isCompleted);
-    detailModal.classList.add('active');
+    // Only a fresh open moves focus; a re-render (e.g. language change) leaves it be.
+    if (!detailModal.classList.contains('active')) {
+        detailModalReturnFocus = document.activeElement;
+        detailModal.removeAttribute('inert');
+        detailModal.classList.add('active');
+        if (surpriseBtn) surpriseBtn.setAttribute('inert', '');
+        modalTitle.focus();
+    }
 }
 
 // A note only belongs to an item that is already completed; for anything else the
@@ -1785,20 +1830,100 @@ function persistOpenNote() {
     syncItemToCloud(selectedItemId, true, note);
 }
 
+/**
+ * Persists any edited memory note and closes the item detail modal.
+ */
 function closeDetailModal() {
     persistOpenNote();
     // A note edited from the List tab never reaches updateProgress, so an
     // open Memories tab behind the modal would otherwise show the old text.
     if (currentView === 'memories') renderMemories();
     detailModal.classList.remove('active');
+    detailModal.setAttribute('inert', '');
+    if (surpriseBtn) surpriseBtn.removeAttribute('inert');
     selectedItemId = null;
+    detailModalFromSurprise = false;
     memoryNote.value = '';
+    updateRerollButton();
+    restoreDetailModalFocus();
 }
 
+/**
+ * Hands focus back to whatever opened the detail modal. If that element is gone,
+ * hidden, or disabled (e.g. Surprise me after the last item is completed), focus
+ * is dropped out of the now-hidden modal instead of being left inside it.
+ */
+function restoreDetailModalFocus() {
+    const target = detailModalReturnFocus;
+    detailModalReturnFocus = null;
+    if (target && target !== document.body && target.isConnected
+        && !target.disabled && target.getClientRects().length > 0) {
+        target.focus();
+    } else if (detailModal.contains(document.activeElement)) {
+        document.activeElement.blur();
+    }
+}
+
+/**
+ * Updates the primary, uncheck, and reroll button visibility and labels inside the detail modal.
+ *
+ * @param {boolean} isCompleted - Whether the currently selected item is completed.
+ */
 function updateModalButtonState(isCompleted) {
     const t = UI_TRANSLATIONS[currentLang];
     modalCheckBtn.textContent = isCompleted ? t.saveNote : t.markComplete;
     modalUncheckBtn.style.display = isCompleted ? 'block' : 'none';
+    updateRerollButton();
+}
+
+/**
+ * Shows the in-modal reroll button only when rerolling cannot lose anything: the
+ * modal came from Surprise Me, the item is uncompleted, another uncompleted item
+ * exists, and no unsaved draft note has been typed (an uncompleted item's draft
+ * lives only in the textarea, so dealing a new card would discard it).
+ */
+function updateRerollButton() {
+    if (!modalSurpriseBtn) return;
+    const canReroll = detailModalFromSurprise && !!selectedItemId
+        && !completedItems[selectedItemId]
+        && !memoryNote.value.trim()
+        && getFilteredItems(currentFilter).filter(i => !completedItems[i.id]).length > 1;
+    modalSurpriseBtn.style.display = canReroll ? 'block' : 'none';
+}
+
+/**
+ * Picks a random uncompleted item from the active category filter and opens its detail modal.
+ * Guards against discarding an unsaved draft note and persists edits to a completed item's
+ * note when called while the detail modal is already open.
+ */
+function triggerSurprise() {
+    if (detailModal.classList.contains('active') && selectedItemId) {
+        // Never reroll over an unsaved draft on an uncompleted item.
+        if (!completedItems[selectedItemId] && memoryNote.value.trim()) return;
+        persistOpenNote();
+    }
+
+    const picked = pickRandomUncompleted(
+        getFilteredItems(currentFilter),
+        completedItems,
+        selectedItemId || lastSurpriseId
+    );
+    if (!picked) return;
+
+    lastSurpriseId = picked.id;
+    window.va?.('event', { name: 'surprise_me' });
+
+    if (currentView === 'map' && leafletMap) {
+        const marker = mapMarkers.get(picked.id);
+        if (marker) marker.openPopup();
+    }
+
+    const wasOpen = detailModal.classList.contains('active');
+    openDetailModal(picked, { fromSurprise: true });
+    if (wasOpen) {
+        // The modal stays open on reroll, so move focus to the new title for screen readers.
+        modalTitle.focus();
+    }
 }
 
 function memoryTimestamp(value) {
@@ -1951,6 +2076,9 @@ function closeProfileModal() {
 // name hallo@moicheck.nl as the way to reach us without it.
 const CONTACT_FUNCTION_REGION = 'eu-west-1';
 
+/**
+ * Attaches DOM event listeners for view switching, filtering, modals, Surprise Me, and auth flows.
+ */
 function setupEventListeners() {
     if (wordOfDaySection) {
         wordOfDaySection.addEventListener('click', (e) => {
@@ -2258,6 +2386,7 @@ function setupEventListeners() {
             // tap is a narrowing, so the card steps aside until "All" is back.
             // CSS keyed off this attribute, same as the view switch.
             document.body.dataset.listFiltered = currentFilter === 'All' ? 'false' : 'true';
+            updateSurpriseButton();
             renderList();
         });
     });
@@ -2549,6 +2678,18 @@ function setupEventListeners() {
             setTimeout(closeDetailModal, 600);
         }
     });
+
+    if (surpriseBtn) {
+        surpriseBtn.addEventListener('click', () => {
+            if (detailModal.classList.contains('active')) return;
+            triggerSurprise();
+        });
+    }
+
+    if (modalSurpriseBtn) {
+        modalSurpriseBtn.addEventListener('click', triggerSurprise);
+        memoryNote.addEventListener('input', updateRerollButton);
+    }
 
     modalUncheckBtn.addEventListener('click', () => {
         if (!selectedItemId || !completedItems[selectedItemId]) return;

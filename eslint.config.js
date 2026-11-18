@@ -44,6 +44,7 @@ export default [
         saveItems: "readonly",
         readStoredState: "readonly",
         createConfetti: "readonly",
+        pickRandomUncompleted: "readonly",
         renderList: "readonly",
         renderWordOfDay: "readonly",
         closeAuthModal: "readonly",
