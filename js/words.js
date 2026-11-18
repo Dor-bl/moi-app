@@ -14,7 +14,9 @@
 // for the bit of context a local would add. `avoid` names other words whose
 // meaning is close enough that offering it as a wrong answer would punish a
 // right guess ("Groningen" for Stad); it works in both directions, so one side
-// of a pair is enough.
+// of a pair is enough. An optional `decoy` is a hand-written wrong answer that
+// always takes one of the two wrong slots, for a word whose classic mistake is
+// not another word's meaning ("good" for Kon minder, which means "could be worse").
 const GRONINGS_WORDS = [
     {
         id: 'moi',
@@ -366,6 +368,7 @@ const GRONINGS_WORDS = [
         avoid: ['goud', 'nuver'],
         word: 'Kon minder',
         meaning: { en: 'could be worse', nl: 'kan slechter' },
+        decoy: { en: 'good, really good', nl: 'goed, echt goed' },
         example: { gr: "Hou was 't eten? Kon minder.", en: 'How was the food? Could be worse.', nl: 'Hoe was het eten? Kan slechter.' },
         note: { en: 'Groningers do not gush, so "could be worse" is usually high praise: the food was actually great.', nl: 'Groningers overdrijven niet, dus "kan slechter" is meestal een groot compliment: het eten was eigenlijk heel goed.' }
     }
@@ -419,6 +422,11 @@ function quizOptionsFor(word, lang, dateKey, words = GRONINGS_WORDS) {
 
     const taken = new Set([normalise(answer)]);
     const distractors = [];
+    const decoy = word.decoy?.[lang];
+    if (decoy && !taken.has(normalise(decoy))) {
+        taken.add(normalise(decoy));
+        distractors.push({ text: decoy, correct: false });
+    }
     const others = words
         .filter(other => other.id !== word.id && !overlaps(word, other))
         .sort((a, b) => hashString(`${seed}|${a.id}`) - hashString(`${seed}|${b.id}`));

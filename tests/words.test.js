@@ -92,7 +92,7 @@ test('a word never borrows a distractor from a word it overlaps with', () => {
         for (const day of days('2026-01-01', GRONINGS_WORDS.length)) {
             const word = wordForDate(day);
             for (const option of quizOptionsFor(word, lang, day)) {
-                if (option.correct) continue;
+                if (option.correct || option.text === word.decoy?.[lang]) continue;
                 const source = lookup.get(option.text.trim().toLowerCase());
                 assert.ok(source, `${word.id}/${lang}: distractor ${option.text} is not a word meaning`);
                 const pair = [word.id, source.id];
@@ -113,6 +113,19 @@ test('quiz options are deterministic for a day and the answer moves between slot
         slots.add(quizOptionsFor(w, 'en', day).findIndex(o => o.correct));
     }
     assert.equal(slots.size, 3, 'the right answer should land in every slot over two months');
+});
+
+test('a decoy always fills one wrong slot, in both languages', () => {
+    const konMinder = GRONINGS_WORDS.find(w => w.id === 'kon-minder');
+    for (const lang of LANGS) {
+        for (const day of days('2026-01-01', 30)) {
+            const options = quizOptionsFor(konMinder, lang, day);
+            const decoys = options.filter(o => o.text === konMinder.decoy[lang]);
+            assert.equal(decoys.length, 1, `${lang} on ${day}: ${JSON.stringify(options)}`);
+            assert.equal(decoys[0].correct, false);
+            assert.equal(options.length, 3);
+        }
+    }
 });
 
 test('a borrowed meaning that reads like the answer is skipped', () => {
