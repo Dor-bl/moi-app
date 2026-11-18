@@ -309,3 +309,40 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
         await new Promise(resolve => server.close(resolve));
     }
 });
+
+test('Escape closes the detail modal like the close button, including from inside the note field', async () => {
+    const server = await startAppServer();
+    let browser;
+    try {
+        const port = server.address().port;
+        browser = await chromium.launch(
+            process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {}
+        );
+        const page = await browser.newPage({ viewport: { width: 375, height: 800 } });
+        await page.goto(`http://127.0.0.1:${port}/`);
+        // Runs in the browser; globalThis keeps the Node-side linter happy.
+        const focusedId = () => page.evaluate(() => globalThis.document.activeElement.id);
+
+        // Escape with focus on the title, where opening puts it.
+        await page.click('#surpriseBtn');
+        await page.waitForSelector('#detailModal.active');
+        await page.keyboard.press('Escape');
+        assert.equal(await page.isVisible('#detailModal.active'), false);
+        assert.notEqual(await page.getAttribute('#detailModal', 'inert'), null);
+        assert.equal(await page.getAttribute('#surpriseBtn', 'inert'), null);
+        assert.equal(await focusedId(), 'surpriseBtn');
+
+        // Escape while typing in the note field closes too, and the reopened
+        // modal starts from an empty note, as it does after the close button.
+        await page.click('#surpriseBtn');
+        await page.waitForSelector('#detailModal.active');
+        await page.fill('#memoryNote', 'half-typed');
+        await page.keyboard.press('Escape');
+        assert.equal(await page.isVisible('#detailModal.active'), false);
+        assert.equal(await page.inputValue('#memoryNote'), '');
+        assert.equal(await focusedId(), 'surpriseBtn');
+    } finally {
+        if (browser) await browser.close();
+        await new Promise(resolve => server.close(resolve));
+    }
+});

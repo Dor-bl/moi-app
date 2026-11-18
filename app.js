@@ -2410,7 +2410,15 @@ function setupEventListeners() {
     
     // Modals
     closeDetailModalBtn.addEventListener('click', closeDetailModal);
-    
+    // Escape does exactly what the × button does. Listening on the modal itself,
+    // not the document, means it only fires while focus is inside this dialog,
+    // so a dialog opened on top of it handles its own Escape.
+    detailModal.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || !detailModal.classList.contains('active')) return;
+        e.preventDefault();
+        closeDetailModal();
+    });
+
     closeProfileModalBtn.addEventListener('click', closeProfileModal);
 
     // Account deletion modal controls
