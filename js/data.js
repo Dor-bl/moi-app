@@ -599,12 +599,12 @@ const EVENTS = [
         }
     },
     {
-        id: 'aigrunn-hackathon-2026',
-        date: '2026-11-11',
-        endDate: '2026-11-12',
+        id: 'aigrunn-hackathon-2027',
+        date: '2027-05-26',
+        endDate: '2027-05-27',
         title: { en: 'aiGrunn Hackathon', nl: 'aiGrunn Hackathon' },
         location: { en: 'Niemeyer, Groningen', nl: 'Niemeyer, Groningen' },
-        tip: { en: 'Two days of building in the run-up to the aiGrunn Conference, in two parallel streams. Explore is open to anyone curious about AI, no experience needed: pick a technology or an idea and tinker. The Challenge stream, run with Green Business Challenge, puts teams of 18–30-year-olds with a Dutch address on a concrete problem. Food and drinks are provided, selected winners may present on the conference stage on 13 November, and participants get a discounted conference ticket. Spots are limited, so apply online.', nl: 'Twee dagen bouwen in aanloop naar de aiGrunn Conferentie, in twee parallelle stromen. Explore staat open voor iedereen die nieuwsgierig is naar AI, ervaring is niet nodig: kies een technologie of idee en ga experimenteren. De Challenge-stroom, samen met Green Business Challenge, zet teams van 18- tot 30-jarigen met een Nederlands adres op een concreet vraagstuk. Eten en drinken zijn geregeld, geselecteerde winnaars mogen mogelijk op 13 november op het podium van de conferentie presenteren en deelnemers krijgen korting op een conferentiekaartje. Er zijn beperkt plekken, dus meld je online aan.' },
+        tip: { en: 'Two days of building in the run-up to the aiGrunn Conference: pick a real-world problem AI can help solve, build a working AI-powered service around it, and work out how it would reach customers, with a demo at the end. No AI experience is needed, and you can join a team around a challenge instead of bringing your own idea. Food and drinks are provided, participants get a discounted conference ticket, and the winners are presented at the conference on 28 May. Places are limited, so apply online.', nl: 'Twee dagen bouwen in aanloop naar de aiGrunn Conferentie: kies een echt probleem waar AI bij kan helpen, bouw er een werkende AI-dienst omheen en bedenk hoe die bij klanten komt, met aan het eind een demo. Ervaring met AI is niet nodig, en je kunt ook aanschuiven bij een team rond een uitdaging in plaats van zelf een idee mee te nemen. Eten en drinken zijn geregeld, deelnemers krijgen korting op een conferentiekaartje en de winnaars worden op 28 mei op de conferentie gepresenteerd. Er zijn beperkt plekken, dus meld je online aan.' },
         url: 'https://www.aigrunn.org/hackathon'
     },
     {
@@ -628,6 +628,18 @@ const EVENTS = [
                 nl: 'Ingecheckt bij de aiGrunn Conferentie, de grootste AI-bijeenkomst van het Noorden!'
             }
         }
+    },
+    {
+        id: 'aigrunn-2027',
+        date: '2027-05-28',
+        title: { en: 'aiGrunn Conference', nl: 'aiGrunn Conferentie' },
+        location: { en: 'Groningen city centre', nl: 'Binnenstad van Groningen' },
+        tip: { en: 'The North\'s biggest AI gathering, from the people behind the PyGrunn Python conference, moves to spring and scales up: more talks, more visitors and more locations across the city centre, in the same format as before, with tracks from tech to business and government, hands-on sessions and the free aiLand outside. A good way into Groningen\'s tech scene if you work in or near AI. The 2026 edition sold out, and tickets for this one are already on sale online.', nl: 'De grootste AI-bijeenkomst van het Noorden, van de makers van de Python-conferentie PyGrunn, verhuist naar het voorjaar en wordt groter: meer talks, meer bezoekers en meer locaties in de binnenstad, in hetzelfde format als eerder, met tracks van tech tot business en overheid, hands-on sessies en het gratis aiLand buiten. Een goede ingang tot de Groningse techscene als je in of rond AI werkt. De editie van 2026 was uitverkocht, en kaartjes voor deze zijn al online te koop.' },
+        // No checkIn yet: aigrunn.org/2027 names only "the heart of Groningen"
+        // and "more locations", not a main venue, so there is no point to
+        // centre on. aigrunn-2026 above stays even though this replaces it,
+        // because it carries a checkIn and badge (see the refresh spec).
+        url: 'https://www.aigrunn.org/2027'
     },
     {
         id: 'winterstad-2026',
