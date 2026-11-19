@@ -1218,6 +1218,19 @@ const EVENTS = [
         url: 'https://cinemaculinair.nl/agenda/groningen/'
     },
     {
+        id: 'juf-roos-kielzog-2026',
+        date: '2026-11-22',
+        // Per kielzog.nl/evenementen/juf-roos-3 (read 19 November 2026): one
+        // performance, 14:00 - 15:00, in the Theaterzaal.
+        startTime: '14:00',
+        endTime: '15:00',
+        kidFriendly: true,
+        title: { en: 'Juf Roos goes on holiday (family show, 2+)', nl: 'Juf Roos gaat op vakantie (familievoorstelling, 2+)' },
+        location: { en: 'Theater Kielzog, Hoogezand', nl: 'Theater Kielzog, Hoogezand' },
+        tip: { en: 'Juf Roos takes Gijs on a trip through the Dutch countryside, where a stray puppy leads them to Aunt Tulp\'s farm. It is a one-hour, sing-along show made for toddlers and up, and the kids are invited to join in the whole way through. It is in Dutch, but the songs carry it. Tickets are €19.80 to €22, and the "Kids Gratis" offer does not apply to this show. Hoogezand is a short train ride east of the city.', nl: 'Juf Roos neemt Gijs mee op reis door het Hollandse platteland, waar een weggelopen puppy ze naar de boerderij van tante Tulp leidt. Een interactieve meezingvoorstelling van een uur voor peuters en ouder, waarin de kinderen de hele tijd mogen meedoen. Kaarten kosten €19,80 tot €22, en de "Kids Gratis"-actie geldt niet voor deze voorstelling. Hoogezand ligt een kort treinritje ten oosten van de stad.' },
+        url: 'https://www.kielzog.nl/evenementen/juf-roos-3'
+    },
+    {
         id: 'cinema-culinair-groningen-2026-11-26',
         date: '2026-11-26',
         endDate: '2026-11-29',
