@@ -2062,6 +2062,20 @@ function closeProfileModal() {
     if (hadFocus || document.activeElement === document.body) profileBtn.focus();
 }
 
+// Settings and Contact are plain modals: `inert` (set in index.html) keeps the
+// closed dialog out of the tab order, so it is lifted only while open.
+function openSimpleModal(modal) {
+    modal.removeAttribute('inert');
+    modal.classList.add('active');
+}
+
+function closeSimpleModal(modal, opener) {
+    const hadFocus = modal.contains(document.activeElement);
+    modal.classList.remove('active');
+    modal.setAttribute('inert', '');
+    if (hadFocus && opener) opener.focus();
+}
+
 // Where the contact Edge Function is allowed to run. Supabase Edge Functions
 // otherwise execute in the region nearest the caller — the project's own
 // eu-west-1 governs the database and nothing else — so a submission sent from
@@ -2126,13 +2140,13 @@ function setupEventListeners() {
     // Settings Modal events
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
-            settingsModal.classList.add('active');
+            openSimpleModal(settingsModal);
         });
     }
 
     if (closeSettingsModalBtn) {
         closeSettingsModalBtn.addEventListener('click', () => {
-            settingsModal.classList.remove('active');
+            closeSimpleModal(settingsModal, settingsBtn);
         });
     }
 
@@ -2578,15 +2592,15 @@ function setupEventListeners() {
         contactFormView.style.display = 'block';
         contactSuccess.style.display = 'none';
         contactForm.reset();
-        contactModal.classList.add('active');
+        openSimpleModal(contactModal);
     });
 
     closeContactModalBtn.addEventListener('click', () => {
-        contactModal.classList.remove('active');
+        closeSimpleModal(contactModal, contactBtn);
     });
 
     contactSuccessClose.addEventListener('click', () => {
-        contactModal.classList.remove('active');
+        closeSimpleModal(contactModal, contactBtn);
     });
 
     contactForm.addEventListener('submit', async (e) => {
@@ -2668,8 +2682,10 @@ function setupEventListeners() {
                 closeProfileModal();
             } else if (modal === authModal) {
                 closeAuthModal();
-            } else {
-                modal.classList.remove('active');
+            } else if (modal === settingsModal) {
+                closeSimpleModal(settingsModal, settingsBtn);
+            } else if (modal === contactModal) {
+                closeSimpleModal(contactModal, contactBtn);
             }
         });
     });

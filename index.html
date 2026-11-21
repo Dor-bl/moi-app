@@ -239,8 +239,9 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settingsModal">
+    <!-- Settings Modal. `inert` keeps the closed dialog out of the tab order;
+         app.js lifts it only while open. -->
+    <div class="modal-overlay" id="settingsModal" inert>
         <div class="modal-content">
             <button class="close-btn" id="closeSettingsModal">&times;</button>
             <h2 id="settingsModalTitle">Settings</h2>
@@ -299,8 +300,9 @@
         </div>
     </div>
 
-    <!-- Contact Modal -->
-    <div class="modal-overlay" id="contactModal">
+    <!-- Contact Modal. `inert` keeps the closed dialog out of the tab order;
+         app.js lifts it only while open. -->
+    <div class="modal-overlay" id="contactModal" inert>
         <div class="modal-content">
             <button class="close-btn" id="closeContactModal">&times;</button>
             <h2 id="contactModalTitle">Contact Us</h2>
