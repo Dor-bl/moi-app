@@ -50,7 +50,7 @@ Two of these deserve more than a row.
 
 **An account is deleted, with its progress and notes, once it has gone 24 months without
 being used.** Deleting it sooner is up to the user, from the profile. `privacy.html` §4 says
-the same thing to users. The job and its SQL are in the README under "Dormant accounts are
+the same thing to users. The job and its SQL are in [`data-handling.md`](data-handling.md) under "Dormant accounts are
 deleted after 24 months".
 
 Before this, account data had no retention period at all: "until you ask us to delete it" put

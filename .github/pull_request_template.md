@@ -50,7 +50,7 @@ Manual steps:
 - [ ] Reacts via `onAuthStateChange`; no direct reads/writes of `sb-*` keys, tokens, or refresh timers
 - [ ] Every `await` in a flow that can outlive an auth change is followed by a staleness check
 - [ ] No token, session, or user object logged; magic-link tokens still cleared from the URL
-- [ ] New tables/columns come with RLS policies and a README SQL update
+- [ ] New tables/columns come with RLS policies and an SQL update in `docs/setup/supabase.md`
 
 **XSS**
 - [ ] Nothing user-controlled (memory notes, `user_progress` values, emails, URL/hash values) is
@@ -66,7 +66,7 @@ Manual steps:
 - [ ] `CATEGORY_BADGES` / `MILESTONES` thresholds still make sense after a count change
 
 **Config & secrets**
-- [ ] No real keys in the diff; new config values added to `config.template.js` and documented in the README
+- [ ] No real keys in the diff; new config values added to `config.template.js` and documented in `docs/setup/supabase.md`
 - [ ] No `service_role` key anywhere in client code
 
 **Accessibility & rendering**

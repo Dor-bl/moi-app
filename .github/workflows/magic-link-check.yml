@@ -11,7 +11,7 @@ name: Daily magic-link check
 # The recipient is Resend's test sink, delivered@resend.dev: it accepts mail
 # without a human receiving it and without counting against sender reputation.
 # create_user is false, so the check never signs anyone up; it needs that
-# address to exist once as a user (README, "Daily magic-link check").
+# address to exist once as a user (docs/operations/runbook.md, "Daily magic-link check").
 
 on:
   schedule:
@@ -34,7 +34,7 @@ jobs:
           ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$PROJECT_REF" ] || [ -z "$ANON_KEY" ]; then
-            echo "::error::SUPABASE_PROJECT_REF and SUPABASE_ANON_KEY must be set as repository secrets. See README, 'Daily magic-link check'."
+            echo "::error::SUPABASE_PROJECT_REF and SUPABASE_ANON_KEY must be set as repository secrets. See docs/operations/runbook.md, 'Daily magic-link check'."
             exit 1
           fi
 
@@ -54,8 +54,8 @@ jobs:
 
           echo "::error::POST /auth/v1/otp returned HTTP $status: $body"
           case "$status" in
-            500) echo "::error::Supabase could not send the email. Read the failing request's 'error' in Logs -> Auth Logs; see README, 'Troubleshooting: magic links fail with a 500'." ;;
-            422) echo "::error::Most likely delivered@resend.dev does not exist as a user, so create_user=false refuses it. See README, 'Daily magic-link check'." ;;
+            500) echo "::error::Supabase could not send the email. Read the failing request's 'error' in Logs -> Auth Logs; see docs/operations/runbook.md, 'Troubleshooting: magic links fail with a 500'." ;;
+            422) echo "::error::Most likely delivered@resend.dev does not exist as a user, so create_user=false refuses it. See docs/operations/runbook.md, 'Daily magic-link check'." ;;
             429)
               # Two limiters answer 429 here; only the response's error_code
               # says which. They point in opposite directions for real users.

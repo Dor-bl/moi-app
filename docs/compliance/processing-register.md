@@ -12,7 +12,7 @@ last item of [#92](https://github.com/Dor-bl/moi-app/issues/92); companion:
 
 Article 30(1) asks a controller to keep one record of what it processes, why, who receives
 it, where it goes, how long it is kept, and what protects it. The facts were already in the
-repository — spread across `README.md`, `privacy.html`, and the decision records — but no
+repository — spread across the README and setup docs, `privacy.html`, and the decision records — but no
 single document answered the question, which meant answering it took an afternoon of reading.
 During an incident you do not have an afternoon.
 
@@ -99,7 +99,7 @@ outside this activity, such as contact correspondence (activity 2); those are an
 as `privacy.html` §5 says. If a column is added to `user_progress` or a field to the account,
 add it to the export too, or the file stops being complete.
 
-**`public.profiles`, created 2 November 2026.** The SQL is in `README.md`; it was applied to
+**`public.profiles`, created 2 November 2026.** The SQL is in [`docs/setup/supabase.md`](../setup/supabase.md); it was applied to
 the project that day and checked afterwards: four columns and no more, row-level security on,
 one `select` policy keyed to `auth.uid() = id`, `select` granted to `authenticated` and
 nothing to `anon`, the trigger present on `auth.users` and firing on `insert or update of
@@ -367,7 +367,7 @@ The quickest check that it has not drifted: `grep` the code for table names and
 
 | Claim | Where it came from |
 | --- | --- |
-| Schema, RLS policies, grants, `delete_user()`, `profiles` and its sync trigger, `client_errors`, its `pg_cron` job | `README.md` |
+| Schema, RLS policies, grants, `delete_user()`, `profiles` and its sync trigger, `client_errors`, its `pg_cron` job | Schema, RLS, `profiles` and its trigger in [`docs/setup/supabase.md`](../setup/supabase.md); `delete_user()` and its grant in [`data-handling.md`](data-handling.md); `client_errors`, its policy and its `pg_cron` cleanup job in [`docs/operations/runbook.md`](../operations/runbook.md) |
 | `public.profiles` created, backfilled and verified on the project | This register's activity 1, checked against the live schema on 2 November 2026 |
 | Purposes, recipients, transfers, retention as stated publicly | `privacy.html` §§1–4 |
 | Project region `eu-west-1`, contact relay pinned and **observed** answering from it | [`edge-function-region.md`](../decisions/edge-function-region.md) |

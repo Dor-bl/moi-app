@@ -42,7 +42,7 @@ In scope:
 - the site at <https://moicheck.nl>;
 - the code in this repository, including the Supabase Edge Function under
   `supabase/functions/` and the database row-level security policies set up
-  by the SQL in the README.
+  by the SQL in [`docs/setup/supabase.md`](docs/setup/supabase.md).
 
 Out of scope:
 

@@ -69,7 +69,7 @@ jobs:
           # deploying that branch. Through the environment it is only ever data.
           SELECTED_REF: ${{ github.ref }}
         run: |
-          echo "::error::This workflow deploys to production and runs from main only. Got '$SELECTED_REF'. Merge first, or use the manual command in the README to deploy a branch deliberately."
+          echo "::error::This workflow deploys to production and runs from main only. Got '$SELECTED_REF'. Merge first, or use the manual command in docs/setup/contact-form.md to deploy a branch deliberately."
           exit 1
 
       - name: Checkout code
@@ -97,7 +97,7 @@ jobs:
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
           if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$PROJECT_REF" ]; then
-            echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF must be set as repository secrets. See README, 'Contact form (Supabase Edge Function)'."
+            echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF must be set as repository secrets. See docs/setup/contact-form.md."
             exit 1
           fi
           # --no-verify-jwt is required, not a preference: the platform rejects

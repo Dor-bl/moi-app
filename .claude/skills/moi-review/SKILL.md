@@ -83,7 +83,7 @@ guards.
 - Every `await` on a Supabase call inside a flow that can outlive an auth change needs a staleness
   check after it (see `syncCloudProgress`).
 - Client-side checks are UX, not security. Anything that must actually be enforced belongs in RLS
-  policies or the `delete_user` RPC — if a diff adds a new table or column, the README's SQL and
+  policies or the `delete_user` RPC — if a diff adds a new table or column, the SQL in docs/setup/supabase.md and
   policy section must be updated too.
 - Access tokens must not linger in the address bar; `clearMagicLinkFromUrl()` /
   `history.replaceState` exists for that reason. Flag any code that logs a token, session object,
@@ -119,7 +119,7 @@ value is a repo-authored `item.url`, not user input.
 ### 6. Secrets and config
 
 - `config.js` is gitignored; real keys must never appear in the diff. Any new config value must also
-  be added to [`config.template.js`](../../../config.template.js) and documented in the README.
+  be added to [`config.template.js`](../../../config.template.js) and documented in docs/setup/supabase.md.
 - The Supabase **anon** key in client code is expected and fine. A `service_role` key anywhere in
   the browser bundle is blocking.
 
@@ -136,7 +136,7 @@ dialog, a toggle, or a new interactive control. Decorative SVGs get `aria-hidden
 
 ### 9. Docs
 
-The README's Supabase setup section is load-bearing. If a diff changes the auth flow, check whether
+[`docs/setup/supabase.md`](../../../docs/setup/supabase.md) is load-bearing. If a diff changes the auth flow, check whether
 steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular that the templates use
 `{{ .RedirectTo }}/?token_hash={{ .TokenHash }}&amp;type=email` and that `ConfirmationURL` appears
 **nowhere** in them, including as visible link text.

@@ -162,7 +162,7 @@ hatch if anything turns out to have depended on it; nothing in this repository d
 
 The anon and publishable keys are public by design and safe to ship; the browser only ever
 needs those. Since 12 October 2026 the `*_ANON_KEY` variables hold the disabled legacy `anon`
-key and nothing reads them; the build command uses the publishable key (README, setup step
+key and nothing reads them; the build command uses the publishable key (docs/setup/supabase.md, setup step
 4). The `NEXT_PUBLIC_*` names are vestigial — this is not a Next.js app.
 
 ### Where they came from
@@ -180,7 +180,7 @@ Three things had to be true, and each was checked rather than reasoned about. Th
 1. **Nothing on Vercel can read them.** The project has no Vercel Function. Vercel
    environment variables are readable only by build processes and functions, and the only
    build step is the one-line command that writes `config.js` from the Supabase URL, the
-   publishable key and the Google client ID (README, setup step 4). It reads none of the
+   publishable key and the Google client ID (docs/setup/supabase.md, setup step 4). It reads none of the
    removed variables. Everything else is static files served as they sit in the repo.
 2. **The contact function does not use them.** `supabase/functions/contact/index.ts` reads
    exactly one secret, `Deno.env.get('RESEND_API_KEY')`, and that value comes from
@@ -305,7 +305,7 @@ will return hits that do not contradict that:
 | Where | What it is |
 | --- | --- |
 | `supabase/functions/contact/index.ts:3` | Header comment — "Replaces FormSubmit", pointing at the decision record. A comment in a code file, not an executable reference |
-| `README.md:169` | Contact-form section; explains the replacement and links the decision record by path |
+| `docs/setup/contact-form.md` (was `README.md:169`) | Contact-form section; explains the replacement and links the decision record by path |
 | `docs/decisions/formsubmit-gdpr-basis.md` | The decision record itself |
 | This file | The sentence you are reading |
 

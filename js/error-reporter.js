@@ -4,7 +4,7 @@
 //
 // MoiCheck is a static site, so an error that only happens in a visitor's browser
 // never reaches a server log. This sends uncaught errors and unhandled promise
-// rejections to the client_errors table in Supabase (README "Browser error
+// rejections to the client_errors table in Supabase (docs/operations/runbook.md, "Browser error
 // reports"), where they are kept 30 days.
 //
 // Reports are anonymous: no user id, the page path without its query or
