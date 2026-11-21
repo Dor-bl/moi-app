@@ -367,7 +367,7 @@ The quickest check that it has not drifted: `grep` the code for table names and
 
 | Claim | Where it came from |
 | --- | --- |
-| Schema, RLS policies, grants, `delete_user()`, `profiles` and its sync trigger, `client_errors`, its `pg_cron` job | [`docs/setup/supabase.md`](../setup/supabase.md); `client_errors` in [`docs/operations/runbook.md`](../operations/runbook.md); the `pg_cron` job in [`data-handling.md`](data-handling.md) |
+| Schema, RLS policies, grants, `delete_user()`, `profiles` and its sync trigger, `client_errors`, its `pg_cron` job | Schema, RLS, `profiles` and its trigger in [`docs/setup/supabase.md`](../setup/supabase.md); `delete_user()` and its grant in [`data-handling.md`](data-handling.md); `client_errors`, its policy and its `pg_cron` cleanup job in [`docs/operations/runbook.md`](../operations/runbook.md) |
 | `public.profiles` created, backfilled and verified on the project | This register's activity 1, checked against the live schema on 2 November 2026 |
 | Purposes, recipients, transfers, retention as stated publicly | `privacy.html` §§1–4 |
 | Project region `eu-west-1`, contact relay pinned and **observed** answering from it | [`edge-function-region.md`](../decisions/edge-function-region.md) |

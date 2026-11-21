@@ -191,7 +191,7 @@ order by p.email, up.date desc;
 Six things to know before running it:
 
 - **Nobody signed in may write to the mirror, and only its subject may read it.** The
-  `revoke all` then `grant select` is the same shape as `client_errors` further down: the
+  `revoke all` then `grant select` is the same shape as `client_errors` in [the operations runbook](../operations/runbook.md#browser-error-reports): the
   grant settles that `anon` sees nothing at all and that `authenticated` can read but never
   insert, update or delete, and the policy then settles *which* rows a reader gets. The
   trigger is the only writer, and it writes as the table's owner.
