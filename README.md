@@ -59,7 +59,7 @@ Using Python's built-in HTTP server:
 
 ```bash
 # Clone the repository
-git clone https.github.com/Dor-bl/moi-app.git
+git clone https://github.com/Dor-bl/moi-app.git
 cd moi-app
 
 # Run local server
