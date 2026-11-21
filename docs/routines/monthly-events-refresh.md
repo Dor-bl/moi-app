@@ -115,6 +115,39 @@ obvious place to start, but they are not a closed list. If discovery turns up so
 else genuinely worth a newcomer's time in the city or province, propose it — prefer what
 is distinctly Groningen over what could be anywhere.
 
+### Every run that gets past Step 1 looks ahead
+
+Chasing successors for lapsed entries is not discovery. A run that only does that can
+miss a well-known event happening days later, which is how the Sinterklaas arrival in
+Haren (21 November 2026) went unlisted: the 18 November run spent its research on lapsed
+entries and never looked at the coming weekends. So every run that passes the gate also:
+
+- **Scans the next three weeks** on visitgroningen.nl **and** www.ervaarharen.nl, and
+  the municipal calendar where it is reachable. Check ervaarharen.nl every time; it is
+  the only source that reliably carries Haren's own events.
+- **Logs the lookahead** in its row of the table below: the window scanned and what was
+  added or left out. A run that scanned and found nothing new says so.
+
+### What counts as local
+
+The municipality of Groningen is the city **plus** its villages and former
+municipalities: Haren (including Glimmen, Onnen and Noordlaren), Ten Boer and the other
+villages that merged into it in 2019. Their events are local and are judged like any
+other event in the city. They are **not** "village events across the province".
+
+That matters most for the recurring set pieces a newcomer would hear about from
+neighbours or their children's school, such as the Sinterklaas arrival, Sint Maarten and
+the Koningsdag programme. Haren's Sinterklaas arrival goes on the list the same way the
+city's does. The provincial ones (Delfzijl, Appingedam, Veendam, Winschoten and the like)
+can still be left out, as they have been so far.
+
+### Exclusions are not inherited
+
+A "Left out" note in the table below records one run's judgement on one set of
+listings. It is not a rule. A later run may not skip an event because an earlier run
+skipped its *class*. It weighs each event on its own against this file, and only a
+change to this file can exclude a class.
+
 ### Verification — the exact dates
 
 Here the rule is strict, and it does **not** relax for an event that was discovered on a
