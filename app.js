@@ -2269,7 +2269,7 @@ function setupEventListeners() {
 
     googleAuthBtn.addEventListener('click', async () => {
         if (!supabaseClient) {
-            alert('To enable Google Login, please connect your free Supabase URL & Anon Key in app.js or window.SUPABASE_URL. Check README.md for 1-minute setup steps!');
+            alert('To enable Google Login, please connect your free Supabase URL & Anon Key in app.js or window.SUPABASE_URL. See docs/setup/supabase.md for setup steps.');
             return;
         }
         const { error } = await supabaseClient.auth.signInWithOAuth({
@@ -2293,7 +2293,7 @@ function setupEventListeners() {
         const submitBtn = document.getElementById('magicLinkSubmitBtn');
 
         if (!supabaseClient) {
-            alert('To enable Magic Link Login, please connect your free Supabase URL & Anon Key in app.js or window.SUPABASE_URL. Check README.md for 1-minute setup steps!');
+            alert('To enable Magic Link Login, please connect your free Supabase URL & Anon Key in app.js or window.SUPABASE_URL. See docs/setup/supabase.md for setup steps.');
             return;
         }
 

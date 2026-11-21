@@ -35,7 +35,7 @@ let heldUserId = null;
 // the previous user's ticks and notes under the new user's id. See issue #52.
 const SYNCED_USER_KEY = 'moiCheckSyncedUser';
 
-// user_progress.note has a server-side check (char_length <= 1000, see README).
+// user_progress.note has a server-side check (char_length <= 1000, see docs/setup/supabase.md).
 // The textarea's maxlength stops new notes going over it, but notes written
 // before that cap (#204) can still be longer, and one rejected row fails a
 // whole batch upsert. Clamp by code point, which is what char_length counts,
@@ -99,7 +99,8 @@ function updateAuthBtnState(isLoggedIn) {
 // Turn a Supabase sign-in error into something a visitor can act on. A 5xx here
 // means the request reached Supabase and failed inside it, so telling the user to
 // check their email address (what the raw message often implies) sends them the
-// wrong way; see README "Magic links fail with a 500" for the project-side fixes.
+// wrong way; see docs/operations/runbook.md, "Troubleshooting: magic links fail
+// with a 500", for the project-side fixes.
 function describeMagicLinkError(error) {
     const status = error && error.status;
 
@@ -118,7 +119,7 @@ function describeMagicLinkError(error) {
 // (Outlook, Office 365, most corporate filters) prefetch every link in a
 // message, and that first fetch used up the one-time token before the person
 // ever tapped it. The email template now links here with a token hash instead
-// (see README), and nothing is verified until the visitor presses the button —
+// (see docs/setup/supabase.md, step 7), and nothing is verified until the visitor presses the button —
 // a scanner fetching this page gets HTML and consumes nothing.
 function getPendingMagicLink() {
     const params = new URLSearchParams(window.location.search);
