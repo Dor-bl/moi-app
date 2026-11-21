@@ -94,12 +94,15 @@ test('closed Settings and Contact modals are inert and never take Tab focus', as
         assert.equal(await isInert('#settingsModal'), true);
         assert.equal(await focusedId(), 'settingsBtn');
 
-        // Settings: a click on the backdrop closes it and restores inert too.
+        // Settings: a click on the backdrop closes it, restores inert, and hands
+        // focus back even though the click first moves focus to <body>.
         await page.click('#settingsBtn');
         await page.waitForSelector('#settingsModal.active');
+        await page.focus('#closeSettingsModal');
         await page.mouse.click(5, 5);
         assert.equal(await page.isVisible('#settingsModal.active'), false);
         assert.equal(await isInert('#settingsModal'), true);
+        assert.equal(await focusedId(), 'settingsBtn');
 
         // Contact: same open/close contract via × and the backdrop.
         await page.click('#contactBtn');
@@ -112,9 +115,11 @@ test('closed Settings and Contact modals are inert and never take Tab focus', as
 
         await page.click('#contactBtn');
         await page.waitForSelector('#contactModal.active');
+        await page.focus('#closeContactModal');
         await page.mouse.click(5, 5);
         assert.equal(await page.isVisible('#contactModal.active'), false);
         assert.equal(await isInert('#contactModal'), true);
+        assert.equal(await focusedId(), 'contactBtn');
     } finally {
         if (browser) await browser.close();
         server.close();

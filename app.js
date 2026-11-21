@@ -2073,7 +2073,9 @@ function closeSimpleModal(modal, opener) {
     const hadFocus = modal.contains(document.activeElement);
     modal.classList.remove('active');
     modal.setAttribute('inert', '');
-    if (hadFocus && opener) opener.focus();
+    // A backdrop click moves focus to <body> before this runs, so treat that
+    // as "focus was in the modal" too, as closeProfileModal does.
+    if (opener && (hadFocus || document.activeElement === document.body)) opener.focus();
 }
 
 // Where the contact Edge Function is allowed to run. Supabase Edge Functions
