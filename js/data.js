@@ -1269,6 +1269,21 @@ const EVENTS = [
         url: 'https://www.whiskyfestivalgroningen.nl'
     },
     {
+        id: 'winter-wereldmarkt-onnen-2026',
+        date: '2026-11-28',
+        endDate: '2026-11-29',
+        // Per campingdekleinewereld.nl/winterwereldmarkt (read 21 November
+        // 2026): open from 10:00 on both days, the market itself 10:00 - 17:00;
+        // the food and drink square stays open later, with no closing time given.
+        startTime: '10:00',
+        endTime: '17:00',
+        kidFriendly: true,
+        title: { en: 'Winter Wereldmarkt (winter market)', nl: 'Winter Wereldmarkt' },
+        location: { en: 'Camping de Kleine Wereld, Onnen (Haren)', nl: 'Camping de Kleine Wereld, Onnen (Haren)' },
+        tip: { en: 'For one weekend a campsite just south of Haren turns into a small winter village of lights, music and wood smoke. The stalls sell handmade jewellery, scarves, vintage clothes, ceramics and other gifts from local makers, there is live music in the afternoon, and glühwein, soup and burgers keep you warm. Kids get a swing carousel, a bouncy castle, a silent disco, face painting and marshmallows over the campfire, and there are bushcraft and candle-decorating workshops. Parking is €5 by car, and coming by bike or on foot is free; on Saturday a bus runs there too.', nl: 'Eén weekend lang verandert een camping net ten zuiden van Haren in een klein winterdorp vol lichtjes, muziek en de geur van houtvuur. In de kraampjes vind je handgemaakte sieraden, sjaals, vintage kleding, keramiek en andere cadeaus van lokale makers, \'s middags is er livemuziek, en glühwein, mosterdsoep en burgers houden je warm. Kinderen kunnen in de zweefmolen, op het luchtkussen, naar de silent disco, zich laten schminken en marshmallows roosteren boven het kampvuur, en er zijn workshops vuur maken en kaarsen versieren. Parkeren kost €5 met de auto, op de fiets of te voet is gratis; op zaterdag rijdt er ook een bus.' },
+        url: 'https://www.campingdekleinewereld.nl/winterwereldmarkt'
+    },
+    {
         id: 'survivalrun-groningen-2026',
         date: '2026-11-29',
         // 09:00 is the first published start (the kids run, per the organiser's
@@ -1280,6 +1295,34 @@ const EVENTS = [
         location: { en: 'ACLO sports centre, Blauwborgje 16, Zernike campus', nl: 'ACLO Sportcentrum, Blauwborgje 16, Zernike' },
         tip: { en: 'Survivalrun is a Dutch outdoor sport that mixes trail running with obstacles, and the 13th Groningen edition sends you round a mostly unpaved course on and around the Zernike campus, with the start and finish on the south side of the ACLO sports centre. There is a distance for almost everyone: competition classes, an 8.5 km and a 5 km recreational run (solo, in pairs or as a team), a youth class for ages 8 to 14, a parent-and-child run from age 8 and a 2 km mini run from age 6, and this year the Dutch student championship is held here too. Starts run from the kids run at 09:00 to the parent-and-child run at 13:20. It is heavier than an obstacle run: you hand in your wristband at any obstacle you fail, and the organisers expect some technique (monkey hang, cat crawl, swing-over), with training evenings on Wednesdays and Thursdays if you want to learn. Register in advance on the organiser\'s site; the listing gives the fee as €27.50. Spectators are explicitly welcome: follow the runners by bike along the marked route, and the start-finish area and the survival track at De Bunders are where most obstacles are in view.', nl: 'Survivalrun is een echte Nederlandse buitensport die hardlopen combineert met hindernissen, en de 13e Groningse editie stuurt je over een grotendeels onverhard parcours op en rond de Zernike Campus, met start en finish aan de zuidkant van sportcentrum ACLO. Er is voor bijna iedereen een afstand: wedstrijdklassen, een recreantenrun van 8,5 en van 5 km (alleen, als koppel of als team), een jeugdklasse van 8 tot 14 jaar, een ouder-kindrun vanaf 8 jaar en een minirun van 2 km vanaf 6 jaar, en dit jaar wordt hier ook het Nederlands Studenten Kampioenschap gehouden. De starts lopen van de kidsrun om 9.00 uur tot de ouder-kindrun om 13.20 uur. Het is zwaarder dan een obstacle run: bij elke hindernis die je niet haalt lever je je polsbandje in, en de organisatie verwacht enige techniek (apenhang, catcrawl, swingover); op woensdag- en donderdagavond kun je meetrainen om het te leren. Inschrijven doe je vooraf via de site van de organisatie; volgens de agenda kost het €27,50. Toeschouwers zijn uitdrukkelijk welkom: volg de lopers per fiets langs de uitgezette route, en bij het start-finishterrein en de survivalbaan aan De Bunders zie je de meeste hindernissen tegelijk.' },
         url: 'https://survivalrungroningen.nl/'
+    },
+    {
+        id: 'cinair-groningen-2026',
+        date: '2026-12-10',
+        endDate: '2026-12-13',
+        // Per Cinair's own ticket shop, linked from cinair.eu (read 21 November
+        // 2026): seven screenings at Europapark, 10 - 13 December. The
+        // municipal permit calendar lists Stationsplein and 3 - 12 December
+        // instead; the organiser's dates and venue are the ones used here.
+        // Start times differ per film and no end times are given, so no hours.
+        title: { en: 'Cinair drive-in cinema', nl: 'Cinair drive-in bioscoop' },
+        location: { en: 'Europapark', nl: 'Europapark' },
+        tip: { en: 'A giant open-air screen comes to Europapark for four winter nights, and you watch from your own car. On the bill: Spider-Man: Brand New Day and Obsession on Thursday 10, The Nutcracker and Michael on Friday 11, Home Alone and Beauty and the Beast on Saturday 12, and The Odyssey on Sunday 13. Everyone in the car needs a ticket: a regular one is €18 plus a €1.35 service fee and comes with a bag of crisps, and a VIP ticket (€37) gets you the first two rows and a bigger snack. Check each film\'s language when you book; Spider-Man, for example, is in English with Dutch subtitles. Arrive 45 minutes early. You do need a car, so this one is for when you can borrow one.', nl: 'Een gigantisch openluchtscherm strijkt vier winteravonden neer op het Europapark, en je kijkt vanuit je eigen auto. Op het programma: Spider-Man: Brand New Day en Obsession op donderdag 10, The Nutcracker en Michael op vrijdag 11, Home Alone en Beauty and the Beast op zaterdag 12, en The Odyssey op zondag 13. Iedereen in de auto heeft een kaartje nodig: een gewoon kaartje kost €18 plus €1,35 servicekosten, inclusief een zakje chips, en met een VIP-kaartje (€37) sta je in de eerste twee rijen en krijg je een grotere snack. Kijk bij het boeken in welke taal de film is; Spider-Man is bijvoorbeeld Engels met Nederlandse ondertiteling. Kom 45 minuten van tevoren. Je hebt wel een auto nodig.' },
+        url: 'https://www.cinair.eu/en'
+    },
+    {
+        id: 'kerstmarkt-haren-2026',
+        date: '2026-12-19',
+        endDate: '2026-12-20',
+        // Per ervaarharen.nl/event/kerstmarkt-haren (read 21 November 2026):
+        // open 11:00 - 17:00 on both days. The municipal permit runs 17 - 20
+        // December because it includes the build-up days.
+        startTime: '11:00',
+        endTime: '17:00',
+        title: { en: 'Haren Christmas market', nl: 'Kerstmarkt Haren' },
+        location: { en: 'Around the Dorpskerk, Rijksstraatweg, Haren', nl: 'Rondom de Dorpskerk, Rijksstraatweg, Haren' },
+        tip: { en: 'Haren\'s own Christmas market fills the square around the old village church for a weekend, with local shops and a handful of selected sellers offering gifts, festive fashion and good food. Sunday the 20th is also a shopping Sunday, so most of the shops in the village centre are open for last-minute presents. It is part of the WinterGoud programme, which makes it an easy pairing with the city\'s winter events. Haren is a short bike ride or bus ride south of the city.', nl: 'Haren heeft zijn eigen kerstmarkt, een weekend lang rond de oude dorpskerk, waar Harense ondernemers en een aantal speciaal geselecteerde verkopers cadeaus, feestmode en lekker eten aanbieden. Zondag 20 december is ook koopzondag, dus de meeste winkels in het centrum zijn open voor de laatste cadeaus. De markt hoort bij het WinterGoud-programma en is dus goed te combineren met de winterse evenementen in de stad. Haren ligt een kort fiets- of busritje ten zuiden van de stad.' },
+        url: 'https://www.ervaarharen.nl/event/kerstmarkt-haren/'
     }
 ];
 
