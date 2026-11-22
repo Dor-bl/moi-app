@@ -1323,6 +1323,67 @@ const EVENTS = [
         location: { en: 'Around the Dorpskerk, Rijksstraatweg, Haren', nl: 'Rondom de Dorpskerk, Rijksstraatweg, Haren' },
         tip: { en: 'Haren\'s own Christmas market fills the square around the old village church for a weekend, with local shops and a handful of selected sellers offering gifts, festive fashion and good food. It is open 11:00 to 17:00 on both days. Sunday the 20th is also a shopping Sunday, so most of the shops in the village centre are open for last-minute presents. It is part of the WinterGoud programme, which makes it an easy pairing with the city\'s winter events. Haren is a short bike ride or bus ride south of the city.', nl: 'Haren heeft zijn eigen kerstmarkt, een weekend lang rond de oude dorpskerk, waar Harense ondernemers en een aantal speciaal geselecteerde verkopers cadeaus, feestmode en lekker eten aanbieden. De markt is beide dagen open van 11.00 tot 17.00 uur. Zondag 20 december is ook koopzondag, dus de meeste winkels in het centrum zijn open voor de laatste cadeaus. De markt hoort bij het WinterGoud-programma en is dus goed te combineren met de winterse evenementen in de stad. Haren ligt een kort fiets- of busritje ten zuiden van de stad.' },
         url: 'https://www.ervaarharen.nl/event/kerstmarkt-haren/'
+    },
+    {
+        id: 'sinterklaasfestival-haren-2026',
+        date: '2026-11-28',
+        // Per ervaarharen.nl/event/sinterklaas-festival-haren (read 22 November
+        // 2026): 10:00 - 16:00, free games, free Meet & Greet tickets while
+        // they last, handed out from 9:30 in front of the Dorpskerk.
+        startTime: '10:00',
+        endTime: '16:00',
+        free: true,
+        kidFriendly: true,
+        title: { en: 'Sinterklaas Festival Haren', nl: 'Sinterklaasfestival Haren' },
+        location: { en: 'Dorpskerk and village centre, Haren', nl: 'Dorpskerk en centrum, Haren' },
+        tip: { en: 'A week after his arrival in Haren, Sinterklaas sets up a temporary study in the old Dorpskerk, and the Pieten run free games all through the village centre from 10:00 to 16:00. Children can meet Sinterklaas and the Hoofdpiet in person: the Meet & Greet tickets are free but limited, handed out from 9:30 in front of the church, so pick up a time slot in the morning even if you plan to come back later. At 12:00 and 14:30 Sint and the Hoofdpiet step outside to chat with the children. Haren is a short bike or bus ride south of the city.', nl: 'Een week na zijn intocht in Haren richt Sinterklaas een tijdelijke werkkamer in de Dorpskerk in, en de Pieten organiseren van 10.00 tot 16.00 uur gratis spelletjes in het hele centrum. Kinderen kunnen Sinterklaas en de Hoofdpiet ook echt ontmoeten: de kaartjes voor de Meet & Greet zijn gratis, maar op = op, en worden vanaf 9.30 uur voor de kerk uitgedeeld. Haal dus \'s ochtends al een tijdslot, ook als je pas later op de dag wilt komen. Om 12.00 en 14.30 uur komen Sint en de Hoofdpiet even naar buiten om met de kinderen te praten. Haren ligt een kort fiets- of busritje ten zuiden van de stad.' },
+        url: 'https://www.ervaarharen.nl/event/sinterklaas-festival-haren/'
+    },
+    // Kerstmarkt Bourtange: three separate weekends, so one entry per weekend
+    // (a single 5 - 20 December span would show it as open on the weekdays in
+    // between). Per bourtange.nl/events/kerstmarkt (read 22 November 2026):
+    // 5, 6, 12, 13, 19 and 20 December 2026, Saturday 11:00 - 21:00, Sunday
+    // 11:00 - 18:00, €4.50 in advance or €5 at the gate from age 6, under-6s
+    // and parking free, no dogs. Visit Groningen lists 11:00 - 18:00 on the
+    // Saturdays too; the organiser's longer Saturday hours are used here.
+    {
+        id: 'kerstmarkt-bourtange-2026-12-05',
+        date: '2026-12-05',
+        endDate: '2026-12-06',
+        hours: {
+            '2026-12-05': ['11:00', '21:00'],
+            '2026-12-06': ['11:00', '18:00']
+        },
+        title: { en: 'Christmas market in Vesting Bourtange', nl: 'Kerstmarkt Vesting Bourtange' },
+        location: { en: 'Vesting Bourtange, Westerwolde', nl: 'Vesting Bourtange, Westerwolde' },
+        tip: { en: 'The star fort of Bourtange is lit up with thousands of lights and dozens of Christmas trees on its ramparts, and nearly 100 stalls spread over its squares and bastions, with choirs, street theatre and plenty of glühwein. Saturdays run until 21:00, and the evening, once it is dark, is when it is at its best; Sundays close at 18:00. Entry is €4.50 online or €5 at the gate from age 6, under-6s are free, parking is free, and dogs are not allowed. This is the first of three weekends.', nl: 'De vesting Bourtange baadt in duizenden lichtjes, met tientallen verlichte kerstbomen op de wallen en bijna honderd kramen verspreid over de pleinen en bastions, plus koren, straattheater en natuurlijk glühwein. Op zaterdag is de markt open tot 21.00 uur, en juist als het donker wordt is het op zijn mooist; op zondag sluit hij om 18.00 uur. Entree is €4,50 online of €5 aan de kassa vanaf 6 jaar, kinderen tot 6 jaar en parkeren zijn gratis, en honden mogen niet mee. Dit is het eerste van drie weekenden.' },
+        url: 'https://www.bourtange.nl/events/kerstmarkt/'
+    },
+    {
+        id: 'kerstmarkt-bourtange-2026-12-12',
+        date: '2026-12-12',
+        endDate: '2026-12-13',
+        hours: {
+            '2026-12-12': ['11:00', '21:00'],
+            '2026-12-13': ['11:00', '18:00']
+        },
+        title: { en: 'Christmas market in Vesting Bourtange', nl: 'Kerstmarkt Vesting Bourtange' },
+        location: { en: 'Vesting Bourtange, Westerwolde', nl: 'Vesting Bourtange, Westerwolde' },
+        tip: { en: 'The star fort of Bourtange is lit up with thousands of lights and dozens of Christmas trees on its ramparts, and nearly 100 stalls spread over its squares and bastions, with choirs, street theatre and plenty of glühwein. Saturdays run until 21:00, and the evening, once it is dark, is when it is at its best; Sundays close at 18:00. Entry is €4.50 online or €5 at the gate from age 6, under-6s are free, parking is free, and dogs are not allowed. This is the second of three weekends.', nl: 'De vesting Bourtange baadt in duizenden lichtjes, met tientallen verlichte kerstbomen op de wallen en bijna honderd kramen verspreid over de pleinen en bastions, plus koren, straattheater en natuurlijk glühwein. Op zaterdag is de markt open tot 21.00 uur, en juist als het donker wordt is het op zijn mooist; op zondag sluit hij om 18.00 uur. Entree is €4,50 online of €5 aan de kassa vanaf 6 jaar, kinderen tot 6 jaar en parkeren zijn gratis, en honden mogen niet mee. Dit is het tweede van drie weekenden.' },
+        url: 'https://www.bourtange.nl/events/kerstmarkt/'
+    },
+    {
+        id: 'kerstmarkt-bourtange-2026-12-19',
+        date: '2026-12-19',
+        endDate: '2026-12-20',
+        hours: {
+            '2026-12-19': ['11:00', '21:00'],
+            '2026-12-20': ['11:00', '18:00']
+        },
+        title: { en: 'Christmas market in Vesting Bourtange', nl: 'Kerstmarkt Vesting Bourtange' },
+        location: { en: 'Vesting Bourtange, Westerwolde', nl: 'Vesting Bourtange, Westerwolde' },
+        tip: { en: 'The star fort of Bourtange is lit up with thousands of lights and dozens of Christmas trees on its ramparts, and nearly 100 stalls spread over its squares and bastions, with choirs, street theatre and plenty of glühwein. Saturdays run until 21:00, and the evening, once it is dark, is when it is at its best; Sundays close at 18:00. Entry is €4.50 online or €5 at the gate from age 6, under-6s are free, parking is free, and dogs are not allowed. This is the last of three weekends.', nl: 'De vesting Bourtange baadt in duizenden lichtjes, met tientallen verlichte kerstbomen op de wallen en bijna honderd kramen verspreid over de pleinen en bastions, plus koren, straattheater en natuurlijk glühwein. Op zaterdag is de markt open tot 21.00 uur, en juist als het donker wordt is het op zijn mooist; op zondag sluit hij om 18.00 uur. Entree is €4,50 online of €5 aan de kassa vanaf 6 jaar, kinderen tot 6 jaar en parkeren zijn gratis, en honden mogen niet mee. Dit is het laatste van drie weekenden.' },
+        url: 'https://www.bourtange.nl/events/kerstmarkt/'
     }
 ];
 
