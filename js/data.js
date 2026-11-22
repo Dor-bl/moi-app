@@ -1342,9 +1342,11 @@ const EVENTS = [
     {
         id: 'kerstmarkt-piccardthof-2026',
         date: '2026-12-12',
-        // No organiser page: the allotment association ATV Piccardthof lists only
-        // an e-mail address and phone number. Date, hours and "Gratis" are from
-        // the Visit Groningen listing (read 22 November 2026), unverified at source.
+        // Date and hours confirmed on the organiser's own page on piccardthof.nl
+        // (ATV Piccardthof, "onze 3e Magische Kerstmarkt": Saturday 12 December,
+        // 16.00 - 20.00), from the owner's screenshot on 22 November 2026; the
+        // host is refused by the egress proxy. "Gratis" is the Visit Groningen
+        // listing's, which stays the url because the exact page path is unknown.
         startTime: '16:00',
         endTime: '20:00',
         free: true,
