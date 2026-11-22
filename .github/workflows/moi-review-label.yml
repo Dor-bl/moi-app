@@ -18,7 +18,7 @@ permissions: {}
 
 jobs:
   sign-off:
-    if: github.event.label.name == 'moi-review: go'
+    if: "github.event.label.name == 'moi-review: go'"
     name: Post moi-review status
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -44,4 +44,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
-        run: gh pr edit "$PR" --repo "$REPO" --remove-label 'moi-review: go'
+        run: |
+          gh pr edit "$PR" --repo "$REPO" --remove-label 'moi-review: go'
