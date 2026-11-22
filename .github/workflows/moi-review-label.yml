@@ -1,0 +1,47 @@
+name: moi-review sign-off
+
+# `moi-review` is a required check on main, and it means "the owner has read
+# this round's review and signs off". Posting it by hand needed a gh command
+# with the head commit's SHA, which was easy to forget. Adding the
+# `moi-review: go` label to a PR now posts a success status on its current head
+# commit and then removes the label again, so the next push (a new commit with
+# no status) needs a fresh label, just as it needed a fresh command before.
+#
+# Agents do not add this label: the sign-off is the owner's.
+# Fork PRs get a read-only token and will fail here; this repo has none.
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions: {}
+
+jobs:
+  sign-off:
+    if: github.event.label.name == 'moi-review: go'
+    name: Post moi-review status
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      statuses: write
+      pull-requests: write
+    steps:
+      - name: Mark the head commit as reviewed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          gh api "repos/$REPO/statuses/$SHA" \
+            -f state=success \
+            -f context=moi-review \
+            -f description="GO: signed off by $ACTOR" \
+            -f target_url="$PR_URL"
+      - name: Remove the label for the next round
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR" --repo "$REPO" --remove-label 'moi-review: go'
