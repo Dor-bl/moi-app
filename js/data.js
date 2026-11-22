@@ -1339,6 +1339,20 @@ const EVENTS = [
         tip: { en: 'A week after his arrival in Haren, Sinterklaas sets up a temporary study in the old Dorpskerk, and the Pieten run free games all through the village centre from 10:00 to 16:00. Children can meet Sinterklaas and the Hoofdpiet in person: the Meet & Greet tickets are free but limited, handed out from 9:30 in front of the church, so pick up a time slot in the morning even if you plan to come back later. At 12:00 and 14:30 Sint and the Hoofdpiet step outside to chat with the children. Haren is a short bike or bus ride south of the city.', nl: 'Een week na zijn intocht in Haren richt Sinterklaas een tijdelijke werkkamer in de Dorpskerk in, en de Pieten organiseren van 10.00 tot 16.00 uur gratis spelletjes in het hele centrum. Kinderen kunnen Sinterklaas en de Hoofdpiet ook echt ontmoeten: de kaartjes voor de Meet & Greet zijn gratis, maar op = op, en worden vanaf 9.30 uur voor de kerk uitgedeeld. Haal dus \'s ochtends al een tijdslot, ook als je pas later op de dag wilt komen. Om 12.00 en 14.30 uur komen Sint en de Hoofdpiet even naar buiten om met de kinderen te praten. Haren ligt een kort fiets- of busritje ten zuiden van de stad.' },
         url: 'https://www.ervaarharen.nl/event/sinterklaas-festival-haren/'
     },
+    {
+        id: 'kerstmarkt-piccardthof-2026',
+        date: '2026-12-12',
+        // No organiser page: the allotment association ATV Piccardthof lists only
+        // an e-mail address and phone number. Date, hours and "Gratis" are from
+        // the Visit Groningen listing (read 22 November 2026), unverified at source.
+        startTime: '16:00',
+        endTime: '20:00',
+        free: true,
+        title: { en: 'Magical Christmas market at the Piccardthof', nl: 'Magische Kerstmarkt Piccardthof' },
+        location: { en: 'ATV Piccardthof allotment gardens, Schweitzerlaan 14', nl: 'Volkstuinencomplex ATV Piccardthof, Schweitzerlaan 14' },
+        tip: { en: 'For one evening the Piccardthof, a big allotment-garden complex on the west side of the city, lights up its garden paths for a small Christmas market with live music. Expect glühwein and hot chocolate, food and treats, stalls full of (Christmas) gifts, Christmas trees for sale, a chat with Father Christmas, and Christmas decorations for the children to make. Free to get in, Saturday 16:00 to 20:00.', nl: 'Eén avond lang zijn de tuinpaden van de Piccardthof, het grote volkstuinencomplex aan de westkant van de stad, sfeervol verlicht voor een kleine kerstmarkt met livemuziek. Er is glühwein en chocomelk, lekker eten, kraampjes vol (kerst)cadeaus, een kerstbomenverkoop en een praatje met de kerstman, en kinderen kunnen er kerststukjes maken. De toegang is gratis, zaterdag van 16.00 tot 20.00 uur.' },
+        url: 'https://www.visitgroningen.nl/nl/doen/uitgaan/4003117993/magische-kerstmarkt-piccardthof'
+    },
     // Kerstmarkt Bourtange: three separate weekends, so one entry per weekend
     // (a single 5 - 20 December span would show it as open on the weekdays in
     // between). Per bourtange.nl/events/kerstmarkt (read 22 November 2026):
