@@ -47,6 +47,9 @@ jobs:
 
       - name: Review
         id: review
+        # Well under the job's 20 minutes, so the failure steps below still get
+        # time to set the status and remove the label.
+        timeout-minutes: 12
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -96,7 +99,14 @@ jobs:
 
       - name: Report a failed run
         if: failure()
+        env:
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
         run: |
+          # The action hides Claude's output; print only the final result
+          # message, which carries the API error (bad key, no credit, ...).
+          if [ -f "$EXECUTION_FILE" ]; then
+            jq -r '.[] | select(.type == "result") | "Claude result: \(.result // "(no message)")"' "$EXECUTION_FILE" || true
+          fi
           gh api "repos/$REPO/statuses/$SHA" -f state=error -f context=moi-review \
             -f description="Review run failed; see the run log" \
             -f target_url="${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}"
