@@ -24,6 +24,11 @@ jobs:
     name: Run moi-review
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # A second label on the same PR replaces a review that is still running,
+    # rather than racing it for the comment, the status and the label.
+    concurrency:
+      group: moi-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
       statuses: write
