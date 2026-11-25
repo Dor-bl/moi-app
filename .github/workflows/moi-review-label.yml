@@ -1,0 +1,132 @@
+name: moi-review
+
+# `moi-review` is a required check on main. Adding the `moi-review` label to a
+# PR runs Claude Code against the checklist in .claude/skills/moi-review/SKILL.md,
+# posts the review as a PR comment, and sets the `moi-review` status on the
+# head commit from its verdict: success for GO / GO with nits, failure for NO GO.
+# The label is then removed, so the next push (a new commit with no status)
+# needs the label again to be reviewed.
+#
+# Claude only gets read-only tools here; the comment and the status are posted
+# by the steps after it, from its structured output. Each run is billed to the
+# ANTHROPIC_API_KEY repository secret. Fork PRs get no secrets and would fail;
+# this repo has none.
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions: {}
+
+jobs:
+  review:
+    if: github.event.label.name == 'moi-review'
+    name: Run moi-review
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A second label on the same PR replaces a review that is still running,
+    # rather than racing it for the comment, the status and the label.
+    concurrency:
+      group: moi-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Mark the review as running
+        run: |
+          gh api "repos/$REPO/statuses/$SHA" -f state=pending -f context=moi-review \
+            -f description="Review running" \
+            -f target_url="${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}"
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Review
+        id: review
+        # Well under the job's 20 minutes, so the failure steps below still get
+        # time to set the status and remove the label.
+        timeout-minutes: 12
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            BASE: origin/${{ github.event.pull_request.base.ref }}
+
+            Review this pull request against the checklist in
+            .claude/skills/moi-review/SKILL.md. Read that file first and follow
+            it, including "Reporting findings" and the "Do not flag" list.
+            Also read CLAUDE.md. The PR head is checked out; see the change with
+            `git diff BASE...HEAD` or `gh pr diff`, and read the PR description
+            with `gh pr view` for intent. Skip the skill's npm ci / lint / test
+            commands: CI runs those as separate required checks.
+
+            Do not post anything to GitHub yourself. Return:
+            - verdict: "NO GO" if any blocking finding is open, "GO, with nits"
+              if only nits or should-fix items remain, otherwise "GO".
+            - summary: one line, under 100 characters, for the commit status.
+            - comment: the full review in Markdown. Its first line is
+              `## ✅ GO — moi-review`, `## ✅ GO, with nits — moi-review` or
+              `## ❌ NO GO — moi-review`, then each finding labelled blocking /
+              should fix / nit and verified / suspected with file:line, what
+              you checked, and a **Not checked** line.
+          claude_args: |
+            --model claude-sonnet-5-5
+            --max-turns 40
+            --permission-mode default
+            --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*)"
+            --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["GO","GO, with nits","NO GO"]},"summary":{"type":"string"},"comment":{"type":"string"}},"required":["verdict","summary","comment"]}'
+
+      - name: Post the review and set the status
+        env:
+          # Parsed with jq below rather than fromJSON(): GitHub evaluates step
+          # env even when an earlier failure skips this step, and fromJSON('')
+          # then logs a confusing "template is not valid" error.
+          RESULT: ${{ steps.review.outputs.structured_output }}
+        run: |
+          VERDICT=$(jq -r .verdict <<<"$RESULT")
+          SUMMARY=$(jq -r .summary <<<"$RESULT")
+          COMMENT=$(jq -r .comment <<<"$RESULT")
+          # Fail closed: anything but a known verdict (empty or malformed output)
+          # exits here, and the failure step below sets the status to error.
+          case "$VERDICT" in
+            "GO"|"GO, with nits") state=success ;;
+            "NO GO") state=failure ;;
+            *) echo "::error::Unexpected verdict: '$VERDICT'"; exit 1 ;;
+          esac
+          printf '%s\n\n<sub>Reviewed commit %s · [run log](%s)</sub>\n' "$COMMENT" "$SHA" \
+            "${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" > review.md
+          url=$(gh pr comment "$PR" --repo "$REPO" --body-file review.md)
+          gh api "repos/$REPO/statuses/$SHA" -f state="$state" -f context=moi-review \
+            -f description="$(printf '%s: %s' "$VERDICT" "$SUMMARY" | cut -c1-140)" \
+            -f target_url="$url"
+
+      - name: Report a failed run
+        if: failure()
+        env:
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+        run: |
+          # The action hides Claude's output; print only the final result
+          # message, which carries the API error (bad key, no credit, ...).
+          if [ -f "$EXECUTION_FILE" ]; then
+            jq -r '.[] | select(.type == "result") | "Claude result: \(.result // "(no message)")"' "$EXECUTION_FILE" || true
+          fi
+          gh api "repos/$REPO/statuses/$SHA" -f state=error -f context=moi-review \
+            -f description="Review run failed; see the run log" \
+            -f target_url="${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}"
+
+      - name: Remove the label for the next round
+        if: always()
+        run: |
+          gh pr edit "$PR" --repo "$REPO" --remove-label moi-review
