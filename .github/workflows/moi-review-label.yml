@@ -85,10 +85,14 @@ jobs:
 
       - name: Post the review and set the status
         env:
-          VERDICT: ${{ fromJSON(steps.review.outputs.structured_output).verdict }}
-          SUMMARY: ${{ fromJSON(steps.review.outputs.structured_output).summary }}
-          COMMENT: ${{ fromJSON(steps.review.outputs.structured_output).comment }}
+          # Parsed with jq below rather than fromJSON(): GitHub evaluates step
+          # env even when an earlier failure skips this step, and fromJSON('')
+          # then logs a confusing "template is not valid" error.
+          RESULT: ${{ steps.review.outputs.structured_output }}
         run: |
+          VERDICT=$(jq -r .verdict <<<"$RESULT")
+          SUMMARY=$(jq -r .summary <<<"$RESULT")
+          COMMENT=$(jq -r .comment <<<"$RESULT")
           printf '%s\n\n<sub>Reviewed commit %s · [run log](%s)</sub>\n' "$COMMENT" "$SHA" \
             "${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" > review.md
           url=$(gh pr comment "$PR" --repo "$REPO" --body-file review.md)
