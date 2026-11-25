@@ -23,6 +23,7 @@
 | `icon-maskable-512.png` | Android maskable, content inside the 80% safe zone. |
 | `oauth-logo-120.png` | Google OAuth consent screen. Everything sits inside the round crop. |
 | `og-image.png` | 1200×630 share image. |
+| `github-social-preview.png` | 1280×640 GitHub repository social preview (Settings → Social preview). Not served by the site. |
 
 ## Rules
 
