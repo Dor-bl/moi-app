@@ -68,9 +68,15 @@ jobs:
             .claude/skills/moi-review/SKILL.md. Read that file first and follow
             it, including "Reporting findings" and the "Do not flag" list.
             Also read CLAUDE.md. The PR head is checked out; see the change with
-            `git diff BASE...HEAD` or `gh pr diff`, and read the PR description
-            with `gh pr view` for intent. Skip the skill's npm ci / lint / test
-            commands: CI runs those as separate required checks.
+            `git diff BASE...HEAD` or `gh pr diff`. Read the PR description and
+            its comments with `gh pr view <PR NUMBER> --comments` (the checkout
+            is a detached HEAD, so pass the number): earlier review rounds and
+            their answers are there. Skip the skill's npm ci / lint / test
+            commands: CI runs those as separate required checks. That includes
+            the checks on the shipped data: event dates, hours, EN/NL fields
+            and flags (tests/events.test.js), and unique ids in BUCKET_LIST and
+            EVENTS (tests/data-ids.test.js). So don't list those under Not
+            checked just because you cannot run node here.
 
             Do not post anything to GitHub yourself. Return:
             - verdict: "NO GO" if any blocking finding is open, "GO, with nits"

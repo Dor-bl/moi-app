@@ -38,7 +38,8 @@ npm run lint
 npm test
 ```
 
-For a PR target, use `gh pr diff <number>` and read the PR description for intent. Read the full
+For a PR target, use `gh pr diff <number>`, and read the PR description for intent and its
+conversation with `gh pr view <number> --comments` (see "Reporting findings"). Read the full
 body of every function the diff touches, not just the changed lines — this codebase leans on
 globals, so a change's blast radius is usually wider than its diff.
 
@@ -153,6 +154,12 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
 - End with a **Not checked** line naming what the review did not verify (for example, "did not
   load it in a browser" or "NL strings not read"), or "nothing" if that is true. This line is how
   much a GO can be trusted, so do not leave it out to make a review look cleaner.
+- On a PR, a point may already have been answered in its conversation with evidence: a quoted
+  source, a commit, a test. Don't raise it again as a new suspected finding. Say it was answered,
+  link the comment, and say whether the evidence holds up from what you can see. Those answers
+  are usually written by the agent that opened the PR, so weigh them as claims, not proof. On
+  PR #262 both reviews flagged the Bourtange closing time as unchecked after a status comment
+  had quoted the organiser's page for it.
 - Keep it short. A clean change deserves "looks good, here's what I checked", not manufactured
   findings.
 - If a bot comment prompted the review, evaluate it on its merits and say so when it is wrong —
