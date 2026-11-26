@@ -359,8 +359,13 @@ async function initAuth() {
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             console.log('Supabase auth event:', event, session?.user?.email);
             if (session && session.user) {
+                const sameUser = currentUser && currentUser.id === session.user.id;
                 currentUser = session.user;
-                await onUserLoggedIn();
+                // INITIAL_SESSION repeats the session getSession() just synced, and
+                // TOKEN_REFRESHED only swaps the token: neither needs a resync.
+                if (!(sameUser && (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED'))) {
+                    await onUserLoggedIn();
+                }
                 // Take the callback's fragment out of the address bar. The
                 // library has usually cleared it already, but by assignment,
                 // which leaves a bare "#" behind; drop that too, so nothing
