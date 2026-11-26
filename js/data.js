@@ -1362,6 +1362,8 @@ const EVENTS = [
     // 11:00 - 18:00, €4.50 in advance or €5 at the gate from age 6, under-6s
     // and parking free, no dogs. Visit Groningen lists 11:00 - 18:00 on the
     // Saturdays too; the organiser's longer Saturday hours are used here.
+    // The tips' lights, lit trees on the ramparts, nearly 100 stalls, choirs
+    // and street theatre are from the same organiser page.
     {
         id: 'kerstmarkt-bourtange-2026-12-05',
         date: '2026-12-05',
