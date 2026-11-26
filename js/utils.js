@@ -48,11 +48,22 @@ function showBadgeToast(badge) {
 // caller means, and what follows the save still has to run — the sign-in sync's
 // upload, the rest of a sign-out or account deletion. Pending ids are kept until a
 // write goes through, as in saveItems.
+//
+// A reset is the exception: an empty completedItems means the previous account's
+// progress must not stay behind in the store, where the next load would take it for a
+// guest's and upload it into whichever account signs in. So the key is removed
+// instead, which frees space and goes through where the write did not. If even that
+// throws (storage blocked outright), it throws to the caller as before.
 function saveState() {
     try {
         localStorage.setItem('moiCheckState', JSON.stringify(completedItems));
         unsavedIds.clear();
     } catch (err) {
+        if (Object.keys(completedItems).length === 0) {
+            localStorage.removeItem('moiCheckState');
+            unsavedIds.clear();
+            return;
+        }
         console.warn('Progress not saved in this browser:', err);
     }
 }

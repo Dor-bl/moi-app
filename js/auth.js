@@ -577,8 +577,16 @@ async function syncCloudProgress() {
 
             // A change, not a reset: saveItems() writes only these ids. Adopted re-ticks are
             // written now too, since the save above replaced them with this tab's older copy
-            // and their upload below may fail.
-            if (dropped.length || adopted.length) saveItems([...dropped, ...adopted]);
+            // and their upload below may fail. A refused write is not fatal here, unlike a
+            // user's tick: completedItems already holds the result, and the upload below
+            // must still run. A dropped item left in the store is dropped again next sync.
+            if (dropped.length || adopted.length) {
+                try {
+                    saveItems([...dropped, ...adopted]);
+                } catch (err) {
+                    console.warn('Sync cleanup not saved in this browser:', err);
+                }
+            }
 
             // One upsert for everything the cloud lacks: items it does not have, and
             // notes it does not have on items it does. A failed upload leaves the carried
