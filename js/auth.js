@@ -361,9 +361,10 @@ async function initAuth() {
             if (session && session.user) {
                 const sameUser = currentUser && currentUser.id === session.user.id;
                 currentUser = session.user;
-                // INITIAL_SESSION repeats the session getSession() just synced, and
-                // TOKEN_REFRESHED only swaps the token: neither needs a resync.
-                if (!(sameUser && (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED'))) {
+                // INITIAL_SESSION repeats the session getSession() just synced.
+                // TOKEN_REFRESHED still syncs: a tab resuming with an expired token
+                // gets only that event, and it is what pulls other devices' ticks.
+                if (!(sameUser && event === 'INITIAL_SESSION')) {
                     await onUserLoggedIn();
                 }
                 // Take the callback's fragment out of the address bar. The

@@ -1,8 +1,7 @@
 // supabase-js emits INITIAL_SESSION to a new onAuthStateChange subscriber, and
 // initAuth subscribes only after getSession() has already synced that session,
-// so every signed-in load used to run the full cloud sync twice. TOKEN_REFRESHED
-// (about hourly) took the same path, and its authGeneration bump made an
-// in-flight syncItemToCloud skip markSynced. Runs the real js/auth.js.
+// so every signed-in load used to run the full cloud sync twice. Runs the real
+// js/auth.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -32,16 +31,14 @@ test('a signed-in page load syncs once, not again on INITIAL_SESSION', async () 
     assert.equal(replaced.length, 1, 'the bare "#" a callback leaves is still cleared');
 });
 
-test('TOKEN_REFRESHED for the same user swaps currentUser without a resync', async () => {
+test('TOKEN_REFRESHED still syncs: it is all a tab resuming with an expired token gets', async () => {
     const { supabase, module, renders } = await signedInLoad();
-    const generation = module.authGeneration;
     const refreshed = { ...USER_A };
 
     await supabase.emit('TOKEN_REFRESHED', { user: refreshed });
 
     assert.equal(module.currentUser, refreshed);
-    assert.equal(renders.list, 1);
-    assert.equal(module.authGeneration, generation);
+    assert.equal(renders.list, 2, 'changes made on other devices are pulled on resume');
 });
 
 test('a different user still gets a full sync', async () => {
