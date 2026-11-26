@@ -1,7 +1,11 @@
 // Application Core - Main UI Orchestration & Event Dispatching
 
 // State
-let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
+// Through readStoredState (js/utils.js, loaded first) rather than a bare
+// JSON.parse: a value that is not valid JSON (a write cut short, a hand edit)
+// would otherwise throw here at the top level, and nothing below would run —
+// an empty page instead of an empty list.
+let completedItems = readStoredState() || {};
 // Validated on read, not just on write: a stored value that is not a language we
 // ship ('undefined' from an older build, a hand-edited key, 'constructor' and
 // friends off the prototype) otherwise reaches UI_TRANSLATIONS[currentLang] and
