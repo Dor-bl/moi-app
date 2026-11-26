@@ -1,4 +1,4 @@
-// Utils Module - Shared Global Exports: getMilestoneObj, showBadgeToast, saveState, saveItems, readStoredState, createConfetti, pickRandomUncompleted
+// Utils Module - Shared Global Exports: getMilestoneObj, showBadgeToast, saveState, saveItems, readStoredState, hasUnsavedChange, createConfetti, pickRandomUncompleted
 // Dependencies: Expects MILESTONES, UI_TRANSLATIONS, currentLang, completedItems, currentUser, SYNCED_USER_KEY.
 
 let toastTimeout = null;
@@ -43,9 +43,38 @@ function showBadgeToast(badge) {
 // Overwrites the stored progress with this tab's copy. Right for a reset — sign-out
 // and account deletion empty completedItems and mean it — and wrong for a change,
 // which is what saveItems below is for.
+//
+// A refused write (storage full) does not throw: completedItems is already what the
+// caller means, and what follows the save still has to run — the sign-in sync's
+// upload, the rest of a sign-out or account deletion. Pending ids are kept until a
+// write goes through, as in saveItems.
+//
+// A reset is the exception: an empty completedItems means the previous account's
+// progress must not stay behind in the store, where the next load would take it for a
+// guest's and upload it into whichever account signs in. So the key is removed
+// instead, which frees space and goes through where the write did not. If even that
+// throws (storage blocked outright), it throws to the caller as before.
 function saveState() {
-    localStorage.setItem('moiCheckState', JSON.stringify(completedItems));
-    unsavedIds.clear();
+    try {
+        localStorage.setItem('moiCheckState', JSON.stringify(completedItems));
+        unsavedIds.clear();
+    } catch (err) {
+        if (Object.keys(completedItems).length === 0) {
+            localStorage.removeItem('moiCheckState');
+            unsavedIds.clear();
+            return;
+        }
+        // Every id the overwrite would have set or removed stays pending, so the next
+        // saveItems() writes this tab's values for them rather than folding the stale
+        // stored ones back in: a refused overwrite is retried, not undone.
+        for (const id of Object.keys({ ...readStoredState(), ...completedItems })) unsavedIds.add(id);
+        console.warn('Progress not saved in this browser:', err);
+    }
+}
+
+// Whether this tab holds a change to this item that has not been written yet.
+function hasUnsavedChange(id) {
+    return unsavedIds.has(id);
 }
 
 // The progress as stored right now, or null when it is missing or cannot be trusted
