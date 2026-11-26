@@ -53,6 +53,10 @@ function initTheme() {
 
 function setTheme(themeOption) {
     const validTheme = ALLOWED_THEMES.includes(themeOption) ? themeOption : 'system';
-    localStorage.setItem('moiCheckTheme', validTheme);
+    // A refused write (storage full, site data blocked) only means the choice
+    // lasts for this page view; it must not stop the theme from applying.
+    try {
+        localStorage.setItem('moiCheckTheme', validTheme);
+    } catch { /* see above */ }
     applyTheme(validTheme);
 }

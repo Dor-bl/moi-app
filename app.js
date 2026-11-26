@@ -373,7 +373,13 @@ function updateLanguageUI() {
 function setLanguage(lang) {
     if (!ALLOWED_LANGS.includes(lang) || lang === currentLang) return;
     currentLang = lang;
-    localStorage.setItem('moiCheckLang', currentLang);
+    // A refused write (storage full, site data blocked) only means the choice
+    // lasts for this page view. Letting it throw would leave currentLang
+    // switched with nothing re-rendered, and the early return above would then
+    // swallow every retry until a reload.
+    try {
+        localStorage.setItem('moiCheckLang', currentLang);
+    } catch { /* see above */ }
     updateLanguageUI();
     renderWordOfDay();
     renderList();
@@ -754,7 +760,11 @@ function buildCompletedDivider(count, collapsed) {
 
     divider.addEventListener('click', () => {
         completedCollapsedPref = String(!collapsed);
-        localStorage.setItem('moiCheckCompletedCollapsed', completedCollapsedPref);
+        // A refused write only means the choice lasts for this page view; it
+        // must not stop the toggle itself.
+        try {
+            localStorage.setItem('moiCheckCompletedCollapsed', completedCollapsedPref);
+        } catch { /* see above */ }
         renderList();
     });
 

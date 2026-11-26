@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function loadTheme({ savedTheme = null, withGoogleButton = true } = {}) {
+function loadTheme({ savedTheme = null, withGoogleButton = true, failWrites = false } = {}) {
     const listeners = [];
     const calls = { render: 0 };
     const store = new Map(savedTheme ? [['moiCheckTheme', savedTheme]] : []);
@@ -26,7 +26,10 @@ function loadTheme({ savedTheme = null, withGoogleButton = true } = {}) {
     const sandbox = {
         localStorage: {
             getItem: k => (store.has(k) ? store.get(k) : null),
-            setItem: (k, v) => store.set(k, String(v)),
+            setItem: (k, v) => {
+                if (failWrites) throw new Error('QuotaExceededError');
+                store.set(k, String(v));
+            },
             removeItem: k => store.delete(k)
         },
         document: { documentElement: root, querySelectorAll: () => [] },
@@ -84,4 +87,13 @@ test('a page without the auth module (privacy.html) registers the listener witho
     const t = loadTheme({ savedTheme: 'system', withGoogleButton: false });
     t.initTheme();
     assert.doesNotThrow(() => t.listeners[0]());
+});
+
+test('a refused theme write still applies the theme', () => {
+    const t = loadTheme({ savedTheme: 'light', failWrites: true });
+    t.initTheme();
+
+    assert.doesNotThrow(() => t.setTheme('dark'));
+
+    assert.equal(t.root._attrs['data-theme'], 'dark', 'the choice holds for this page view');
 });
