@@ -339,7 +339,7 @@ async function initAuth() {
             window.history.replaceState(null, '', url.pathname + url.search);
 
             console.error('Supabase auth error:', errorDesc);
-            alert('Sign In Notice: ' + errorDesc);
+            alert(UI_TRANSLATIONS[currentLang].authErrorNotice + ' ' + errorDesc);
         }
 
         // Take the hash out of the address bar straight away — it is a

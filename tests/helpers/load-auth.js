@@ -94,7 +94,7 @@ export function createFakeSupabase({ rows = [], selectError = null, session = nu
 // supply the browser globals a particular path needs (a richer `document`,
 // `crypto`, `TextEncoder`, a `window.GOOGLE_CLIENT_ID`) without every other
 // test having to carry them.
-export function loadAuthModule({ storage = createLocalStorage(), supabaseClient = null, overrides = {} } = {}) {
+export function loadAuthModule({ storage = createLocalStorage(), supabaseClient = null, translations = null, overrides = {} } = {}) {
     const renders = { list: 0, progress: 0 };
 
     const sandbox = {
@@ -130,6 +130,9 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
     }
     sandbox.window.localStorage = storage;
 
+    // A test that checks user-facing text passes the real UI_TRANSLATIONS from
+    // js/data.js; the rest get the two-key stub below.
+    sandbox.__translations = translations;
     const context = vm.createContext(sandbox);
 
     // Globals that app.js and js/data.js own at runtime; auth.js only touches
@@ -137,7 +140,7 @@ export function loadAuthModule({ storage = createLocalStorage(), supabaseClient 
     vm.runInContext(`
         let completedItems = {};
         let currentLang = 'en';
-        const UI_TRANSLATIONS = { en: { signIn: 'Sign In', signOut: 'Sign Out' } };
+        const UI_TRANSLATIONS = globalThis.__translations || { en: { signIn: 'Sign In', signOut: 'Sign Out' } };
         const BUCKET_LIST = [
             { id: '1', title: { en: 'Eat your first Groninger Eierbal', nl: 'Eet je eerste Groningse Eierbal' } },
             { id: '2', title: { en: 'Climb the Martinitoren', nl: 'Beklim de Martinitoren' } }
