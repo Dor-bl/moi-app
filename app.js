@@ -1633,15 +1633,25 @@ function toggleComplete(id, event = null) {
         syncItemToCloud(id, true, noteVal);
     }
     
-    const adopted = saveItems([id]);
+    // A refused write (storage full or blocked) keeps the tick for this session:
+    // saveItems leaves the id pending, and the next save that works writes it out. The
+    // card, the progress and the modal still have to follow it, or the tick looks like
+    // it did nothing and the next click on the box unticks it. Treated like a blocked
+    // save (null) below.
+    let adopted;
+    try {
+        adopted = saveItems([id]);
+    } catch (err) {
+        console.warn('Progress not saved in this browser:', err);
+        adopted = null;
+    }
 
     // After the save, not before it: saveItems() has by then folded in whatever other
     // tabs ticked, so the category count includes their items. Checked beforehand, two
     // tabs that each finish one of a category's last two items would both count one
-    // short, and the category would complete with no toast in either. A save that
-    // throws never gets here, which is right: nothing was saved to celebrate. Nor does a
-    // save the account guard blocked (null): another tab took the store over, so this
-    // tick was not saved either.
+    // short, and the category would complete with no toast in either. A save that was
+    // refused, or that the account guard blocked (null: another tab took the store
+    // over), gets no toast: nothing was saved to celebrate.
     if (!isCompleted && adopted !== null) checkBadgeUnlocks(id, false);
 
     const card = document.querySelector(`.bucket-card[data-id="${id}"]`);
@@ -1847,9 +1857,15 @@ function persistOpenNote() {
     // again then). Left marked synced, a failed upload plus an untick in another tab
     // would make the next sync drop the item and this note with it, instead of retrying.
     delete entry.synced;
-    if (saveItems([selectedItemId])) {
-        renderList();
-        updateProgress();
+    // A refused write keeps the edit for this session (it waits in saveItems' pending
+    // ids) and must not stop the modal from closing or the upload below.
+    try {
+        if (saveItems([selectedItemId])) {
+            renderList();
+            updateProgress();
+        }
+    } catch (err) {
+        console.warn('Note not saved in this browser:', err);
     }
     syncItemToCloud(selectedItemId, true, note);
 }
