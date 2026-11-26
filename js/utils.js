@@ -1,4 +1,4 @@
-// Utils Module - Shared Global Exports: getMilestoneObj, showBadgeToast, saveState, saveItems, readStoredState, createConfetti, pickRandomUncompleted
+// Utils Module - Shared Global Exports: getMilestoneObj, showBadgeToast, saveState, saveItems, readStoredState, hasUnsavedChange, createConfetti, pickRandomUncompleted
 // Dependencies: Expects MILESTONES, UI_TRANSLATIONS, currentLang, completedItems, currentUser, SYNCED_USER_KEY.
 
 let toastTimeout = null;
@@ -64,8 +64,17 @@ function saveState() {
             unsavedIds.clear();
             return;
         }
+        // Every id the overwrite would have set or removed stays pending, so the next
+        // saveItems() writes this tab's values for them rather than folding the stale
+        // stored ones back in: a refused overwrite is retried, not undone.
+        for (const id of Object.keys({ ...readStoredState(), ...completedItems })) unsavedIds.add(id);
         console.warn('Progress not saved in this browser:', err);
     }
+}
+
+// Whether this tab holds a change to this item that has not been written yet.
+function hasUnsavedChange(id) {
+    return unsavedIds.has(id);
 }
 
 // The progress as stored right now, or null when it is missing or cannot be trusted

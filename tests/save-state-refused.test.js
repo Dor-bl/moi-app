@@ -114,3 +114,55 @@ test('a refused write still uploads the guest ticks when a synced item is droppe
     assert.deepEqual(supabase.upserts.map(u => u.row.item_id), ['7'], 'the guest tick must reach the account');
     assert.deepEqual(Object.keys(plain(tab.completedItems)).sort(), ['5', '7']);
 });
+
+test('a note edit that was never written is uploaded and kept, not swapped for the stored copy', async () => {
+    const storage = storageRefusingProgress({
+        moiCheckState: JSON.stringify({ '5': { date: '2026-11-01T00:00:00.000Z', note: 'old' } })
+    });
+    const supabase = createFakeSupabase({ rows: [] });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = JSON.parse(storage.getItem('moiCheckState'));
+
+    // As a guest, the edit's write is refused: it waits as this tab's unsaved change.
+    tab.completedItems['5'].note = 'new';
+    assert.throws(() => tab.saveItems(['5']), /quota/);
+
+    tab.currentUser = userB;
+    await tab.onUserLoggedIn();
+
+    assert.deepEqual(supabase.upserts.map(u => [u.row.item_id, u.row.note]), [['5', 'new']]);
+    assert.equal(plain(tab.completedItems)['5'].note, 'new', 'the stored "old" is not taken for a newer edit');
+});
+
+test('a refused sign-in merge is not undone by the next save that goes through', async () => {
+    const cloudNote = 'the account’s note, longer than the one stored here';
+    const merged5 = { date: '2026-10-30T08:00:00.000Z', note: cloudNote, synced: true };
+    // Room for the merged item alone, not with the synced item the sync then drops.
+    const limit = JSON.stringify({ '5': merged5 }).length + 5;
+    const storage = createLocalStorage({
+        moiCheckState: JSON.stringify({
+            '5': { date: '2026-10-30T08:00:00.000Z', note: 'old', synced: true },
+            '9': { date: '2026-10-01T00:00:00.000Z', note: 'unticked on another device', synced: true }
+        })
+    });
+    const setItem = storage.setItem;
+    storage.setItem = (key, value) => {
+        if (key === 'moiCheckState' && String(value).length > limit) {
+            throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+        }
+        setItem(key, value);
+    };
+    const supabase = createFakeSupabase({
+        rows: [{ user_id: 'user-b', item_id: '5', date: '2026-10-30T08:00:00.000Z', note: cloudNote }]
+    });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = JSON.parse(storage.getItem('moiCheckState'));
+    tab.currentUser = userB;
+
+    await tab.onUserLoggedIn();
+
+    assert.equal(plain(tab.completedItems)['5'].note, cloudNote, 'this tab keeps the account’s note');
+    const stored = JSON.parse(storage.getItem('moiCheckState'));
+    assert.equal(stored['5'].note, cloudNote, 'and that is what was written');
+    assert.ok(!('9' in stored));
+});

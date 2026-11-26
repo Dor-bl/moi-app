@@ -1,5 +1,5 @@
 // Auth Module - Shared Global Exports: SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_CLIENT_ID, supabaseClient, currentUser, authGeneration, updateAuthBtnState, initAuth, onUserLoggedIn, onUserLoggedOut, syncCloudProgress, syncItemToCloud, describeMagicLinkError, finishMagicLinkSignIn, initGoogleSignIn, renderGoogleButton, deleteUserAccountAndData, buildAccountExport, exportMissesLocalChanges
-// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, renderWordOfDay, closeAuthModal, saveState, saveItems, readStoredState.
+// Dependencies: Expects UI_TRANSLATIONS, BUCKET_LIST, currentLang, completedItems, renderList, updateProgress, renderWordOfDay, closeAuthModal, saveState, saveItems, readStoredState, hasUnsavedChange.
 
 // Supabase Configuration
 const SUPABASE_URL = (typeof window !== 'undefined' && window.SUPABASE_URL) ? window.SUPABASE_URL : '';
@@ -768,7 +768,10 @@ function markSynced(rows) {
         const uploaded = `${r.date}\n${r.note}`;
         const theirs = stored[r.item_id];
         if (entryVersion(completedItems[r.item_id]) !== uploaded) continue;
-        if (!theirs || entryVersion(theirs) === uploaded) {
+        // A stored copy that differs is another tab's newer save, unless this tab has
+        // a change to the item that never got written: then the store is just older,
+        // and this tab's copy, the one uploaded, is the one to keep.
+        if (!theirs || entryVersion(theirs) === uploaded || hasUnsavedChange(r.item_id)) {
             ids.push(r.item_id);
         } else if (ownStore && typeof theirs === 'object') {
             // Another tab saved a newer version since this one was saved. Take it now,
