@@ -75,8 +75,12 @@ jobs:
             commands: CI runs those as separate required checks. That includes
             the checks on the shipped data: event dates, hours, EN/NL fields
             and flags (tests/events.test.js), and unique ids in BUCKET_LIST and
-            EVENTS (tests/data-ids.test.js). So don't list those under Not
-            checked just because you cannot run node here.
+            EVENTS (tests/data-ids.test.js). Leave lint, tests and CI out of
+            **Not checked** entirely: they are separate required checks.
+
+            Read-only git is allowed: diff, log, show, blame, status, ls-files
+            and check-ignore. If a command you need is refused, name it under
+            **Not checked**; never describe output you did not get.
 
             Do not post anything to GitHub yourself. Return:
             - verdict: "NO GO" if any blocking finding is open, "GO, with nits"
@@ -91,8 +95,21 @@ jobs:
             --model claude-sonnet-5-5
             --max-turns 40
             --permission-mode default
-            --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(gh pr view:*),Bash(gh pr diff:*)"
+            --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(git status:*),Bash(git ls-files:*),Bash(git check-ignore:*),Bash(gh pr view:*),Bash(gh pr diff:*)"
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["GO","GO, with nits","NO GO"]},"summary":{"type":"string"},"comment":{"type":"string"}},"required":["verdict","summary","comment"]}'
+
+      - name: List refused tool calls
+        if: always()
+        env:
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+        run: |
+          # The action logs only a count of refused calls; print which ones, so
+          # a blocked command can be added to --allowedTools above.
+          if [ -f "$EXECUTION_FILE" ]; then
+            jq -r '.[] | select(.type == "result") | .permission_denials // [] | .[]
+              | "Refused: \(.tool_name) \(.tool_input.command // (.tool_input | tostring))"' \
+              "$EXECUTION_FILE" || true
+          fi
 
       - name: Post the review and set the status
         env:
