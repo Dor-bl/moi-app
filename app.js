@@ -1,12 +1,21 @@
 // Application Core - Main UI Orchestration & Event Dispatching
 
 // State
-let completedItems = JSON.parse(localStorage.getItem('moiCheckState')) || {};
+// Through readStoredState (js/utils.js, loaded first) rather than a bare
+// JSON.parse: a value that is not valid JSON (a write cut short, a hand edit)
+// would otherwise throw here at the top level, and nothing below would run —
+// an empty page instead of an empty list.
+let completedItems = readStoredState() || {};
 // Validated on read, not just on write: a stored value that is not a language we
 // ship ('undefined' from an older build, a hand-edited key, 'constructor' and
 // friends off the prototype) otherwise reaches UI_TRANSLATIONS[currentLang] and
 // throws during init, which renders an empty page rather than a wrong language.
-const storedLang = localStorage.getItem('moiCheckLang');
+// Blocked site data makes any touch of localStorage throw (SecurityError); at
+// the top level that would stop this whole script, so fall back to defaults.
+let storedLang = null;
+try {
+    storedLang = localStorage.getItem('moiCheckLang');
+} catch { /* storage blocked: default language */ }
 let currentLang = ALLOWED_LANGS.includes(storedLang) ? storedLang : 'en';
 let currentFilter = 'All';
 // Independent toggles, ANDed together: an event must match every active key to
@@ -20,7 +29,10 @@ let detailModalFromSurprise = false;
 // Element that had focus when the detail modal opened, so closing can hand it back.
 let detailModalReturnFocus = null;
 // null = no explicit choice yet, so the section auto-collapses once it grows.
-let completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
+let completedCollapsedPref = null;
+try {
+    completedCollapsedPref = localStorage.getItem('moiCheckCompletedCollapsed');
+} catch { /* storage blocked, as for storedLang above */ }
 let resortTimer = null;
 let listNeedsResort = false;
 // The occurrence key of a check-in waiting on a GPS fix, or null. It does two

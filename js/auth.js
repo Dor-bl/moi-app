@@ -328,7 +328,7 @@ async function initAuth() {
         const errorDesc = hashParams.get('error_description') || queryParams.get('error_description');
         if (errorDesc) {
             console.error('Supabase auth error:', errorDesc);
-            alert('Sign In Notice: ' + errorDesc);
+            alert(UI_TRANSLATIONS[currentLang].authErrorNotice + ' ' + errorDesc);
         }
 
         // Take the hash out of the address bar straight away — it is a

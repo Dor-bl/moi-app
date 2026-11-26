@@ -27,14 +27,19 @@ function updateThemeButtonsUI(currentOption) {
 }
 
 function initTheme() {
-    let savedTheme = localStorage.getItem('moiCheckTheme');
-    if (!savedTheme) {
-        savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            localStorage.setItem('moiCheckTheme', savedTheme);
-            localStorage.removeItem('theme');
+    let savedTheme = null;
+    // Blocked site data makes any touch of localStorage throw (SecurityError),
+    // and this runs during boot: fall back to the system theme rather than stop.
+    try {
+        savedTheme = localStorage.getItem('moiCheckTheme');
+        if (!savedTheme) {
+            savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                localStorage.setItem('moiCheckTheme', savedTheme);
+                localStorage.removeItem('theme');
+            }
         }
-    }
+    } catch { /* storage blocked: system theme */ }
     if (!ALLOWED_THEMES.includes(savedTheme)) {
         savedTheme = 'system';
     }
