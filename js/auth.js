@@ -154,6 +154,9 @@ function finishMagicLinkSignIn(pending) {
     finishBtn.textContent = t().magicFinishBtn;
     finish.style.display = 'block';
     authModal.classList.add('active');
+    // Into the sheet, as openAuthModal does, so a keyboard or screen-reader
+    // user lands on the one thing this sheet asks them to do.
+    finishBtn.focus();
 
     finishBtn.onclick = async () => {
         // After a failed attempt the button turns into "request a new link":
@@ -187,9 +190,11 @@ function finishMagicLinkSignIn(pending) {
         }
 
         // onAuthStateChange picks up the new session; just put the modal back.
+        // Through closeAuthModal, as onGoogleCredential does, so focus leaves
+        // the hidden sheet instead of dropping to <body> with this button.
         finish.style.display = 'none';
         authActions.style.display = 'block';
-        authModal.classList.remove('active');
+        closeAuthModal();
     };
 }
 
