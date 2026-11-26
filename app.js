@@ -237,6 +237,8 @@ function updateSurpriseButton() {
  */
 function updateLanguageUI() {
     const t = UI_TRANSLATIONS[currentLang];
+    // Screen readers pick their voice from the document language (WCAG 3.1.1).
+    document.documentElement.lang = currentLang;
 
     langBtns.forEach(btn => {
         const isCurrent = btn.dataset.lang === currentLang;

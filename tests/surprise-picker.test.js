@@ -297,13 +297,23 @@ test('clicking Surprise me FAB opens a random uncompleted item and Pick another 
         assert.equal(await page.isVisible('#modalSurpriseBtn'), false);
         // Closing hands focus back to the Surprise me button that opened it.
         assert.equal(await focusedId(), 'surpriseBtn');
+        const docLang = () => page.evaluate(() => globalThis.document.documentElement.lang);
+        assert.equal(await docLang(), 'en');
         await page.click('#settingsBtn');
         await page.click('.lang-option-btn[data-lang="nl"]');
         await page.click('#closeSettingsModal');
 
+        // The document language follows the switch, so screen readers use a Dutch voice.
+        assert.equal(await docLang(), 'nl');
         assert.equal(await page.textContent('#txtSurpriseMe'), 'Verras mij');
         await page.click('#surpriseBtn');
         assert.equal(await page.textContent('#modalSurpriseBtn'), 'Kies een andere 🎲');
+
+        // Switching back restores it.
+        await page.click('#closeDetailModal');
+        await page.click('#settingsBtn');
+        await page.click('.lang-option-btn[data-lang="en"]');
+        assert.equal(await docLang(), 'en');
     } finally {
         if (browser) await browser.close();
         await new Promise(resolve => server.close(resolve));
