@@ -43,9 +43,18 @@ function showBadgeToast(badge) {
 // Overwrites the stored progress with this tab's copy. Right for a reset — sign-out
 // and account deletion empty completedItems and mean it — and wrong for a change,
 // which is what saveItems below is for.
+//
+// A refused write (storage full) does not throw: completedItems is already what the
+// caller means, and what follows the save still has to run — the sign-in sync's
+// upload, the rest of a sign-out or account deletion. Pending ids are kept until a
+// write goes through, as in saveItems.
 function saveState() {
-    localStorage.setItem('moiCheckState', JSON.stringify(completedItems));
-    unsavedIds.clear();
+    try {
+        localStorage.setItem('moiCheckState', JSON.stringify(completedItems));
+        unsavedIds.clear();
+    } catch (err) {
+        console.warn('Progress not saved in this browser:', err);
+    }
 }
 
 // The progress as stored right now, or null when it is missing or cannot be trusted
