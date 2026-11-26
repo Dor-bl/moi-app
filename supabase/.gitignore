@@ -1,0 +1,5 @@
+# Supabase CLI local state. `supabase link` writes the linked project ref,
+# pooler URL and service versions into .temp/; none of it belongs in the repo.
+.branches
+.temp
+.env
