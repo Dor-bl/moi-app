@@ -43,6 +43,7 @@ export default [
         saveState: "readonly",
         saveItems: "readonly",
         readStoredState: "readonly",
+        hasUnsavedChange: "readonly",
         createConfetti: "readonly",
         pickRandomUncompleted: "readonly",
         renderList: "readonly",
