@@ -327,6 +327,17 @@ async function initAuth() {
         const queryParams = new URLSearchParams(window.location.search);
         const errorDesc = hashParams.get('error_description') || queryParams.get('error_description');
         if (errorDesc) {
+            // Out of the address bar before it is shown, so it is shown once.
+            // Nothing else removes it: the library throws on an error in the URL
+            // before its own cleanup, and the hash is otherwise only cleared on a
+            // successful sign-in, so every reload of a guest's page repeated the
+            // alert. Cleared first rather than after, because alert() blocks and
+            // a reload while it is open would otherwise keep the error. The hash
+            // goes whole — on this path it carries nothing but the error.
+            const url = new URL(window.location.href);
+            ['error', 'error_code', 'error_description'].forEach(key => url.searchParams.delete(key));
+            window.history.replaceState(null, '', url.pathname + url.search);
+
             console.error('Supabase auth error:', errorDesc);
             alert('Sign In Notice: ' + errorDesc);
         }
