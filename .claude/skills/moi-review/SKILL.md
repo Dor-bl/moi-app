@@ -89,6 +89,11 @@ guards.
   write. A rule like "guest entries are handled by the guest path" has to hold on that next call
   too, not only on a run that succeeds. (PR #277: the marker was written before the cloud read,
   so after a failed read the retry treated guest entries as the account's own edits.)
+- The other direction matters too: a value read *before* an `await` and used *after* it. Trace
+  what the user (a tick, a note edit) or another tab can change while the `await` is pending, and
+  what the stale value then decides. (PR #277: `ownPendingEdits` was read from the marker before
+  the first sign-in's cloud read, so a note edited during that read was still treated as guest
+  progress and lost to the cloud row when its upload failed.)
 - Client-side checks are UX, not security. Anything that must actually be enforced belongs in RLS
   policies or the `delete_user` RPC — if a diff adds a new table or column, the SQL in docs/setup/supabase.md and
   policy section must be updated too.
@@ -156,6 +161,11 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
   suspected, it is at least should fix. CLAUDE.md's "push back on micro-edge-cases" is about
   cross-tab races that need new machinery to fix, not about data loss on an ordinary sequence
   such as a failed network request.
+- A cross-tab path that loses data and can be fixed with what the code already has (a snapshot
+  it has already read, an existing flag) is not that kind of race: report it as at least should
+  fix. If `main` already loses data in the same sequence, label it **pre-existing** instead of
+  leaving it out, so the owner can decide. (PR #277: a stale tab's sync overwrote another tab's
+  pending note edit, and the `stored` snapshot it needed was already read.)
 - Cite `file.js:line` and state the concrete failure: inputs or sequence of events → wrong result.
   If you cannot describe how it breaks, it is a nit or it is not a finding.
 - Mark each finding **verified** (you reproduced it, or traced the code path to the failure) or

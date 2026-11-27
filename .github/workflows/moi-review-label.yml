@@ -3,7 +3,8 @@ name: moi-review
 # `moi-review` is a required check on main. Adding the `moi-review` label to a
 # PR runs Claude Code against the checklist in .claude/skills/moi-review/SKILL.md,
 # posts the review as a PR comment, and sets the `moi-review` status on the
-# head commit from its verdict: success for GO / GO with nits, failure for NO GO.
+# head commit from its verdict: success for GO / GO with nits, failure for NO GO,
+# and failure for a GO on app code that took fewer than 10 turns (too shallow).
 # The label is then removed, so the next push (a new commit with no status)
 # needs the label again to be reviewed.
 #
@@ -68,10 +69,23 @@ jobs:
             .claude/skills/moi-review/SKILL.md. Read that file first and follow
             it, including "Reporting findings" and the "Do not flag" list.
             Also read CLAUDE.md. The PR head is checked out; see the change with
-            `git diff BASE...HEAD` or `gh pr diff`. Read the PR description and
-            its comments with `gh pr view <PR NUMBER> --comments` (the checkout
-            is a detached HEAD, so pass the number): earlier review rounds and
-            their answers are there. Skip the skill's npm ci / lint / test
+            `git diff BASE...HEAD` or `gh pr diff`.
+
+            Review in two passes, in this order:
+            1. Your own pass. Read the diff and the full body of every function
+               it touches, then write down your findings. Do not read the PR
+               comments yet. A new round is a new change to review, not only
+               a check that the last round's finding is fixed.
+            2. Only then read the PR description and its comments with
+               `gh pr view <PR NUMBER> --comments` (the checkout is a detached
+               HEAD, so pass the number). Earlier review rounds and their
+               answers are there. Compare them with your own findings, as the
+               skill's "Reporting findings" section says.
+            (PR #277: a review that opened with "Copilot's finding is fixed"
+            checked only that path, stopped after 6 turns, and missed two
+            data-loss paths in the same function.)
+
+            Skip the skill's npm ci / lint / test
             commands: CI runs those as separate required checks. That includes
             the checks on the shipped data: event dates, hours, EN/NL fields
             and flags (tests/events.test.js), and unique ids in BUCKET_LIST and
@@ -118,6 +132,7 @@ jobs:
           # then logs a confusing "template is not valid" error.
           RESULT: ${{ steps.review.outputs.structured_output }}
           EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+          BASE: origin/${{ github.event.pull_request.base.ref }}
         run: |
           VERDICT=$(jq -r .verdict <<<"$RESULT")
           SUMMARY=$(jq -r .summary <<<"$RESULT")
@@ -130,23 +145,37 @@ jobs:
             *) echo "::error::Unexpected verdict: '$VERDICT'"; exit 1 ;;
           esac
           # Turn count in the footer: --max-turns is only a ceiling, and a review
-          # that stopped after a handful of turns cannot have traced much (PR #277
-          # got a GO after 5). Below 10, say so where the reader will see it.
+          # that stopped after a handful of turns cannot have traced much. PR #277
+          # got a GO after 5 turns, and another after 6 that missed two data-loss
+          # paths in js/auth.js. So when the diff touches app code, a GO below 10
+          # turns does not pass: the comment is still posted, the status is a
+          # failure, and adding the label again runs a new review. A count that
+          # can't be read counts as shallow. A diff with no app code (docs, CI,
+          # the checklist) only gets the warning: PR #279's CI-only diff got a
+          # sound review in 6. A NO GO stands at any depth.
+          MIN_TURNS=10
           TURNS=$(jq -r '[.[] | select(.type == "result") | .num_turns][0] // "?"' "$EXECUTION_FILE" 2>/dev/null || echo "?")
-          case "$TURNS" in
-            ''|*[!0-9]*) depth="${TURNS:-?} turns" ;;
-            *) if [ "$TURNS" -lt 10 ]; then
-                 depth="⚠️ only $TURNS turns: a shallow review, weigh this verdict accordingly"
-                 echo "::warning::moi-review finished in $TURNS turns"
-               else
-                 depth="$TURNS turns"
-               fi ;;
-          esac
+          case "$TURNS" in ''|*[!0-9]*) TURNS="?" ;; esac
+          if [ "$TURNS" = "?" ] || [ "$TURNS" -lt "$MIN_TURNS" ]; then
+            depth="⚠️ only $TURNS turns: a shallow review"
+            [ "$TURNS" = "?" ] && depth="⚠️ turn count unknown: treated as a shallow review"
+            echo "::warning::moi-review finished in $TURNS turns"
+            # If the diff can't be read, assume it touches app code (fail closed).
+            files=$(git diff --name-only "$BASE...$SHA" 2>/dev/null) || files="app.js"
+            app_code=$(printf '%s\n' "$files" | grep -E '^(app\.js|js/|supabase/|index\.html)' || true)
+            if [ "$state" = success ] && [ -n "$app_code" ]; then
+              depth="$depth of app code, so this GO does not pass; add the label again for a new review"
+              state=failure
+              DESCRIPTION="Not accepted: $VERDICT after $TURNS turns on app code; add the label again"
+            fi
+          else
+            depth="$TURNS turns"
+          fi
           printf '%s\n\n<sub>Reviewed commit %s · %s · [run log](%s)</sub>\n' "$COMMENT" "$SHA" "$depth" \
             "${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" > review.md
           url=$(gh pr comment "$PR" --repo "$REPO" --body-file review.md)
           gh api "repos/$REPO/statuses/$SHA" -f state="$state" -f context=moi-review \
-            -f description="$(printf '%s: %s' "$VERDICT" "$SUMMARY" | cut -c1-140)" \
+            -f description="$(printf '%s' "${DESCRIPTION:-$VERDICT: $SUMMARY}" | cut -c1-140)" \
             -f target_url="$url"
 
       - name: Report a failed run
