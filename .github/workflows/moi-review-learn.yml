@@ -174,7 +174,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$BRANCH"
           git commit -q -m "$TITLE" -m "Learned from review misses on #$PR. See $RUN_URL" -- "$SKILL"
-          git push -q origin "$BRANCH"
 
           compare="${{ github.server_url }}/$REPO/compare/main...$BRANCH?expand=1&title=$(jq -rn --arg t "$TITLE" '$t|@uri')"
           { echo "moi-review passed $COUNT commit(s) on #$PR that Copilot then reviewed with open high-severity issues."
@@ -182,6 +181,13 @@ jobs:
             echo; echo "## Why"; echo; cat "$T/reason.md"
             echo; echo "## Change"; echo; echo '```diff'; git show --format= HEAD -- "$SKILL"; echo '```'
             echo; echo "<sub>Branch \`$BRANCH\` · [run log]($RUN_URL)</sub>"; } > "$T/issue.md"
+          # The pushed branch is what marks this PR as handled (see "Find review
+          # misses"), so it goes up only once the issue exists: if the issue call
+          # fails, a re-run starts over. A push that fails after the issue leaves
+          # an issue whose link 404s, and a re-run opens a fresh one.
           issue=$(gh issue create --repo "$REPO" --title "moi-review-learn: $TITLE" --body-file "$T/issue.md")
+          git push -q origin "$BRANCH"
+          # Only a pointer to the issue, so a failure here doesn't fail the run.
           gh pr comment "$PR" --repo "$REPO" \
-            --body "moi-review-learn found $COUNT missed commit(s) here and proposed a checklist change: $issue"
+            --body "moi-review-learn found $COUNT missed commit(s) here and proposed a checklist change: $issue" \
+            || echo "::warning::Could not comment on #$PR; the proposal is $issue"
