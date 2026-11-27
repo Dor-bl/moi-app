@@ -441,6 +441,11 @@ async function syncCloudProgress() {
     // Sign-out already clears both, so this only catches the paths where it
     // never ran - a crashed tab, a session that expired, storage half-cleared.
     const lastSyncedUser = localStorage.getItem(SYNCED_USER_KEY);
+    // Issue #276: when this browser was already synced to this same account, an unsynced
+    // entry is this account's own pending edit (a note changed or cleared while offline),
+    // not a guest's, so it wins over the older cloud copy below. Guest merges (no marker)
+    // keep the rules they had.
+    const ownPendingEdits = lastSyncedUser === currentUser.id;
     if (lastSyncedUser && lastSyncedUser !== currentUser.id) {
         completedItems = {};
         saveState();
@@ -533,6 +538,17 @@ async function syncCloudProgress() {
                 const local = completedItems[row.item_id];
                 const cloudNote = row.note || '';
                 const date = row.date || new Date().toISOString();
+                if (ownPendingEdits && local && typeof local === 'object' && !local.synced
+                    && typeof local.note === 'string') {
+                    const note = clampNote(local.note);
+                    const entryDate = local.date || date;
+                    const pending = note !== cloudNote;
+                    completedItems[row.item_id] = { date: entryDate, note, synced: !pending };
+                    if (pending) {
+                        carriedNotes.push({ user_id: currentUser.id, item_id: row.item_id, note, date: entryDate });
+                    }
+                    return;
+                }
                 let guestNote = '';
                 if (!cloudNote && local && typeof local === 'object' && !local.synced
                     && typeof local.note === 'string' && local.note.trim()) {
