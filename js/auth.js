@@ -538,18 +538,37 @@ async function syncCloudProgress() {
                 const local = completedItems[row.item_id];
                 const cloudNote = row.note || '';
                 const date = row.date || new Date().toISOString();
+                // Issue #276: `noteEdited` marks a note edit made while signed in (see
+                // persistOpenNote), so it is this account's own pending change and wins over
+                // the older cloud copy. Every path that drops the account marker also wipes
+                // the progress, so a marked entry cannot belong to another account. Guest
+                // progress, bare ticks and entries saved by older builds (which could hold
+                // `synced: false` for a guest note) have no mark and keep the guest rules.
+                if (local && typeof local === 'object' && local.noteEdited === true && !local.synced
+                    && typeof local.note === 'string') {
+                    const note = clampNote(local.note);
+                    const entryDate = local.date || date;
+                    const pending = note !== cloudNote;
+                    completedItems[row.item_id] = pending
+                        ? { date: entryDate, note, noteEdited: true }
+                        : { date: entryDate, note, synced: true };
+                    if (pending) {
+                        carriedNotes.push({ user_id: currentUser.id, item_id: row.item_id, note, date: entryDate });
+                    }
+                    return;
+                }
                 let guestNote = '';
                 if (!cloudNote && local && typeof local === 'object' && !local.synced
                     && typeof local.note === 'string' && local.note.trim()) {
                     guestNote = clampNote(local.note);
                     carriedNotes.push({ user_id: currentUser.id, item_id: row.item_id, note: guestNote, date });
                 }
-                completedItems[row.item_id] = {
-                    date,
-                    note: cloudNote || guestNote,
-                    // A carried note is not in the cloud yet; the upload below marks it.
-                    synced: !guestNote
-                };
+                // A carried note is not in the cloud yet; the upload below marks it. It is
+                // left unflagged rather than `synced: false`, which would make a retry treat
+                // it as a signed-in edit and let it beat a note the account has gained since.
+                completedItems[row.item_id] = guestNote
+                    ? { date, note: guestNote }
+                    : { date, note: cloudNote, synced: true };
             });
             // saveState(), not saveItems(), on purpose. This path ends in a full upload of
             // completedItems under currentUser.id, so it must hold only this tab's own
@@ -808,7 +827,10 @@ function markSynced(rows) {
         updateProgress();
     }
     if (!ids.length) return;
-    for (const id of ids) completedItems[id].synced = true;
+    for (const id of ids) {
+        completedItems[id].synced = true;
+        delete completedItems[id].noteEdited;
+    }
     // saveItems() folds in whatever another tab saved to the shared store while the request
     // was in flight, and returns true when it did. The list on screen was drawn before
     // that, so it must be redrawn: otherwise this tab holds an item it shows as unticked,
