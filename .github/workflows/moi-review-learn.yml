@@ -12,6 +12,9 @@ name: moi-review-learn
 # without review. Copilot comments and PR text are untrusted input, so they never
 # write to the checklist directly.
 #
+# It never comments on the PR. Its reasoning goes to the run summary, and only
+# a proposed change produces something for the owner: the issue.
+#
 # Actions can't open PRs in this repo (that setting is off), and a PR the owner
 # opens from the link gets CI, which one opened by GITHUB_TOKEN would not.
 #
@@ -39,7 +42,7 @@ jobs:
     permissions:
       contents: write        # push the moi-learn/pr-<N> branch
       issues: write          # open the proposal issue
-      pull-requests: write   # read reviews; comment on the PR (gh pr comment needs write here)
+      pull-requests: read    # read reviews and review comments
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -175,13 +178,11 @@ jobs:
             *) echo "::error::Unexpected decision: '$DECISION'"; exit 1 ;;
           esac
 
-          if [ "$DECISION" = no_change ]; then
-            { echo "## moi-review-learn: $COUNT missed commit(s), no checklist change"
-              echo; cat "$T/reason.md"
-              echo; echo "<sub>[run log]($RUN_URL)</sub>"; } > "$T/comment.md"
-            gh pr comment "$PR" --repo "$REPO" --body-file "$T/comment.md"
-            exit 0
-          fi
+          # The reasoning always goes to the run's summary page. Nothing is posted
+          # on the PR: it is merged, and only a proposed change needs the owner.
+          { echo "## moi-review-learn on #$PR: $COUNT missed commit(s), $DECISION"
+            echo; cat "$T/reason.md"; } >> "$GITHUB_STEP_SUMMARY"
+          [ "$DECISION" = no_change ] && exit 0
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -200,7 +201,4 @@ jobs:
           # an issue whose link 404s, and a re-run opens a fresh one.
           issue=$(gh issue create --repo "$REPO" --title "moi-review-learn: $TITLE" --body-file "$T/issue.md")
           git push -q origin "$BRANCH"
-          # Only a pointer to the issue, so a failure here doesn't fail the run.
-          gh pr comment "$PR" --repo "$REPO" \
-            --body "moi-review-learn found $COUNT missed commit(s) here and proposed a checklist change: $issue" \
-            || echo "::warning::Could not comment on #$PR; the proposal is $issue"
+          echo "Proposal: $issue" >> "$GITHUB_STEP_SUMMARY"
