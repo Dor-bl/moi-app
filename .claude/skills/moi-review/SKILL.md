@@ -191,3 +191,9 @@ This file is the reviewer's only memory, and it is edited by hand. When a bug re
 a review should have caught, add one line to the checklist above in the same PR as the fix, naming
 the concrete failure it guards against. Do not add rules for edge cases nobody has hit: a list
 that only grows gets stricter every round, which is how PR #50 happened.
+
+Misses caught before `main` count too. When a PR merges, [`moi-review-learn.yml`](../../../.github/workflows/moi-review-learn.yml)
+looks for commits this review passed that Copilot then reviewed with an open high-severity issue.
+For each such PR it judges whether Copilot was right and, only for a real gap in this list,
+proposes one small edit as an issue with a link to open the PR. Merging that PR is how this file
+learns; closing the issue declines it.
