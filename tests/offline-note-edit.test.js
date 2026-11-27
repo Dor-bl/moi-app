@@ -16,10 +16,10 @@ async function signedInTab(storage, supabase) {
     return tab;
 }
 
-// As app.js persistOpenNote does it.
+// As app.js persistOpenNote does it for a signed-in user.
 function editNote(tab, id, note) {
     tab.completedItems[id].note = note;
-    delete tab.completedItems[id].synced;
+    tab.completedItems[id].synced = false;
     tab.saveItems([id]);
     return tab.syncItemToCloud(id, true, note);
 }
@@ -48,11 +48,32 @@ test('an unsynced local note equal to the cloud note is marked synced without an
     const storage = createLocalStorage();
     const supabase = createFakeSupabase({ rows: [cloudRow('user-b', '1', 'same')] });
     const tab = await signedInTab(storage, supabase);
-    delete tab.completedItems['1'].synced;
+    tab.completedItems['1'].synced = false;
     supabase.upserts.length = 0;
 
     await tab.syncCloudProgress();
 
     assert.equal(plain(tab.completedItems)['1'].synced, true);
     assert.equal(supabase.upserts.length, 0);
+});
+
+// Review on #277: the account marker is written before the cloud read, so a failed first
+// read used to make the next sync treat guest entries as this account's own edits. A guest
+// tick with no note then uploaded '' over the account's memory. Guest rules must hold
+// until one merge has succeeded.
+test('a failed first read does not let a guest tick erase the account note on retry', { timeout: 5000 }, async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [cloudRow('user-b', '1', 'memory')] });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = { '1': { date: '2026-11-01T00:00:00.000Z', note: '' } };
+    tab.currentUser = userB;
+    const realFrom = supabase.from;
+    supabase.from = t => ({ ...realFrom(t), select: () => ({ eq: async () => ({ data: null, error: { message: 'offline' } }) }) });
+    await tab.onUserLoggedIn();
+    supabase.from = realFrom;
+
+    await tab.syncCloudProgress();
+
+    assert.equal(plain(tab.completedItems)['1'].note, 'memory');
+    assert.deepEqual(supabase.upserts.map(u => u.row.note), []);
 });

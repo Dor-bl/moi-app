@@ -1856,7 +1856,11 @@ function persistOpenNote() {
     // The edit is not in the cloud until its upload succeeds (markSynced sets the flag
     // again then). Left marked synced, a failed upload plus an untick in another tab
     // would make the next sync drop the item and this note with it, instead of retrying.
-    delete entry.synced;
+    // Signed in, it is set to false rather than removed: false marks the account's own
+    // pending edit, which the next sync keeps over the older cloud note (#276). A guest
+    // edit has no account yet and keeps the guest merge rules.
+    if (currentUser) entry.synced = false;
+    else delete entry.synced;
     // A refused write keeps the edit for this session (it waits in saveItems' pending
     // ids) and must not stop the modal from closing or the upload below.
     try {
