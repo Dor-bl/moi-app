@@ -117,6 +117,7 @@ jobs:
           # env even when an earlier failure skips this step, and fromJSON('')
           # then logs a confusing "template is not valid" error.
           RESULT: ${{ steps.review.outputs.structured_output }}
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
         run: |
           VERDICT=$(jq -r .verdict <<<"$RESULT")
           SUMMARY=$(jq -r .summary <<<"$RESULT")
@@ -128,7 +129,20 @@ jobs:
             "NO GO") state=failure ;;
             *) echo "::error::Unexpected verdict: '$VERDICT'"; exit 1 ;;
           esac
-          printf '%s\n\n<sub>Reviewed commit %s · [run log](%s)</sub>\n' "$COMMENT" "$SHA" \
+          # Turn count in the footer: --max-turns is only a ceiling, and a review
+          # that stopped after a handful of turns cannot have traced much (PR #277
+          # got a GO after 5). Below 10, say so where the reader will see it.
+          TURNS=$(jq -r '[.[] | select(.type == "result") | .num_turns][0] // "?"' "$EXECUTION_FILE" 2>/dev/null || echo "?")
+          case "$TURNS" in
+            ''|*[!0-9]*) depth="${TURNS:-?} turns" ;;
+            *) if [ "$TURNS" -lt 10 ]; then
+                 depth="⚠️ only $TURNS turns: a shallow review, weigh this verdict accordingly"
+                 echo "::warning::moi-review finished in $TURNS turns"
+               else
+                 depth="$TURNS turns"
+               fi ;;
+          esac
+          printf '%s\n\n<sub>Reviewed commit %s · %s · [run log](%s)</sub>\n' "$COMMENT" "$SHA" "$depth" \
             "${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" > review.md
           url=$(gh pr comment "$PR" --repo "$REPO" --body-file review.md)
           gh api "repos/$REPO/statuses/$SHA" -f state="$state" -f context=moi-review \

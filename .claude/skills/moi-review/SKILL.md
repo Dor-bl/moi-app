@@ -83,6 +83,12 @@ guards.
   `sb-*` storage keys, tokens, or refresh timers directly.
 - Every `await` on a Supabase call inside a flow that can outlive an auth change needs a staleness
   check after it (see `syncCloudProgress`).
+- A call can stop part-way, and the next call starts from what it left. For every write to
+  stored state (`SYNCED_USER_KEY`, `moiCheckState`) made before an `await` or an early `return`,
+  trace what the *next* call sees when this one errors, throws or goes stale right after the
+  write. A rule like "guest entries are handled by the guest path" has to hold on that next call
+  too, not only on a run that succeeds. (PR #277: the marker was written before the cloud read,
+  so after a failed read the retry treated guest entries as the account's own edits.)
 - Client-side checks are UX, not security. Anything that must actually be enforced belongs in RLS
   policies or the `delete_user` RPC — if a diff adds a new table or column, the SQL in docs/setup/supabase.md and
   policy section must be updated too.
@@ -146,6 +152,10 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
 
 - Order by severity: **blocking** (correctness, security, data loss, CI failure) → **should fix** →
   **nit**. Label each one.
+- A path that can erase a user's ticks or notes is never a nit. Verified, it is blocking;
+  suspected, it is at least should fix. CLAUDE.md's "push back on micro-edge-cases" is about
+  cross-tab races that need new machinery to fix, not about data loss on an ordinary sequence
+  such as a failed network request.
 - Cite `file.js:line` and state the concrete failure: inputs or sequence of events → wrong result.
   If you cannot describe how it breaks, it is a nit or it is not a finding.
 - Mark each finding **verified** (you reproduced it, or traced the code path to the failure) or
