@@ -533,17 +533,20 @@ async function syncCloudProgress() {
                 const local = completedItems[row.item_id];
                 const cloudNote = row.note || '';
                 const date = row.date || new Date().toISOString();
-                // Issue #276: `synced: false` marks a note edit made while signed in (see
+                // Issue #276: `noteEdited` marks a note edit made while signed in (see
                 // persistOpenNote), so it is this account's own pending change and wins over
                 // the older cloud copy. Every path that drops the account marker also wipes
-                // the progress, so a flagged entry cannot belong to another account. Guest
-                // progress and bare ticks have no flag and keep the guest rules below.
-                if (local && typeof local === 'object' && local.synced === false
+                // the progress, so a marked entry cannot belong to another account. Guest
+                // progress, bare ticks and entries saved by older builds (which could hold
+                // `synced: false` for a guest note) have no mark and keep the guest rules.
+                if (local && typeof local === 'object' && local.noteEdited === true && !local.synced
                     && typeof local.note === 'string') {
                     const note = clampNote(local.note);
                     const entryDate = local.date || date;
                     const pending = note !== cloudNote;
-                    completedItems[row.item_id] = { date: entryDate, note, synced: !pending };
+                    completedItems[row.item_id] = pending
+                        ? { date: entryDate, note, noteEdited: true }
+                        : { date: entryDate, note, synced: true };
                     if (pending) {
                         carriedNotes.push({ user_id: currentUser.id, item_id: row.item_id, note, date: entryDate });
                     }
@@ -819,7 +822,10 @@ function markSynced(rows) {
         updateProgress();
     }
     if (!ids.length) return;
-    for (const id of ids) completedItems[id].synced = true;
+    for (const id of ids) {
+        completedItems[id].synced = true;
+        delete completedItems[id].noteEdited;
+    }
     // saveItems() folds in whatever another tab saved to the shared store while the request
     // was in flight, and returns true when it did. The list on screen was drawn before
     // that, so it must be redrawn: otherwise this tab holds an item it shows as unticked,

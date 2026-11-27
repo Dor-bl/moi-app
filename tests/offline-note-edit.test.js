@@ -19,7 +19,8 @@ async function signedInTab(storage, supabase) {
 // As app.js persistOpenNote does it for a signed-in user.
 function editNote(tab, id, note) {
     tab.completedItems[id].note = note;
-    tab.completedItems[id].synced = false;
+    delete tab.completedItems[id].synced;
+    tab.completedItems[id].noteEdited = true;
     tab.saveItems([id]);
     return tab.syncItemToCloud(id, true, note);
 }
@@ -41,6 +42,7 @@ for (const newNote of ['NEW', '']) {
         assert.equal(entry.note, newNote, 'the offline edit was overwritten by the cloud note');
         assert.deepEqual(supabase.upserts.map(u => u.row.note), [newNote], 'the edit should be retried');
         assert.equal(entry.synced, true, 'a successful retry marks the entry synced');
+        assert.equal(entry.noteEdited, undefined, 'and clears the pending-edit mark');
     });
 }
 
@@ -48,7 +50,8 @@ test('an unsynced local note equal to the cloud note is marked synced without an
     const storage = createLocalStorage();
     const supabase = createFakeSupabase({ rows: [cloudRow('user-b', '1', 'same')] });
     const tab = await signedInTab(storage, supabase);
-    tab.completedItems['1'].synced = false;
+    delete tab.completedItems['1'].synced;
+    tab.completedItems['1'].noteEdited = true;
     supabase.upserts.length = 0;
 
     await tab.syncCloudProgress();
@@ -102,7 +105,7 @@ test('a note edited during the first sign-in read survives a failed upload', { t
 
     const entry = plain(tab.completedItems)['1'];
     assert.equal(entry.note, 'NEW', 'the edit was replaced by the cloud note');
-    assert.equal(entry.synced, false, 'still pending, so the next sync retries it');
+    assert.equal(entry.noteEdited, true, 'still pending, so the next sync retries it');
 });
 
 // Review on #277: a carried guest note whose upload failed is still guest progress, not a
@@ -120,6 +123,23 @@ test('a carried guest note that failed to upload does not overwrite a later acco
     await tab.onUserLoggedIn();
     supabase.from = realFrom;
     rows[0].note = 'from another device';
+
+    await tab.syncCloudProgress();
+
+    assert.equal(plain(tab.completedItems)['1'].note, 'from another device');
+    assert.deepEqual(supabase.upserts.map(u => u.row.note), []);
+});
+
+// Review on #277: older builds stored a carried guest note whose upload failed as
+// `synced: false`. After an update such an entry is still guest progress, so a note the
+// account has gained since keeps winning.
+test('a guest note stored as synced: false by an older build does not overwrite the account note', { timeout: 5000 }, async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [cloudRow('user-b', '1', 'from another device')] });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = { '1': { date: '2026-11-01T00:00:00.000Z', note: 'guest memory', synced: false } };
+    tab.currentUser = userB;
+    storage.setItem('moiCheckSyncedUser', 'user-b');
 
     await tab.syncCloudProgress();
 
