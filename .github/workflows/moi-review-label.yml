@@ -100,11 +100,24 @@ jobs:
             - verdict: "NO GO" if any blocking finding is open, "GO, with nits"
               if only nits or should-fix items remain, otherwise "GO".
             - summary: one line, under 100 characters, for the commit status.
-            - comment: the full review in Markdown. Its first line is
-              `## ✅ GO — moi-review`, `## ✅ GO, with nits — moi-review` or
-              `## ❌ NO GO — moi-review`, then each finding labelled blocking /
-              should fix / nit and verified / suspected with file:line, what
-              you checked, and a **Not checked** line.
+            - comment: the review in GitHub Markdown, readable in a minute. In
+              this order:
+              1. `## ✅ GO — moi-review`, `## ✅ GO, with nits — moi-review` or
+                 `## ❌ NO GO — moi-review`.
+              2. One sentence: what the change does and why this verdict.
+              3. Each blocking and should-fix finding, most severe first, as a
+                 bold one-line headline (`**Blocking, verified:** file.js:line
+                 — what breaks`) and at most three short bullets: the sequence
+                 of events → the wrong result, and the fix. No heading per
+                 severity, and no restating the PR description.
+              4. Nits, collapsed: `<details><summary>N nits</summary>`, each a
+                 single line with its label and file:line.
+              5. What you checked, collapsed:
+                 `<details><summary>What I checked</summary>`, one line per
+                 area, file:line where it helps.
+              6. A visible **Not checked:** line, last, on one line.
+              Put a blank line after each `<summary>` line and before
+              `</details>`, or the Markdown inside will not render.
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 40

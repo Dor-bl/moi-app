@@ -181,7 +181,9 @@ steps 5 (Redirect URLs) and 7 (email templates) still hold — in particular tha
   PR #262 both reviews flagged the Bourtange closing time as unchecked after a status comment
   had quoted the organiser's page for it.
 - Keep it short. A clean change deserves "looks good, here's what I checked", not manufactured
-  findings.
+  findings. Give each finding a one-line headline (label, `file.js:line`, what breaks) and at most
+  three bullets under it; give each area you checked one line. In a PR comment, put the nits and
+  the checked list in collapsed `<details>` blocks so the findings that need action come first.
 - If a bot comment prompted the review, evaluate it on its merits and say so when it is wrong —
   an unrealistic edge case that costs hundreds of lines to satisfy should be declined with the
   trade-off explained, not patched.
