@@ -38,8 +38,8 @@ jobs:
       group: moi-review-learn-${{ inputs.pr || github.event.pull_request.number }}
     permissions:
       contents: write        # push the moi-learn/pr-<N> branch
-      issues: write          # open the proposal issue, comment on the PR
-      pull-requests: read    # read reviews and review comments
+      issues: write          # open the proposal issue
+      pull-requests: write   # read reviews; comment on the PR (gh pr comment needs write here)
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -127,6 +127,19 @@ jobs:
             --permission-mode default
             --allowedTools "Read,Grep,Glob,Edit,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(gh pr view:*)"
             --json-schema '{"type":"object","properties":{"decision":{"type":"string","enum":["change","no_change"]},"title":{"type":"string"},"reason":{"type":"string"}},"required":["decision","title","reason"]}'
+
+      - name: List refused tool calls
+        if: always() && steps.misses.outputs.count != '0'
+        env:
+          EXECUTION_FILE: ${{ steps.learn.outputs.execution_file }}
+        run: |
+          # As in moi-review-label.yml: the action logs only a count of refused
+          # calls, so print which ones were refused.
+          if [ -f "$EXECUTION_FILE" ]; then
+            jq -r '.[] | select(.type == "result") | .permission_denials // [] | .[]
+              | "Refused: \(.tool_name) \(.tool_input.command // (.tool_input | tostring))"' \
+              "$EXECUTION_FILE" || true
+          fi
 
       - name: Publish the proposal
         if: steps.misses.outputs.count != '0'
