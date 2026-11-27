@@ -98,7 +98,7 @@ test('a carried note whose upload fails stays unsynced, and the next sync carrie
 
     let entry = plain(tab.completedItems)['5'];
     assert.equal(entry.note, 'keep me', 'the note is kept even though the upload failed');
-    assert.equal(entry.synced, false, 'not marked synced after a failed upload');
+    assert.equal(entry.synced, undefined, 'not marked synced after a failed upload');
     assert.deepEqual(supabase.upserts, [], 'nothing recorded by the failed attempt');
 
     await tab.syncCloudProgress();

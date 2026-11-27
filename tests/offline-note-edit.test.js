@@ -104,3 +104,25 @@ test('a note edited during the first sign-in read survives a failed upload', { t
     assert.equal(entry.note, 'NEW', 'the edit was replaced by the cloud note');
     assert.equal(entry.synced, false, 'still pending, so the next sync retries it');
 });
+
+// Review on #277: a carried guest note whose upload failed is still guest progress, not a
+// signed-in edit. If the account gains a note meanwhile (another device), the retry keeps
+// the account's note, as the guest rules say.
+test('a carried guest note that failed to upload does not overwrite a later account note', { timeout: 5000 }, async () => {
+    const storage = createLocalStorage();
+    const rows = [cloudRow('user-b', '1', '')];
+    const supabase = createFakeSupabase({ rows });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = { '1': { date: '2026-11-01T00:00:00.000Z', note: 'guest memory' } };
+    tab.currentUser = userB;
+    const realFrom = supabase.from;
+    supabase.from = t => ({ ...realFrom(t), upsert: async () => ({ error: { message: 'offline' } }) });
+    await tab.onUserLoggedIn();
+    supabase.from = realFrom;
+    rows[0].note = 'from another device';
+
+    await tab.syncCloudProgress();
+
+    assert.equal(plain(tab.completedItems)['1'].note, 'from another device');
+    assert.deepEqual(supabase.upserts.map(u => u.row.note), []);
+});

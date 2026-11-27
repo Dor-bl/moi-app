@@ -555,12 +555,12 @@ async function syncCloudProgress() {
                     guestNote = clampNote(local.note);
                     carriedNotes.push({ user_id: currentUser.id, item_id: row.item_id, note: guestNote, date });
                 }
-                completedItems[row.item_id] = {
-                    date,
-                    note: cloudNote || guestNote,
-                    // A carried note is not in the cloud yet; the upload below marks it.
-                    synced: !guestNote
-                };
+                // A carried note is not in the cloud yet; the upload below marks it. It is
+                // left unflagged rather than `synced: false`, which would make a retry treat
+                // it as a signed-in edit and let it beat a note the account has gained since.
+                completedItems[row.item_id] = guestNote
+                    ? { date, note: guestNote }
+                    : { date, note: cloudNote, synced: true };
             });
             // saveState(), not saveItems(), on purpose. This path ends in a full upload of
             // completedItems under currentUser.id, so it must hold only this tab's own
