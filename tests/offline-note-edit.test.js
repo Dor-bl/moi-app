@@ -77,3 +77,30 @@ test('a failed first read does not let a guest tick erase the account note on re
     assert.equal(plain(tab.completedItems)['1'].note, 'memory');
     assert.deepEqual(supabase.upserts.map(u => u.row.note), []);
 });
+
+// Review on #277: a note edited while the first sign-in read is still in flight is a
+// signed-in edit too. If its upload fails, the cloud row arriving afterwards must not
+// replace it.
+test('a note edited during the first sign-in read survives a failed upload', { timeout: 5000 }, async () => {
+    const storage = createLocalStorage();
+    const supabase = createFakeSupabase({ rows: [cloudRow('user-b', '1', 'old note')] });
+    const { module: tab } = loadAuthModule({ storage, supabaseClient: supabase });
+    tab.completedItems = { '1': { date: '2026-11-01T00:00:00.000Z', note: '' } };
+    tab.currentUser = userB;
+    const realFrom = supabase.from;
+    let releaseRead;
+    const readGate = new Promise(resolve => { releaseRead = resolve; });
+    supabase.from = t => ({
+        ...realFrom(t),
+        select: () => ({ eq: async (c, v) => { await readGate; return realFrom(t).select().eq(c, v); } }),
+        upsert: async () => ({ error: { message: 'offline' } })
+    });
+    const signIn = tab.onUserLoggedIn();
+    await editNote(tab, '1', 'NEW');
+    releaseRead();
+    await signIn;
+
+    const entry = plain(tab.completedItems)['1'];
+    assert.equal(entry.note, 'NEW', 'the edit was replaced by the cloud note');
+    assert.equal(entry.synced, false, 'still pending, so the next sync retries it');
+});
