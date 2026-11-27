@@ -14,9 +14,9 @@ You maintain MoiCheck, a no-build vanilla-JS PWA (classic scripts sharing global
   git fetch origin
   git worktree add ../moi-app-<slug> -b <branch> origin/main      # new fix
   git worktree add ../moi-app-pr<N> -b pr<N>-fix --track origin/<pr-branch>   # existing PR
-  git push origin HEAD:<pr-branch>                                 # push fixes to that PR
+  git -C ../moi-app-pr<N> push origin HEAD:<pr-branch>             # push fixes to that PR
   ```
-  Leave out `-b` and the worktree is a detached HEAD: a plain `git push` then fails, and there is no branch for the cleanup step to keep.
+  Leave out `-b` and the worktree is a detached HEAD: a plain `git push` then fails, and there is no branch for the cleanup step to keep. `git worktree add` does not change directory, so run every later command in the worktree, either with `git -C <worktree>` or after `cd`. Run from the owner's checkout, a push sends that checkout's HEAD instead.
   On Windows, reuse the main checkout's `node_modules` through a junction made in PowerShell (`New-Item -ItemType Junction -Path <wt>\node_modules -Target E:\Git\moi-app\node_modules`). Git Bash `mklink` fails. Before `git worktree remove`, delete the junction with `(Get-Item <wt>\node_modules).Delete()` so the real folder survives.
 - **Follow [`CLAUDE.md`](../../CLAUDE.md) and [`GEMINI.md`](../../GEMINI.md).** Opening a PR is pre-authorized. Rules that came out of PR #50 still apply: no `localStorage` locks, no storage-adapter wrappers, and the `authGeneration` counter for in-flight races.
 - **Never add the `moi-review` label and never post the `moi-review` status.** Each run costs API credit. After every push, tell the owner which PR heads need the label. Add it only when the owner says so in chat, naming the PRs.
@@ -50,8 +50,8 @@ You maintain MoiCheck, a no-build vanilla-JS PWA (classic scripts sharing global
 
 ## Proving a fix
 
-- **Make the bug fail first.** A test must fail on `main` and pass with the fix. Use the node:vm harnesses in `tests/helpers/` (`load-auth.js`, `load-words.js`, …), or the `loadTheme` harness in `tests/theme-system-change.test.js`, which has a `failWrites` option for refused storage. Run `npm run lint` and `npm test` in the worktree before you push.
-- **Browser checks:** run Playwright from the repo's `node_modules` against `file://…/index.html`. A dev server through `npx http-server` or `preview_start` may be blocked. In a script outside the repo, import it as `file:///E:/Git/moi-app/node_modules/playwright/index.mjs`. When an element is outside the viewport, click it with `page.evaluate(() => el.click())`.
+- **Make the bug fail first.** A test must fail without the fix and pass with it. For a bug found on `main`, the baseline is `main`. For a bug in an open PR, the baseline is that PR's unfixed head, because a regression the PR introduced passes on `main`. Use the node:vm harnesses in `tests/helpers/` (`load-auth.js`, `load-words.js`, …), or the `loadTheme` harness in `tests/theme-system-change.test.js`, which has a `failWrites` option for refused storage. Run `npm run lint` and `npm test` in the worktree before you push.
+- **Browser checks:** run Playwright from the repo's `node_modules` against `file://…/index.html`. A dev server through `npx http-server` or `preview_start` may be blocked. In a script outside the repo, import it as `file:///E:/Git/moi-app/node_modules/playwright/index.mjs`. When an element is outside the viewport, click it with `page.locator('<selector>').evaluate(el => el.click())`. The locator passes the element to the callback, while a bare `page.evaluate(() => el.click())` throws a `ReferenceError`.
 - If something cannot be tested in this environment (a real sign-in, a Vercel preview), say so in the PR under "Not checked", and tell the owner what to check by hand.
 
 ## Report
