@@ -103,16 +103,17 @@ function updateAuthBtnState(isLoggedIn) {
 // with a 500", for the project-side fixes.
 function describeMagicLinkError(error) {
     const status = error && error.status;
+    const t = UI_TRANSLATIONS[currentLang];
 
     if (status === 429) {
-        return 'Too many sign-in attempts. Please wait a minute and try again.';
+        return t.magicLinkRateLimited;
     }
 
     if (status >= 500) {
-        return 'Sign-in is temporarily unavailable — the email could not be sent. This is on our side, not yours. Please try again later.';
+        return t.magicLinkUnavailable;
     }
 
-    return (error && error.message) || 'Could not send the magic link. Please try again.';
+    return (error && error.message) || t.magicLinkFailed;
 }
 
 // Magic links no longer point at Supabase's verify endpoint. Mail scanners
